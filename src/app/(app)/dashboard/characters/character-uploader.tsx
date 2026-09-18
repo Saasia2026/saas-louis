@@ -24,7 +24,7 @@ export function CharacterUploader({ userId }: { userId: string }) {
     setError(null);
     if (!next) return setFile(null);
     if (!ACCEPTED_TYPES.includes(next.type)) {
-      return setError("Format accepté : MP4, MOV ou WebM.");
+      return setError("Format accepté : MP4.");
     }
     if (next.size > MAX_VIDEO_BYTES) {
       return setError("Vidéo trop lourde (50 Mo maximum).");
@@ -59,7 +59,7 @@ export function CharacterUploader({ userId }: { userId: string }) {
     <section className="rounded-2xl border border-white/10 p-5">
       <h2 className="font-display text-lg">Nouveau personnage</h2>
       <p className="mt-1 text-sm text-muted">
-        Une vidéo courte du sujet (5 à 10 s suffisent), bien éclairée, sans autre visage.
+        Une vidéo MP4 du sujet (720p minimum ; seules les 4 premières secondes comptent), bien éclairée, sans autre visage.
       </p>
 
       <div className="mt-4 flex flex-col gap-3">

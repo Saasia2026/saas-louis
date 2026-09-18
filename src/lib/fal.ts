@@ -282,9 +282,13 @@ export async function createFalCharacter(input: { name: string; videoUrl: string
   const { request_id } = await fal.queue.submit(endpoint, {
     input: { name: input.name, video_url: input.videoUrl },
   });
+  // Sous le maxDuration de la page (120 s), pour que l'échec soit noté
+  // plutôt que de laisser le personnage en 'pending'.
+  const deadline = Date.now() + 100_000;
   for (;;) {
     const { status } = await fal.queue.status(endpoint, { requestId: request_id });
     if (status === "COMPLETED") break;
+    if (Date.now() > deadline) throw new Error("Sora n'a pas répondu à temps");
     await new Promise((r) => setTimeout(r, 4000));
   }
   const { data } = await fal.queue.result(endpoint, { requestId: request_id });

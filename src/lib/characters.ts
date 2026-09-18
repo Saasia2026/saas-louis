@@ -1,7 +1,7 @@
 import "server-only";
 import { CHARACTER_VIDEOS_BUCKET } from "@/lib/character";
 import { createFalCharacter } from "@/lib/fal";
-import { errorMessage } from "@/lib/replicate";
+import { errorMessage, isOutOfCredit } from "@/lib/replicate";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Personnage Sora : une vidéo courte envoyée une fois donne un identifiant
@@ -51,7 +51,9 @@ export async function registerCharacter(characterId: string) {
       .from("characters")
       .update({
         status: "failed",
-        error: "La création du personnage a échoué. Réessaie avec une autre vidéo.",
+        error: isOutOfCredit(e)
+          ? "Le compte du service de génération n'a plus de crédit. Réessaie plus tard."
+          : "La création du personnage a échoué. Réessaie avec une autre vidéo (MP4, 720p minimum).",
       })
       .eq("id", characterId)
       .eq("status", "pending");

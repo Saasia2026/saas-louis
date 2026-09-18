@@ -27,9 +27,10 @@ assuming one exists.
   PostCSS plugin is `@tailwindcss/postcss`. Add design tokens there, not in a JS config.
 - Fonts are wired as CSS variables (`--font-geist-sans`, `--font-geist-mono`) in
   `layout.tsx` and mapped to `--font-sans` / `--font-mono` in `globals.css`.
-- The repo is currently the `create-next-app` starter with Supabase wired in at the
-  env level only — there is no `src/lib`, no Supabase client module, and no route
-  handlers yet. Those are yours to create.
+- App routes: `login/`, `auth/confirm/`, `(app)/dashboard/` (twins, train, generate,
+  characters) and webhooks under `api/`. Server logic lives in `src/lib/` (Supabase
+  clients in `src/lib/supabase/`, providers `fal.ts` / `replicate.ts`, video assembly
+  in `video-pipeline.ts`). Session refresh runs in `src/proxy.ts`.
 
 ### Next.js 16 specifics that differ from older versions
 
@@ -51,5 +52,6 @@ deploy state. If they are unauthenticated, tell the user to run `/mcp`.
 
 Environment: `.env.local` is gitignored (`.env*`) and holds the public Supabase URL
 and anon key. Server-side secrets are pulled with `vercel env pull .env.local` once
-the Vercel project is linked. The Supabase Postgres has no tables yet — verify the
-live schema via MCP before writing queries.
+the Vercel project is linked. Schema lives in `supabase/migrations/`; every migration
+applied through MCP must also be saved there. Verify the live schema via MCP before
+writing queries, and regenerate `src/lib/supabase/database.types.ts` after changes.

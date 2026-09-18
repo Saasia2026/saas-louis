@@ -15,7 +15,6 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["ffmpeg-static"],
   outputFileTracingIncludes: {
     "/dashboard/generate": ["./node_modules/ffmpeg-static/ffmpeg*"],
-    "/dashboard/gallery": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/generate/webhook": ["./node_modules/ffmpeg-static/ffmpeg*"],
   },
 };
