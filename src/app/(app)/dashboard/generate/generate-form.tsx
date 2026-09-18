@@ -74,7 +74,9 @@ export function GenerateForm({
   const [durationSeconds, setDurationSeconds] = useState(Math.min(15, maxVideoSeconds));
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("9:16");
   const [template, setTemplate] = useState<VideoTemplate>(VIDEO_TEMPLATES[0]);
-  const [preset, setPreset] = useState<PresetId>(DEFAULT_PRESET);
+  const [preset, setPreset] = useState<PresetId>(
+    presets.includes(DEFAULT_PRESET) ? DEFAULT_PRESET : (presets[0] ?? DEFAULT_PRESET),
+  );
   const [mode, setMode] = useState<"director" | "form">("director");
   const [pace, setPace] = useState<Pace>(DEFAULT_PACE);
   const [characterId, setCharacterId] = useState<string | undefined>();

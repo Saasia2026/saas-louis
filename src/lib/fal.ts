@@ -1,6 +1,5 @@
 import "server-only";
 import { ApiError, createFalClient } from "@fal-ai/client";
-import type { Status } from "replicate";
 import {
   DEFAULT_VIDEO_MODEL,
   findVideoModel,
@@ -8,26 +7,15 @@ import {
   type ImageModelId,
   type VideoModelId,
 } from "@/lib/generation";
-import { createReplicate, type PredictionState } from "@/lib/replicate";
+import type { PredictionState, PredictionStatus } from "@/lib/predictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TRAINING_PHOTOS_BUCKET } from "@/lib/twin";
 
-// fal.ai sert de second fournisseur pour les images du jumeau (Flux + LoRA)
-// et l'animation des plans (Kling), mêmes modèles que sur Replicate.
-// Les identifiants de requête fal sont stockés préfixés
-// ("fal:image:<id>", "fal:video:<id>") dans les mêmes colonnes que les
-// prédictions Replicate : le préfixe dit où et comment les suivre.
+// fal.ai génère les images du jumeau et les plans vidéo. Les identifiants de
+// requête sont stockés préfixés ("fal:ref:<modèle>:<id>",
+// "fal:video:<modèle>:<id>"…) : le préfixe dit comment les suivre.
 // fal n'a pas de webhook ici : ses requêtes avancent par le polling du
 // dashboard (getGeneration).
-
-export const FAL_IMAGE_MODEL = "fal-ai/flux-lora";
-
-// Tailles Flux d'environ 1 Mpx, comme les aspect_ratio de Replicate.
-const IMAGE_SIZES: Record<string, { width: number; height: number }> = {
-  "9:16": { width: 768, height: 1344 },
-  "1:1": { width: 1024, height: 1024 },
-  "16:9": { width: 1344, height: 768 },
-};
 
 export function falEnabled() {
   return Boolean(process.env.FAL_KEY);
@@ -43,39 +31,13 @@ function createFal() {
   return createFalClient({ credentials });
 }
 
-export async function createFalTwinImage(input: {
-  twinId: string;
-  prompt: string;
-  aspectRatio: string;
-  seed?: number;
-}) {
-  const loraUrl = await getFalLoraUrl(input.twinId);
-  const { request_id } = await createFal().queue.submit(FAL_IMAGE_MODEL, {
-    input: {
-      prompt: input.prompt,
-      ...(input.seed !== undefined && { seed: input.seed }),
-      image_size: IMAGE_SIZES[input.aspectRatio] ?? IMAGE_SIZES["9:16"],
-      // Un peu sous 1 : le visage reste fidèle, la pose et le décor suivent
-      // mieux la scène.
-      loras: [{ path: loraUrl, scale: 0.85 }],
-      num_images: 1,
-      // Mêmes réglages que sur Replicate (voir createTwinImagePrediction).
-      guidance_scale: 3,
-      num_inference_steps: 28,
-      output_format: "jpeg",
-    },
-  });
-  return `fal:image:${request_id}`;
-}
-
 // ---------------------------------------------------------------------------
 // Images à photos de référence
 // ---------------------------------------------------------------------------
 
-// Moteur d'image principal : un modèle d'édition reçoit des photos
-// d'entraînement du jumeau (visage) et, pour les plans suivants d'une vidéo,
-// le premier plan déjà validé (tenue, objets, lieu). Bien plus cohérent d'un
-// plan à l'autre qu'avec Flux + LoRA. Le modèle et la définition viennent du
+// Un modèle d'édition reçoit des photos du jumeau (visage) et, pour les plans
+// suivants d'une vidéo, le premier plan déjà validé (tenue, objets, lieu). Le
+// modèle et la définition viennent du
 // préréglage de la génération (voir PRESETS).
 const FAL_REFERENCE_MODELS: Record<ImageModelId, string> = {
   "seedream-4.5": "fal-ai/bytedance/seedream/v4.5/edit",
@@ -440,11 +402,10 @@ export async function createFalShotVideo(input: {
   return `fal:video:${input.videoModel}:${request_id}`;
 }
 
-// "fal:image:<id>", "fal:ref:<modèle>:<id>", "fal:video:<modèle>:<id>" ou,
-// avant le choix du modèle, "fal:video:<id>" (Kling 2.5).
+// "fal:ref:<modèle>:<id>", "fal:text:<modèle>:<id>", "fal:video:<modèle>:<id>"
+// ou, avant le choix du modèle, "fal:video:<id>" (Kling 2.5).
 function parseFalId(id: string) {
   const parts = id.split(":");
-  if (parts[1] === "image") return { endpoint: FAL_IMAGE_MODEL, kind: "image", requestId: parts[2] };
   if (parts[1] === "text") {
     const endpoint = FAL_TEXT_VIDEO_ENDPOINTS[parts[2] as VideoModelId];
     if (!endpoint) throw new Error(`Modèle vidéo fal inconnu : ${id}`);
@@ -460,7 +421,7 @@ function parseFalId(id: string) {
   return { endpoint: FAL_VIDEO_ENDPOINTS[model.id], kind: "video", requestId: parts[parts.length - 1] };
 }
 
-// État d'une requête fal, au format des prédictions Replicate.
+// État d'une requête fal.
 export async function getFalPrediction(id: string): Promise<PredictionState> {
   const { endpoint, kind, requestId } = parseFalId(id);
   const fal = createFal();
@@ -481,87 +442,6 @@ export async function getFalPrediction(id: string): Promise<PredictionState> {
     if (!(e instanceof ApiError)) throw e;
     console.error("fal", endpoint, e.status, JSON.stringify(e.body).slice(0, 500));
   }
-  const done: Status = url ? "succeeded" : "failed";
+  const done: PredictionStatus = url ? "succeeded" : "failed";
   return { id, status: done, output: url ?? null };
-}
-
-// ---------------------------------------------------------------------------
-// Poids LoRA
-// ---------------------------------------------------------------------------
-
-const pendingLoras = new Map<string, Promise<string>>();
-
-// URL des poids LoRA du jumeau sur le stockage fal. L'entraînement Replicate
-// les livre dans une archive .tar (~170 Mo, trop lourde pour Supabase
-// Storage) : le .safetensors en est extrait puis envoyé sur fal, une fois.
-export function getFalLoraUrl(twinId: string) {
-  let pending = pendingLoras.get(twinId);
-  if (!pending) {
-    pending = loadFalLoraUrl(twinId).finally(() => pendingLoras.delete(twinId));
-    pendingLoras.set(twinId, pending);
-  }
-  return pending;
-}
-
-async function loadFalLoraUrl(twinId: string) {
-  const admin = createAdminClient();
-  const { data: twin, error } = await admin
-    .from("twins")
-    .select("fal_lora_url, replicate_training_id")
-    .eq("id", twinId)
-    .single();
-  if (error) throw error;
-  if (twin.fal_lora_url) return twin.fal_lora_url;
-  if (!twin.replicate_training_id) throw new Error("Jumeau sans entraînement");
-
-  const training = await createReplicate().trainings.get(twin.replicate_training_id);
-  const weightsUrl = (training.output as { weights?: string } | null)?.weights;
-  if (!weightsUrl) throw new Error("Poids LoRA introuvables");
-
-  const response = await fetch(weightsUrl);
-  if (!response.ok) throw new Error(`Téléchargement des poids LoRA : ${response.status}`);
-  const weights = extractSafetensors(new Uint8Array(await response.arrayBuffer()));
-  if (!weights) throw new Error("Archive LoRA sans fichier .safetensors");
-
-  const url = await createFal().storage.upload(
-    new File([weights], `lora-${twinId}.safetensors`, {
-      type: "application/octet-stream",
-    }),
-    { lifecycle: { expiresIn: "never" } },
-  );
-
-  const { error: updateError } = await admin
-    .from("twins")
-    .update({ fal_lora_url: url })
-    .eq("id", twinId);
-  if (updateError) throw updateError;
-  return url;
-}
-
-// Premier fichier .safetensors d'une archive tar (ustar ou GNU).
-function extractSafetensors(tar: Uint8Array<ArrayBuffer>) {
-  const decoder = new TextDecoder();
-  const field = (start: number, length: number) =>
-    decoder.decode(tar.subarray(start, start + length)).replace(/\0[\s\S]*$/, "");
-
-  let offset = 0;
-  let longName: string | null = null;
-  while (offset + 512 <= tar.length) {
-    const name = field(offset, 100);
-    if (!name) break;
-    const size = parseInt(field(offset + 124, 12).trim() || "0", 8);
-    const type = field(offset + 156, 1);
-    const prefix = field(offset + 257, 6) === "ustar" ? field(offset + 345, 155) : "";
-    const data = offset + 512;
-    const fullName = longName ?? (prefix ? `${prefix}/${name}` : name);
-    longName = null;
-
-    if (type === "L") {
-      longName = field(data, size);
-    } else if ((type === "0" || type === "") && fullName.endsWith(".safetensors")) {
-      return tar.subarray(data, data + size);
-    }
-    offset = data + Math.ceil(size / 512) * 512;
-  }
-  return null;
 }

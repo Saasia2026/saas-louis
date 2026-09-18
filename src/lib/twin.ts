@@ -13,16 +13,8 @@ export const ACCEPTED_PHOTO_TYPES: Record<string, string> = {
 };
 
 export const TRAINING_PHOTOS_BUCKET = "training-photos";
+// Anciens modèles 3D des jumeaux, effacés avec le jumeau.
 export const TWIN_MODELS_BUCKET = "twin-models";
-
-// Modèle 3D d'un jumeau : null tant qu'il n'est pas lancé.
-export type TwinModelStatus = "image" | "mesh" | "ready" | "failed" | null;
-
-export type TwinModelView = {
-  status: TwinModelStatus;
-  modelUrl?: string;
-  imageUrl?: string;
-};
 
 export type TrainingPhoto = {
   id: string;

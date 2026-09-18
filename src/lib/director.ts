@@ -26,6 +26,9 @@ import { FREE_TEMPLATE_ID, VIDEO_TEMPLATES } from "@/lib/templates";
 
 export const MAX_DIRECTOR_MESSAGES = 40;
 export const MAX_DIRECTOR_MESSAGE_LENGTH = 2000;
+// Messages par jour et par compte : chaque message appelle Claude sans être
+// payé en crédits. Aligné avec public.use_director_message.
+export const DIRECTOR_DAILY_LIMIT = 20;
 const TOKEN_TTL_MS = 24 * 60 * 60_000;
 
 const DraftSchema = z.object({

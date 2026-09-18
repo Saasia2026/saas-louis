@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { CHARACTER_VIDEOS_BUCKET, MAX_CHARACTER_NAME_LENGTH } from "@/lib/character";
 import { registerCharacter } from "@/lib/characters";
-import { errorMessage } from "@/lib/replicate";
+import { errorMessage } from "@/lib/predictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 

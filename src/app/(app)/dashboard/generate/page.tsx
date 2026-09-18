@@ -122,7 +122,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
         resume={resume}
         credits={profile?.credits_remaining ?? 0}
         maxVideoSeconds={maxVideoSeconds(profile?.plan ?? "free")}
-        presets={availablePresets(falEnabled()).map((p) => p.id)}
+        presets={availablePresets(falEnabled(), Boolean(twin)).map((p) => p.id)}
         characters={characters ?? []}
       />
     </div>

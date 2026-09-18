@@ -3,13 +3,11 @@
 export const GENERATIONS_BUCKET = "generations";
 export const MAX_PROMPT_LENGTH = 1000;
 
-// Chaque plan est une image du jumeau animée par ce modèle, puis les plans
-// sont assemblés. Kling produit des plans de 5 ou 10 s.
-export const VIDEO_MODEL = "kwaivgi/kling-v2.5-turbo-pro";
+// Durée d'un plan par défaut : les plans sont générés un par un, puis
+// assemblés.
 export const VIDEO_STEP_SECONDS = 5;
 
-// Modèles d'animation au choix. Kling 2.5 tourne sur Replicate avec fal en
-// relais ; les autres n'existent que sur fal (FAL_KEY requis).
+// Modèles d'animation au choix, tous sur fal (FAL_KEY requis).
 // creditsPerSecond est aligné avec public.video_model_credits_per_second.
 export const VIDEO_MODELS = [
   {
@@ -19,7 +17,6 @@ export const VIDEO_MODELS = [
     label: "Sora 2",
     hint: "Avec le son, plans de 8 s",
     creditsPerSecond: 5,
-    falOnly: true,
     endFrames: false,
     direct: true,
     shotSeconds: 8,
@@ -32,7 +29,6 @@ export const VIDEO_MODELS = [
     label: "Wan 2.7",
     hint: "Vidéo directe, 1080p",
     creditsPerSecond: 1,
-    falOnly: true,
     endFrames: false,
     direct: true,
   },
@@ -41,7 +37,6 @@ export const VIDEO_MODELS = [
     label: "Seedance 1 Lite",
     hint: "Vidéo directe, 720p",
     creditsPerSecond: 1,
-    falOnly: true,
     endFrames: false,
     direct: true,
   },
@@ -50,7 +45,6 @@ export const VIDEO_MODELS = [
     label: "Kling 2.5 Turbo",
     hint: "Rapide et fiable",
     creditsPerSecond: 1,
-    falOnly: false,
     // Ce modèle n'accepte pas d'image de fin de plan.
     endFrames: false,
     direct: false,
@@ -60,7 +54,6 @@ export const VIDEO_MODELS = [
     label: "Seedance 1.5 Pro",
     hint: "Mouvements naturels",
     creditsPerSecond: 1,
-    falOnly: true,
     endFrames: true,
     direct: false,
   },
@@ -69,7 +62,6 @@ export const VIDEO_MODELS = [
     label: "Kling 3.0 Pro",
     hint: "Qualité cinéma",
     creditsPerSecond: 2,
-    falOnly: true,
     endFrames: true,
     direct: false,
   },
@@ -152,10 +144,11 @@ export function findPreset(id: unknown): Preset | undefined {
   return PRESETS.find((p) => p.id === id);
 }
 
-// Préréglages utilisables : sans FAL_KEY, seul le modèle d'animation de
-// Replicate est disponible.
-export function availablePresets(falEnabled: boolean) {
-  return PRESETS.filter((p) => falEnabled || !findVideoModel(p.videoModel)?.falOnly);
+// Préréglages vidéo utilisables : aucun sans FAL_KEY. Sora 2 refuse les
+// photos de personnes réelles : pas de Sora avec un jumeau.
+export function availablePresets(falEnabled: boolean, withTwin: boolean) {
+  if (!falEnabled) return [];
+  return PRESETS.filter((p) => !withTwin || p.videoModel !== "sora-2");
 }
 
 // Alignés avec public.start_generation et public.max_video_seconds.

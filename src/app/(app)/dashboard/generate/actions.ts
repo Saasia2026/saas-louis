@@ -1,8 +1,8 @@
 "use server";
 
 import Anthropic from "@anthropic-ai/sdk";
-import { getTwinAppearance } from "@/lib/appearance";
 import {
+  DIRECTOR_DAILY_LIMIT,
   MAX_DIRECTOR_MESSAGES,
   MAX_DIRECTOR_MESSAGE_LENGTH,
   createDraftToken,
@@ -32,17 +32,12 @@ import {
   type Preset,
 } from "@/lib/generation";
 import {
-  currentImageEngine,
-  getPrediction,
-  imagePrompt,
-  startTwinImage,
-} from "@/lib/providers";
-import {
   applyImagePredictionResult,
   errorMessage,
   isOutOfCredit,
   isRateLimited,
-} from "@/lib/replicate";
+} from "@/lib/predictions";
+import { getPrediction, imagePrompt, startTwinImage } from "@/lib/providers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Storyboard } from "@/lib/storyboard";
 import { createClient } from "@/lib/supabase/server";
@@ -94,7 +89,8 @@ export async function generate(input: {
     return { error: "Modèle de vidéo invalide." };
   }
   const preset = findPreset(input.preset ?? DEFAULT_PRESET);
-  if (!preset || !availablePresets(falEnabled()).includes(preset)) {
+  // Une photo n'utilise que le modèle d'image du préréglage.
+  if (!preset || (kind === "video" && !availablePresets(falEnabled(), Boolean(input.twinId)).includes(preset))) {
     return { error: RPC_ERRORS.invalid_preset };
   }
   const pace = input.pace ?? DEFAULT_PACE;
@@ -133,7 +129,7 @@ export async function launchDirectorVideo(input: {
   const draft = readDraftToken(input.draftToken, auth.claims.sub);
   if (!draft) return { error: "Brouillon expiré. Envoie un message au Director pour le rafraîchir." };
   const preset = findPreset(draft.preset);
-  if (!preset || !availablePresets(falEnabled()).includes(preset)) {
+  if (!preset || !availablePresets(falEnabled(), Boolean(input.twinId)).includes(preset)) {
     return { error: RPC_ERRORS.invalid_preset };
   }
 
@@ -169,22 +165,19 @@ async function startGeneration(
   },
 ): Promise<Result<{ generationId: string }>> {
   const { prompt, kind, template, durationSeconds, pace, preset, twinId } = input;
-  const imageEngine = currentImageEngine();
 
   // Une photo exige un jumeau ; une vidéo peut s'en passer.
-  let twinModelVersion = "";
   if (twinId) {
     const { data: twin } = await supabase
       .from("twins")
-      .select("replicate_model_version")
+      .select("id")
       .eq("id", twinId)
       .eq("status", "ready")
       .not("consent_confirmed_at", "is", null)
       .maybeSingle();
-    if (!twin?.replicate_model_version) {
+    if (!twin) {
       return { error: "Ton jumeau n'est pas encore prêt." };
     }
-    twinModelVersion = twin.replicate_model_version;
   } else if (kind === "image") {
     return { error: "Choisis un jumeau pour générer une photo." };
   }
@@ -213,7 +206,6 @@ async function startGeneration(
       p_duration_seconds: kind === "video" ? durationSeconds : undefined,
       p_metadata: {
         aspect_ratio: input.aspectRatio,
-        image_engine: imageEngine,
         ...(template && { template: template.id }),
         ...(kind === "video" && {
           preset: preset.id,
@@ -244,12 +236,10 @@ async function startGeneration(
         generationId,
         userId,
         twinId: twinId ?? null,
-        twinModelVersion,
         prompt,
         aspectRatio: input.aspectRatio,
         durationSeconds,
         preset,
-        imageEngine,
         pace,
         soraCharacterId: character?.id,
         characterName: character?.name,
@@ -258,14 +248,9 @@ async function startGeneration(
       });
     } else {
       const predictionId = await startTwinImage({
-        engine: imageEngine,
         preset,
         twinId: twinId!,
-        modelVersion: twinModelVersion,
-        prompt: imagePrompt(imageEngine, {
-          appearance: imageEngine === "lora" ? await getTwinAppearance(twinId!) : "",
-          scene: prompt,
-        }),
+        prompt: imagePrompt({ scene: prompt }),
         aspectRatio: input.aspectRatio,
       });
       await admin
@@ -423,12 +408,22 @@ export async function directorChat(input: {
     return { error: `Message invalide (${MAX_DIRECTOR_MESSAGE_LENGTH} caractères maximum).` };
   }
 
+  // Compté avant l'appel à Claude : un message qui échoue compte aussi.
+  const { error: limitError } = await supabase.rpc("use_director_message");
+  if (limitError) {
+    return {
+      error: limitError.message.includes("director_limit")
+        ? `Tu as atteint la limite de ${DIRECTOR_DAILY_LIMIT} messages au Director pour aujourd'hui. Reviens demain, ou lance ta vidéo avec le formulaire.`
+        : "Le Director ne répond pas. Réessaie dans un instant.",
+    };
+  }
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("plan")
     .eq("id", userId)
     .single();
-  const presets = availablePresets(falEnabled()).map((p) => p.id);
+  const presets = availablePresets(falEnabled(), Boolean(input.twinId)).map((p) => p.id);
   const current = input.draftToken ? readDraftToken(input.draftToken, userId) : null;
 
   try {

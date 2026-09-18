@@ -8,9 +8,6 @@ export const metadata: Metadata = {
   title: "Crée ton jumeau — TwinPost",
 };
 
-// startTraining télécharge et zippe jusqu'à 30 photos avant d'appeler Replicate.
-export const maxDuration = 120;
-
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 export default async function TrainPage() {
@@ -21,8 +18,8 @@ export default async function TrainPage() {
   }
 
   // On reprend le jumeau en cours de création s'il y en a un ; sinon, un
-  // nouveau jumeau est créé au premier upload. Les autres jumeaux (prêts,
-  // en entraînement) ne bloquent pas la création.
+  // nouveau jumeau est créé au premier upload. Les jumeaux déjà prêts ne
+  // bloquent pas la création.
   const { data: pending } = await supabase
     .from("twins")
     .select("id")

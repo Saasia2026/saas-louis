@@ -10,7 +10,7 @@ import {
   TRAINING_PHOTOS_BUCKET,
   type TrainingPhoto,
 } from "@/lib/twin";
-import { ensurePendingTwin, startTraining } from "./actions";
+import { activateTwin, ensurePendingTwin } from "./actions";
 
 const UPLOAD_CONCURRENCY = 3;
 
@@ -166,7 +166,7 @@ export function PhotoUploader({
     startTrainingTransition(async () => {
       const twinId = await twinIdRef.current;
       if (!twinId) return;
-      const res = await startTraining(twinId, consent);
+      const res = await activateTwin(twinId, consent);
       if (res.error !== undefined) setNotice(res.error);
     });
   }
@@ -219,7 +219,7 @@ export function PhotoUploader({
             <span className="text-muted">
               {count < MIN_PHOTOS
                 ? ` · encore ${MIN_PHOTOS - count} minimum`
-                : " · prêt pour l'entraînement"}
+                : " · prêt"}
               {uploading > 0 && ` · ${uploading} en cours d'envoi`}
             </span>
           </p>
@@ -236,7 +236,7 @@ export function PhotoUploader({
           disabled={!canTrain || !consent || training}
           className="rounded-lg bg-gradient-to-r from-neon-purple to-neon-pink px-5 py-2.5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {training ? "Lancement…" : "Lancer l'entraînement"}
+          {training ? "Création…" : "Créer mon jumeau"}
         </button>
       </div>
 

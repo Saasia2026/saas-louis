@@ -1,7 +1,7 @@
 import "server-only";
 import { CHARACTER_VIDEOS_BUCKET } from "@/lib/character";
 import { createFalCharacter } from "@/lib/fal";
-import { errorMessage, isOutOfCredit } from "@/lib/replicate";
+import { errorMessage, isOutOfCredit } from "@/lib/predictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Personnage Sora : une vidéo courte envoyée une fois donne un identifiant

@@ -57,6 +57,24 @@ export type Database = {
           },
         ]
       }
+      director_usage: {
+        Row: {
+          day: string
+          messages: number
+          user_id: string
+        }
+        Insert: {
+          day?: string
+          messages?: number
+          user_id: string
+        }
+        Update: {
+          day?: string
+          messages?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       generation_shots: {
         Row: {
           attempts: number
@@ -378,6 +396,11 @@ export type Database = {
           p_twin_id: string | null
         }
         Returns: string
+      }
+      use_director_message: { Args: never; Returns: number }
+      video_model_credits_per_second: {
+        Args: { p_video_model: string }
+        Returns: number
       }
     }
     Enums: {

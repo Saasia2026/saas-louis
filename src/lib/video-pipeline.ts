@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import ffmpegPath from "ffmpeg-static";
-import { getTwinAppearance } from "@/lib/appearance";
 import {
   DEFAULT_PACE,
   GENERATIONS_BUCKET,
@@ -22,16 +21,6 @@ import {
   type Preset,
 } from "@/lib/generation";
 import {
-  getPrediction,
-  imageEngineOf,
-  imagePrompt,
-  startDirectShotVideo,
-  startTextShotVideo,
-  startShotVideo,
-  startTwinImage,
-  type ImageEngine,
-} from "@/lib/providers";
-import {
   copyOutputToStorage,
   errorMessage,
   isOutOfCredit,
@@ -39,7 +28,15 @@ import {
   isTerminal,
   outputUrlOf,
   type PredictionState,
-} from "@/lib/replicate";
+} from "@/lib/predictions";
+import {
+  getPrediction,
+  imagePrompt,
+  startDirectShotVideo,
+  startTextShotVideo,
+  startShotVideo,
+  startTwinImage,
+} from "@/lib/providers";
 import { writeStoryboard, type Storyboard } from "@/lib/storyboard";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -49,9 +46,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // 2. stage 'shots' : dès que toutes les images sont prêtes, le modèle vidéo
 //    choisi anime chaque image ('video'), le clip est copié dans Storage
 //    ('done'), puis ffmpeg assemble le tout.
-// Replicate limite la création de prédictions : les lancements se font un par
-// un, fal prend le relais en cas de refus (429, voir providers.ts), et si lui
-// aussi refuse, le plan reste en attente jusqu'au passage suivant.
+// fal limite la création de requêtes : les lancements se font un par un, et
+// un refus (429) laisse le plan en attente jusqu'au passage suivant.
 // advanceVideoGeneration est idempotente : webhook et polling peuvent
 // l'appeler en même temps, chaque transition est protégée par un update
 // conditionnel.
@@ -96,10 +92,8 @@ type VideoGeneration = {
   user_id: string;
   // null : vidéo sans jumeau, générée directement depuis le texte.
   twinId: string | null;
-  twinModelVersion: string;
   aspectRatio: AspectRatio;
   preset: Preset;
-  imageEngine: ImageEngine;
   pace: Pace;
   // Personnage Sora réutilisé dans chaque plan, et son nom pour le prompt.
   soraCharacterId: string | null;
@@ -120,12 +114,10 @@ export async function startVideoGeneration(input: {
   generationId: string;
   userId: string;
   twinId: string | null;
-  twinModelVersion: string;
   prompt: string;
   aspectRatio: AspectRatio;
   durationSeconds: number;
   preset: Preset;
-  imageEngine: ImageEngine;
   pace: Pace;
   soraCharacterId?: string | null;
   characterName?: string | null;
@@ -136,11 +128,9 @@ export async function startVideoGeneration(input: {
   const admin = createAdminClient();
   const durations = shotDurations(input.durationSeconds, input.preset.id, input.pace);
   const twinId = input.twinId;
-  const [storyboard, appearance] = await Promise.all([
+  const storyboard =
     input.storyboard ??
-      writeStoryboard(input.prompt, durations, input.direction, twinId ? "twin" : "free"),
-    twinId ? getTwinAppearance(twinId) : "",
-  ]);
+    (await writeStoryboard(input.prompt, durations, input.direction, twinId ? "twin" : "free"));
 
   const { data: shots, error } = await admin
     .from("generation_shots")
@@ -152,16 +142,14 @@ export async function startVideoGeneration(input: {
         duration_seconds: duration,
         summary: storyboard.shots[position].summary,
         image_prompt: twinId
-          ? imagePrompt(input.imageEngine, {
-              appearance,
+          ? imagePrompt({
               outfit: storyboard.subject,
               scene: storyboard.shots[position].scene,
             })
           : [storyboard.subject, storyboard.shots[position].scene].filter(Boolean).join(". "),
         motion_prompt: storyboard.shots[position].motion,
         end_image_prompt: twinId && input.preset.endFrames
-          ? imagePrompt(input.imageEngine, {
-              appearance,
+          ? imagePrompt({
               outfit: storyboard.subject,
               scene: storyboard.shots[position].end,
             })
@@ -184,10 +172,8 @@ export async function startVideoGeneration(input: {
     id: input.generationId,
     user_id: input.userId,
     twinId,
-    twinModelVersion: input.twinModelVersion,
     aspectRatio: input.aspectRatio,
     preset: input.preset,
-    imageEngine: input.imageEngine,
     pace: input.pace,
     soraCharacterId: input.soraCharacterId ?? null,
     characterName: input.characterName ?? null,
@@ -274,7 +260,7 @@ async function startDirectShot(
 // Images
 // ---------------------------------------------------------------------------
 
-// Avec le moteur à références, le premier plan sert de modèle aux autres
+// Le premier plan sert de modèle aux autres
 // (tenue, objets, lieu) : ils attendent son image, sauf s'il a échoué. Le
 // plan 2 part en même temps que le plan 1 pour gagner une attente : sa
 // continuité repose alors sur le seul storyboard.
@@ -283,7 +269,7 @@ const PARALLEL_FIRST_SHOTS = 2;
 async function startQueuedShots(generation: VideoGeneration, shots: Shot[]) {
   let continuityUrl: string | undefined;
   let waitForAnchor = false;
-  if (generation.imageEngine === "reference" && shots.some((s) => s.position > 0)) {
+  if (shots.some((s) => s.position > 0)) {
     const anchor =
       shots.find((s) => s.position === 0) ??
       (await loadShots(generation.id)).find((s) => s.position === 0);
@@ -345,10 +331,8 @@ async function startShotImage(
   let predictionId: string;
   try {
     predictionId = await startTwinImage({
-      engine: generation.imageEngine,
       preset: generation.preset,
       twinId: generation.twinId!,
-      modelVersion: generation.twinModelVersion,
       prompt: shot.image_prompt,
       aspectRatio: generation.aspectRatio,
       // Chaque lancement change de graine, sinon il referait la même image.
@@ -383,10 +367,8 @@ async function startEndImage(generation: VideoGeneration, shot: Shot) {
   const admin = createAdminClient();
   try {
     const predictionId = await startTwinImage({
-      engine: generation.imageEngine,
       preset: generation.preset,
       twinId: generation.twinId!,
-      modelVersion: generation.twinModelVersion,
       prompt: shot.end_image_prompt!,
       aspectRatio: generation.aspectRatio,
       seed: seedOf(generation.id) + shot.attempts + 1000,
@@ -448,7 +430,7 @@ async function advanceFrames(
       try {
         imagePath = await copyOutputToStorage(imageUrl, framePath(generation, shot));
       } catch (e) {
-        // Sortie expirée (URL Replicate valable une heure) ou illisible.
+        // Sortie expirée ou illisible.
         console.error("advanceFrames: copie", errorMessage(e));
         return imageRetryOrFail(shot);
       }
@@ -573,7 +555,7 @@ async function advanceAnimation(
           `${generation.user_id}/${generation.id}/shot-${String(shot.position).padStart(3, "0")}`,
         );
       } catch (e) {
-        // Sortie expirée (URL Replicate valable une heure) ou illisible.
+        // Sortie expirée ou illisible.
         console.error("advanceAnimation: copie", errorMessage(e));
         return videoRetryOrFail(shot);
       }
@@ -692,7 +674,7 @@ async function loadGeneration(generationId: string) {
   const { data: row } = await createAdminClient()
     .from("generations")
     .select(
-      "id, user_id, twin_id, stage, status, metadata, storyboard, twins(replicate_model_version)",
+      "id, user_id, twin_id, stage, status, metadata, storyboard",
     )
     .eq("id", generationId)
     .eq("kind", "video")
@@ -709,10 +691,8 @@ async function loadGeneration(generationId: string) {
     id: row.id,
     user_id: row.user_id,
     twinId: row.twin_id,
-    twinModelVersion: row.twins?.replicate_model_version ?? "",
     aspectRatio: isAspectRatio(metadata?.aspect_ratio) ? metadata.aspect_ratio : "9:16",
     preset: findPreset(metadata?.preset) ?? PRESETS[0],
-    imageEngine: imageEngineOf(row.metadata),
     pace: isPace(metadata?.pace) ? metadata.pace : DEFAULT_PACE,
     soraCharacterId: metadata?.sora_character_id ?? null,
     characterName: metadata?.character_name ?? null,
