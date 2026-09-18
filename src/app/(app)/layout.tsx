@@ -2,7 +2,9 @@ import { LogOut, Plus, Zap } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/login/actions";
+import { LanguageSwitcher } from "@/app/language-switcher";
 import { Logo } from "@/app/logo";
+import { getDictionary } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { Breadcrumb, SidebarNav, TopNav } from "./nav-links";
 
@@ -21,6 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq("id", data.claims.sub)
     .single();
 
+  const t = await getDictionary();
   const displayName = profile?.full_name || profile?.email || "";
   const credits = profile?.credits_remaining ?? 0;
 
@@ -39,10 +42,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
         <Link href="/dashboard/generate" className="btn btn-accent mt-6 w-full">
           <Plus />
-          Nouvelle vidéo
+          {t.shell.newVideo}
         </Link>
 
-        <p className="mt-6 mb-2 px-3 text-xs font-medium text-faint">Espace de travail</p>
+        <p className="mt-6 mb-2 px-3 text-xs font-medium text-faint">{t.shell.workspace}</p>
         <SidebarNav />
 
         <div className="mt-auto flex flex-col gap-3">
@@ -51,7 +54,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             className="spotlight group rounded-xl border border-line bg-surface-2 p-3 transition-colors hover:border-line-strong"
           >
             <span className="flex items-center justify-between text-xs text-muted">
-              Crédits
+              {t.shell.nav.credits}
               <Zap className="size-3.5 text-accent-light" />
             </span>
             <span className="mt-1 block font-wide text-2xl tabular-nums">{credits}</span>
@@ -62,7 +65,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               />
             </span>
             <span className="mt-2 block text-xs text-faint transition-colors group-hover:text-muted">
-              Recharger →
+              {t.shell.recharge}
             </span>
           </Link>
 
@@ -71,10 +74,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <span className="min-w-0 flex-1 truncate text-sm text-muted" title={displayName}>
               {displayName}
             </span>
+            <LanguageSwitcher up />
             <form action={signOut}>
-              <button type="submit" title="Déconnexion" className="btn btn-ghost p-2">
+              <button type="submit" title={t.common.signOut} className="btn btn-ghost p-2">
                 <LogOut />
-                <span className="sr-only">Déconnexion</span>
+                <span className="sr-only">{t.common.signOut}</span>
               </button>
             </form>
           </div>
@@ -94,12 +98,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <Link href="/dashboard/credits" className="chip">
                 <span className="size-1.5 animate-pulse rounded-full bg-accent shadow-[0_0_8px_var(--accent)]" />
                 <span className="font-medium text-text tabular-nums">{credits}</span>
-                crédits
+                {t.common.credits}
               </Link>
+              <div className="md:hidden">
+                <LanguageSwitcher />
+              </div>
               <form action={signOut} className="md:hidden">
-                <button type="submit" title="Déconnexion" className="btn btn-ghost p-2">
+                <button type="submit" title={t.common.signOut} className="btn btn-ghost p-2">
                   <LogOut />
-                  <span className="sr-only">Déconnexion</span>
+                  <span className="sr-only">{t.common.signOut}</span>
                 </button>
               </form>
             </div>

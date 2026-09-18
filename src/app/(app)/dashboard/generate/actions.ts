@@ -11,6 +11,9 @@ import {
   type DirectorDraft,
   type DirectorMessage,
 } from "@/lib/director";
+import { fmt, type Locale } from "@/i18n/config";
+import type { Dictionary } from "@/i18n/dictionaries";
+import { getDictionary, getLocale } from "@/i18n/server";
 import { falEnabled } from "@/lib/fal";
 import {
   DEFAULT_PACE,
@@ -43,6 +46,7 @@ import type { Storyboard } from "@/lib/storyboard";
 import { createClient } from "@/lib/supabase/server";
 import { findTemplate, type VideoTemplate } from "@/lib/templates";
 import {
+  OUT_OF_CREDIT_ERROR,
   advanceVideoGeneration,
   cancelFrames,
   startVideoGeneration,
@@ -52,14 +56,26 @@ type Result<T> = { data: T; error?: never } | { data?: never; error: string };
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
-const RPC_ERRORS: Record<string, string> = {
-  insufficient_credits: "Pas assez de crédits. Recharge-les depuis la page Crédits (en haut à droite).",
-  duration_exceeds_plan: "Cette durée dépasse la limite de ton abonnement.",
-  invalid_duration: "Durée invalide.",
-  invalid_preset: "Qualité indisponible.",
-  invalid_pace: "Rythme invalide.",
-  not_authenticated: "Session expirée, reconnecte-toi.",
-};
+// Erreurs levées par public.start_generation, traduites.
+function rpcErrors(t: Dictionary): Record<string, string> {
+  return {
+    insufficient_credits: t.generateErrors.insufficientCredits,
+    duration_exceeds_plan: t.generateErrors.durationExceedsPlan,
+    invalid_duration: t.generateErrors.invalidDuration,
+    invalid_preset: t.generateErrors.invalidPreset,
+    invalid_pace: t.generateErrors.invalidPace,
+    not_authenticated: t.common.sessionExpired,
+  };
+}
+
+const LANGUAGES: Record<Locale, string> = { fr: "French", en: "English", es: "Spanish" };
+
+// Messages d'erreur enregistrés en base (en français) : traduits à l'affichage.
+function translateStoredError(error: string | null, t: Dictionary) {
+  if (!error) return undefined;
+  if (error === OUT_OF_CREDIT_ERROR) return t.generateErrors.outOfCredit;
+  return error;
+}
 
 // Débite les crédits puis lance la génération : une image, ou le storyboard
 // et les plans d'une vidéo.
@@ -76,34 +92,36 @@ export async function generate(input: {
   // Personnage Sora réutilisé dans la vidéo.
   characterId?: string;
 }): Promise<Result<{ generationId: string }>> {
+  const t = await getDictionary();
+  const errors = t.generateErrors;
   const prompt = input.prompt.trim();
-  if (!prompt) return { error: "Décris la scène à générer." };
+  if (!prompt) return { error: errors.emptyPrompt };
   if (prompt.length > MAX_PROMPT_LENGTH) {
-    return { error: `${MAX_PROMPT_LENGTH} caractères maximum.` };
+    return { error: fmt(t.common.maxChars, { max: MAX_PROMPT_LENGTH }) };
   }
-  if (!isAspectRatio(input.aspectRatio)) return { error: "Format invalide." };
-  if (!isGenerationKind(input.kind)) return { error: "Type invalide." };
+  if (!isAspectRatio(input.aspectRatio)) return { error: errors.invalidFormat };
+  if (!isGenerationKind(input.kind)) return { error: errors.invalidKind };
   const kind: GenerationKind = input.kind;
   const template = kind === "video" ? findTemplate(input.templateId) : undefined;
   if (kind === "video" && input.templateId && !template) {
-    return { error: "Modèle de vidéo invalide." };
+    return { error: errors.invalidTemplate };
   }
   const preset = findPreset(input.preset ?? DEFAULT_PRESET);
   // Une photo n'utilise que le modèle d'image du préréglage.
   if (!preset || (kind === "video" && !availablePresets(falEnabled(), Boolean(input.twinId)).includes(preset))) {
-    return { error: RPC_ERRORS.invalid_preset };
+    return { error: errors.invalidPreset };
   }
   const pace = input.pace ?? DEFAULT_PACE;
-  if (!isPace(pace)) return { error: "Rythme invalide." };
+  if (!isPace(pace)) return { error: errors.invalidPace };
   // La durée doit tomber juste sur la longueur de plan du préréglage.
   const step = keptSeconds(preset.id, pace);
   const durationSeconds = Math.max(step, Math.round(input.durationSeconds / step) * step);
 
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
-  if (!auth?.claims) return { error: RPC_ERRORS.not_authenticated };
+  if (!auth?.claims) return { error: t.common.sessionExpired };
 
-  return startGeneration(supabase, auth.claims.sub, {
+  return startGeneration(supabase, auth.claims.sub, t, {
     twinId: input.twinId,
     prompt,
     kind,
@@ -122,18 +140,19 @@ export async function launchDirectorVideo(input: {
   characterId?: string;
   draftToken: string;
 }): Promise<Result<{ generationId: string }>> {
+  const t = await getDictionary();
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
-  if (!auth?.claims) return { error: RPC_ERRORS.not_authenticated };
+  if (!auth?.claims) return { error: t.common.sessionExpired };
 
   const draft = readDraftToken(input.draftToken, auth.claims.sub);
-  if (!draft) return { error: "Brouillon expiré. Envoie un message au Director pour le rafraîchir." };
+  if (!draft) return { error: t.generateErrors.draftExpired };
   const preset = findPreset(draft.preset);
   if (!preset || !availablePresets(falEnabled(), Boolean(input.twinId)).includes(preset)) {
-    return { error: RPC_ERRORS.invalid_preset };
+    return { error: t.generateErrors.invalidPreset };
   }
 
-  return startGeneration(supabase, auth.claims.sub, {
+  return startGeneration(supabase, auth.claims.sub, t, {
     twinId: input.twinId,
     prompt: `${draft.title} : ${draft.brief}`.slice(0, MAX_PROMPT_LENGTH),
     kind: "video",
@@ -151,6 +170,7 @@ export async function launchDirectorVideo(input: {
 async function startGeneration(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
+  t: Dictionary,
   input: {
     twinId?: string;
     prompt: string;
@@ -176,10 +196,10 @@ async function startGeneration(
       .not("consent_confirmed_at", "is", null)
       .maybeSingle();
     if (!twin) {
-      return { error: "Ton jumeau n'est pas encore prêt." };
+      return { error: t.generateErrors.twinNotReady };
     }
   } else if (kind === "image") {
-    return { error: "Choisis un jumeau pour générer une photo." };
+    return { error: t.generateErrors.twinRequired };
   }
 
   // Personnage Sora : son identifiant est vérifié côté serveur.
@@ -192,7 +212,7 @@ async function startGeneration(
       .eq("status", "ready")
       .maybeSingle();
     if (!data?.sora_character_id) {
-      return { error: "Ce personnage n'est pas prêt." };
+      return { error: t.generateErrors.characterNotReady };
     }
     character = { id: data.sora_character_id, name: data.name };
   }
@@ -225,8 +245,9 @@ async function startGeneration(
     },
   );
   if (rpcError) {
-    const code = Object.keys(RPC_ERRORS).find((c) => rpcError.message.includes(c));
-    return { error: code ? RPC_ERRORS[code] : "Ton jumeau n'est pas encore prêt." };
+    const known = rpcErrors(t);
+    const code = Object.keys(known).find((c) => rpcError.message.includes(c));
+    return { error: code ? known[code] : t.generateErrors.twinNotReady };
   }
 
   const admin = createAdminClient();
@@ -263,10 +284,10 @@ async function startGeneration(
     await admin.rpc("fail_generation", { p_generation_id: generationId });
     return {
       error: isOutOfCredit(e)
-        ? "Le compte du service de génération n'a plus de crédit. Tes crédits ont été rendus."
+        ? t.generateErrors.outOfCredit
         : isRateLimited(e)
-          ? "Le service de génération est saturé, réessaie dans quelques secondes. Tes crédits ont été rendus."
-          : "La génération n'a pas pu démarrer. Tes crédits ont été rendus.",
+          ? t.generateErrors.rateLimited
+          : t.generateErrors.startFailed,
     };
   }
 
@@ -304,7 +325,7 @@ export async function getGeneration(
       .maybeSingle();
 
   const { data: initial } = await select();
-  if (!initial) return { error: "Génération introuvable." };
+  if (!initial) return { error: (await getDictionary()).generateErrors.notFound };
   let generation = initial;
 
   if (generation.status === "processing") {
@@ -335,7 +356,7 @@ export async function getGeneration(
     shotsTotal: shots.length,
     framesDone: shots.filter((s) => ["framed", "video", "done"].includes(s.stage)).length,
     shotsDone: shots.filter((s) => s.stage === "done").length,
-    error: generation.error ?? undefined,
+    error: translateStoredError(generation.error, await getDictionary()),
   };
 
   if (generation.poster_path) {
@@ -372,9 +393,11 @@ const toResult = ({ error }: { error?: string }): Result<null> =>
 
 // Abandonne une vidéo avant l'animation ; les crédits sont rendus.
 export async function cancelVideo(generationId: string): Promise<Result<null>> {
+  const t = await getDictionary();
   const userId = await currentUserId();
-  if (!userId) return { error: RPC_ERRORS.not_authenticated };
-  return toResult(await cancelFrames(generationId, userId));
+  if (!userId) return { error: t.common.sessionExpired };
+  const { error } = await cancelFrames(generationId, userId);
+  return toResult({ error: error && t.generateErrors[error] });
 }
 
 export type DirectorResult = {
@@ -391,9 +414,10 @@ export async function directorChat(input: {
   // Jumeau choisi, ou rien pour une vidéo sans personnage.
   twinId?: string;
 }): Promise<Result<DirectorResult>> {
+  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
-  if (!auth?.claims) return { error: RPC_ERRORS.not_authenticated };
+  if (!auth?.claims) return { error: t.common.sessionExpired };
   const userId = auth.claims.sub;
 
   const messages = input.messages.slice(-MAX_DIRECTOR_MESSAGES);
@@ -405,7 +429,7 @@ export async function directorChat(input: {
       m.content.length <= MAX_DIRECTOR_MESSAGE_LENGTH,
   );
   if (!valid || messages.at(-1)?.role !== "user") {
-    return { error: `Message invalide (${MAX_DIRECTOR_MESSAGE_LENGTH} caractères maximum).` };
+    return { error: fmt(t.generateErrors.invalidMessage, { max: MAX_DIRECTOR_MESSAGE_LENGTH }) };
   }
 
   // Compté avant l'appel à Claude : un message qui échoue compte aussi.
@@ -413,8 +437,8 @@ export async function directorChat(input: {
   if (limitError) {
     return {
       error: limitError.message.includes("director_limit")
-        ? `Tu as atteint la limite de ${DIRECTOR_DAILY_LIMIT} messages au Director pour aujourd'hui. Reviens demain, ou lance ta vidéo avec le formulaire.`
-        : "Le Director ne répond pas. Réessaie dans un instant.",
+        ? fmt(t.generateErrors.directorLimit, { limit: DIRECTOR_DAILY_LIMIT })
+        : t.generateErrors.directorDown,
     };
   }
 
@@ -433,6 +457,8 @@ export async function directorChat(input: {
       maxVideoSeconds: maxVideoSeconds(profile?.plan ?? "free"),
       presets,
       mode: input.twinId ? "twin" : "free",
+      language: LANGUAGES[locale],
+      refusal: t.generateErrors.directorRefusal,
     });
     return {
       data: { reply, draft, draftToken: draft ? createDraftToken(userId, draft) : null },
@@ -442,8 +468,8 @@ export async function directorChat(input: {
     return {
       error:
         e instanceof Anthropic.AuthenticationError
-          ? "Le Director est indisponible : la clé du service IA est invalide."
-          : "Le Director ne répond pas. Réessaie dans un instant.",
+          ? t.generateErrors.directorKey
+          : t.generateErrors.directorDown,
     };
   }
 }

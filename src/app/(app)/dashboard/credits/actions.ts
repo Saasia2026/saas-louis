@@ -2,6 +2,8 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { fmt } from "@/i18n/config";
+import { getDictionary, getLocale } from "@/i18n/server";
 import { CREDIT_CURRENCY, findCreditPack } from "@/lib/credit-packs";
 import { createStripe, stripeEnabled } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
@@ -19,17 +21,25 @@ export async function buyCredits(formData: FormData) {
   const origin =
     (await headers()).get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
+  const [t, locale] = await Promise.all([
+    getDictionary().then((d) => d.creditsPage),
+    getLocale(),
+  ]);
   let url: string | null;
   try {
     const session = await createStripe().checkout.sessions.create({
       mode: "payment",
+      // Page de paiement Stripe dans la langue du site.
+      locale,
       line_items: [
         {
           quantity: 1,
           price_data: {
             currency: CREDIT_CURRENCY,
             unit_amount: pack.amount,
-            product_data: { name: `TwinPost · ${pack.credits} crédits (${pack.label})` },
+            product_data: {
+              name: fmt(t.productName, { credits: pack.credits, label: t.packs[pack.id] }),
+            },
           },
         },
       ],

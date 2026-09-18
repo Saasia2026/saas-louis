@@ -55,19 +55,19 @@ export type DirectorDraft = z.infer<typeof DraftSchema> & {
 
 export type DirectorMessage = { role: "user" | "assistant"; content: string };
 
-const systemPrompt = (mode: SubjectMode) => `You are the Director of TwinPost, an app where creators make social media videos. ${mode === "twin" ? "This video stars the creator's own AI twin." : "This video has no fixed character: it shows whatever the creator describes."} You chat with the creator in French, in a warm, concise and practical tone, to shape their video, and you keep an up-to-date draft of it.
+const systemPrompt = (mode: SubjectMode, language: string) => `You are the Director of TwinPost, an app where creators make social media videos. ${mode === "twin" ? "This video stars the creator's own AI twin." : "This video has no fixed character: it shows whatever the creator describes."} You chat with the creator in ${language}, in a warm, concise and practical tone, to shape their video, and you keep an up-to-date draft of it.
 
 What these videos must look like: a real video someone actually filmed with an ordinary camera, the kind that gets posted on Instagram or TikTok. Natural, lively movement and scenes that hold together matter far more than polish: never aim for a cinematic look unless the creator explicitly asks for one.
 
 How a video is made: the video is a sequence of shots, each generated on its own by a video model and then edited together. The length of a shot depends on the chosen preset (see the context). Once launched, the whole video is produced without further input.
 
 On every turn:
-- "reply": your message to the creator, in French, a few short sentences. Briefly say what you changed in the draft, and ask at most one question when something important is missing (the idea, the product, the place, the mood). Do not repeat the whole storyboard: the app displays it next to the chat.
+- "reply": your message to the creator, in ${language}, a few short sentences. Briefly say what you changed in the draft, and ask at most one question when something important is missing (the idea, the product, the place, the mood). Do not repeat the whole storyboard: the app displays it next to the chat.
 - "draft": the complete updated draft, or null only while there is not yet enough to propose a first version. As soon as the idea is clear enough, propose a full draft rather than asking more questions; the creator will refine it.
 
 Draft fields:
-- "title": a short French title for the video.
-- "brief": the creator's idea in one or two French sentences.
+- "title": a short title for the video, in ${language}.
+- "brief": the creator's idea in one or two sentences, in ${language}.
 - "aspectRatio": "9:16" (Story, default for social media), "1:1" (square) or "16:9" (landscape).
 - "preset": the quality preset, only among the available ones listed in the context. Default to "balanced". Use "fast" when the creator wants it quicker or cheaper. Keep the current one unless the creator asks for another.
 - "pace": "fast" cuts every shot in half for a punchy social media edit (twice as many shots for the same length, twice the cost), "normal" keeps whole shots. Some presets ignore it (see the context). Default to "fast" for ads, teasers and energetic videos, "normal" for calm or intimate ones.
@@ -89,6 +89,9 @@ export async function directorTurn(input: {
   maxVideoSeconds: number;
   presets: PresetId[];
   mode: SubjectMode;
+  // Langue des réponses ("French", "English"…) et message en cas de refus.
+  language: string;
+  refusal: string;
 }): Promise<{ reply: string; draft: DirectorDraft | null }> {
   const history = input.messages.slice(-MAX_DIRECTOR_MESSAGES);
   const last = history.at(-1);
@@ -120,7 +123,7 @@ export async function directorTurn(input: {
     },
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
-    system: systemPrompt(input.mode),
+    system: systemPrompt(input.mode, input.language),
     messages: [
       ...history.slice(0, -1),
       { role: "user", content: `${context}\n\nCreator's message:\n${last.content}` },
@@ -130,7 +133,7 @@ export async function directorTurn(input: {
   if (response.stop_reason === "refusal" || !response.parsed_output) {
     console.error("directorTurn: pas de réponse", response.stop_reason);
     return {
-      reply: "Je ne peux pas t'aider sur cette demande. Essaie une autre idée de vidéo ?",
+      reply: input.refusal,
       draft: input.current,
     };
   }

@@ -8,6 +8,7 @@ import {
   MAX_CHARACTER_NAME_LENGTH,
   MAX_CHARACTER_VIDEO_BYTES as MAX_VIDEO_BYTES,
 } from "@/lib/character";
+import { useI18n } from "@/i18n/provider";
 import { createClient } from "@/lib/supabase/client";
 import { createCharacter } from "./actions";
 
@@ -15,6 +16,8 @@ import { createCharacter } from "./actions";
 // personnage réutilisable.
 export function CharacterUploader({ userId }: { userId: string }) {
   const [supabase] = useState(createClient);
+  const { t } = useI18n();
+  const C = t.characters;
   const [name, setName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,10 +28,10 @@ export function CharacterUploader({ userId }: { userId: string }) {
     setError(null);
     if (!next) return setFile(null);
     if (!ACCEPTED_TYPES.includes(next.type)) {
-      return setError("Format accepté : MP4.");
+      return setError(C.errors.format);
     }
     if (next.size > MAX_VIDEO_BYTES) {
-      return setError("Vidéo trop lourde (50 Mo maximum).");
+      return setError(C.errors.tooBig);
     }
     setFile(next);
   }
@@ -42,7 +45,7 @@ export function CharacterUploader({ userId }: { userId: string }) {
         .from(CHARACTER_VIDEOS_BUCKET)
         .upload(path, file, { contentType: file.type });
       if (upload.error) {
-        setError("L'envoi de la vidéo a échoué.");
+        setError(C.errors.upload);
         return;
       }
       const res = await createCharacter({ name: name.trim(), videoPath: path });
@@ -61,25 +64,25 @@ export function CharacterUploader({ userId }: { userId: string }) {
       <span className="flex size-9 items-center justify-center rounded-lg border border-accent/40 bg-accent/15 text-accent-light">
         <UserPlus className="size-4" />
       </span>
-      <h2 className="mt-4 text-base font-semibold">Nouveau personnage</h2>
+      <h2 className="mt-4 text-base font-semibold">{C.newTitle}</h2>
       <p className="mt-1 text-sm leading-relaxed text-muted">
-        Une vidéo MP4 du sujet (720p minimum ; seules les 4 premières secondes comptent), bien éclairée, sans autre visage.
+        {C.newHint}
       </p>
 
       <div className="mt-5 flex flex-col gap-4">
         <label className="flex flex-col gap-2">
-          <span className="label">Nom</span>
+          <span className="label">{C.name}</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={MAX_CHARACTER_NAME_LENGTH}
-            placeholder="Ex. : Nino"
+            placeholder={C.namePlaceholder}
             className="field"
           />
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="label">Vidéo</span>
+          <span className="label">{C.video}</span>
           <input
             ref={inputRef}
             type="file"
@@ -95,7 +98,7 @@ export function CharacterUploader({ userId }: { userId: string }) {
           disabled={pending || !file || !name.trim()}
           className="btn btn-accent w-full py-3"
         >
-          {pending ? "Création du personnage… (~30 s)" : "Créer le personnage"}
+          {pending ? C.creating : C.create}
         </button>
         {error && <p className="text-sm text-danger">{error}</p>}
       </div>

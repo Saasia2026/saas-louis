@@ -1,6 +1,8 @@
 "use server";
 
 import { headers } from "next/headers";
+import { fmt } from "@/i18n/config";
+import { getDictionary } from "@/i18n/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/safe-next-path";
@@ -20,17 +22,18 @@ export async function signIn(
   formData: FormData,
 ): Promise<AuthState> {
   const { email, password } = readCredentials(formData);
+  const t = (await getDictionary()).login;
   if (!email || !password) {
-    return { error: "Email et mot de passe requis." };
+    return { error: t.errors.missing };
   }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     if (error.code === "email_not_confirmed") {
-      return { error: "Confirme ton email avant de te connecter." };
+      return { error: t.errors.notConfirmed };
     }
-    return { error: "Email ou mot de passe incorrect." };
+    return { error: t.errors.wrong };
   }
 
   redirect(safeNextPath(formData.get("next")));
@@ -41,13 +44,12 @@ export async function signUp(
   formData: FormData,
 ): Promise<AuthState> {
   const { email, password } = readCredentials(formData);
+  const t = (await getDictionary()).login;
   if (!email || !password) {
-    return { error: "Email et mot de passe requis." };
+    return { error: t.errors.missing };
   }
   if (password.length < MIN_PASSWORD_LENGTH) {
-    return {
-      error: `Le mot de passe doit faire au moins ${MIN_PASSWORD_LENGTH} caractères.`,
-    };
+    return { error: fmt(t.errors.tooShort, { min: MIN_PASSWORD_LENGTH }) };
   }
 
   const origin =
@@ -60,9 +62,9 @@ export async function signUp(
   });
   if (error) {
     if (error.code === "weak_password") {
-      return { error: "Mot de passe trop faible." };
+      return { error: t.errors.weak };
     }
-    return { error: "Inscription impossible. Réessaie dans un instant." };
+    return { error: t.errors.signUpFailed };
   }
 
   // Confirmation d'email désactivée côté Supabase : la session existe déjà.
@@ -70,9 +72,7 @@ export async function signUp(
     redirect("/dashboard");
   }
 
-  return {
-    message: "Compte créé ! Clique sur le lien reçu par email pour l'activer.",
-  };
+  return { message: t.created };
 }
 
 export async function signOut() {

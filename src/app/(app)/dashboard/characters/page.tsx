@@ -2,24 +2,34 @@ import type { Metadata } from "next";
 import { ArrowRight, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Dictionary } from "@/i18n/dictionaries";
+import { getDictionary } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "../../page-header";
 import { CharacterUploader } from "./character-uploader";
 
-export const metadata: Metadata = {
-  title: "Personnages — TwinPost",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getDictionary();
+  return { title: `${t.meta.characters} — TwinPost` };
+}
 
 // La création d'un personnage attend la réponse de Sora (~30 s).
 export const maxDuration = 120;
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Création en cours…",
-  ready: "Prêt",
-  failed: "Échec",
-};
+// Erreur enregistrée : un code, ou un ancien message en français.
+function errorText(error: string, t: Dictionary) {
+  if (error === "out_of_credit" || error.startsWith("Le compte")) {
+    return t.characters.errors.outOfCredit;
+  }
+  if (error === "sora_failed" || error.startsWith("La création")) {
+    return t.characters.errors.soraFailed;
+  }
+  return error;
+}
 
 export default async function CharactersPage() {
+  const t = await getDictionary();
+  const C = t.characters;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) {
@@ -33,9 +43,8 @@ export default async function CharactersPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Bibliothèque" title="Personnages">
-        Un personnage garde le même sujet d&apos;une vidéo à l&apos;autre : une personne, un
-        animal ou un produit. Il s&apos;utilise ensuite dans la génération.
+      <PageHeader eyebrow={C.eyebrow} title={C.title}>
+        {C.intro}
       </PageHeader>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
@@ -45,7 +54,7 @@ export default async function CharactersPage() {
           <span className="flex size-9 items-center justify-center rounded-lg border border-line bg-surface-2 text-muted">
             <Users className="size-4" />
           </span>
-          <h2 className="mt-4 text-base font-semibold">Déjà créés</h2>
+          <h2 className="mt-4 text-base font-semibold">{C.existing}</h2>
           {characters?.length ? (
             <ul className="mt-4 flex flex-col divide-y divide-line border-y border-line">
               {characters.map((c) => (
@@ -63,14 +72,14 @@ export default async function CharactersPage() {
                           : "bg-surface-3 text-muted"
                     }`}
                   >
-                    {c.error ?? STATUS_LABELS[c.status] ?? c.status}
+                    {c.error ? errorText(c.error, t) : (C.status[c.status as keyof typeof C.status] ?? c.status)}
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
             <p className="mt-4 text-sm text-muted">
-              Aucun personnage pour l&apos;instant. Envoie une première vidéo.
+              {C.empty}
             </p>
           )}
 
@@ -78,7 +87,7 @@ export default async function CharactersPage() {
             href="/dashboard/generate"
             className="btn btn-secondary mt-5"
           >
-            Aller au studio
+            {C.goStudio}
             <ArrowRight />
           </Link>
         </section>

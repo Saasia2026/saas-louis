@@ -51,9 +51,8 @@ export async function registerCharacter(characterId: string) {
       .from("characters")
       .update({
         status: "failed",
-        error: isOutOfCredit(e)
-          ? "Le compte du service de génération n'a plus de crédit. Réessaie plus tard."
-          : "La création du personnage a échoué. Réessaie avec une autre vidéo (MP4, 720p minimum).",
+        // Code traduit par la page Personnages.
+        error: isOutOfCredit(e) ? "out_of_credit" : "sora_failed",
       })
       .eq("id", characterId)
       .eq("status", "pending");

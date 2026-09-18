@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useI18n } from "@/i18n/provider";
 import { signIn, signUp, type AuthState } from "./actions";
 
 type Mode = "signin" | "signup";
@@ -13,6 +14,7 @@ export function AuthForm({
   initialError?: string;
 }) {
   const [mode, setMode] = useState<Mode>("signin");
+  const { t } = useI18n();
 
   return (
     <div className="panel glass animate-fade-up p-6 shadow-[0_30px_80px_-30px_rgb(91_124_255/0.45)] [animation-delay:150ms]">
@@ -27,7 +29,7 @@ export function AuthForm({
               mode === m ? "bg-surface-3 text-text shadow-sm" : "text-muted hover:text-text"
             }`}
           >
-            {m === "signin" ? "Connexion" : "Inscription"}
+            {m === "signin" ? t.login.signIn : t.login.signUp}
           </button>
         ))}
       </div>
@@ -55,12 +57,13 @@ function CredentialsForm({
     mode === "signin" ? signIn : signUp,
     { error: initialError },
   );
+  const { t } = useI18n();
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {next && <input type="hidden" name="next" value={next} />}
       <label className="flex flex-col gap-2">
-        <span className="label">Email</span>
+        <span className="label">{t.login.email}</span>
         <input
           type="email"
           name="email"
@@ -70,7 +73,7 @@ function CredentialsForm({
         />
       </label>
       <label className="flex flex-col gap-2">
-        <span className="label">Mot de passe</span>
+        <span className="label">{t.login.password}</span>
         <input
           type="password"
           name="password"
@@ -92,10 +95,10 @@ function CredentialsForm({
         className="btn btn-accent w-full"
       >
         {pending
-          ? "Un instant…"
+          ? t.login.wait
           : mode === "signin"
-            ? "Se connecter"
-            : "Créer mon compte"}
+            ? t.login.submitSignIn
+            : t.login.submitSignUp}
       </button>
     </form>
   );

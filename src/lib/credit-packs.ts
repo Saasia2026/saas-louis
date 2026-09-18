@@ -19,8 +19,9 @@ export function findCreditPack(id: unknown): CreditPack | undefined {
   return CREDIT_PACKS.find((p) => p.id === id);
 }
 
-export function formatPrice(amount: number) {
-  return new Intl.NumberFormat("fr-FR", {
+// `intlLocale` : voir INTL_LOCALES (i18n/config.ts).
+export function formatPrice(amount: number, intlLocale = "fr-FR") {
+  return new Intl.NumberFormat(intlLocale, {
     style: "currency",
     currency: CREDIT_CURRENCY,
   }).format(amount / 100);

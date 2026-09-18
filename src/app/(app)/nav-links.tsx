@@ -3,11 +3,12 @@
 import { Clapperboard, Coins, Users, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useI18n } from "@/i18n/provider";
 
-export const NAV_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/dashboard/generate", label: "Studio", icon: Clapperboard },
-  { href: "/dashboard/characters", label: "Personnages", icon: Users },
-  { href: "/dashboard/credits", label: "Crédits", icon: Coins },
+const NAV_LINKS: { href: string; key: "studio" | "characters" | "credits"; icon: LucideIcon }[] = [
+  { href: "/dashboard/generate", key: "studio", icon: Clapperboard },
+  { href: "/dashboard/characters", key: "characters", icon: Users },
+  { href: "/dashboard/credits", key: "credits", icon: Coins },
 ];
 
 function useActive() {
@@ -18,9 +19,10 @@ function useActive() {
 // Navigation de la barre latérale (écrans larges).
 export function SidebarNav() {
   const isActive = useActive();
+  const { t } = useI18n();
   return (
     <nav className="flex flex-col gap-0.5">
-      {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+      {NAV_LINKS.map(({ href, key, icon: Icon }) => {
         const active = isActive(href);
         return (
           <Link
@@ -39,7 +41,7 @@ export function SidebarNav() {
             <Icon
               className={`size-4 transition-colors ${active ? "text-accent-light" : "text-faint group-hover:text-muted"}`}
             />
-            {label}
+            {t.shell.nav[key]}
           </Link>
         );
       })}
@@ -50,9 +52,10 @@ export function SidebarNav() {
 // Onglets horizontaux (mobile).
 export function TopNav() {
   const isActive = useActive();
+  const { t } = useI18n();
   return (
     <nav className="flex gap-1 overflow-x-auto">
-      {NAV_LINKS.map(({ href, label, icon: Icon }) => (
+      {NAV_LINKS.map(({ href, key, icon: Icon }) => (
         <Link
           key={href}
           href={href}
@@ -62,7 +65,7 @@ export function TopNav() {
           }`}
         >
           <Icon className="size-4" />
-          {label}
+          {t.shell.nav[key]}
         </Link>
       ))}
     </nav>
@@ -72,12 +75,13 @@ export function TopNav() {
 // Fil d'Ariane de la barre du haut.
 export function Breadcrumb() {
   const isActive = useActive();
+  const { t } = useI18n();
   const current = NAV_LINKS.find((l) => isActive(l.href));
   return (
     <p className="flex items-center gap-2 text-sm">
-      <span className="text-faint">Espace de travail</span>
+      <span className="text-faint">{t.shell.workspace}</span>
       <span className="text-faint">/</span>
-      <span className="font-medium text-text">{current?.label ?? "Studio"}</span>
+      <span className="font-medium text-text">{t.shell.nav[current?.key ?? "studio"]}</span>
     </p>
   );
 }

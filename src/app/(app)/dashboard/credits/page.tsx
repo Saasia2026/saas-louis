@@ -2,21 +2,22 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CREDIT_PACKS, formatPrice } from "@/lib/credit-packs";
 import { createStripe, fulfillCheckoutSession, stripeEnabled } from "@/lib/stripe";
+import { INTL_LOCALES } from "@/i18n/config";
+import { getDictionary, getLocale } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "../../page-header";
 import { buyCredits } from "./actions";
 
-export const metadata: Metadata = {
-  title: "Crédits — TwinPost",
-};
-
-const ERRORS: Record<string, string> = {
-  unavailable: "Le paiement n'est pas encore disponible.",
-  checkout: "La page de paiement n'a pas pu s'ouvrir. Réessaie dans un instant.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getDictionary();
+  return { title: `${t.meta.credits} — TwinPost` };
+}
 
 export default async function CreditsPage(props: PageProps<"/dashboard/credits">) {
   const { session_id: sessionId, error } = await props.searchParams;
+  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
+  const P = t.creditsPage;
+  const price = (amount: number) => formatPrice(amount, INTL_LOCALES[locale]);
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) redirect("/login?next=/dashboard/credits");
@@ -28,25 +29,19 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
     try {
       const session = await createStripe().checkout.sessions.retrieve(sessionId);
       if (session.metadata?.user_id !== auth.claims.sub) {
-        notice = { ok: false, text: "Ce paiement ne correspond pas à ton compte." };
+        notice = { ok: false, text: P.notices.mismatch };
       } else if (session.payment_status === "paid") {
         await fulfillCheckoutSession(session);
-        notice = { ok: true, text: "Paiement reçu, tes crédits ont été ajoutés. Merci !" };
+        notice = { ok: true, text: P.notices.paid };
       } else {
-        notice = {
-          ok: true,
-          text: "Paiement en cours de validation : tes crédits arriveront dès qu'il sera confirmé.",
-        };
+        notice = { ok: true, text: P.notices.pending };
       }
     } catch (e) {
       console.error("CreditsPage", e instanceof Error ? e.message : e);
-      notice = {
-        ok: false,
-        text: "Impossible de vérifier le paiement pour l'instant. S'il a abouti, tes crédits arriveront automatiquement.",
-      };
+      notice = { ok: false, text: P.notices.verifyFailed };
     }
-  } else if (typeof error === "string" && ERRORS[error]) {
-    notice = { ok: false, text: ERRORS[error] };
+  } else if (error === "unavailable" || error === "checkout") {
+    notice = { ok: false, text: P.notices[error] };
   }
 
   const { data: profile } = await supabase
@@ -58,20 +53,19 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
 
   return (
     <div>
-      <PageHeader eyebrow="Facturation" title="Crédits">
-        Un crédit = une seconde de vidéo (Sora 2 : 5 crédits la seconde). Paie seulement ce
-        que tu utilises, sans abonnement.
+      <PageHeader eyebrow={P.eyebrow} title={P.title}>
+        {P.intro}
       </PageHeader>
 
       <div className="mt-8 flex animate-fade-up flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="label">Solde actuel</p>
+          <p className="label">{P.balance}</p>
           <p className="mt-1 font-wide text-5xl">
             {profile?.credits_remaining ?? 0}
-            <span className="ml-2 font-sans text-base font-normal text-muted">crédits</span>
+            <span className="ml-2 font-sans text-base font-normal text-muted">{t.common.credits}</span>
           </p>
         </div>
-        <p className="label">Paiement sécurisé par Stripe</p>
+        <p className="label">{P.secure}</p>
       </div>
 
       {notice && (
@@ -97,25 +91,25 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
               style={{ animationDelay: `${100 + i * 90}ms` }}
             >
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold">{pack.label}</h2>
+                <h2 className="text-base font-semibold">{P.packs[pack.id]}</h2>
                 {featured && (
                   <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-white shadow-[0_0_16px_var(--accent)]">
-                    Populaire
+                    {P.popular}
                   </span>
                 )}
               </div>
-              <p className="mt-6 font-wide text-4xl">{formatPrice(pack.amount)}</p>
+              <p className="mt-6 font-wide text-4xl">{price(pack.amount)}</p>
               <dl className="mt-6 divide-y divide-line border-y border-line text-sm">
                 <div className="flex justify-between py-2.5">
-                  <dt className="text-muted">Crédits</dt>
+                  <dt className="text-muted">{P.creditsRow}</dt>
                   <dd className="font-medium tabular-nums">{pack.credits}</dd>
                 </div>
                 <div className="flex justify-between py-2.5">
-                  <dt className="text-muted">Prix du crédit</dt>
-                  <dd className="font-medium tabular-nums">{formatPrice(Math.round(pack.amount / pack.credits))}</dd>
+                  <dt className="text-muted">{P.perCreditRow}</dt>
+                  <dd className="font-medium tabular-nums">{price(Math.round(pack.amount / pack.credits))}</dd>
                 </div>
                 <div className="flex justify-between py-2.5">
-                  <dt className="text-muted">Plans Sora 2 de 8 s</dt>
+                  <dt className="text-muted">{P.soraShots}</dt>
                   <dd className="font-medium tabular-nums">{Math.floor(pack.credits / 40)}</dd>
                 </div>
               </dl>
@@ -126,7 +120,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                   disabled={!enabled}
                   className={`btn w-full ${featured ? "btn-accent" : "btn-secondary"}`}
                 >
-                  Acheter
+                  {P.buy}
                 </button>
               </form>
             </li>
@@ -135,7 +129,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
       </ul>
 
       <p className="mt-6 text-xs text-muted">
-        Les crédits n&apos;expirent pas. Une génération qui échoue te rend ses crédits.
+        {P.footer}
       </p>
     </div>
   );

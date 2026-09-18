@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Studio, type Job } from "./studio";
 
 export const metadata: Metadata = {
-  title: "Studio — TwinPost",
+  title: "Studio — TwinPost", // Même nom dans les trois langues.
 };
 
 // Le storyboard, le lancement des plans et le montage passent par les

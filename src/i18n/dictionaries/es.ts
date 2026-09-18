@@ -1,0 +1,318 @@
+import type { Dictionary } from "./fr";
+
+export const es: Dictionary = {
+  meta: {
+    description: "Describe tu vídeo, TwinPost lo hace: guion gráfico, planos y montaje con IA.",
+    login: "Iniciar sesión",
+    studio: "Estudio",
+    characters: "Personajes",
+    credits: "Créditos",
+  },
+
+  common: {
+    credit: "crédito",
+    credits: "créditos",
+    signOut: "Cerrar sesión",
+    language: "Idioma",
+    sessionExpired: "Tu sesión ha caducado, vuelve a iniciar sesión.",
+    maxChars: "{max} caracteres como máximo.",
+  },
+
+  shell: {
+    newVideo: "Nuevo vídeo",
+    workspace: "Espacio de trabajo",
+    recharge: "Recargar →",
+    nav: { studio: "Estudio", characters: "Personajes", credits: "Créditos" },
+  },
+
+  landing: {
+    features: "Funciones",
+    pricing: "Precios",
+    openStudio: "Abrir el estudio",
+    studioShort: "Estudio",
+    start: "Empezar",
+    eyebrow: "Estudio de vídeo IA · del texto al montaje final",
+    titleTop: "Descríbelo.",
+    titleBottom: "Lo rodamos.",
+    subtitle:
+      "TwinPost convierte una idea en un vídeo listo para publicar: guion gráfico, planos generados por los mejores modelos y montaje, en unos minutos.",
+    ctaFirst: "Crear mi primer vídeo",
+    ctaPricing: "Ver precios",
+    perks: ["3 créditos gratis", "Sin suscripción", "Créditos devueltos si falla"],
+    mockWindow: "twinpost · Estudio",
+    mockRendering: "Renderizando",
+    mockPrompt:
+      "Un galgo levanta una barra de halterofilia en una final olímpica, retransmisión de TV, el público enloquecido",
+    mockPace: "Pausado",
+    mockStoryboard: "Guion gráfico · 4 planos",
+    mockShot: "Plano",
+    mockShots: [
+      "Plano general del estadio, el público se levanta",
+      "El galgo se acerca a la barra",
+      "Primer plano: agarra la barra",
+      "Cámara lenta en la arrancada, flashes",
+    ],
+    mockShotCount: "Plano 3 / 4",
+    models: ["Sora 2", "Wan 2.7", "Seedance", "Kling 3", "Claude · guion gráfico", "Montaje automático"],
+    featuresTitle: "Todo un set de rodaje, en una pestaña.",
+    featureList: [
+      {
+        title: "Un Director IA",
+        text: "Cuéntale tu idea: te hace las preguntas adecuadas, escribe el guion gráfico y lo ajusta plano a plano contigo.",
+      },
+      { title: "Sonido incluido", text: "Con Sora 2, cada plano llega con su ambiente y sus voces." },
+      {
+        title: "Montaje automático",
+        text: "Los planos se cortan al ritmo adecuado y se montan en un vídeo listo para publicar.",
+      },
+      { title: "Todos los formatos", text: "9:16 para TikTok y Reels, 1:1 para el feed, 16:9 para YouTube." },
+      { title: "Riesgo cero", text: "Una generación que falla te devuelve automáticamente sus créditos." },
+    ],
+    noSubscription: "de suscripción. Los créditos no caducan.",
+    howItWorks: "Cómo funciona",
+    steps: [
+      {
+        title: "Describes tu vídeo",
+        text: "Una idea en una frase, o una conversación con el Director que te hace las preguntas adecuadas.",
+      },
+      {
+        title: "La IA escribe cada plano",
+        text: "Encuadre, movimiento, ambiente: un guion gráfico completo que puedes retocar plano a plano.",
+      },
+      {
+        title: "Los planos se ruedan y se montan",
+        text: "Sora 2, Wan o Seedance generan cada plano, con sonido en Sora. El montaje es automático.",
+      },
+    ],
+    pricingTitle: "Créditos, sin suscripción",
+    pricingText:
+      "Un crédito = un segundo de vídeo (Sora 2: 5 créditos por segundo). 3 créditos gratis al registrarte.",
+    popular: "Popular",
+    perCredit: "el crédito",
+    finalTitleTop: "Tu próximo vídeo",
+    finalTitleBottom: "empieza aquí.",
+    startFree: "Empezar gratis",
+  },
+
+  login: {
+    welcome: "Bienvenido al estudio",
+    tagline: "Describe tu vídeo, la IA lo hace.",
+    signIn: "Iniciar sesión",
+    signUp: "Registrarse",
+    email: "Email",
+    password: "Contraseña",
+    wait: "Un momento…",
+    submitSignIn: "Iniciar sesión",
+    submitSignUp: "Crear mi cuenta",
+    freeCredits: "3 créditos gratis al registrarte",
+    invalidLink: "Este enlace de confirmación no es válido o ha caducado.",
+    errors: {
+      missing: "Se requieren email y contraseña.",
+      notConfirmed: "Confirma tu email antes de iniciar sesión.",
+      wrong: "Email o contraseña incorrectos.",
+      tooShort: "La contraseña debe tener al menos {min} caracteres.",
+      weak: "Contraseña demasiado débil.",
+      signUpFailed: "No se pudo completar el registro. Inténtalo de nuevo en un momento.",
+    },
+    created: "¡Cuenta creada! Haz clic en el enlace que te enviamos por email para activarla.",
+  },
+
+  studio: {
+    title: "¿Qué rodamos?",
+    subtitle: "Describe tu vídeo: el guion gráfico, los planos y el montaje los hacemos por ti.",
+    ideas: [
+      "Un anuncio UGC para mi botella térmica",
+      "Mi fin de semana en Lisboa en vlog",
+      "Teaser de lanzamiento de mi pódcast",
+      "Un galgo campeón de halterofilia, estilo JJ. OO.",
+    ],
+    inputLabel: "Describe tu vídeo",
+    placeholderDirector: "Cuéntale tu vídeo al Director: el tema, el lugar, el ambiente…",
+    placeholderDirectorDraft: "Ej.: haz el plano 2 más dinámico, cambia a 16:9…",
+    moreSettings: "Más ajustes",
+    modeDirector: "Director",
+    modeDirectorHint: "Construye tu vídeo conversando",
+    modeDirect: "Directo",
+    modeDirectHint: "Envía tu petición tal cual",
+    directorStatus: "El Director ajusta duración, formato y calidad contigo",
+    notEnoughCredits: "Créditos insuficientes",
+    sendDirector: "Enviar al Director",
+    launchVideo: "Lanzar el vídeo",
+    quality: "Calidad",
+    style: "Estilo de vídeo",
+    pace: "Ritmo",
+    character: "Personaje",
+    none: "Ninguno",
+    noCharacter: "Ningún personaje listo por ahora.",
+    directorTyping: "El Director está escribiendo",
+    draftReady: "Borrador listo",
+    launch: "Lanzar · {cost} {credits}",
+    shots: "{count} planos",
+    showStoryboard: "Ver el guion gráfico",
+    hideStoryboard: "Ocultar el guion gráfico",
+    shot: "Plano {n}",
+    notEnough: "Créditos insuficientes (te quedan {count}).",
+    cancel: "Cancelar",
+    download: "Descargar",
+    newVideo: "Nuevo vídeo",
+    generatedImage: "Imagen generada",
+    writingStoryboard: "Escribiendo el guion gráfico…",
+    assembling: "Montando el vídeo…",
+    framing: "Imágenes de los planos",
+    filming: "Rodando los planos",
+    progressHint: "Unos minutos · encontrarás el vídeo aquí cuando vuelvas",
+    failed: "La generación falló o se canceló. Te hemos devuelto los créditos.",
+    tooLong: "Está tardando más de lo previsto. Recarga la página en unos minutos.",
+  },
+
+  presets: {
+    realistic: { label: "Realista", hint: "Sora 2, con sonido" },
+    fast: { label: "Rápido", hint: "Vídeo directo, 720p" },
+    balanced: { label: "Natural", hint: "Vídeo directo, 1080p" },
+  },
+
+  paces: {
+    normal: { label: "Pausado", hint: "Planos completos" },
+    fast: { label: "Rápido", hint: "Planos cortados a la mitad, el doble de planos" },
+  },
+
+  formats: {
+    "9:16": { label: "Story", hint: "9:16" },
+    "1:1": { label: "Cuadrado", hint: "1:1" },
+    "16:9": { label: "Horizontal", hint: "16:9" },
+  },
+
+  templates: {
+    free: {
+      label: "Libre",
+      hint: "Tu idea, sin plantilla",
+      placeholder:
+        "Ej.: un día en París: café en una terraza por la mañana, paseo junto al Sena, atardecer en el Trocadero. Look streetwear negro.",
+    },
+    "ugc-ad": {
+      label: "Anuncio UGC",
+      hint: "Producto recomendado a cámara",
+      placeholder:
+        "Ej.: mi nueva botella térmica verde salvia, la llevo al gimnasio y a la oficina. Ropa deportiva informal.",
+    },
+    "product-showcase": {
+      label: "Producto premium",
+      hint: "Presentación de alta gama",
+      placeholder: "Ej.: un reloj automático con esfera azul noche y correa de cuero marrón.",
+    },
+    "travel-vlog": {
+      label: "Vlog de viaje",
+      hint: "Diario de viaje dinámico",
+      placeholder: "Ej.: tres días en Lisboa: tranvía amarillo, miradouro al atardecer, pastéis de nata.",
+    },
+    "day-in-my-life": {
+      label: "Day in my life",
+      hint: "Un día, de la mañana a la noche",
+      placeholder: "Ej.: mi día de emprendedor: despertar, café, reuniones, deporte, cena con amigos.",
+    },
+    expert: {
+      label: "Experto / coach",
+      hint: "Marca personal profesional",
+      placeholder: "Ej.: coach de finanzas personales, presento mi nuevo curso online. Traje azul marino.",
+    },
+    fashion: {
+      label: "Lookbook de moda",
+      hint: "Looks y poses editoriales",
+      placeholder: "Ej.: look de otoño en la ciudad: gabardina beige, jersey de punto crema, botines marrones.",
+    },
+    trailer: {
+      label: "Tráiler",
+      hint: "Teaser estilo cine",
+      placeholder: "Ej.: lanzo mi pódcast de aventura: montaña, tormenta, cumbre al amanecer.",
+    },
+  },
+
+  generateErrors: {
+    insufficientCredits: "No tienes créditos suficientes. Recárgalos desde la página Créditos.",
+    durationExceedsPlan: "Esta duración supera el límite de tu plan.",
+    invalidDuration: "Duración no válida.",
+    invalidPreset: "Calidad no disponible.",
+    invalidPace: "Ritmo no válido.",
+    emptyPrompt: "Describe la escena que quieres generar.",
+    invalidFormat: "Formato no válido.",
+    invalidKind: "Tipo no válido.",
+    invalidTemplate: "Estilo de vídeo no válido.",
+    draftExpired: "El borrador ha caducado. Envía un mensaje al Director para actualizarlo.",
+    twinNotReady: "Tu gemelo aún no está listo.",
+    twinRequired: "Elige un gemelo para generar una foto.",
+    characterNotReady: "Este personaje no está listo.",
+    outOfCredit:
+      "La cuenta del servicio de generación se ha quedado sin crédito. Te hemos devuelto los créditos.",
+    rateLimited:
+      "El servicio de generación está saturado, inténtalo de nuevo en unos segundos. Te hemos devuelto los créditos.",
+    startFailed: "La generación no pudo empezar. Te hemos devuelto los créditos.",
+    notFound: "Generación no encontrada.",
+    videoNotFound: "Vídeo no encontrado.",
+    notRunning: "Este vídeo ya no está en curso.",
+    animationStarted: "La animación ya ha empezado.",
+    invalidMessage: "Mensaje no válido ({max} caracteres como máximo).",
+    directorLimit:
+      "Has alcanzado el límite de {limit} mensajes al Director por hoy. Vuelve mañana o pasa al modo Directo.",
+    directorDown: "El Director no responde. Inténtalo de nuevo en un momento.",
+    directorKey: "El Director no está disponible: la clave del servicio de IA no es válida.",
+    directorRefusal: "No puedo ayudarte con esta petición. ¿Probamos con otra idea de vídeo?",
+  },
+
+  characters: {
+    eyebrow: "Biblioteca",
+    title: "Personajes",
+    intro:
+      "Un personaje mantiene el mismo sujeto de un vídeo a otro: una persona, un animal o un producto. Después se usa en la generación.",
+    newTitle: "Nuevo personaje",
+    newHint:
+      "Un vídeo MP4 del sujeto (720p como mínimo; solo cuentan los 4 primeros segundos), bien iluminado, sin otras caras.",
+    name: "Nombre",
+    namePlaceholder: "Ej.: Nino",
+    video: "Vídeo",
+    creating: "Creando el personaje… (~30 s)",
+    create: "Crear el personaje",
+    existing: "Ya creados",
+    empty: "Todavía no hay personajes. Sube un primer vídeo.",
+    goStudio: "Ir al estudio",
+    status: { pending: "Creando…", ready: "Listo", failed: "Error" },
+    errors: {
+      format: "Formato aceptado: MP4.",
+      tooBig: "Vídeo demasiado pesado (50 MB como máximo).",
+      upload: "No se pudo subir el vídeo.",
+      noName: "Ponle un nombre a tu personaje.",
+      invalidVideo: "Vídeo no válido.",
+      createFailed: "No se pudo crear el personaje.",
+      notFound: "Personaje no encontrado.",
+      deleteFailed: "No se pudo eliminar.",
+      outOfCredit: "La cuenta del servicio de generación se ha quedado sin crédito. Inténtalo más tarde.",
+      soraFailed:
+        "No se pudo crear el personaje. Prueba con otro vídeo (MP4, 720p como mínimo).",
+    },
+  },
+
+  creditsPage: {
+    eyebrow: "Facturación",
+    title: "Créditos",
+    intro:
+      "Un crédito = un segundo de vídeo (Sora 2: 5 créditos por segundo). Paga solo lo que usas, sin suscripción.",
+    balance: "Saldo actual",
+    secure: "Pago seguro con Stripe",
+    popular: "Popular",
+    creditsRow: "Créditos",
+    perCreditRow: "Precio por crédito",
+    soraShots: "Planos Sora 2 de 8 s",
+    buy: "Comprar",
+    footer: "Los créditos no caducan. Una generación que falla te devuelve sus créditos.",
+    packs: { starter: "Descubrimiento", creator: "Creador", studio: "Estudio" },
+    productName: "TwinPost · {credits} créditos ({label})",
+    notices: {
+      paid: "Pago recibido, tus créditos se han añadido. ¡Gracias!",
+      pending: "Pago en validación: tus créditos llegarán en cuanto se confirme.",
+      mismatch: "Este pago no corresponde a tu cuenta.",
+      verifyFailed:
+        "No podemos verificar el pago ahora mismo. Si se completó, tus créditos llegarán automáticamente.",
+      unavailable: "El pago aún no está disponible.",
+      checkout: "No se pudo abrir la página de pago. Inténtalo de nuevo en un momento.",
+    },
+  },
+};

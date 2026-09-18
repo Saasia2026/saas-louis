@@ -514,14 +514,14 @@ async function advanceFrames(
 export async function cancelFrames(
   generationId: string,
   userId: string,
-): Promise<{ error?: string }> {
+): Promise<{ error?: "videoNotFound" | "notRunning" | "animationStarted" }> {
   const loaded = await loadGeneration(generationId);
-  if (!loaded || loaded.row.user_id !== userId) return { error: "Vidéo introuvable." };
+  if (!loaded || loaded.row.user_id !== userId) return { error: "videoNotFound" };
   if (loaded.row.status !== "processing") {
-    return { error: "Cette vidéo n'est plus en cours." };
+    return { error: "notRunning" };
   }
   if (loaded.row.stage !== "frames") {
-    return { error: "L'animation a déjà commencé." };
+    return { error: "animationStarted" };
   }
   await createAdminClient().rpc("fail_generation", { p_generation_id: generationId });
   return {};

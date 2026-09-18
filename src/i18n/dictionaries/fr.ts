@@ -1,0 +1,322 @@
+// Textes du site en français : la référence. en.ts et es.ts suivent
+// exactement la même structure (vérifiée par le type Dictionary).
+// Les {variables} sont remplacées par fmt() (voir i18n/config.ts).
+
+export const fr = {
+  meta: {
+    description: "Décris ta vidéo, TwinPost la réalise : storyboard, plans et montage par l'IA.",
+    login: "Connexion",
+    studio: "Studio",
+    characters: "Personnages",
+    credits: "Crédits",
+  },
+
+  common: {
+    credit: "crédit",
+    credits: "crédits",
+    signOut: "Déconnexion",
+    language: "Langue",
+    sessionExpired: "Session expirée, reconnecte-toi.",
+    maxChars: "{max} caractères maximum.",
+  },
+
+  shell: {
+    newVideo: "Nouvelle vidéo",
+    workspace: "Espace de travail",
+    recharge: "Recharger →",
+    nav: { studio: "Studio", characters: "Personnages", credits: "Crédits" },
+  },
+
+  landing: {
+    features: "Fonctionnalités",
+    pricing: "Tarifs",
+    openStudio: "Ouvrir le studio",
+    studioShort: "Studio",
+    start: "Commencer",
+    eyebrow: "Studio vidéo IA · du texte au montage final",
+    titleTop: "Décris-la.",
+    titleBottom: "On la tourne.",
+    subtitle:
+      "TwinPost transforme une idée en vidéo prête à publier : storyboard, plans générés par les meilleurs modèles et montage, en quelques minutes.",
+    ctaFirst: "Créer ma première vidéo",
+    ctaPricing: "Voir les tarifs",
+    perks: ["3 crédits offerts", "Sans abonnement", "Crédits rendus en cas d'échec"],
+    mockWindow: "twinpost · Studio",
+    mockRendering: "Rendu en cours",
+    mockPrompt:
+      "Un lévrier soulève une barre d'haltérophilie en finale olympique, retransmission télé, public en délire",
+    mockPace: "Posé",
+    mockStoryboard: "Storyboard · 4 plans",
+    mockShot: "Plan",
+    mockShots: [
+      "Plan large du stade, la foule se lève",
+      "Le lévrier s'avance vers la barre",
+      "Gros plan : il empoigne la barre",
+      "Ralenti sur l'arraché, flashs",
+    ],
+    mockShotCount: "Plan 3 / 4",
+    models: ["Sora 2", "Wan 2.7", "Seedance", "Kling 3", "Claude · storyboard", "Montage auto"],
+    featuresTitle: "Tout un plateau de tournage, dans un onglet.",
+    featureList: [
+      {
+        title: "Un Director IA",
+        text: "Raconte ton idée : il te pose les bonnes questions, écrit le storyboard et le retouche plan par plan avec toi.",
+      },
+      { title: "Le son inclus", text: "Avec Sora 2, chaque plan arrive avec son ambiance et ses voix." },
+      {
+        title: "Montage automatique",
+        text: "Les plans sont coupés au bon rythme et assemblés en une vidéo prête à publier.",
+      },
+      { title: "Tous les formats", text: "9:16 pour TikTok et Reels, 1:1 pour le feed, 16:9 pour YouTube." },
+      { title: "Zéro risque", text: "Une génération qui échoue te rend automatiquement ses crédits." },
+    ],
+    noSubscription: "d'abonnement. Les crédits n'expirent pas.",
+    howItWorks: "Comment ça marche",
+    steps: [
+      {
+        title: "Tu décris ta vidéo",
+        text: "Une idée en une phrase, ou une discussion avec le Director qui te pose les bonnes questions.",
+      },
+      {
+        title: "L'IA écrit chaque plan",
+        text: "Cadrage, mouvement, ambiance : un storyboard complet que tu peux retoucher plan par plan.",
+      },
+      {
+        title: "Les plans sont tournés et montés",
+        text: "Sora 2, Wan ou Seedance génèrent chaque plan, avec le son sur Sora. Le montage est automatique.",
+      },
+    ],
+    pricingTitle: "Des crédits, sans abonnement",
+    pricingText:
+      "Un crédit = une seconde de vidéo (Sora 2 : 5 crédits la seconde). 3 crédits offerts à l'inscription.",
+    popular: "Populaire",
+    perCredit: "le crédit",
+    finalTitleTop: "Ta prochaine vidéo",
+    finalTitleBottom: "commence ici.",
+    startFree: "Commencer gratuitement",
+  },
+
+  login: {
+    welcome: "Bienvenue dans le studio",
+    tagline: "Décris ta vidéo, l'IA la réalise.",
+    signIn: "Connexion",
+    signUp: "Inscription",
+    email: "Email",
+    password: "Mot de passe",
+    wait: "Un instant…",
+    submitSignIn: "Se connecter",
+    submitSignUp: "Créer mon compte",
+    freeCredits: "3 crédits offerts à l'inscription",
+    invalidLink: "Ce lien de confirmation est invalide ou a expiré.",
+    errors: {
+      missing: "Email et mot de passe requis.",
+      notConfirmed: "Confirme ton email avant de te connecter.",
+      wrong: "Email ou mot de passe incorrect.",
+      tooShort: "Le mot de passe doit faire au moins {min} caractères.",
+      weak: "Mot de passe trop faible.",
+      signUpFailed: "Inscription impossible. Réessaie dans un instant.",
+    },
+    created: "Compte créé ! Clique sur le lien reçu par email pour l'activer.",
+  },
+
+  studio: {
+    title: "Qu'est-ce qu'on tourne ?",
+    subtitle: "Décris ta vidéo : storyboard, plans et montage sont faits pour toi.",
+    ideas: [
+      "Une pub UGC pour ma gourde isotherme",
+      "Mon week-end à Lisbonne en vlog",
+      "Teaser de lancement de mon podcast",
+      "Un lévrier champion d'haltérophilie, façon JO",
+    ],
+    inputLabel: "Décris ta vidéo",
+    placeholderDirector: "Raconte ta vidéo au Director : le sujet, le lieu, l'ambiance…",
+    placeholderDirectorDraft: "Ex. : rends le plan 2 plus dynamique, passe en 16:9…",
+    moreSettings: "Plus de réglages",
+    modeDirector: "Director",
+    modeDirectorHint: "Construis ta vidéo en discutant",
+    modeDirect: "Direct",
+    modeDirectHint: "Lance ta demande telle quelle",
+    directorStatus: "Le Director règle durée, format et qualité avec toi",
+    notEnoughCredits: "Crédits insuffisants",
+    sendDirector: "Envoyer au Director",
+    launchVideo: "Lancer la vidéo",
+    quality: "Qualité",
+    style: "Style de vidéo",
+    pace: "Rythme",
+    character: "Personnage",
+    none: "Aucun",
+    noCharacter: "Aucun personnage prêt pour l'instant.",
+    directorTyping: "Le Director écrit",
+    draftReady: "Brouillon prêt",
+    launch: "Lancer · {cost} {credits}",
+    shots: "{count} plans",
+    showStoryboard: "Voir le storyboard",
+    hideStoryboard: "Masquer le storyboard",
+    shot: "Plan {n}",
+    notEnough: "Pas assez de crédits ({count} restants).",
+    cancel: "Annuler",
+    download: "Télécharger",
+    newVideo: "Nouvelle vidéo",
+    generatedImage: "Image générée",
+    writingStoryboard: "Écriture du storyboard…",
+    assembling: "Montage de la vidéo…",
+    framing: "Images des plans",
+    filming: "Tournage des plans",
+    progressHint: "Quelques minutes · tu retrouveras la vidéo ici en revenant",
+    failed: "La génération a échoué ou a été annulée. Tes crédits ont été rendus.",
+    tooLong: "C'est plus long que prévu. Recharge la page dans quelques minutes.",
+  },
+
+  presets: {
+    realistic: { label: "Réaliste", hint: "Sora 2, avec le son" },
+    fast: { label: "Rapide", hint: "Vidéo directe, 720p" },
+    balanced: { label: "Naturel", hint: "Vidéo directe, 1080p" },
+  },
+
+  paces: {
+    normal: { label: "Posé", hint: "Plans entiers" },
+    fast: { label: "Rapide", hint: "Plans coupés en deux, 2× plus de plans" },
+  },
+
+  formats: {
+    "9:16": { label: "Story", hint: "9:16" },
+    "1:1": { label: "Carré", hint: "1:1" },
+    "16:9": { label: "Paysage", hint: "16:9" },
+  },
+
+  templates: {
+    free: {
+      label: "Libre",
+      hint: "Ton idée, sans cadre",
+      placeholder:
+        "Ex. : une journée à Paris : café en terrasse le matin, balade le long de la Seine, coucher de soleil au Trocadéro. Tenue streetwear noire.",
+    },
+    "ugc-ad": {
+      label: "Pub UGC",
+      hint: "Produit recommandé face caméra",
+      placeholder:
+        "Ex. : ma nouvelle gourde isotherme vert sauge, je l'emmène à la salle et au bureau. Tenue sport décontractée.",
+    },
+    "product-showcase": {
+      label: "Produit premium",
+      hint: "Mise en valeur haut de gamme",
+      placeholder: "Ex. : une montre automatique au cadran bleu nuit et bracelet cuir marron.",
+    },
+    "travel-vlog": {
+      label: "Vlog voyage",
+      hint: "Carnet de voyage dynamique",
+      placeholder: "Ex. : trois jours à Lisbonne : tram jaune, miradouro au coucher du soleil, pastéis de nata.",
+    },
+    "day-in-my-life": {
+      label: "Day in my life",
+      hint: "Une journée, du matin au soir",
+      placeholder: "Ex. : ma journée d'entrepreneur : réveil, café, réunions, sport, dîner entre amis.",
+    },
+    expert: {
+      label: "Expert / coach",
+      hint: "Personal branding pro",
+      placeholder:
+        "Ex. : coach en finances personnelles, je présente ma nouvelle formation en ligne. Costume bleu marine.",
+    },
+    fashion: {
+      label: "Lookbook mode",
+      hint: "Tenues et poses éditoriales",
+      placeholder: "Ex. : look automne en ville : trench beige, pull en maille crème, bottines marron.",
+    },
+    trailer: {
+      label: "Bande-annonce",
+      hint: "Teaser façon cinéma",
+      placeholder: "Ex. : je lance mon podcast sur l'aventure : montagne, tempête, sommet au lever du soleil.",
+    },
+  },
+
+  generateErrors: {
+    insufficientCredits: "Pas assez de crédits. Recharge-les depuis la page Crédits.",
+    durationExceedsPlan: "Cette durée dépasse la limite de ton abonnement.",
+    invalidDuration: "Durée invalide.",
+    invalidPreset: "Qualité indisponible.",
+    invalidPace: "Rythme invalide.",
+    emptyPrompt: "Décris la scène à générer.",
+    invalidFormat: "Format invalide.",
+    invalidKind: "Type invalide.",
+    invalidTemplate: "Modèle de vidéo invalide.",
+    draftExpired: "Brouillon expiré. Envoie un message au Director pour le rafraîchir.",
+    twinNotReady: "Ton jumeau n'est pas encore prêt.",
+    twinRequired: "Choisis un jumeau pour générer une photo.",
+    characterNotReady: "Ce personnage n'est pas prêt.",
+    outOfCredit: "Le compte du service de génération n'a plus de crédit. Tes crédits ont été rendus.",
+    rateLimited:
+      "Le service de génération est saturé, réessaie dans quelques secondes. Tes crédits ont été rendus.",
+    startFailed: "La génération n'a pas pu démarrer. Tes crédits ont été rendus.",
+    notFound: "Génération introuvable.",
+    videoNotFound: "Vidéo introuvable.",
+    notRunning: "Cette vidéo n'est plus en cours.",
+    animationStarted: "L'animation a déjà commencé.",
+    invalidMessage: "Message invalide ({max} caractères maximum).",
+    directorLimit:
+      "Tu as atteint la limite de {limit} messages au Director pour aujourd'hui. Reviens demain, ou passe en mode Direct.",
+    directorDown: "Le Director ne répond pas. Réessaie dans un instant.",
+    directorKey: "Le Director est indisponible : la clé du service IA est invalide.",
+    directorRefusal: "Je ne peux pas t'aider sur cette demande. Essaie une autre idée de vidéo ?",
+  },
+
+  characters: {
+    eyebrow: "Bibliothèque",
+    title: "Personnages",
+    intro:
+      "Un personnage garde le même sujet d'une vidéo à l'autre : une personne, un animal ou un produit. Il s'utilise ensuite dans la génération.",
+    newTitle: "Nouveau personnage",
+    newHint:
+      "Une vidéo MP4 du sujet (720p minimum ; seules les 4 premières secondes comptent), bien éclairée, sans autre visage.",
+    name: "Nom",
+    namePlaceholder: "Ex. : Nino",
+    video: "Vidéo",
+    creating: "Création du personnage… (~30 s)",
+    create: "Créer le personnage",
+    existing: "Déjà créés",
+    empty: "Aucun personnage pour l'instant. Envoie une première vidéo.",
+    goStudio: "Aller au studio",
+    status: { pending: "Création en cours…", ready: "Prêt", failed: "Échec" },
+    errors: {
+      format: "Format accepté : MP4.",
+      tooBig: "Vidéo trop lourde (50 Mo maximum).",
+      upload: "L'envoi de la vidéo a échoué.",
+      noName: "Donne un nom à ton personnage.",
+      invalidVideo: "Vidéo invalide.",
+      createFailed: "Le personnage n'a pas pu être créé.",
+      notFound: "Personnage introuvable.",
+      deleteFailed: "La suppression a échoué.",
+      outOfCredit: "Le compte du service de génération n'a plus de crédit. Réessaie plus tard.",
+      soraFailed:
+        "La création du personnage a échoué. Réessaie avec une autre vidéo (MP4, 720p minimum).",
+    },
+  },
+
+  creditsPage: {
+    eyebrow: "Facturation",
+    title: "Crédits",
+    intro:
+      "Un crédit = une seconde de vidéo (Sora 2 : 5 crédits la seconde). Paie seulement ce que tu utilises, sans abonnement.",
+    balance: "Solde actuel",
+    secure: "Paiement sécurisé par Stripe",
+    popular: "Populaire",
+    creditsRow: "Crédits",
+    perCreditRow: "Prix du crédit",
+    soraShots: "Plans Sora 2 de 8 s",
+    buy: "Acheter",
+    footer: "Les crédits n'expirent pas. Une génération qui échoue te rend ses crédits.",
+    packs: { starter: "Découverte", creator: "Créateur", studio: "Studio" },
+    productName: "TwinPost · {credits} crédits ({label})",
+    notices: {
+      paid: "Paiement reçu, tes crédits ont été ajoutés. Merci !",
+      pending: "Paiement en cours de validation : tes crédits arriveront dès qu'il sera confirmé.",
+      mismatch: "Ce paiement ne correspond pas à ton compte.",
+      verifyFailed:
+        "Impossible de vérifier le paiement pour l'instant. S'il a abouti, tes crédits arriveront automatiquement.",
+      unavailable: "Le paiement n'est pas encore disponible.",
+      checkout: "La page de paiement n'a pas pu s'ouvrir. Réessaie dans un instant.",
+    },
+  },
+};
+
+export type Dictionary = typeof fr;

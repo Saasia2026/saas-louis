@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { fmt } from "@/i18n/config";
+import { getDictionary } from "@/i18n/server";
 import { CHARACTER_VIDEOS_BUCKET, MAX_CHARACTER_NAME_LENGTH } from "@/lib/character";
 import { registerCharacter } from "@/lib/characters";
 import { errorMessage } from "@/lib/predictions";
@@ -15,18 +17,20 @@ export async function createCharacter(input: {
   name: string;
   videoPath: string;
 }): Promise<Result<{ characterId: string }>> {
+  const t = await getDictionary();
+  const errors = t.characters.errors;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
-  if (!auth?.claims) return { error: "Session expirée, reconnecte-toi." };
+  if (!auth?.claims) return { error: t.common.sessionExpired };
 
   const name = input.name.trim();
-  if (!name) return { error: "Donne un nom à ton personnage." };
+  if (!name) return { error: errors.noName };
   if (name.length > MAX_CHARACTER_NAME_LENGTH) {
-    return { error: `${MAX_CHARACTER_NAME_LENGTH} caractères maximum.` };
+    return { error: fmt(t.common.maxChars, { max: MAX_CHARACTER_NAME_LENGTH }) };
   }
   // La vidéo doit appartenir au dossier de l'utilisateur.
   if (!input.videoPath.startsWith(`${auth.claims.sub}/`)) {
-    return { error: "Vidéo invalide." };
+    return { error: errors.invalidVideo };
   }
 
   const { data: character, error } = await supabase
@@ -36,7 +40,7 @@ export async function createCharacter(input: {
     .single();
   if (error) {
     console.error("createCharacter", error.message);
-    return { error: "Le personnage n'a pas pu être créé." };
+    return { error: errors.createFailed };
   }
 
   try {
@@ -49,19 +53,20 @@ export async function createCharacter(input: {
 }
 
 export async function deleteCharacter(characterId: string): Promise<Result<null>> {
+  const t = await getDictionary();
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
-  if (!auth?.claims) return { error: "Session expirée, reconnecte-toi." };
+  if (!auth?.claims) return { error: t.common.sessionExpired };
 
   const { data: character } = await supabase
     .from("characters")
     .select("video_path")
     .eq("id", characterId)
     .maybeSingle();
-  if (!character) return { error: "Personnage introuvable." };
+  if (!character) return { error: t.characters.errors.notFound };
 
   const { error } = await supabase.from("characters").delete().eq("id", characterId);
-  if (error) return { error: "La suppression a échoué." };
+  if (error) return { error: t.characters.errors.deleteFailed };
   await createAdminClient()
     .storage.from(CHARACTER_VIDEOS_BUCKET)
     .remove([character.video_path]);

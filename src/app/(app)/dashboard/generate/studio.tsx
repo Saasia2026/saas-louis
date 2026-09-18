@@ -31,6 +31,8 @@ import {
   type PresetId,
 } from "@/lib/generation";
 import { LogoMark } from "@/app/logo-mark";
+import { fmt, plural } from "@/i18n/config";
+import { useI18n } from "@/i18n/provider";
 import { findTemplate, VIDEO_TEMPLATES, type VideoTemplate } from "@/lib/templates";
 import {
   cancelVideo,
@@ -43,13 +45,6 @@ import {
 
 const POLL_INTERVAL_MS: Record<GenerationKind, number> = { image: 3_000, video: 4_000 };
 const MAX_MESSAGE_LENGTH = 2000;
-
-const IDEAS = [
-  "Une pub UGC pour ma gourde isotherme",
-  "Mon week-end à Lisbonne en vlog",
-  "Teaser de lancement de mon podcast",
-  "Un lévrier champion d'haltérophilie, façon JO",
-];
 
 // Environ 10 min de marge, plus le temps de rendu des plans.
 function pollTimeoutMs(job: Job) {
@@ -88,6 +83,7 @@ export function Studio({
   resume?: Active;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [mode, setMode] = useState<Mode>("director");
   const [text, setText] = useState("");
   const [showSettings, setShowSettings] = useState(false);
@@ -156,14 +152,14 @@ export function Studio({
         return finish({
           kind: "error",
           message:
-            view.error ?? "La génération a échoué ou a été annulée. Tes crédits ont été rendus.",
+            view.error ?? t.studio.failed,
         });
       }
       setPhase({ kind: "generating", job, id, view });
       if (Date.now() > deadline) {
         return finish({
           kind: "error",
-          message: "C'est plus long que prévu. Recharge la page dans quelques minutes.",
+          message: t.studio.tooLong,
         });
       }
       timer = setTimeout(tick, POLL_INTERVAL_MS[job.kind]);
@@ -174,7 +170,7 @@ export function Studio({
       stopped = true;
       clearTimeout(timer);
     };
-  }, [active, resume, router]);
+  }, [active, resume, router, t]);
 
   function pickTemplate(next: VideoTemplate) {
     setTemplate(next);
@@ -264,9 +260,9 @@ export function Studio({
       placeholder={
         mode === "director"
           ? draft
-            ? "Ex. : rends le plan 2 plus dynamique, passe en 16:9…"
-            : "Raconte ta vidéo au Director : le sujet, le lieu, l'ambiance…"
-          : template.placeholder
+            ? t.studio.placeholderDirectorDraft
+            : t.studio.placeholderDirector
+          : t.templates[template.id as keyof typeof t.templates]?.placeholder ?? template.placeholder
       }
       showSettings={showSettings}
       onToggleSettings={() => setShowSettings((v) => !v)}
@@ -275,12 +271,12 @@ export function Studio({
         mode === "direct" ? (
           <>
             <Menu
-              label={findPreset(preset)?.label ?? "Qualité"}
+              label={t.presets[preset].label}
               openUp={started}
               options={PRESETS.filter((p) => presets.includes(p.id)).map((p) => ({
                 value: p.id,
-                label: p.label,
-                hint: p.hint,
+                label: t.presets[p.id].label,
+                hint: t.presets[p.id].hint,
               }))}
               value={preset}
               onChange={(v) => setPreset(v as PresetId)}
@@ -298,7 +294,11 @@ export function Studio({
             <Menu
               label={aspectRatio}
               openUp={started}
-              options={FORMATS.map((f) => ({ value: f.value, label: f.label, hint: f.hint }))}
+              options={FORMATS.map((f) => ({
+                value: f.value,
+                label: t.formats[f.value].label,
+                hint: t.formats[f.value].hint,
+              }))}
               value={aspectRatio}
               onChange={(v) => setAspectRatio(v as AspectRatio)}
             />
@@ -308,52 +308,52 @@ export function Studio({
       status={
         mode === "direct"
           ? credits >= directCost
-            ? `${directCost} crédit${directCost > 1 ? "s" : ""}`
-            : "Crédits insuffisants"
-          : "Le Director règle durée, format et qualité avec toi"
+            ? `${directCost} ${plural(directCost, t.common.credit, t.common.credits)}`
+            : t.studio.notEnoughCredits
+          : t.studio.directorStatus
       }
       settings={
         <div className="flex flex-col gap-4">
           {mode === "direct" && (
-            <SettingGroup label="Style de vidéo">
-              {VIDEO_TEMPLATES.map((t) => (
+            <SettingGroup label={t.studio.style}>
+              {VIDEO_TEMPLATES.map((tpl) => (
                 <button
-                  key={t.id}
+                  key={tpl.id}
                   type="button"
-                  title={t.hint}
-                  aria-pressed={template.id === t.id}
-                  onClick={() => pickTemplate(t)}
+                  title={t.templates[tpl.id as keyof typeof t.templates]?.hint}
+                  aria-pressed={template.id === tpl.id}
+                  onClick={() => pickTemplate(tpl)}
                   className="chip"
                 >
-                  {t.label}
+                  {t.templates[tpl.id as keyof typeof t.templates]?.label ?? tpl.label}
                 </button>
               ))}
             </SettingGroup>
           )}
           {mode === "direct" && (
-            <SettingGroup label="Rythme">
+            <SettingGroup label={t.studio.pace}>
               {PACES.map((p) => (
                 <button
                   key={p.id}
                   type="button"
-                  title={p.hint}
+                  title={t.paces[p.id].hint}
                   aria-pressed={pace === p.id}
                   onClick={() => setPace(p.id)}
                   className="chip"
                 >
-                  {p.label}
+                  {t.paces[p.id].label}
                 </button>
               ))}
             </SettingGroup>
           )}
-          <SettingGroup label="Personnage">
+          <SettingGroup label={t.studio.character}>
             <button
               type="button"
               aria-pressed={!characterId}
               onClick={() => setCharacterId(undefined)}
               className="chip"
             >
-              Aucun
+              {t.studio.none}
             </button>
             {characters.map((c) => (
               <button
@@ -367,7 +367,7 @@ export function Studio({
               </button>
             ))}
             {!characters.length && (
-              <span className="text-xs text-faint">Aucun personnage prêt pour l&apos;instant.</span>
+              <span className="text-xs text-faint">{t.studio.noCharacter}</span>
             )}
           </SettingGroup>
         </div>
@@ -389,10 +389,10 @@ export function Studio({
         <div className="flex flex-1 flex-col items-center justify-center py-12">
           <h1 className="flex animate-fade-up items-center gap-3 text-center text-4xl font-semibold tracking-tight sm:text-5xl">
             <LogoMark className="size-11 shrink-0 sm:size-14" />
-            <span className="text-gradient">Qu&apos;est-ce qu&apos;on tourne ?</span>
+            <span className="text-gradient">{t.studio.title}</span>
           </h1>
           <p className="mt-4 animate-fade-up text-center text-[0.9375rem] text-muted [animation-delay:80ms]">
-            Décris ta vidéo : storyboard, plans et montage sont faits pour toi.
+            {t.studio.subtitle}
           </p>
 
           <div className="relative z-20 mt-10 w-full max-w-3xl animate-fade-up [animation-delay:160ms]">
@@ -404,7 +404,7 @@ export function Studio({
           </div>
 
           <div className="mt-6 flex max-w-3xl animate-fade-up flex-wrap justify-center gap-2 [animation-delay:240ms]">
-            {IDEAS.map((idea) => (
+            {t.studio.ideas.map((idea) => (
               <button key={idea} type="button" onClick={() => setText(idea)} className="chip">
                 {idea}
               </button>
@@ -428,7 +428,7 @@ export function Studio({
             )}
             {pending && (
               <AssistantMessage>
-                <span className="inline-flex gap-1 py-1.5" aria-label="Le Director écrit">
+                <span className="inline-flex gap-1 py-1.5" aria-label={t.studio.directorTyping}>
                   <span className="size-1.5 animate-pulse rounded-full bg-muted" />
                   <span className="size-1.5 animate-pulse rounded-full bg-muted [animation-delay:150ms]" />
                   <span className="size-1.5 animate-pulse rounded-full bg-muted [animation-delay:300ms]" />
@@ -504,6 +504,7 @@ function Composer({
   settings: React.ReactNode;
   openUp: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <form
       onSubmit={(e) => {
@@ -524,7 +525,7 @@ function Composer({
         maxLength={Math.max(MAX_PROMPT_LENGTH, MAX_MESSAGE_LENGTH)}
         rows={openUp ? 1 : 3}
         placeholder={placeholder}
-        aria-label="Décris ta vidéo"
+        aria-label={t.studio.inputLabel}
         className={`field-sizing-content block max-h-60 w-full ${openUp ? "min-h-12" : "min-h-24"} resize-none bg-transparent px-5 pt-4 pb-2 text-[0.9375rem] leading-relaxed outline-none placeholder:text-faint`}
       />
 
@@ -539,7 +540,7 @@ function Composer({
           type="button"
           onClick={onToggleSettings}
           aria-expanded={showSettings}
-          title="Plus de réglages"
+          title={t.studio.moreSettings}
           className={`flex size-8 items-center justify-center rounded-full border transition-all ${
             showSettings
               ? "rotate-45 border-accent/60 bg-accent/15 text-accent-light"
@@ -552,8 +553,8 @@ function Composer({
         <div className="flex rounded-full border border-line bg-surface-2 p-0.5 text-sm">
           {(
             [
-              { value: "director", label: "Director", hint: "Construis ta vidéo en discutant" },
-              { value: "direct", label: "Direct", hint: "Lance ta demande telle quelle" },
+              { value: "director", label: t.studio.modeDirector, hint: t.studio.modeDirectorHint },
+              { value: "direct", label: t.studio.modeDirect, hint: t.studio.modeDirectHint },
             ] as const
           ).map((m) => (
             <button
@@ -577,7 +578,7 @@ function Composer({
           <button
             type="submit"
             disabled={!canSend}
-            title={mode === "director" ? "Envoyer au Director" : "Lancer la vidéo"}
+            title={mode === "director" ? t.studio.sendDirector : t.studio.launchVideo}
             className="flex size-9 items-center justify-center rounded-full bg-text text-black transition-all hover:shadow-[0_0_20px_-2px_rgb(255_255_255/0.6)] active:scale-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-faint disabled:shadow-none"
           >
             {mode === "director" ? <ArrowUp className="size-4" /> : <WandSparkles className="size-4" />}
@@ -686,22 +687,24 @@ function DraftCard({
   onLaunch: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const { t } = useI18n();
   const durationSeconds = draft.shots.length * keptSeconds(draft.preset, draft.pace);
   const cost = costOf("video", durationSeconds, draft.preset, draft.pace);
+  const template = findTemplate(draft.templateId);
   const tags = [
-    findPreset(draft.preset)?.label,
+    findPreset(draft.preset) && t.presets[draft.preset].label,
     formatDuration(durationSeconds),
     draft.aspectRatio,
-    `${draft.shots.length} plans`,
-    PACES.find((p) => p.id === draft.pace)?.label,
-    findTemplate(draft.templateId)?.label,
-  ].filter(Boolean);
+    fmt(t.studio.shots, { count: draft.shots.length }),
+    PACES.some((p) => p.id === draft.pace) && t.paces[draft.pace].label,
+    template && (t.templates[template.id as keyof typeof t.templates]?.label ?? template.label),
+  ].filter((tag): tag is string => Boolean(tag));
 
   return (
     <section className="panel glow ml-10 animate-fade-up p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-medium text-accent-light">Brouillon prêt</p>
+          <p className="text-xs font-medium text-accent-light">{t.studio.draftReady}</p>
           <h2 className="mt-1 text-lg font-semibold tracking-tight">{draft.title}</h2>
           <p className="mt-1 text-sm text-muted">{draft.brief}</p>
         </div>
@@ -712,7 +715,7 @@ function DraftCard({
           className="btn btn-accent"
         >
           <WandSparkles />
-          Lancer · {cost} crédit{cost > 1 ? "s" : ""}
+          {fmt(t.studio.launch, { cost, credits: plural(cost, t.common.credit, t.common.credits) })}
         </button>
       </div>
 
@@ -731,14 +734,14 @@ function DraftCard({
         className="mt-4 flex items-center gap-1 text-sm text-muted hover:text-text"
       >
         <ChevronDown className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
-        {open ? "Masquer le storyboard" : "Voir le storyboard"}
+        {open ? t.studio.hideStoryboard : t.studio.showStoryboard}
       </button>
       {open && (
         <ol className="mt-3 flex flex-col divide-y divide-line border-y border-line">
           {draft.shots.map((shot, i) => (
             <li key={i} className="flex gap-3 py-2.5 text-sm">
               <span className="w-14 shrink-0 text-xs font-medium text-accent-light tabular-nums">
-                Plan {i + 1}
+                {fmt(t.studio.shot, { n: i + 1 })}
               </span>
               <span className="text-muted">{shot.summary}</span>
             </li>
@@ -747,7 +750,7 @@ function DraftCard({
       )}
       {credits < cost && (
         <p className="mt-3 text-xs text-danger">
-          Pas assez de crédits ({credits} restant{credits > 1 ? "s" : ""}).
+          {fmt(t.studio.notEnough, { count: credits })}
         </p>
       )}
     </section>
@@ -763,6 +766,7 @@ function Result({
   onReset: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   const aspectRatio = phase.kind === "error" ? "9:16" : phase.job.aspectRatio;
 
   return (
@@ -792,7 +796,7 @@ function Result({
               ) : (
                 // URL signée d'un bucket privé : pas d'optimisation Next.
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={phase.view.mediaUrl} alt="Image générée" className="size-full object-cover" />
+                <img src={phase.view.mediaUrl} alt={t.studio.generatedImage} className="size-full object-cover" />
               )
             ) : (
               <>
@@ -819,19 +823,19 @@ function Result({
         {phase.kind === "generating" && phase.job.kind === "video" && phase.id && (
           <button type="button" onClick={onCancel} className="btn btn-secondary">
             <X />
-            Annuler
+            {t.studio.cancel}
           </button>
         )}
         {phase.kind === "done" && (
           <a href={phase.view.downloadUrl ?? phase.view.mediaUrl} className="btn btn-primary">
             <Download />
-            Télécharger
+            {t.studio.download}
           </a>
         )}
         {phase.kind !== "generating" && (
           <button type="button" onClick={onReset} className="btn btn-secondary">
             <RefreshCw />
-            Nouvelle vidéo
+            {t.studio.newVideo}
           </button>
         )}
       </div>
@@ -840,12 +844,13 @@ function Result({
 }
 
 function ProgressLabel({ phase }: { phase: Extract<Phase, { kind: "generating" }> }) {
+  const { t } = useI18n();
   const view = phase.view;
   if (!view || view.shotsTotal === 0) {
-    return <span className="text-muted">Écriture du storyboard…</span>;
+    return <span className="text-muted">{t.studio.writingStoryboard}</span>;
   }
   if (view.stage === "assembling") {
-    return <span>Montage de la vidéo…</span>;
+    return <span>{t.studio.assembling}</span>;
   }
   // Les images comptent pour la première moitié de la barre, l'animation
   // pour la seconde.
@@ -854,7 +859,7 @@ function ProgressLabel({ phase }: { phase: Extract<Phase, { kind: "generating" }
   const progress = (done / view.shotsTotal / 2 + (frames ? 0 : 0.5)) * 100;
   return (
     <span className="w-full">
-      {frames ? "Images des plans" : "Tournage des plans"} · {done}/{view.shotsTotal}
+      {frames ? t.studio.framing : t.studio.filming} · {done}/{view.shotsTotal}
       <span className="mt-3 block h-1 overflow-hidden rounded-full bg-surface-3">
         <span
           className="relative block h-full overflow-hidden rounded-full bg-accent shadow-[0_0_12px_var(--accent)] transition-all duration-700 after:absolute after:inset-0 after:animate-shimmer after:bg-gradient-to-r after:from-transparent after:via-white/60 after:to-transparent"
@@ -862,7 +867,7 @@ function ProgressLabel({ phase }: { phase: Extract<Phase, { kind: "generating" }
         />
       </span>
       <span className="mt-2 block text-xs text-muted">
-        Quelques minutes · tu retrouveras la vidéo ici en revenant
+        {t.studio.progressHint}
       </span>
     </span>
   );
