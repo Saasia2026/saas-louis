@@ -15,16 +15,16 @@ export function AuthForm({
   const [mode, setMode] = useState<Mode>("signin");
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-card p-6 shadow-[0_0_40px_-12px_var(--neon-purple)]">
-      <div className="mb-6 grid grid-cols-2 gap-1 rounded-lg bg-white/5 p-1 text-sm">
+    <div className="panel p-6">
+      <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface-2 p-1 text-sm">
         {(["signin", "signup"] as const).map((m) => (
           <button
             key={m}
             type="button"
             onClick={() => setMode(m)}
             aria-pressed={mode === m}
-            className={`rounded-md py-2 font-medium transition-colors ${
-              mode === m ? "bg-neon-purple text-white" : "text-muted hover:text-text"
+            className={`rounded-lg py-2 font-medium transition-colors ${
+              mode === m ? "bg-surface-3 text-text shadow-sm" : "text-muted hover:text-text"
             }`}
           >
             {m === "signin" ? "Connexion" : "Inscription"}
@@ -59,37 +59,37 @@ function CredentialsForm({
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {next && <input type="hidden" name="next" value={next} />}
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="text-muted">Email</span>
+      <label className="flex flex-col gap-2">
+        <span className="label-mono">Email</span>
         <input
           type="email"
           name="email"
           required
           autoComplete="email"
-          className="rounded-lg border border-white/10 bg-bg px-3 py-2.5 outline-none focus:border-neon-purple"
+          className="field"
         />
       </label>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="text-muted">Mot de passe</span>
+      <label className="flex flex-col gap-2">
+        <span className="label-mono">Mot de passe</span>
         <input
           type="password"
           name="password"
           required
           minLength={mode === "signup" ? 8 : undefined}
           autoComplete={mode === "signin" ? "current-password" : "new-password"}
-          className="rounded-lg border border-white/10 bg-bg px-3 py-2.5 outline-none focus:border-neon-purple"
+          className="field"
         />
       </label>
 
       <p aria-live="polite" className="min-h-5 text-sm">
-        {state.error && <span className="text-neon-pink">{state.error}</span>}
-        {state.message && <span className="text-neon-cyan">{state.message}</span>}
+        {state.error && <span className="text-danger">{state.error}</span>}
+        {state.message && <span className="text-success">{state.message}</span>}
       </p>
 
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg bg-gradient-to-r from-neon-purple to-neon-pink py-2.5 font-semibold text-white transition-opacity disabled:opacity-60"
+        className="btn btn-primary w-full"
       >
         {pending
           ? "Un instant…"

@@ -174,12 +174,12 @@ export function GenerateForm({
         <div
           role="tablist"
           aria-label="Mode de création"
-          className="grid grid-cols-2 gap-1 rounded-xl bg-white/5 p-1"
+          className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface p-1"
         >
           {(
             [
               { value: "director", label: "Director", hint: "Construis ta vidéo en discutant" },
-              { value: "form", label: "Formulaire", hint: "Réglages manuels, photo ou vidéo" },
+              { value: "form", label: "Formulaire", hint: "Tous les réglages à la main" },
             ] as const
           ).map((m) => (
             <button
@@ -189,10 +189,10 @@ export function GenerateForm({
               aria-selected={mode === m.value}
               onClick={() => setMode(m.value)}
               className={`rounded-lg px-3 py-2 text-left transition-colors ${
-                mode === m.value ? "bg-neon-purple/20" : "hover:bg-white/5"
+                mode === m.value ? "bg-surface-3 shadow-sm" : "hover:bg-surface-2"
               }`}
             >
-              <span className="block text-sm font-semibold">{m.label}</span>
+              <span className="block text-sm font-medium">{m.label}</span>
               <span className="block text-xs text-muted">{m.hint}</span>
             </button>
           ))}
@@ -223,7 +223,7 @@ export function GenerateForm({
             className="flex flex-col gap-5"
           >
             <fieldset>
-              <legend className="mb-2 text-sm text-muted">Type</legend>
+              <legend className="label-mono mb-2">Type</legend>
               <div className="grid grid-cols-2 gap-2">
                 {(
                   [
@@ -242,13 +242,9 @@ export function GenerateForm({
                     type="button"
                     onClick={() => setKind(k.value)}
                     aria-pressed={kind === k.value}
-                    className={`flex flex-col items-start rounded-xl border px-4 py-3 text-left transition-colors ${
-                      kind === k.value
-                        ? "border-neon-purple bg-neon-purple/10"
-                        : "border-white/10 hover:border-white/30"
-                    }`}
+                    className="option px-4 py-3"
                   >
-                    <span className="font-semibold">{k.label}</span>
+                    <span className="text-sm font-medium">{k.label}</span>
                     <span className="text-xs text-muted">{k.hint}</span>
                   </button>
                 ))}
@@ -257,7 +253,7 @@ export function GenerateForm({
     
             {kind === "video" && (
               <fieldset>
-                <legend className="mb-2 text-sm text-muted">Style de vidéo</legend>
+                <legend className="label-mono mb-2">Style de vidéo</legend>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {VIDEO_TEMPLATES.map((t) => (
                     <button
@@ -265,13 +261,9 @@ export function GenerateForm({
                       type="button"
                       onClick={() => pickTemplate(t)}
                       aria-pressed={template.id === t.id}
-                      className={`flex flex-col items-start rounded-xl border px-3 py-2.5 text-left transition-colors ${
-                        template.id === t.id
-                          ? "border-neon-purple bg-neon-purple/10"
-                          : "border-white/10 hover:border-white/30"
-                      }`}
+                      className="option"
                     >
-                      <span className="text-sm font-semibold">{t.label}</span>
+                      <span className="text-sm font-medium">{t.label}</span>
                       <span className="text-xs text-muted">{t.hint}</span>
                     </button>
                   ))}
@@ -281,9 +273,9 @@ export function GenerateForm({
     
             {kind === "video" && (
               <label className="flex flex-col gap-2">
-                <span className="flex items-baseline justify-between text-sm">
-                  <span className="text-muted">Durée</span>
-                  <span className="font-display text-lg">{formatDuration(durationSeconds)}</span>
+                <span className="flex items-baseline justify-between">
+                  <span className="label-mono">Durée</span>
+                  <span className="font-mono text-lg">{formatDuration(durationSeconds)}</span>
                 </span>
                 <input
                   type="range"
@@ -292,7 +284,7 @@ export function GenerateForm({
                   step={VIDEO_STEP_SECONDS}
                   value={durationSeconds}
                   onChange={(e) => setDurationSeconds(Number(e.target.value))}
-                  className="accent-[var(--neon-purple)]"
+                  className="accent-[var(--accent)]"
                 />
                 <span className="flex justify-between text-xs text-muted">
                   <span>{formatDuration(VIDEO_STEP_SECONDS)}</span>
@@ -305,17 +297,13 @@ export function GenerateForm({
     
             {kind === "video" && characters.length > 0 && (
           <fieldset>
-            <legend className="mb-2 text-sm text-muted">Personnage</legend>
+            <legend className="label-mono mb-2">Personnage</legend>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => setCharacterId(undefined)}
                 aria-pressed={!characterId}
-                className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
-                  characterId
-                    ? "border-white/15 text-muted hover:border-white/40"
-                    : "border-neon-purple bg-neon-purple/15 text-text"
-                }`}
+                className="chip"
               >
                 Aucun
               </button>
@@ -325,11 +313,7 @@ export function GenerateForm({
                   type="button"
                   onClick={() => setCharacterId(c.id)}
                   aria-pressed={characterId === c.id}
-                  className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
-                    characterId === c.id
-                      ? "border-neon-purple bg-neon-purple/15 text-text"
-                      : "border-white/15 text-muted hover:border-white/40"
-                  }`}
+                  className="chip"
                 >
                   {c.name}
                 </button>
@@ -340,7 +324,7 @@ export function GenerateForm({
 
         {kind === "video" && (
           <fieldset>
-            <legend className="mb-2 text-sm text-muted">Rythme</legend>
+            <legend className="label-mono mb-2">Rythme</legend>
             <div className="grid grid-cols-2 gap-2">
               {PACES.map((p) => (
                 <button
@@ -348,13 +332,9 @@ export function GenerateForm({
                   type="button"
                   onClick={() => setPace(p.id)}
                   aria-pressed={pace === p.id}
-                  className={`flex flex-col items-start rounded-xl border px-3 py-2.5 text-left transition-colors ${
-                    pace === p.id
-                      ? "border-neon-purple bg-neon-purple/10"
-                      : "border-white/10 hover:border-white/30"
-                  }`}
+                  className="option"
                 >
-                  <span className="text-sm font-semibold">{p.label}</span>
+                  <span className="text-sm font-medium">{p.label}</span>
                   <span className="text-xs text-muted">{p.hint}</span>
                 </button>
               ))}
@@ -364,7 +344,7 @@ export function GenerateForm({
 
         {kind === "video" && presets.length > 1 && (
           <fieldset>
-            <legend className="mb-2 text-sm text-muted">Qualité</legend>
+            <legend className="label-mono mb-2">Qualité</legend>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               {PRESETS.filter((p) => presets.includes(p.id)).map((p) => (
                 <button
@@ -372,13 +352,9 @@ export function GenerateForm({
                   type="button"
                   onClick={() => setPreset(p.id)}
                   aria-pressed={preset === p.id}
-                  className={`flex flex-col items-start rounded-xl border px-3 py-2.5 text-left transition-colors ${
-                    preset === p.id
-                      ? "border-neon-purple bg-neon-purple/10"
-                      : "border-white/10 hover:border-white/30"
-                  }`}
+                  className="option"
                 >
-                  <span className="text-sm font-semibold">{p.label}</span>
+                  <span className="text-sm font-medium">{p.label}</span>
                   <span className="text-xs text-muted">{p.hint}</span>
                 </button>
               ))}
@@ -387,7 +363,7 @@ export function GenerateForm({
         )}
     
             <label className="flex flex-col gap-2">
-              <span className="text-sm text-muted">
+              <span className="label-mono">
                 {kind === "video"
                   ? "Raconte ta vidéo : où tu es, ce que tu fais, l'ambiance"
                   : "Où et comment veux-tu apparaître ?"}
@@ -402,7 +378,7 @@ export function GenerateForm({
                     ? template.placeholder
                     : "Ex. : assis en terrasse d'un café parisien, lumière dorée du soir"
                 }
-                className="resize-none rounded-xl border border-white/10 bg-card px-4 py-3 outline-none focus:border-neon-purple"
+                className="field resize-none px-4 py-3 leading-relaxed"
               />
             </label>
     
@@ -412,7 +388,7 @@ export function GenerateForm({
                   key={s}
                   type="button"
                   onClick={() => setPrompt(s)}
-                  className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-muted transition-colors hover:border-neon-cyan hover:text-text"
+                  className="chip"
                 >
                   {s}
                 </button>
@@ -420,7 +396,7 @@ export function GenerateForm({
             </div>
     
             <fieldset>
-              <legend className="mb-2 text-sm text-muted">Format</legend>
+              <legend className="label-mono mb-2">Format</legend>
               <div className="grid grid-cols-3 gap-2">
                 {FORMATS.map((f) => (
                   <button
@@ -428,14 +404,10 @@ export function GenerateForm({
                     type="button"
                     onClick={() => setAspectRatio(f.value)}
                     aria-pressed={aspectRatio === f.value}
-                    className={`flex flex-col items-center gap-2 rounded-xl border px-3 py-3 text-sm transition-colors ${
-                      aspectRatio === f.value
-                        ? "border-neon-purple bg-neon-purple/10"
-                        : "border-white/10 hover:border-white/30"
-                    }`}
+                    className="option items-center gap-2 py-3 text-sm"
                   >
                     <span
-                      className="h-8 rounded-sm border-2 border-current opacity-70"
+                      className="h-8 rounded-[3px] border-[1.5px] border-current opacity-60"
                       style={{ aspectRatio: f.value.replace(":", " / ") }}
                     />
                     <span className="font-medium">{f.label}</span>
@@ -448,7 +420,7 @@ export function GenerateForm({
             <button
               type="submit"
               disabled={!canSubmit}
-              className="rounded-lg bg-gradient-to-r from-neon-purple to-neon-pink py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="btn btn-primary w-full py-3"
             >
               {busy
                 ? "Génération en cours…"
@@ -498,7 +470,9 @@ function Result({
   return (
     <div className="flex flex-col gap-3">
       <div
-        className="relative mx-auto flex w-full max-w-sm items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-card"
+        className={`relative mx-auto flex w-full max-w-sm items-center justify-center overflow-hidden rounded-2xl border bg-surface ${
+          phase.kind === "generating" ? "glow" : "border-line"
+        }`}
         style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
       >
         {phase.kind === "done" ? (
@@ -529,14 +503,17 @@ function Result({
               />
             )}
             <div className="relative flex w-full flex-col items-center gap-3 px-6 text-center text-sm">
-              <span className="size-10 animate-spin rounded-full border-2 border-white/15 border-t-neon-cyan" />
+              <span className="size-9 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
               <ProgressLabel phase={phase} />
             </div>
           </>
         ) : phase.kind === "error" ? (
-          <p className="px-6 text-center text-sm text-neon-pink">{phase.message}</p>
+          <p className="px-6 text-center text-sm text-danger">{phase.message}</p>
         ) : (
-          <p className="px-6 text-center text-sm text-muted">Ton résultat apparaîtra ici.</p>
+          <div className="flex flex-col items-center gap-2 px-6 text-center">
+            <span className="label-mono">Aperçu</span>
+            <p className="text-sm text-muted">Ton résultat apparaîtra ici.</p>
+          </div>
         )}
       </div>
 
@@ -544,7 +521,7 @@ function Result({
         <button
           type="button"
           onClick={onCancel}
-          className="mx-auto rounded-lg border border-white/20 px-4 py-2 text-sm text-muted transition-colors hover:text-text"
+          className="btn btn-secondary mx-auto"
         >
           Annuler · crédits rendus
         </button>
@@ -555,7 +532,7 @@ function Result({
           <div className="mx-auto flex w-full max-w-sm gap-2">
             <a
               href={phase.view.downloadUrl ?? phase.view.mediaUrl}
-              className="flex-1 rounded-lg bg-neon-purple py-2.5 text-center text-sm font-semibold text-white"
+              className="btn btn-primary flex-1"
             >
               Télécharger
             </a>
@@ -563,7 +540,7 @@ function Result({
               type="button"
               onClick={onRegenerate}
               disabled={!canRegenerate}
-              className="flex-1 rounded-lg border border-white/20 py-2.5 text-sm font-semibold disabled:opacity-40"
+              className="btn btn-secondary flex-1"
             >
               Regénérer
             </button>
@@ -595,9 +572,9 @@ function ProgressLabel({ phase }: { phase: Extract<Phase, { kind: "generating" }
   return (
     <span className="w-full">
       {frames ? "Images des plans" : "Animation des plans"} · {done}/{view.shotsTotal}
-      <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-white/10">
+      <span className="mt-3 block h-1 overflow-hidden rounded-full bg-surface-3">
         <span
-          className="block h-full rounded-full bg-gradient-to-r from-neon-purple to-neon-cyan transition-all"
+          className="block h-full rounded-full bg-accent shadow-[0_0_12px_var(--accent)] transition-all"
           style={{ width: `${Math.max(progress, 4)}%` }}
         />
       </span>

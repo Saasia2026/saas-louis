@@ -1,30 +1,198 @@
 @import "tailwindcss";
 
-/* Thème TwinPost : futuriste / néon, sombre uniquement. */
+/* Thème TwinPost : noir profond, surfaces sobres, un seul accent bleu
+   électrique réservé à la sélection et au focus. Sombre uniquement. */
 :root {
-  --bg: #07070e;
-  --bg-card: #0d0d1a;
-  --neon-purple: #a855f7;
-  --neon-cyan: #06d6a0;
-  --neon-pink: #ec4899;
-  --text: #e4e4ef;
-  --text-muted: #8888a8;
+  --bg: #000000;
+  --surface: #0b0b0d;
+  --surface-2: #131316;
+  --surface-3: #1b1b1f;
+  --line: rgb(255 255 255 / 0.08);
+  --line-strong: rgb(255 255 255 / 0.16);
+  --text: #f4f4f5;
+  --text-muted: #8b8b94;
+  --accent: #4f6bff;
+  --accent-soft: rgb(79 107 255 / 0.14);
+  --success: #3ecf8e;
+  --danger: #ff5d6c;
   color-scheme: dark;
 }
 
 @theme inline {
   --color-bg: var(--bg);
-  --color-card: var(--bg-card);
-  --color-neon-purple: var(--neon-purple);
-  --color-neon-cyan: var(--neon-cyan);
-  --color-neon-pink: var(--neon-pink);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-text: var(--text);
   --color-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
   --font-sans: var(--font-inter);
-  --font-display: var(--font-space-grotesk);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-archivo);
 }
 
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(60rem 28rem at 50% -10rem, rgb(79 107 255 / 0.16), transparent 70%),
+    var(--bg);
+  background-repeat: no-repeat;
   color: var(--text);
+}
+
+::selection {
+  background: rgb(79 107 255 / 0.4);
+}
+
+/* Titres larges et gras : logo, accueil, grands chiffres. */
+@utility font-wide {
+  font-family: var(--font-archivo);
+  font-stretch: 125%;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* Petite étiquette technique en capitales. */
+@utility label-mono {
+  font-family: var(--font-geist-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+@utility panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+}
+
+/* Halo bleu : élément sélectionné ou mis en avant. */
+@utility glow {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 28px -6px rgb(79 107 255 / 0.7),
+    inset 0 0 24px -12px rgb(79 107 255 / 0.6);
+}
+
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.625rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    opacity 150ms;
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+@utility btn-primary {
+  background: var(--text);
+  color: #000;
+  &:hover:not(:disabled) {
+    background: #d9d9de;
+  }
+}
+
+@utility btn-secondary {
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--text);
+  &:hover:not(:disabled) {
+    border-color: var(--line-strong);
+  }
+}
+
+@utility btn-ghost {
+  color: var(--text-muted);
+  &:hover:not(:disabled) {
+    color: var(--text);
+    background: var(--surface-3);
+  }
+}
+
+@utility field {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  color: var(--text);
+  outline: none;
+  transition:
+    border-color 150ms,
+    box-shadow 150ms;
+  &::placeholder {
+    color: var(--text-muted);
+  }
+  &:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+}
+
+/* Carte de choix (type, format, qualité…) : halo bleu une fois choisie. */
+@utility option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  text-align: left;
+  transition:
+    border-color 150ms,
+    box-shadow 150ms;
+  &:hover {
+    border-color: var(--line-strong);
+  }
+  &[aria-pressed="true"],
+  &[aria-selected="true"] {
+    background: rgb(79 107 255 / 0.08);
+    border-color: var(--accent);
+    box-shadow:
+      0 0 0 1px var(--accent),
+      0 0 24px -8px rgb(79 107 255 / 0.8);
+  }
+}
+
+@utility chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  padding: 0.3125rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  transition:
+    border-color 150ms,
+    color 150ms;
+  &:hover {
+    color: var(--text);
+    border-color: var(--line-strong);
+  }
+  &[aria-pressed="true"] {
+    color: var(--text);
+    border-color: var(--accent);
+    background: rgb(79 107 255 / 0.1);
+  }
 }

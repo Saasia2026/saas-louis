@@ -76,7 +76,7 @@ export function DirectorChat({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex h-[26rem] flex-col rounded-2xl border border-white/10 bg-card">
+      <div className="panel flex h-[28rem] flex-col overflow-hidden">
         <div ref={listRef} className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
           <Bubble role="assistant">
             Salut, je suis ton Director. Raconte-moi ta vidéo : le sujet, le lieu, l&apos;ambiance.
@@ -103,7 +103,7 @@ export function DirectorChat({
                   key={idea}
                   type="button"
                   onClick={() => send(idea)}
-                  className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-muted transition-colors hover:border-neon-cyan hover:text-text"
+                  className="chip"
                 >
                   {idea}
                 </button>
@@ -117,7 +117,7 @@ export function DirectorChat({
             e.preventDefault();
             send(text);
           }}
-          className="flex items-end gap-2 border-t border-white/10 p-3"
+          className="flex items-end gap-2 border-t border-line bg-surface-2/60 p-3"
         >
           <textarea
             value={text}
@@ -136,18 +136,18 @@ export function DirectorChat({
                 : "Décris ta vidéo…"
             }
             aria-label="Message au Director"
-            className="flex-1 resize-none rounded-xl border border-white/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-neon-purple"
+            className="field flex-1 resize-none bg-surface"
           />
           <button
             type="submit"
             disabled={pending || !text.trim()}
-            className="rounded-lg bg-neon-purple px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+            className="btn btn-primary"
           >
             Envoyer
           </button>
         </form>
       </div>
-      {error && <p className="text-sm text-neon-pink">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       {draft && (
         <DraftCard
@@ -168,8 +168,8 @@ function Bubble({ role, children }: { role: DirectorMessage["role"]; children: R
     <div
       className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm ${
         role === "user"
-          ? "self-end rounded-br-sm bg-neon-purple/20"
-          : "self-start rounded-bl-sm bg-white/5"
+          ? "self-end rounded-br-sm bg-accent/20 text-text"
+          : "self-start rounded-bl-sm border border-line bg-surface-2"
       }`}
     >
       {children}
@@ -202,20 +202,21 @@ function DraftCard({
   ].filter(Boolean);
 
   return (
-    <section className="rounded-2xl border border-white/10 p-4">
-      <h2 className="font-display text-lg">{draft.title}</h2>
+    <section className="panel glow p-5">
+      <span className="label-mono">Brouillon</span>
+      <h2 className="mt-1 text-lg font-semibold tracking-tight">{draft.title}</h2>
       <p className="mt-1 text-sm text-muted">{draft.brief}</p>
       <div className="mt-3 flex flex-wrap gap-1.5">
         {chips.map((chip) => (
-          <span key={chip} className="rounded-full bg-white/5 px-2.5 py-1 text-xs">
+          <span key={chip} className="rounded-md border border-line bg-surface-2 px-2 py-0.5 font-mono text-[0.6875rem] text-muted">
             {chip}
           </span>
         ))}
       </div>
-      <ol className="mt-4 flex flex-col gap-2">
+      <ol className="mt-4 flex flex-col divide-y divide-line border-y border-line">
         {draft.shots.map((shot, i) => (
-          <li key={i} className="flex gap-3 text-sm">
-            <span className="w-14 shrink-0 text-muted">Plan {i + 1}</span>
+          <li key={i} className="flex gap-3 py-2.5 text-sm">
+            <span className="label-mono w-14 shrink-0 pt-0.5">Plan {i + 1}</span>
             <span>{shot.summary}</span>
           </li>
         ))}
@@ -224,13 +225,13 @@ function DraftCard({
         type="button"
         onClick={onLaunch}
         disabled={!canLaunch}
-        className="mt-4 w-full rounded-lg bg-gradient-to-r from-neon-purple to-neon-pink py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+        className="btn btn-primary mt-4 w-full py-3"
       >
-        Générer les images · {cost} crédit{cost > 1 ? "s" : ""}
+        Lancer la vidéo · {cost} crédit{cost > 1 ? "s" : ""}
       </button>
       <p className="mt-2 text-center text-xs text-muted">
         {credits >= cost
-          ? "Tu valideras chaque image avant l'animation."
+          ? "Les plans sont générés puis montés automatiquement."
           : `Pas assez de crédits (${credits} restant${credits > 1 ? "s" : ""}).`}
       </p>
     </section>

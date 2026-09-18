@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { CREDIT_PACKS, formatPrice } from "@/lib/credit-packs";
 import { createStripe, fulfillCheckoutSession, stripeEnabled } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "../../page-header";
 import { buyCredits } from "./actions";
 
 export const metadata: Metadata = {
@@ -56,56 +57,84 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
   const enabled = stripeEnabled();
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <h1 className="font-display text-3xl">Crédits</h1>
-      <p className="mt-2 text-sm text-muted">
-        Tu as <span className="text-neon-cyan">{profile?.credits_remaining ?? 0} crédits</span>. Un
-        crédit = une photo, ou une seconde de vidéo (Sora 2 : 5 crédits la seconde).
-      </p>
+    <div>
+      <PageHeader eyebrow="Facturation" title="Crédits">
+        Un crédit = une seconde de vidéo (Sora 2 : 5 crédits la seconde). Paie seulement ce
+        que tu utilises, sans abonnement.
+      </PageHeader>
+
+      <div className="mt-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="label-mono">Solde actuel</p>
+          <p className="mt-1 font-wide text-4xl">
+            {profile?.credits_remaining ?? 0}
+            <span className="ml-2 font-sans text-base font-normal text-muted">crédits</span>
+          </p>
+        </div>
+        <p className="label-mono">Paiement sécurisé · Stripe</p>
+      </div>
 
       {notice && (
         <p
           role="status"
-          className={`mt-6 rounded-xl border p-4 text-sm ${
+          className={`mt-6 rounded-xl border px-4 py-3 text-sm ${
             notice.ok
-              ? "border-neon-cyan/40 text-neon-cyan"
-              : "border-neon-pink/40 text-neon-pink"
+              ? "border-success/30 bg-success/10 text-success"
+              : "border-danger/30 bg-danger/10 text-danger"
           }`}
         >
           {notice.text}
         </p>
       )}
 
-      <ul className="mt-8 grid gap-4 sm:grid-cols-3">
-        {CREDIT_PACKS.map((pack) => (
-          <li
-            key={pack.id}
-            className={`flex flex-col rounded-2xl border bg-card p-6 ${
-              "highlight" in pack && pack.highlight ? "border-neon-purple" : "border-white/10"
-            }`}
-          >
-            <h2 className="font-semibold">{pack.label}</h2>
-            <p className="mt-3 font-display text-3xl">{pack.credits} crédits</p>
-            <p className="mt-1 text-sm text-muted">
-              {formatPrice(pack.amount)} · {formatPrice(Math.round(pack.amount / pack.credits))}{" "}
-              le crédit
-            </p>
-            <form action={buyCredits} className="mt-6">
-              <input type="hidden" name="pack" value={pack.id} />
-              <button
-                type="submit"
-                disabled={!enabled}
-                className="w-full rounded-lg bg-gradient-to-r from-neon-purple to-neon-pink px-4 py-2.5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Acheter
-              </button>
-            </form>
-          </li>
-        ))}
+      <ul className="mt-8 grid gap-4 md:grid-cols-3">
+        {CREDIT_PACKS.map((pack) => {
+          const featured = "highlight" in pack && pack.highlight;
+          return (
+            <li
+              key={pack.id}
+              className={`panel relative flex flex-col p-6 ${featured ? "glow" : ""}`}
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold">{pack.label}</h2>
+                {featured && (
+                  <span className="rounded-md bg-accent px-2 py-0.5 font-mono text-[0.625rem] uppercase tracking-wider text-white">
+                    Populaire
+                  </span>
+                )}
+              </div>
+              <p className="mt-6 font-wide text-4xl">{formatPrice(pack.amount)}</p>
+              <dl className="mt-6 divide-y divide-line border-y border-line text-sm">
+                <div className="flex justify-between py-2.5">
+                  <dt className="text-muted">Crédits</dt>
+                  <dd className="font-mono">{pack.credits}</dd>
+                </div>
+                <div className="flex justify-between py-2.5">
+                  <dt className="text-muted">Prix du crédit</dt>
+                  <dd className="font-mono">{formatPrice(Math.round(pack.amount / pack.credits))}</dd>
+                </div>
+                <div className="flex justify-between py-2.5">
+                  <dt className="text-muted">Plans Sora 2 de 8 s</dt>
+                  <dd className="font-mono">{Math.floor(pack.credits / 40)}</dd>
+                </div>
+              </dl>
+              <form action={buyCredits} className="mt-6">
+                <input type="hidden" name="pack" value={pack.id} />
+                <button
+                  type="submit"
+                  disabled={!enabled}
+                  className={`btn w-full ${featured ? "btn-primary" : "btn-secondary"}`}
+                >
+                  Acheter
+                </button>
+              </form>
+            </li>
+          );
+        })}
       </ul>
 
       <p className="mt-6 text-xs text-muted">
-        Paiement sécurisé par Stripe. Les crédits n&apos;expirent pas.
+        Les crédits n&apos;expirent pas. Une génération qui échoue te rend ses crédits.
       </p>
     </div>
   );

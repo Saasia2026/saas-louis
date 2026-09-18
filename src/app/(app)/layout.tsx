@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/login/actions";
+import { Logo } from "@/app/logo";
+import { createClient } from "@/lib/supabase/server";
+import { NavLinks } from "./nav-links";
 
 // Espace connecté. Le proxy redirige déjà, mais on revérifie ici :
 // le proxy n'est qu'une vérification optimiste.
@@ -22,41 +24,33 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-8">
-        <div className="flex items-center gap-5">
-          <Link href="/dashboard" className="font-display text-xl">
-            Twin<span className="text-neon-purple">Post</span>
-          </Link>
-          <nav className="flex items-center gap-4 text-sm text-muted">
-            <Link href="/dashboard/generate" className="hover:text-text">
-              Générer
+      <header className="sticky top-0 z-10 border-b border-line bg-black/70 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-6">
+            <Logo href="/dashboard" />
+            <NavLinks />
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Link href="/dashboard/credits" className="chip">
+              <span className="size-1.5 rounded-full bg-accent" />
+              <span className="font-mono text-text">{profile?.credits_remaining ?? 0}</span>
+              crédits
             </Link>
-            <Link href="/dashboard/characters" className="hover:text-text">
-              Personnages
-            </Link>
-          </nav>
-        </div>
-        <div className="flex items-center gap-3 text-sm">
-          <Link
-            href="/dashboard/credits"
-            className="rounded-full border border-neon-cyan/40 px-3 py-1 text-neon-cyan hover:bg-neon-cyan/10"
-          >
-            {profile?.credits_remaining ?? 0} crédits
-          </Link>
-          <span
-            title={displayName}
-            className="flex size-8 items-center justify-center rounded-full bg-neon-purple/20 font-semibold uppercase text-neon-purple"
-          >
-            {displayName.charAt(0)}
-          </span>
-          <form action={signOut}>
-            <button type="submit" className="text-muted hover:text-text">
-              Déconnexion
-            </button>
-          </form>
+            <span
+              title={displayName}
+              className="flex size-8 items-center justify-center rounded-full border border-line bg-surface-3 text-xs font-medium uppercase"
+            >
+              {displayName.charAt(0)}
+            </span>
+            <form action={signOut}>
+              <button type="submit" className="btn btn-ghost px-3">
+                Déconnexion
+              </button>
+            </form>
+          </div>
         </div>
       </header>
-      <main className="flex-1 px-4 py-8 sm:px-8">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">{children}</main>
     </div>
   );
 }

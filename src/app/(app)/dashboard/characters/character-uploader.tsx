@@ -56,32 +56,32 @@ export function CharacterUploader({ userId }: { userId: string }) {
   }
 
   return (
-    <section className="rounded-2xl border border-white/10 p-5">
-      <h2 className="font-display text-lg">Nouveau personnage</h2>
-      <p className="mt-1 text-sm text-muted">
+    <section className="panel p-6">
+      <h2 className="text-base font-semibold">Nouveau personnage</h2>
+      <p className="mt-1 text-sm leading-relaxed text-muted">
         Une vidéo MP4 du sujet (720p minimum ; seules les 4 premières secondes comptent), bien éclairée, sans autre visage.
       </p>
 
-      <div className="mt-4 flex flex-col gap-3">
-        <label className="flex flex-col gap-1.5">
-          <span className="text-sm text-muted">Nom</span>
+      <div className="mt-5 flex flex-col gap-4">
+        <label className="flex flex-col gap-2">
+          <span className="label-mono">Nom</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={MAX_CHARACTER_NAME_LENGTH}
             placeholder="Ex. : Nino"
-            className="rounded-xl border border-white/10 bg-card px-4 py-2.5 outline-none focus:border-neon-purple"
+            className="field"
           />
         </label>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-sm text-muted">Vidéo</span>
+        <label className="flex flex-col gap-2">
+          <span className="label-mono">Vidéo</span>
           <input
             ref={inputRef}
             type="file"
             accept={ACCEPTED_TYPES.join(",")}
             onChange={(e) => pick(e.target.files?.[0] ?? null)}
-            className="rounded-xl border border-white/10 bg-card px-4 py-2.5 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-sm file:text-text"
+            className="field py-2 file:mr-3 file:rounded-md file:border file:border-line file:bg-surface-3 file:px-3 file:py-1 file:text-sm file:text-text"
           />
         </label>
 
@@ -89,11 +89,11 @@ export function CharacterUploader({ userId }: { userId: string }) {
           type="button"
           onClick={submit}
           disabled={pending || !file || !name.trim()}
-          className="rounded-lg bg-gradient-to-r from-neon-purple to-neon-pink py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+          className="btn btn-primary w-full py-3"
         >
           {pending ? "Création du personnage… (~30 s)" : "Créer le personnage"}
         </button>
-        {error && <p className="text-sm text-neon-pink">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
       </div>
     </section>
   );

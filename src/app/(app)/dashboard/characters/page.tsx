@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "../../page-header";
 import { CharacterUploader } from "./character-uploader";
 
 export const metadata: Metadata = {
@@ -30,33 +31,32 @@ export default async function CharactersPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <h1 className="font-display text-3xl">Tes personnages</h1>
-      <p className="mt-2 text-sm text-muted">
+    <div>
+      <PageHeader eyebrow="Bibliothèque" title="Personnages">
         Un personnage garde le même sujet d&apos;une vidéo à l&apos;autre : une personne, un
         animal ou un produit. Il s&apos;utilise ensuite dans la génération.
-      </p>
+      </PageHeader>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <CharacterUploader userId={auth.claims.sub} />
 
-        <section className="rounded-2xl border border-white/10 p-5">
-          <h2 className="font-display text-lg">Déjà créés</h2>
+        <section className="panel p-6">
+          <h2 className="text-base font-semibold">Déjà créés</h2>
           {characters?.length ? (
-            <ul className="mt-4 flex flex-col gap-3">
+            <ul className="mt-4 flex flex-col divide-y divide-line border-y border-line">
               {characters.map((c) => (
                 <li
                   key={c.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-white/10 px-4 py-3"
+                  className="flex items-center justify-between gap-4 py-3"
                 >
                   <span className="font-medium">{c.name}</span>
                   <span
-                    className={`text-xs ${
+                    className={`rounded-md px-2 py-0.5 text-right text-xs ${
                       c.status === "ready"
-                        ? "text-neon-cyan"
+                        ? "bg-success/10 text-success"
                         : c.status === "failed"
-                          ? "text-neon-pink"
-                          : "text-muted"
+                          ? "bg-danger/10 text-danger"
+                          : "bg-surface-3 text-muted"
                     }`}
                   >
                     {c.error ?? STATUS_LABELS[c.status] ?? c.status}
@@ -72,9 +72,9 @@ export default async function CharactersPage() {
 
           <Link
             href="/dashboard/generate"
-            className="mt-5 inline-block text-sm text-muted underline-offset-4 hover:text-text hover:underline"
+            className="btn btn-secondary mt-5"
           >
-            Aller à la génération
+            Aller à la génération →
           </Link>
         </section>
       </div>

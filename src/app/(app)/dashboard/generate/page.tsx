@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { falEnabled } from "@/lib/fal";
 import { availablePresets, isAspectRatio, maxVideoSeconds } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "../../page-header";
 import { GenerateForm, type Job } from "./generate-form";
 
 export const metadata: Metadata = {
@@ -65,11 +66,11 @@ export default async function GeneratePage() {
       : undefined;
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <h1 className="font-display text-3xl">Crée ton contenu</h1>
-      <p className="mt-2 text-sm text-muted">
-        Décris ta vidéo : elle est générée telle quelle, sans personnage fixe.
-      </p>
+    <div>
+      <PageHeader eyebrow="Studio" title="Crée ta vidéo">
+        Discute avec le Director ou règle tout toi-même : storyboard, plans et montage sont
+        faits pour toi.
+      </PageHeader>
 
       <GenerateForm
         resume={resume}
