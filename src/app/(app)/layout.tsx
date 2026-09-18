@@ -32,8 +32,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Link href="/dashboard/credits" className="chip">
-              <span className="size-1.5 rounded-full bg-accent" />
-              <span className="font-mono text-text">{profile?.credits_remaining ?? 0}</span>
+              <span className="size-1.5 animate-pulse rounded-full bg-accent shadow-[0_0_8px_var(--accent)]" />
+              <span className="font-medium text-text tabular-nums">{profile?.credits_remaining ?? 0}</span>
               crédits
             </Link>
             <span

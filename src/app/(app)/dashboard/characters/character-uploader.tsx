@@ -56,7 +56,7 @@ export function CharacterUploader({ userId }: { userId: string }) {
   }
 
   return (
-    <section className="panel p-6">
+    <section className="panel lift animate-fade-up p-6">
       <h2 className="text-base font-semibold">Nouveau personnage</h2>
       <p className="mt-1 text-sm leading-relaxed text-muted">
         Une vidéo MP4 du sujet (720p minimum ; seules les 4 premières secondes comptent), bien éclairée, sans autre visage.
@@ -64,7 +64,7 @@ export function CharacterUploader({ userId }: { userId: string }) {
 
       <div className="mt-5 flex flex-col gap-4">
         <label className="flex flex-col gap-2">
-          <span className="label-mono">Nom</span>
+          <span className="label">Nom</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -75,7 +75,7 @@ export function CharacterUploader({ userId }: { userId: string }) {
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="label-mono">Vidéo</span>
+          <span className="label">Vidéo</span>
           <input
             ref={inputRef}
             type="file"

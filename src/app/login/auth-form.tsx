@@ -15,7 +15,7 @@ export function AuthForm({
   const [mode, setMode] = useState<Mode>("signin");
 
   return (
-    <div className="panel p-6">
+    <div className="panel animate-fade-up p-6 [animation-delay:150ms]">
       <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface-2 p-1 text-sm">
         {(["signin", "signup"] as const).map((m) => (
           <button
@@ -60,7 +60,7 @@ function CredentialsForm({
     <form action={formAction} className="flex flex-col gap-4">
       {next && <input type="hidden" name="next" value={next} />}
       <label className="flex flex-col gap-2">
-        <span className="label-mono">Email</span>
+        <span className="label">Email</span>
         <input
           type="email"
           name="email"
@@ -70,7 +70,7 @@ function CredentialsForm({
         />
       </label>
       <label className="flex flex-col gap-2">
-        <span className="label-mono">Mot de passe</span>
+        <span className="label">Mot de passe</span>
         <input
           type="password"
           name="password"

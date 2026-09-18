@@ -76,7 +76,7 @@ export function DirectorChat({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="panel flex h-[28rem] flex-col overflow-hidden">
+      <div className="panel flex h-[28rem] animate-fade-up flex-col overflow-hidden">
         <div ref={listRef} className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
           <Bubble role="assistant">
             Salut, je suis ton Director. Raconte-moi ta vidéo : le sujet, le lieu, l&apos;ambiance.
@@ -202,13 +202,13 @@ function DraftCard({
   ].filter(Boolean);
 
   return (
-    <section className="panel glow p-5">
-      <span className="label-mono">Brouillon</span>
-      <h2 className="mt-1 text-lg font-semibold tracking-tight">{draft.title}</h2>
+    <section className="panel glow animate-fade-up p-5">
+      <span className="eyebrow">Brouillon prêt</span>
+      <h2 className="mt-3 text-lg font-semibold tracking-tight">{draft.title}</h2>
       <p className="mt-1 text-sm text-muted">{draft.brief}</p>
       <div className="mt-3 flex flex-wrap gap-1.5">
         {chips.map((chip) => (
-          <span key={chip} className="rounded-md border border-line bg-surface-2 px-2 py-0.5 font-mono text-[0.6875rem] text-muted">
+          <span key={chip} className="tag">
             {chip}
           </span>
         ))}
@@ -216,7 +216,7 @@ function DraftCard({
       <ol className="mt-4 flex flex-col divide-y divide-line border-y border-line">
         {draft.shots.map((shot, i) => (
           <li key={i} className="flex gap-3 py-2.5 text-sm">
-            <span className="label-mono w-14 shrink-0 pt-0.5">Plan {i + 1}</span>
+            <span className="w-14 shrink-0 text-xs font-medium text-accent-light tabular-nums">Plan {i + 1}</span>
             <span>{shot.summary}</span>
           </li>
         ))}

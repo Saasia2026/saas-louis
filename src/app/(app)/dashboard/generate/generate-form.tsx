@@ -169,7 +169,7 @@ export function GenerateForm({
     phase.kind === "generating" || phase.kind === "done" ? phase.job.aspectRatio : aspectRatio;
 
   return (
-    <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_minmax(0,22rem)]">
+    <div className="mt-8 grid animate-fade-up gap-8 lg:grid-cols-[1fr_minmax(0,22rem)]">
       <div className="flex flex-col gap-5">
         <div
           role="tablist"
@@ -222,8 +222,10 @@ export function GenerateForm({
             }}
             className="flex flex-col gap-5"
           >
+            {/* Sans jumeau, seule la vidéo existe : rien à choisir. */}
+            {twinMode && (
             <fieldset>
-              <legend className="label-mono mb-2">Type</legend>
+              <legend className="label mb-2">Type</legend>
               <div className="grid grid-cols-2 gap-2">
                 {(
                   [
@@ -250,10 +252,11 @@ export function GenerateForm({
                 ))}
               </div>
             </fieldset>
+            )}
     
             {kind === "video" && (
               <fieldset>
-                <legend className="label-mono mb-2">Style de vidéo</legend>
+                <legend className="label mb-2">Style de vidéo</legend>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {VIDEO_TEMPLATES.map((t) => (
                     <button
@@ -274,8 +277,8 @@ export function GenerateForm({
             {kind === "video" && (
               <label className="flex flex-col gap-2">
                 <span className="flex items-baseline justify-between">
-                  <span className="label-mono">Durée</span>
-                  <span className="font-mono text-lg">{formatDuration(durationSeconds)}</span>
+                  <span className="label">Durée</span>
+                  <span className="text-lg font-semibold tabular-nums">{formatDuration(durationSeconds)}</span>
                 </span>
                 <input
                   type="range"
@@ -297,7 +300,7 @@ export function GenerateForm({
     
             {kind === "video" && characters.length > 0 && (
           <fieldset>
-            <legend className="label-mono mb-2">Personnage</legend>
+            <legend className="label mb-2">Personnage</legend>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -324,7 +327,7 @@ export function GenerateForm({
 
         {kind === "video" && (
           <fieldset>
-            <legend className="label-mono mb-2">Rythme</legend>
+            <legend className="label mb-2">Rythme</legend>
             <div className="grid grid-cols-2 gap-2">
               {PACES.map((p) => (
                 <button
@@ -344,7 +347,7 @@ export function GenerateForm({
 
         {kind === "video" && presets.length > 1 && (
           <fieldset>
-            <legend className="label-mono mb-2">Qualité</legend>
+            <legend className="label mb-2">Qualité</legend>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               {PRESETS.filter((p) => presets.includes(p.id)).map((p) => (
                 <button
@@ -363,7 +366,7 @@ export function GenerateForm({
         )}
     
             <label className="flex flex-col gap-2">
-              <span className="label-mono">
+              <span className="label">
                 {kind === "video"
                   ? "Raconte ta vidéo : où tu es, ce que tu fais, l'ambiance"
                   : "Où et comment veux-tu apparaître ?"}
@@ -396,7 +399,7 @@ export function GenerateForm({
             </div>
     
             <fieldset>
-              <legend className="label-mono mb-2">Format</legend>
+              <legend className="label mb-2">Format</legend>
               <div className="grid grid-cols-3 gap-2">
                 {FORMATS.map((f) => (
                   <button
@@ -511,7 +514,7 @@ function Result({
           <p className="px-6 text-center text-sm text-danger">{phase.message}</p>
         ) : (
           <div className="flex flex-col items-center gap-2 px-6 text-center">
-            <span className="label-mono">Aperçu</span>
+            <span className="eyebrow">Aperçu</span>
             <p className="text-sm text-muted">Ton résultat apparaîtra ici.</p>
           </div>
         )}
@@ -574,7 +577,7 @@ function ProgressLabel({ phase }: { phase: Extract<Phase, { kind: "generating" }
       {frames ? "Images des plans" : "Animation des plans"} · {done}/{view.shotsTotal}
       <span className="mt-3 block h-1 overflow-hidden rounded-full bg-surface-3">
         <span
-          className="block h-full rounded-full bg-accent shadow-[0_0_12px_var(--accent)] transition-all"
+          className="relative block h-full overflow-hidden rounded-full bg-accent shadow-[0_0_12px_var(--accent)] transition-all duration-700 after:absolute after:inset-0 after:animate-shimmer after:bg-gradient-to-r after:from-transparent after:via-white/60 after:to-transparent"
           style={{ width: `${Math.max(progress, 4)}%` }}
         />
       </span>

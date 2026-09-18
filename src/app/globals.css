@@ -12,9 +12,11 @@
   --text: #f4f4f5;
   --text-muted: #8b8b94;
   --accent: #4f6bff;
+  --accent-light: #9aa9ff;
   --accent-soft: rgb(79 107 255 / 0.14);
   --success: #3ecf8e;
   --danger: #ff5d6c;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   color-scheme: dark;
 }
 
@@ -28,12 +30,66 @@
   --color-text: var(--text);
   --color-muted: var(--text-muted);
   --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
   --color-accent-soft: var(--accent-soft);
   --color-success: var(--success);
   --color-danger: var(--danger);
   --font-sans: var(--font-inter);
-  --font-mono: var(--font-geist-mono);
   --font-display: var(--font-archivo);
+
+  --animate-fade-up: fade-up 0.7s var(--ease-out) both;
+  --animate-aurora: aurora 18s ease-in-out infinite alternate;
+  --animate-shine: shine 6s linear infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  /* translate (et non transform) : l'effet de survol "lift" reste actif
+     une fois l'apparition terminée. */
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      translate: 0 14px;
+    }
+    to {
+      opacity: 1;
+      translate: none;
+    }
+  }
+  @keyframes aurora {
+    0% {
+      transform: translate3d(-8%, -4%, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(6%, 4%, 0) scale(1.15);
+    }
+    100% {
+      transform: translate3d(-4%, 8%, 0) scale(0.95);
+    }
+  }
+  @keyframes shine {
+    to {
+      background-position: 200% center;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+}
+
+@property --beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes beam {
+  to {
+    --beam-angle: 360deg;
+  }
 }
 
 body {
@@ -42,6 +98,7 @@ body {
     var(--bg);
   background-repeat: no-repeat;
   color: var(--text);
+  font-feature-settings: "cv11", "ss01";
 }
 
 ::selection {
@@ -56,13 +113,50 @@ body {
   letter-spacing: -0.01em;
 }
 
-/* Petite étiquette technique en capitales. */
-@utility label-mono {
-  font-family: var(--font-geist-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+/* Intitulé de champ ou de valeur. */
+@utility label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.25rem;
   color: var(--text-muted);
+}
+
+/* Pastille d'intitulé de section, avec un point lumineux. */
+@utility eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  padding: 0.25rem 0.75rem 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text);
+  &::before {
+    content: "";
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 9999px;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+  }
+}
+
+/* Texte en dégradé bleu qui balaie lentement. */
+@utility text-shine {
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    var(--accent-light) 25%,
+    var(--accent) 50%,
+    var(--accent-light) 75%,
+    var(--accent) 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  color: transparent;
+  animation: var(--animate-shine);
 }
 
 @utility panel {
@@ -71,13 +165,49 @@ body {
   border-radius: 1rem;
 }
 
-/* Halo bleu : élément sélectionné ou mis en avant. */
+/* Carte qui s'élève au survol. */
+@utility lift {
+  transition:
+    transform 250ms var(--ease-out),
+    border-color 250ms,
+    box-shadow 250ms;
+  &:hover {
+    transform: translateY(-3px);
+    border-color: var(--line-strong);
+    box-shadow: 0 16px 40px -20px rgb(0 0 0 / 0.9);
+  }
+}
+
+/* Élément mis en avant : halo bleu et faisceau lumineux qui fait le tour
+   de la bordure. */
 @utility glow {
-  border-color: var(--accent);
+  position: relative;
+  border-color: rgb(79 107 255 / 0.35);
   box-shadow:
-    0 0 0 1px var(--accent),
-    0 0 28px -6px rgb(79 107 255 / 0.7),
-    inset 0 0 24px -12px rgb(79 107 255 / 0.6);
+    0 0 32px -8px rgb(79 107 255 / 0.55),
+    inset 0 0 24px -14px rgb(79 107 255 / 0.6);
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(
+      from var(--beam-angle),
+      transparent 0deg,
+      var(--accent) 60deg,
+      var(--accent-light) 90deg,
+      var(--accent) 120deg,
+      transparent 180deg,
+      transparent 360deg
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    animation: beam 5s linear infinite;
+  }
 }
 
 @utility btn {
@@ -93,7 +223,12 @@ body {
   transition:
     background-color 150ms,
     border-color 150ms,
+    box-shadow 200ms,
+    transform 120ms var(--ease-out),
     opacity 150ms;
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
   &:disabled {
     cursor: not-allowed;
     opacity: 0.4;
@@ -104,7 +239,10 @@ body {
   background: var(--text);
   color: #000;
   &:hover:not(:disabled) {
-    background: #d9d9de;
+    background: #ffffff;
+    box-shadow:
+      0 0 0 4px rgb(255 255 255 / 0.08),
+      0 8px 28px -8px rgb(255 255 255 / 0.35);
   }
 }
 
@@ -114,6 +252,7 @@ body {
   color: var(--text);
   &:hover:not(:disabled) {
     border-color: var(--line-strong);
+    background: #222228;
   }
 }
 
@@ -136,13 +275,18 @@ body {
   outline: none;
   transition:
     border-color 150ms,
-    box-shadow 150ms;
+    box-shadow 200ms;
   &::placeholder {
     color: var(--text-muted);
   }
+  &:hover {
+    border-color: var(--line-strong);
+  }
   &:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
+    box-shadow:
+      0 0 0 3px var(--accent-soft),
+      0 0 24px -8px rgb(79 107 255 / 0.6);
   }
 }
 
@@ -158,10 +302,16 @@ body {
   padding: 0.625rem 0.875rem;
   text-align: left;
   transition:
-    border-color 150ms,
-    box-shadow 150ms;
+    border-color 200ms,
+    box-shadow 250ms,
+    background-color 200ms,
+    transform 200ms var(--ease-out);
   &:hover {
     border-color: var(--line-strong);
+    transform: translateY(-2px);
+  }
+  &:active {
+    transform: scale(0.98);
   }
   &[aria-pressed="true"],
   &[aria-selected="true"] {
@@ -169,7 +319,7 @@ body {
     border-color: var(--accent);
     box-shadow:
       0 0 0 1px var(--accent),
-      0 0 24px -8px rgb(79 107 255 / 0.8);
+      0 0 28px -8px rgb(79 107 255 / 0.85);
   }
 }
 
@@ -185,14 +335,41 @@ body {
   color: var(--text-muted);
   transition:
     border-color 150ms,
-    color 150ms;
+    color 150ms,
+    background-color 150ms,
+    transform 150ms var(--ease-out);
   &:hover {
     color: var(--text);
     border-color: var(--line-strong);
+    transform: translateY(-1px);
   }
   &[aria-pressed="true"] {
     color: var(--text);
     border-color: var(--accent);
-    background: rgb(79 107 255 / 0.1);
+    background: rgb(79 107 255 / 0.12);
+  }
+}
+
+/* Petite pastille de valeur (format, durée…). */
+@utility tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.375rem;
+  border: 1px solid var(--line);
+  background: var(--surface-3);
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -40,7 +40,7 @@ export default async function CharactersPage() {
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <CharacterUploader userId={auth.claims.sub} />
 
-        <section className="panel p-6">
+        <section className="panel lift animate-fade-up p-6 [animation-delay:100ms]">
           <h2 className="text-base font-semibold">Déjà créés</h2>
           {characters?.length ? (
             <ul className="mt-4 flex flex-col divide-y divide-line border-y border-line">

@@ -63,15 +63,15 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
         que tu utilises, sans abonnement.
       </PageHeader>
 
-      <div className="mt-8 flex flex-wrap items-end justify-between gap-4">
+      <div className="mt-8 flex animate-fade-up flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="label-mono">Solde actuel</p>
+          <p className="label">Solde actuel</p>
           <p className="mt-1 font-wide text-4xl">
             {profile?.credits_remaining ?? 0}
             <span className="ml-2 font-sans text-base font-normal text-muted">crédits</span>
           </p>
         </div>
-        <p className="label-mono">Paiement sécurisé · Stripe</p>
+        <p className="label">Paiement sécurisé par Stripe</p>
       </div>
 
       {notice && (
@@ -88,17 +88,18 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
       )}
 
       <ul className="mt-8 grid gap-4 md:grid-cols-3">
-        {CREDIT_PACKS.map((pack) => {
+        {CREDIT_PACKS.map((pack, i) => {
           const featured = "highlight" in pack && pack.highlight;
           return (
             <li
               key={pack.id}
-              className={`panel relative flex flex-col p-6 ${featured ? "glow" : ""}`}
+              className={`panel lift relative flex animate-fade-up flex-col p-6 ${featured ? "glow" : ""}`}
+              style={{ animationDelay: `${100 + i * 90}ms` }}
             >
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold">{pack.label}</h2>
                 {featured && (
-                  <span className="rounded-md bg-accent px-2 py-0.5 font-mono text-[0.625rem] uppercase tracking-wider text-white">
+                  <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-white shadow-[0_0_16px_var(--accent)]">
                     Populaire
                   </span>
                 )}
@@ -107,15 +108,15 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
               <dl className="mt-6 divide-y divide-line border-y border-line text-sm">
                 <div className="flex justify-between py-2.5">
                   <dt className="text-muted">Crédits</dt>
-                  <dd className="font-mono">{pack.credits}</dd>
+                  <dd className="font-medium tabular-nums">{pack.credits}</dd>
                 </div>
                 <div className="flex justify-between py-2.5">
                   <dt className="text-muted">Prix du crédit</dt>
-                  <dd className="font-mono">{formatPrice(Math.round(pack.amount / pack.credits))}</dd>
+                  <dd className="font-medium tabular-nums">{formatPrice(Math.round(pack.amount / pack.credits))}</dd>
                 </div>
                 <div className="flex justify-between py-2.5">
                   <dt className="text-muted">Plans Sora 2 de 8 s</dt>
-                  <dd className="font-mono">{Math.floor(pack.credits / 40)}</dd>
+                  <dd className="font-medium tabular-nums">{Math.floor(pack.credits / 40)}</dd>
                 </div>
               </dl>
               <form action={buyCredits} className="mt-6">
