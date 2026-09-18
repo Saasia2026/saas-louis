@@ -20,9 +20,15 @@ function statusOf(e: unknown) {
 }
 
 // Les erreurs des SDK peuvent embarquer la requête, clé comprise : on ne
-// journalise que le message.
+// journalise que le message. Les erreurs Supabase sont des objets simples
+// ({ message, code, details }).
 export function errorMessage(e: unknown) {
-  return e instanceof Error ? e.message : String(e);
+  if (e instanceof Error) return e.message;
+  const error = e as { message?: unknown; code?: unknown; details?: unknown } | null;
+  if (typeof error?.message === "string") {
+    return [error.code, error.message, error.details].filter(Boolean).join(" · ");
+  }
+  return String(e);
 }
 
 export type PredictionStatus = "starting" | "processing" | "succeeded" | "failed" | "canceled";
