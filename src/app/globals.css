@@ -1,13 +1,16 @@
 @import "tailwindcss";
 
-/* Thème TwinPost : outil de production vidéo. Noir pur, contraste élevé,
-   surfaces vitrées, accent bleu électrique avec une pointe de cyan pour les
-   dégradés. Sombre uniquement. */
+/* Thème TwinPost : outil de production vidéo. Contraste élevé, surfaces
+   vitrées, accent bleu électrique avec une pointe de cyan pour les dégradés.
+   Sombre par défaut ; clair avec data-theme="light" sur <html> (choix de
+   l'utilisateur, voir theme-toggle.tsx) ou, sans choix, si l'appareil est en
+   mode clair. */
 :root {
   --bg: #000000;
   --surface: #0a0a0b;
   --surface-2: #111113;
   --surface-3: #19191c;
+  --surface-hover: #222226;
   --line: rgb(255 255 255 / 0.09);
   --line-strong: rgb(255 255 255 / 0.18);
   --text: #fafafa;
@@ -20,8 +23,83 @@
   --success: #34d399;
   --warning: #fbbf24;
   --danger: #ff5d6c;
+  /* Bouton principal (blanc sur fond sombre, noir sur fond clair). */
+  --on-primary: #000000;
+  --primary-hover: #ffffff;
+  --primary-glow: rgb(255 255 255 / 0.4);
+  --glass-bg: rgb(10 10 11 / 0.65);
+  --composer-bg: rgb(8 8 10 / 0.82);
+  --menu-bg: rgb(17 17 19 / 0.96);
+  --dot: rgb(255 255 255 / 0.1);
+  --highlight: rgb(255 255 255 / 0.04);
+  --gradient-from: #ffffff;
+  --gradient-to: #a1a1aa;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #f6f6f8;
+  --surface: #ffffff;
+  --surface-2: #f3f3f5;
+  --surface-3: #e8e8ec;
+  --surface-hover: #dedee4;
+  --line: rgb(10 10 20 / 0.09);
+  --line-strong: rgb(10 10 20 / 0.18);
+  --text: #0a0a0f;
+  --text-muted: #52525b;
+  --text-faint: #8b8b94;
+  --accent: #4f6bff;
+  --accent-light: #3a52e0;
+  --accent-2: #0891b2;
+  --accent-soft: rgb(79 107 255 / 0.14);
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #e11d48;
+  --on-primary: #ffffff;
+  --primary-hover: #26262e;
+  --primary-glow: rgb(10 10 20 / 0.25);
+  --glass-bg: rgb(255 255 255 / 0.72);
+  --composer-bg: rgb(255 255 255 / 0.86);
+  --menu-bg: rgb(255 255 255 / 0.97);
+  --dot: rgb(10 10 20 / 0.12);
+  --highlight: rgb(255 255 255 / 0.9);
+  --gradient-from: #0a0a0f;
+  --gradient-to: #52525b;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg: #f6f6f8;
+    --surface: #ffffff;
+    --surface-2: #f3f3f5;
+    --surface-3: #e8e8ec;
+    --surface-hover: #dedee4;
+    --line: rgb(10 10 20 / 0.09);
+    --line-strong: rgb(10 10 20 / 0.18);
+    --text: #0a0a0f;
+    --text-muted: #52525b;
+    --text-faint: #8b8b94;
+    --accent: #4f6bff;
+    --accent-light: #3a52e0;
+    --accent-2: #0891b2;
+    --accent-soft: rgb(79 107 255 / 0.14);
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #e11d48;
+    --on-primary: #ffffff;
+    --primary-hover: #26262e;
+    --primary-glow: rgb(10 10 20 / 0.25);
+    --glass-bg: rgb(255 255 255 / 0.72);
+    --composer-bg: rgb(255 255 255 / 0.86);
+    --menu-bg: rgb(255 255 255 / 0.97);
+    --dot: rgb(10 10 20 / 0.12);
+    --highlight: rgb(255 255 255 / 0.9);
+    --gradient-from: #0a0a0f;
+    --gradient-to: #52525b;
+    color-scheme: light;
+  }
 }
 
 @theme inline {
@@ -134,6 +212,9 @@
 body {
   background: var(--bg);
   color: var(--text);
+  transition:
+    background-color 300ms,
+    color 300ms;
   font-feature-settings: "cv11", "ss01";
 }
 
@@ -157,7 +238,7 @@ body {
 
 /* Titre en dégradé blanc vers gris : relief sans couleur. */
 @utility text-gradient {
-  background: linear-gradient(180deg, #ffffff 30%, #a1a1aa 100%);
+  background: linear-gradient(180deg, var(--gradient-from) 30%, var(--gradient-to) 100%);
   background-clip: text;
   color: transparent;
 }
@@ -193,7 +274,7 @@ body {
   gap: 0.5rem;
   border-radius: 9999px;
   border: 1px solid var(--line);
-  background: rgb(255 255 255 / 0.03);
+  background: var(--surface-2);
   padding: 0.25rem 0.75rem 0.25rem 0.625rem;
   font-size: 0.75rem;
   font-weight: 500;
@@ -220,7 +301,7 @@ body {
 
 /* Trame de points, pour les zones d'aperçu. */
 @utility dot-bg {
-  background-image: radial-gradient(rgb(255 255 255 / 0.1) 1px, transparent 1px);
+  background-image: radial-gradient(var(--dot) 1px, transparent 1px);
   background-size: 18px 18px;
 }
 
@@ -228,12 +309,12 @@ body {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 1rem;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 1px 0 var(--highlight);
 }
 
 /* Surface vitrée : laisse deviner le fond. */
 @utility glass {
-  background: rgb(10 10 11 / 0.65);
+  background: var(--glass-bg);
   backdrop-filter: blur(16px) saturate(140%);
 }
 
@@ -340,13 +421,13 @@ body {
 
 @utility btn-primary {
   background: var(--text);
-  color: #000;
+  color: var(--on-primary);
   box-shadow: inset 0 -1px 0 rgb(0 0 0 / 0.15);
   &:hover:not(:disabled) {
-    background: #ffffff;
+    background: var(--primary-hover);
     box-shadow:
-      0 0 0 4px rgb(255 255 255 / 0.08),
-      0 8px 28px -8px rgb(255 255 255 / 0.4);
+      0 0 0 4px var(--accent-soft),
+      0 8px 28px -8px var(--primary-glow);
   }
 }
 
@@ -372,7 +453,7 @@ body {
   color: var(--text);
   &:hover:not(:disabled) {
     border-color: var(--line-strong);
-    background: #222226;
+    background: var(--surface-hover);
   }
 }
 
@@ -527,6 +608,16 @@ body {
   mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000 30%, transparent 80%);
 }
 
+:root[data-theme="light"] .starfield {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .starfield {
+    filter: invert(1) hue-rotate(180deg);
+  }
+}
+
 @keyframes drift {
   to {
     background-position: 0 -2800px;
@@ -537,14 +628,14 @@ body {
    quand on écrit. */
 @utility composer {
   position: relative;
-  background: rgb(8 8 10 / 0.82);
+  background: var(--composer-bg);
   backdrop-filter: blur(20px) saturate(140%);
-  border: 1px solid rgb(255 255 255 / 0.14);
+  border: 1px solid var(--line-strong);
   border-radius: 1.5rem;
   box-shadow:
-    0 0 0 1px rgb(0 0 0 / 0.6),
+    0 0 0 1px var(--line),
     0 20px 60px -20px rgb(91 124 255 / 0.45),
-    inset 0 1px 0 rgb(255 255 255 / 0.06);
+    inset 0 1px 0 var(--highlight);
   transition:
     border-color 200ms,
     box-shadow 300ms;
@@ -553,7 +644,7 @@ body {
     box-shadow:
       0 0 0 4px rgb(91 124 255 / 0.12),
       0 24px 80px -20px rgb(91 124 255 / 0.7),
-      inset 0 1px 0 rgb(255 255 255 / 0.08);
+      inset 0 1px 0 var(--highlight);
   }
 }
 
@@ -564,7 +655,7 @@ body {
   min-width: 13rem;
   border-radius: 0.875rem;
   border: 1px solid var(--line-strong);
-  background: rgb(17 17 19 / 0.96);
+  background: var(--menu-bg);
   backdrop-filter: blur(16px);
   padding: 0.375rem;
   box-shadow: 0 24px 60px -16px rgb(0 0 0 / 0.9);

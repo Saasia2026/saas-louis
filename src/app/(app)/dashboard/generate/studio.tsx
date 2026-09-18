@@ -579,7 +579,7 @@ function Composer({
             type="submit"
             disabled={!canSend}
             title={mode === "director" ? t.studio.sendDirector : t.studio.launchVideo}
-            className="flex size-9 items-center justify-center rounded-full bg-text text-black transition-all hover:shadow-[0_0_20px_-2px_rgb(255_255_255/0.6)] active:scale-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-faint disabled:shadow-none"
+            className="flex size-9 items-center justify-center rounded-full bg-text text-bg transition-all hover:shadow-[0_0_20px_-2px_rgb(255_255_255/0.6)] active:scale-95 disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-faint disabled:shadow-none"
           >
             {mode === "director" ? <ArrowUp className="size-4" /> : <WandSparkles className="size-4" />}
           </button>

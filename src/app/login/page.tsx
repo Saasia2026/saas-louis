@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { LogoMark } from "@/app/logo-mark";
+import { ThemeToggle } from "@/app/theme-toggle";
 import { getDictionary } from "@/i18n/server";
 import { AuthForm } from "./auth-form";
 
@@ -15,7 +16,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
 
   return (
     <main className="relative isolate flex flex-1 flex-col items-center justify-center px-4 py-16">
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex items-center gap-1">
+        <ThemeToggle />
         <LanguageSwitcher />
       </div>
       <div aria-hidden className="grid-bg pointer-events-none absolute inset-0 -z-10" />

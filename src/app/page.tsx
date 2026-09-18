@@ -15,6 +15,7 @@ import Link from "next/link";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { Logo } from "@/app/logo";
 import { LogoMark } from "@/app/logo-mark";
+import { ThemeToggle } from "@/app/theme-toggle";
 import { INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { CREDIT_PACKS, formatPrice } from "@/lib/credit-packs";
@@ -50,6 +51,7 @@ export default async function Home() {
             <a href="#tarifs" className="btn btn-ghost hidden px-3 sm:inline-flex">
               {L.pricing}
             </a>
+            <ThemeToggle />
             <LanguageSwitcher />
             <Link href={start} className="btn btn-primary ml-1 px-3 sm:px-4">
               {loggedIn ? L.studioShort : L.start}
@@ -298,6 +300,7 @@ export default async function Home() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 sm:px-6">
           <Logo />
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <LanguageSwitcher up />
             <span className="text-xs text-faint">© {new Date().getFullYear()} TwinPost</span>
           </div>

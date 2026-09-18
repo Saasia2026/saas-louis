@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { signOut } from "@/app/login/actions";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { Logo } from "@/app/logo";
+import { ThemeToggle } from "@/app/theme-toggle";
 import { getDictionary } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { Breadcrumb, SidebarNav, TopNav } from "./nav-links";
@@ -69,12 +70,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </span>
           </Link>
 
+          <div className="flex items-center justify-between border-t border-line px-1 pt-3">
+            <ThemeToggle />
+            <LanguageSwitcher up />
+          </div>
+
           <div className="flex items-center gap-3 rounded-xl px-2 py-1">
             {avatar}
             <span className="min-w-0 flex-1 truncate text-sm text-muted" title={displayName}>
               {displayName}
             </span>
-            <LanguageSwitcher up />
             <form action={signOut}>
               <button type="submit" title={t.common.signOut} className="btn btn-ghost p-2">
                 <LogOut />
@@ -100,7 +105,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 <span className="font-medium text-text tabular-nums">{credits}</span>
                 {t.common.credits}
               </Link>
-              <div className="md:hidden">
+              <div className="flex items-center md:hidden">
+                <ThemeToggle />
                 <LanguageSwitcher />
               </div>
               <form action={signOut} className="md:hidden">
