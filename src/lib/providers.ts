@@ -74,6 +74,7 @@ export function startTextShotVideo(input: {
   durationSeconds: number;
   seed?: number;
   soraCharacterId?: string;
+  referenceVideoUrl?: string;
 }) {
   return createFalTextVideo(input);
 }

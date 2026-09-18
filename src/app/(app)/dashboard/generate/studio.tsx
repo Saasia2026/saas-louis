@@ -22,6 +22,7 @@ import {
   MAX_PROMPT_LENGTH,
   PACES,
   PRESETS,
+  SWAP_MAX_SECONDS,
   costOf,
   findPreset,
   formatDuration,
@@ -42,13 +43,20 @@ import {
   launchDirectorVideo,
   type GenerationView,
 } from "./actions";
+import type { StyleReference } from "@/lib/reference";
+import { ReferenceBanner, ReferenceButton } from "./reference-picker";
+import { SwapInput, type SwapFile } from "./swap-input";
+import { startSwap } from "./swap-actions";
 
-const POLL_INTERVAL_MS: Record<GenerationKind, number> = { image: 3_000, video: 4_000 };
+const POLL_INTERVAL_MS: Record<GenerationKind, number> = { image: 3_000, video: 4_000, swap: 5_000 };
 const MAX_MESSAGE_LENGTH = 2000;
 
 // Environ 10 min de marge, plus le temps de rendu des plans.
 function pollTimeoutMs(job: Job) {
-  return job.kind === "image" ? 5 * 60_000 : 10 * 60_000 + job.durationSeconds * 5_000;
+  if (job.kind === "image") return 5 * 60_000;
+  // Le remplacement rend le clip entier d'un coup : compter large.
+  if (job.kind === "swap") return 20 * 60_000;
+  return 10 * 60_000 + job.durationSeconds * 5_000;
 }
 
 export type Job = { kind: GenerationKind; aspectRatio: AspectRatio; durationSeconds: number };
@@ -60,19 +68,21 @@ type Phase =
   | { kind: "error"; message: string };
 
 type Active = { id: string; job: Job };
-type Mode = "director" | "direct";
+type Mode = "director" | "direct" | "swap";
 
 // Studio : une seule zone de saisie. En mode Director, la discussion avec
 // Claude construit un brouillon ; en mode Direct, la demande part telle
 // quelle avec les réglages de la barre d'outils. Les réglages secondaires
 // (style, rythme, personnage) restent repliés derrière le bouton +.
 export function Studio({
+  userId,
   credits,
   maxVideoSeconds,
   presets,
   characters,
   resume,
 }: {
+  userId: string;
   credits: number;
   maxVideoSeconds: number;
   // Préréglages disponibles (aucun sans FAL_KEY).
@@ -98,11 +108,20 @@ export function Studio({
   const [durationSeconds, setDurationSeconds] = useState(Math.min(15, maxVideoSeconds));
   const [characterId, setCharacterId] = useState<string | undefined>();
 
+  // Mode Remplacer : clip filmé et image du personnage, déjà déposés.
+  const [swapVideo, setSwapVideo] = useState<SwapFile | null>(null);
+  const [swapImage, setSwapImage] = useState<SwapFile | null>(null);
+
   // Discussion avec le Director.
   const [messages, setMessages] = useState<DirectorMessage[]>([]);
   const [draft, setDraft] = useState<{ value: DirectorDraft; token: string } | null>(null);
   const [pending, setPending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  // Vidéo de référence : son style s'applique à tous les plans du Director.
+  const [reference, setReference] = useState<
+    (StyleReference & { referencePath: string }) | null
+  >(null);
+  const [analyzing, setAnalyzing] = useState(false);
 
   // Génération en cours.
   const [phase, setPhase] = useState<Phase>(
@@ -117,6 +136,14 @@ export function Studio({
   const step = keptSeconds(preset, pace);
   const duration = Math.max(step, Math.round(durationSeconds / step) * step);
   const directCost = costOf("video", duration, preset, pace);
+
+  // Durée illisible dans le navigateur : on affiche le coût maximal, le
+  // serveur débite d'après sa propre mesure.
+  const swapSeconds = Number.isFinite(swapVideo?.seconds)
+    ? Math.max(1, Math.round(swapVideo!.seconds!))
+    : SWAP_MAX_SECONDS;
+  const swapCost = costOf("swap", swapSeconds);
+  const swapTooLong = swapSeconds > SWAP_MAX_SECONDS;
 
   const started = messages.length > 0 || phase.kind !== "idle";
 
@@ -205,13 +232,37 @@ export function Studio({
     );
   }
 
+  async function launchSwap() {
+    if (!swapVideo || !swapImage) return;
+    setPhase({
+      kind: "generating",
+      job: { kind: "swap", aspectRatio: "9:16", durationSeconds: swapSeconds },
+      id: "",
+    });
+    const res = await startSwap({ videoPath: swapVideo.path, imagePath: swapImage.path });
+    router.refresh();
+    if (res.error !== undefined) {
+      setPhase({ kind: "error", message: res.error });
+      return;
+    }
+    const job: Job = {
+      kind: "swap",
+      aspectRatio: res.data.aspectRatio,
+      durationSeconds: res.data.durationSeconds,
+    };
+    setPhase({ kind: "generating", job, id: res.data.generationId });
+    setActive({ id: res.data.generationId, job });
+  }
+
   function launchDraft(value: DirectorDraft, token: string) {
     const job: Job = {
       kind: "video",
       aspectRatio: value.aspectRatio,
       durationSeconds: value.shots.length * keptSeconds(value.preset, value.pace),
     };
-    return launch(job, () => launchDirectorVideo({ characterId, draftToken: token }));
+    return launch(job, () =>
+      launchDirectorVideo({ characterId, draftToken: token, referencePath: reference?.referencePath }),
+    );
   }
 
   async function sendToDirector(content: string) {
@@ -219,7 +270,11 @@ export function Studio({
     setMessages(next);
     setChatError(null);
     setPending(true);
-    const res = await directorChat({ messages: next, draftToken: draft?.token ?? null });
+    const res = await directorChat({
+      messages: next,
+      draftToken: draft?.token ?? null,
+      styleReference: reference?.direction,
+    });
     setPending(false);
     if (res.error !== undefined) {
       // Le message non traité revient dans le champ pour être renvoyé.
@@ -235,12 +290,18 @@ export function Studio({
   }
 
   const canSend =
-    text.trim().length > 0 &&
-    (mode === "director" ? !pending : !busy && credits >= directCost);
+    mode === "swap"
+      ? !busy && Boolean(swapVideo && swapImage) && !swapTooLong && credits >= swapCost
+      : text.trim().length > 0 &&
+        (mode === "director" ? !pending : !busy && credits >= directCost);
 
   function submit() {
-    const content = text.trim();
     if (!canSend) return;
+    if (mode === "swap") {
+      launchSwap();
+      return;
+    }
+    const content = text.trim();
     setText("");
     if (mode === "director") sendToDirector(content);
     else launchDirect(content);
@@ -267,6 +328,23 @@ export function Studio({
       showSettings={showSettings}
       onToggleSettings={() => setShowSettings((v) => !v)}
       openUp={started}
+      banner={
+        mode === "director" && reference ? (
+          <ReferenceBanner reference={reference} onRemove={() => setReference(null)} />
+        ) : undefined
+      }
+      input={
+        mode === "swap" ? (
+          <SwapInput
+            userId={userId}
+            video={swapVideo}
+            image={swapImage}
+            onVideo={setSwapVideo}
+            onImage={setSwapImage}
+            compact={started}
+          />
+        ) : undefined
+      }
       tools={
         mode === "direct" ? (
           <>
@@ -303,10 +381,26 @@ export function Studio({
               onChange={(v) => setAspectRatio(v as AspectRatio)}
             />
           </>
+        ) : mode === "director" ? (
+          <ReferenceButton
+            userId={userId}
+            busy={analyzing}
+            onBusy={setAnalyzing}
+            onReference={setReference}
+            onError={setChatError}
+          />
         ) : null
       }
       status={
-        mode === "direct"
+        mode === "swap"
+          ? !swapVideo || !swapImage
+            ? t.studio.swapPick
+            : swapTooLong
+              ? fmt(t.studio.swapTooLongLocal, { max: SWAP_MAX_SECONDS })
+              : credits >= swapCost
+                ? `${swapCost} ${plural(swapCost, t.common.credit, t.common.credits)}`
+                : t.studio.notEnoughCredits
+          : mode === "direct"
           ? credits >= directCost
             ? `${directCost} ${plural(directCost, t.common.credit, t.common.credits)}`
             : t.studio.notEnoughCredits
@@ -401,15 +495,20 @@ export function Studio({
               className="pointer-events-none absolute -inset-x-16 -inset-y-12 -z-10 animate-aurora rounded-full bg-[radial-gradient(closest-side,rgb(91_124_255/0.28),transparent)] blur-2xl"
             />
             {composer}
+            {chatError && messages.length === 0 && (
+              <p className="mt-3 text-center text-sm text-danger">{chatError}</p>
+            )}
           </div>
 
-          <div className="mt-6 flex max-w-3xl animate-fade-up flex-wrap justify-center gap-2 [animation-delay:240ms]">
-            {t.studio.ideas.map((idea) => (
-              <button key={idea} type="button" onClick={() => setText(idea)} className="chip">
-                {idea}
-              </button>
-            ))}
-          </div>
+          {mode !== "swap" && (
+            <div className="mt-6 flex max-w-3xl animate-fade-up flex-wrap justify-center gap-2 [animation-delay:240ms]">
+              {t.studio.ideas.map((idea) => (
+                <button key={idea} type="button" onClick={() => setText(idea)} className="chip">
+                  {idea}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -483,6 +582,8 @@ function Composer({
   onSubmit,
   canSend,
   placeholder,
+  banner,
+  input,
   tools,
   status,
   showSettings,
@@ -497,6 +598,10 @@ function Composer({
   onSubmit: () => void;
   canSend: boolean;
   placeholder: string;
+  // Au-dessus de la zone de texte (vidéo de référence).
+  banner?: React.ReactNode;
+  // Remplace la zone de texte (mode Remplacer).
+  input?: React.ReactNode;
   tools: React.ReactNode;
   status: string;
   showSettings: boolean;
@@ -513,6 +618,8 @@ function Composer({
       }}
       className="composer"
     >
+      {banner}
+      {input ?? (
       <textarea
         value={text}
         onChange={(e) => onText(e.target.value)}
@@ -528,14 +635,16 @@ function Composer({
         aria-label={t.studio.inputLabel}
         className={`field-sizing-content block max-h-60 w-full ${openUp ? "min-h-12" : "min-h-24"} resize-none bg-transparent px-5 pt-4 pb-2 text-[0.9375rem] leading-relaxed outline-none placeholder:text-faint`}
       />
+      )}
 
-      {showSettings && (
+      {showSettings && !input && (
         <div className="mx-4 mb-2 animate-fade-up rounded-xl border border-line bg-surface-2/70 p-4 [animation-duration:200ms]">
           {settings}
         </div>
       )}
 
       <div className="flex flex-wrap items-center gap-2 px-3 pb-3">
+        {!input && (
         <button
           type="button"
           onClick={onToggleSettings}
@@ -549,12 +658,14 @@ function Composer({
         >
           <Plus className="size-4" />
         </button>
+        )}
 
         <div className="flex rounded-full border border-line bg-surface-2 p-0.5 text-sm">
           {(
             [
               { value: "director", label: t.studio.modeDirector, hint: t.studio.modeDirectorHint },
               { value: "direct", label: t.studio.modeDirect, hint: t.studio.modeDirectHint },
+              { value: "swap", label: t.studio.modeSwap, hint: t.studio.modeSwapHint },
             ] as const
           ).map((m) => (
             <button
@@ -782,7 +893,7 @@ function Result({
             style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
           >
             {phase.kind === "done" ? (
-              phase.job.kind === "video" ? (
+              phase.job.kind !== "image" ? (
                 <video
                   src={phase.view.mediaUrl}
                   poster={phase.view.posterUrl}
@@ -846,6 +957,14 @@ function Result({
 function ProgressLabel({ phase }: { phase: Extract<Phase, { kind: "generating" }> }) {
   const { t } = useI18n();
   const view = phase.view;
+  if (phase.job.kind === "swap") {
+    return (
+      <span className="w-full">
+        {t.studio.swapping}
+        <span className="mt-2 block text-xs text-muted">{t.studio.progressHint}</span>
+      </span>
+    );
+  }
   if (!view || view.shotsTotal === 0) {
     return <span className="text-muted">{t.studio.writingStoryboard}</span>;
   }

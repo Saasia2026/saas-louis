@@ -38,7 +38,22 @@ export type PredictionState = {
   id: string;
   status: PredictionStatus;
   output: unknown;
+  // Refus du filtre de contenu : relancer le même prompt ne sert à rien.
+  refused?: boolean;
 };
+
+// Message enregistré en base (traduit à l'affichage, voir generate/actions.ts).
+export const CONTENT_REFUSED_ERROR =
+  "Le filtre de contenu du modèle vidéo a refusé une scène. Tes crédits ont été rendus.";
+
+// Erreur fal 422 « content_policy_violation » (filtre de contenu).
+export function isContentRefused(e: unknown) {
+  const body = (e as { body?: { detail?: unknown } } | null)?.body;
+  return (
+    Array.isArray(body?.detail) &&
+    body.detail.some((d: { type?: unknown }) => d?.type === "content_policy_violation")
+  );
+}
 
 const TERMINAL: PredictionStatus[] = ["succeeded", "failed", "canceled"];
 
@@ -89,8 +104,9 @@ export async function copyOutputToStorage(
   return storagePath;
 }
 
-// Applique l'état final d'une prédiction de photo : copie l'image ou
-// rembourse le crédit. Idempotent : ne touche qu'une photo encore en cours.
+// Applique l'état final d'une génération en une seule requête (photo, ou
+// remplacement de personnage) : copie le résultat ou rembourse les crédits.
+// Idempotent : ne touche qu'une génération encore en cours.
 export async function applyImagePredictionResult(prediction: PredictionState) {
   if (!isTerminal(prediction.status)) return;
 
@@ -98,7 +114,7 @@ export async function applyImagePredictionResult(prediction: PredictionState) {
   const { data: generation } = await admin
     .from("generations")
     .select("id, user_id")
-    .eq("kind", "image")
+    .in("kind", ["image", "swap"])
     .eq("replicate_prediction_id", prediction.id)
     .in("status", ["pending", "processing"])
     .maybeSingle();
@@ -107,6 +123,12 @@ export async function applyImagePredictionResult(prediction: PredictionState) {
   const outputUrl = outputUrlOf(prediction);
   if (prediction.status !== "succeeded" || !outputUrl) {
     await admin.rpc("fail_generation", { p_generation_id: generation.id });
+    if (prediction.refused) {
+      await admin
+        .from("generations")
+        .update({ error: CONTENT_REFUSED_ERROR })
+        .eq("id", generation.id);
+    }
     return;
   }
 

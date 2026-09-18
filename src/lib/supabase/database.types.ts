@@ -446,6 +446,14 @@ export type Database = {
         }
         Returns: string
       }
+      start_swap_generation: {
+        Args: {
+          p_duration_seconds: number
+          p_metadata?: Json
+          p_user_id: string
+        }
+        Returns: string
+      }
       use_director_message: { Args: never; Returns: number }
       video_model_credits_per_second: {
         Args: { p_video_model: string }

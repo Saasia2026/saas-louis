@@ -29,6 +29,8 @@ export const MAX_DIRECTOR_MESSAGE_LENGTH = 2000;
 // Messages par jour et par compte : chaque message appelle Claude sans être
 // payé en crédits. Aligné avec public.use_director_message.
 export const DIRECTOR_DAILY_LIMIT = 20;
+// Direction artistique tirée d'une vidéo de référence (voir reference.ts).
+export const MAX_STYLE_REFERENCE_LENGTH = 4000;
 const TOKEN_TTL_MS = 24 * 60 * 60_000;
 
 const DraftSchema = z.object({
@@ -92,6 +94,8 @@ export async function directorTurn(input: {
   // Langue des réponses ("French", "English"…) et message en cas de refus.
   language: string;
   refusal: string;
+  // Direction artistique d'une vidéo de référence déposée par le créateur.
+  styleReference?: string;
 }): Promise<{ reply: string; draft: DirectorDraft | null }> {
   const history = input.messages.slice(-MAX_DIRECTOR_MESSAGES);
   const last = history.at(-1);
@@ -111,6 +115,11 @@ export async function directorTurn(input: {
         }.`,
     ),
     `Current draft: ${input.current ? JSON.stringify(input.current) : "none yet"}.`,
+    ...(input.styleReference
+      ? [
+          `Reference video: the creator uploaded a video whose art direction every shot must follow, whatever the subject or story. Apply it to each shot's "scene" and "motion" (camera and its speed, speed and energy of movement, framing, lighting, colours, texture) and to the editing rhythm (choose "pace" and the shot count accordingly). It counts as the creator explicitly asking for this look, so it overrides the default "ordinary camera" look where they differ; the storyboard rules still apply. If the current draft does not follow it yet, rewrite the shots so it does. Art direction:\n${input.styleReference}`,
+        ]
+      : []),
   ].join("\n");
 
   const response = await new Anthropic().beta.messages.parse({
@@ -148,7 +157,9 @@ function sanitizeDraft(
   limits: { maxVideoSeconds: number; presets: PresetId[] },
 ): DirectorDraft | null {
   const pace: Pace = isPace(draft.pace) ? draft.pace : DEFAULT_PACE;
-  const preset = limits.presets.find((p) => p === draft.preset) ?? DEFAULT_PRESET;
+  // Sinon le premier disponible : avec une vidéo de référence, c'est le seul.
+  const preset =
+    limits.presets.find((p) => p === draft.preset) ?? limits.presets[0] ?? DEFAULT_PRESET;
   const shots = draft.shots.slice(0, shotCount(limits.maxVideoSeconds, preset, pace));
   // En rythme rapide, deux plans coupés font une durée entière : le compte
   // doit rester pair pour que la durée facturée tombe juste.

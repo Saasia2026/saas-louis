@@ -8,6 +8,7 @@ import ffmpegPath from "ffmpeg-static";
 import {
   DEFAULT_PACE,
   GENERATIONS_BUCKET,
+  SWAP_INPUTS_BUCKET,
   PRESETS,
   findPreset,
   hasAudio,
@@ -21,8 +22,10 @@ import {
   type Preset,
 } from "@/lib/generation";
 import {
+  CONTENT_REFUSED_ERROR,
   copyOutputToStorage,
   errorMessage,
+  isContentRefused,
   isOutOfCredit,
   isRateLimited,
   isTerminal,
@@ -98,6 +101,8 @@ type VideoGeneration = {
   // Personnage Sora réutilisé dans chaque plan, et son nom pour le prompt.
   soraCharacterId: string | null;
   characterName: string | null;
+  // Vidéo de référence (bucket swap-inputs), pour le préréglage Référence.
+  referenceVideoPath: string | null;
 };
 
 // Graine commune à tous les plans d'une vidéo : des images plus proches
@@ -121,6 +126,7 @@ export async function startVideoGeneration(input: {
   pace: Pace;
   soraCharacterId?: string | null;
   characterName?: string | null;
+  referenceVideoPath?: string | null;
   direction?: string;
   // Storyboard déjà écrit (mode Director), un plan par tranche de durée.
   storyboard?: Storyboard;
@@ -177,6 +183,7 @@ export async function startVideoGeneration(input: {
     pace: input.pace,
     soraCharacterId: input.soraCharacterId ?? null,
     characterName: input.characterName ?? null,
+    referenceVideoPath: input.referenceVideoPath ?? null,
   };
   if (direct) await startDirectShots(generation, shots);
   else await startQueuedShots(generation, shots);
@@ -228,6 +235,9 @@ async function startDirectShot(
       : await startTextShotVideo({
           ...shotInput,
           soraCharacterId: generation.soraCharacterId ?? undefined,
+          referenceVideoUrl: generation.referenceVideoPath
+            ? await signedInputUrl(generation.referenceVideoPath)
+            : undefined,
         });
     await admin
       .from("generation_shots")
@@ -236,6 +246,7 @@ async function startDirectShot(
     return "ok";
   } catch (e) {
     if (isOutOfCredit(e)) return failOutOfCredit(generation.id, e);
+    if (isContentRefused(e)) return failContentRefused(generation.id);
     if (isRateLimited(e)) {
       await admin
         .from("generation_shots")
@@ -301,6 +312,26 @@ async function failOutOfCredit(generationId: string, e: unknown): Promise<"throt
   return "throttled";
 }
 
+// Prompt refusé par le filtre de contenu : le relancer tel quel échouerait
+// encore. La vidéo échoue, les crédits sont rendus et le message le dit.
+async function failContentRefused(generationId: string): Promise<"throttled"> {
+  const admin = createAdminClient();
+  await admin.rpc("fail_generation", { p_generation_id: generationId });
+  await admin
+    .from("generations")
+    .update({ error: CONTENT_REFUSED_ERROR })
+    .eq("id", generationId);
+  return "throttled";
+}
+
+async function signedInputUrl(inputPath: string) {
+  const { data, error } = await createAdminClient()
+    .storage.from(SWAP_INPUTS_BUCKET)
+    .createSignedUrl(inputPath, FRAME_URL_TTL_SECONDS);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
 async function signedFrameUrl(imagePath: string) {
   const { data, error } = await createAdminClient()
     .storage.from(GENERATIONS_BUCKET)
@@ -341,6 +372,7 @@ async function startShotImage(
     });
   } catch (e) {
     if (isOutOfCredit(e)) return failOutOfCredit(generation.id, e);
+    if (isContentRefused(e)) return failContentRefused(generation.id);
     if (isRateLimited(e)) {
       await admin
         .from("generation_shots")
@@ -544,6 +576,7 @@ async function advanceAnimation(
       const prediction = await getPrediction(shot.video_prediction_id);
       if (!isTerminal(prediction.status)) return;
       const clipUrl = outputUrlOf(prediction);
+      if (prediction.refused) return failContentRefused(generation.id);
       if (prediction.status !== "succeeded" || !clipUrl) {
         return videoRetryOrFail(shot);
       }
@@ -624,6 +657,7 @@ async function startAnimation(
     return "ok";
   } catch (e) {
     if (isOutOfCredit(e)) return failOutOfCredit(generation.id, e);
+    if (isContentRefused(e)) return failContentRefused(generation.id);
     if (isRateLimited(e)) {
       await admin
         .from("generation_shots")
@@ -686,6 +720,7 @@ async function loadGeneration(generationId: string) {
     pace?: string;
     sora_character_id?: string;
     character_name?: string;
+    reference_video_path?: string;
   } | null;
   const generation: VideoGeneration = {
     id: row.id,
@@ -696,6 +731,7 @@ async function loadGeneration(generationId: string) {
     pace: isPace(metadata?.pace) ? metadata.pace : DEFAULT_PACE,
     soraCharacterId: metadata?.sora_character_id ?? null,
     characterName: metadata?.character_name ?? null,
+    referenceVideoPath: metadata?.reference_video_path ?? null,
   };
   return { row, generation };
 }

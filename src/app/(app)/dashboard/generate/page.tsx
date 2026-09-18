@@ -43,8 +43,8 @@ export default async function GeneratePage() {
   // plutôt que d'afficher un formulaire vide.
   const running = await supabase
     .from("generations")
-    .select("id, metadata, duration_seconds")
-    .eq("kind", "video")
+    .select("id, kind, metadata, duration_seconds")
+    .in("kind", ["video", "swap"])
     .eq("status", "processing")
     .gte("created_at", resumeSince())
     .order("created_at", { ascending: false })
@@ -57,7 +57,7 @@ export default async function GeneratePage() {
       ? {
           id: running.id,
           job: {
-            kind: "video",
+            kind: running.kind === "swap" ? "swap" : "video",
             aspectRatio,
             durationSeconds: running.duration_seconds,
           } satisfies Job,
@@ -66,6 +66,7 @@ export default async function GeneratePage() {
 
   return (
     <Studio
+      userId={auth.claims.sub}
       resume={resume}
       credits={profile?.credits_remaining ?? 0}
       maxVideoSeconds={maxVideoSeconds(profile?.plan ?? "free")}

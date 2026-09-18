@@ -61,7 +61,8 @@ Motion carries the video:
 - Keep one continuous action per shot: no cut, no change of place inside a shot, and the face stays recognisable at least once in the shot.
 
 - Vary framing and angle a lot between shots (extreme close-up on a detail, wide shot, low angle, high angle, over-the-shoulder, three-quarter), while keeping the location plausible.
-- Keep everything suitable for a public social media feed.`;
+- Keep everything suitable for a public social media feed.
+- The video models' content filters refuse physical violence. For a fight, a chase or a confrontation, never write blows or contact between people (no grabbing, shoving, punching, lunging at, fists up, tackling, struggling): show dodges, escapes, near misses, reactions and objects falling instead, with people kept apart.`;
 
 const FREE_RULES = `You turn a short request into a storyboard for a social media video. Nobody in particular stars in it: the video shows whatever the request describes.
 
@@ -88,7 +89,8 @@ Motion carries the video:
 - Vary the energy between shots: a fast, punchy one next to a calmer one.
 - Keep one continuous action per shot: no cut and no change of place inside a shot.
 - Vary framing and angle a lot between shots (extreme close-up on a detail, wide shot, low angle, high angle, over-the-shoulder).
-- Keep everything suitable for a public social media feed.`;
+- Keep everything suitable for a public social media feed.
+- The video models' content filters refuse physical violence. For a fight, a chase or a confrontation, never write blows or contact between people (no grabbing, shoving, punching, lunging at, fists up, tackling, struggling): show dodges, escapes, near misses, reactions and objects falling instead, with people kept apart.`;
 
 export function storyboardRules(mode: SubjectMode) {
   return mode === "twin" ? TWIN_RULES : FREE_RULES;

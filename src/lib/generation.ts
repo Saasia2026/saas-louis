@@ -65,6 +65,17 @@ export const VIDEO_MODELS = [
     endFrames: true,
     direct: false,
   },
+  {
+    // Kling O1 avec la vidéo de référence du créateur : chaque plan reprend
+    // la caméra, la vitesse et le rendu de la vraie vidéo, pas d'une
+    // description (voir reference.ts). fal : 0,168 $ la seconde.
+    id: "kling-o1-ref",
+    label: "Kling O1 Référence",
+    hint: "Suit ta vidéo de référence",
+    creditsPerSecond: 2,
+    endFrames: false,
+    direct: true,
+  },
 ] as const;
 
 export type VideoModelId = (typeof VIDEO_MODELS)[number]["id"];
@@ -121,6 +132,16 @@ export const PRESETS = [
     videoModel: "wan-2.7",
     endFrames: false,
   },
+  {
+    // Réservé aux vidéos avec une vidéo de référence (availablePresets).
+    id: "reference",
+    label: "Référence",
+    hint: "Kling O1, suit ta vidéo de référence",
+    imageModel: "nano-banana-pro",
+    resolution: "1K",
+    videoModel: "kling-o1-ref",
+    endFrames: false,
+  },
 ] as const satisfies readonly {
   id: string;
   label: string;
@@ -146,9 +167,14 @@ export function findPreset(id: unknown): Preset | undefined {
 
 // Préréglages vidéo utilisables : aucun sans FAL_KEY. Sora 2 refuse les
 // photos de personnes réelles : pas de Sora avec un jumeau.
-export function availablePresets(falEnabled: boolean, withTwin: boolean) {
+export function availablePresets(falEnabled: boolean, withTwin: boolean, withReference = false) {
   if (!falEnabled) return [];
-  return PRESETS.filter((p) => !withTwin || p.videoModel !== "sora-2");
+  // Avec une vidéo de référence, seul Kling O1 la reçoit vraiment. Sans
+  // jumeau uniquement : le jumeau passe par des photos, pas par elle.
+  if (withReference && !withTwin) return PRESETS.filter((p) => p.id === "reference");
+  return PRESETS.filter(
+    (p) => p.id !== "reference" && (!withTwin || p.videoModel !== "sora-2"),
+  );
 }
 
 // Alignés avec public.start_generation et public.max_video_seconds.
@@ -163,11 +189,22 @@ export function maxVideoSeconds(plan: string) {
   return MAX_VIDEO_SECONDS[plan] ?? MAX_VIDEO_SECONDS.free;
 }
 
-export type GenerationKind = "video" | "image";
+// "swap" : remplacement de personnage dans un clip déposé par l'utilisateur
+// (voir generate/swap-actions.ts), lancé à part de generate().
+export type GenerationKind = "video" | "image" | "swap";
 
 export function isGenerationKind(value: unknown): value is GenerationKind {
-  return value === "video" || value === "image";
+  return value === "video" || value === "image" || value === "swap";
 }
+
+// Remplacement de personnage. Alignés avec public.start_swap_generation.
+export const SWAP_INPUTS_BUCKET = "swap-inputs";
+export const SWAP_CREDITS_PER_SECOND = 1;
+export const SWAP_MAX_SECONDS = 15;
+// Taille alignée avec le bucket swap-inputs.
+export const SWAP_MAX_BYTES = 50 * 1024 * 1024;
+export const SWAP_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
+export const SWAP_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 // Rythme du montage. Chaque plan est toujours animé sur 5 s ; en rythme
 // rapide, seules les 2,5 premières secondes sont gardées, ce qui double le
@@ -208,6 +245,7 @@ export function costOf(
   pace: Pace = DEFAULT_PACE,
 ) {
   if (kind === "image") return IMAGE_COST;
+  if (kind === "swap") return Math.ceil(durationSeconds) * SWAP_CREDITS_PER_SECOND;
   const preset = findPreset(presetId) ?? PRESETS[0];
   const shots = shotCount(durationSeconds, presetId, pace);
   const perSecond = findVideoModel(preset.videoModel)?.creditsPerSecond ?? 1;

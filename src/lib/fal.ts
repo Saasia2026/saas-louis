@@ -7,7 +7,11 @@ import {
   type ImageModelId,
   type VideoModelId,
 } from "@/lib/generation";
-import type { PredictionState, PredictionStatus } from "@/lib/predictions";
+import {
+  isContentRefused,
+  type PredictionState,
+  type PredictionStatus,
+} from "@/lib/predictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TRAINING_PHOTOS_BUCKET } from "@/lib/twin";
 
@@ -234,6 +238,7 @@ const FAL_TEXT_VIDEO_ENDPOINTS: Record<VideoModelId, string> = {
   "kling-2.5": "fal-ai/kling-video/v2.5-turbo/pro/text-to-video",
   "seedance-1.5": "fal-ai/bytedance/seedance/v1.5/pro/text-to-video",
   "kling-3": "fal-ai/kling-video/v3/pro/text-to-video",
+  "kling-o1-ref": "fal-ai/kling-video/o1/video-to-video/reference",
 };
 
 // Crée un personnage Sora à partir d'une courte vidéo et renvoie son
@@ -267,9 +272,31 @@ export async function createFalTextVideo(input: {
   seed?: number;
   // Personnage Sora réutilisé d'un plan à l'autre.
   soraCharacterId?: string;
+  // Vidéo de référence du créateur (Kling O1 Référence).
+  referenceVideoUrl?: string;
 }) {
   const fal = createFal();
   const duration = String(input.durationSeconds);
+
+  // La vidéo de référence porte la direction visuelle : pas de consigne de
+  // rendu « caméra ordinaire » ici, elle la contredirait.
+  if (input.videoModel === "kling-o1-ref") {
+    if (!input.referenceVideoUrl) throw new Error("Vidéo de référence manquante");
+    const { request_id } = await fal.queue.submit(
+      "fal-ai/kling-video/o1/video-to-video/reference",
+      {
+        input: {
+          prompt: `Use @Video1 only as the reference for the visual style: reproduce its camera work and camera speed, the speed and energy of movement, the framing, the lighting, the colour grading and the image texture, as if the new shot was filmed by the same crew. Do not copy the people, objects, place, text or story of @Video1. No readable text, logos or brand names anywhere in the frame. New shot: ${input.prompt}`,
+          video_url: input.referenceVideoUrl,
+          aspect_ratio: input.aspectRatio,
+          duration: duration as "5",
+          keep_audio: false,
+        },
+      },
+    );
+    return `fal:text:${input.videoModel}:${request_id}`;
+  }
+
   const prompt = [
     input.prompt,
     "Real footage: handheld camera with slight natural shake, natural available light, lifelike speed and weight of movement, no slow motion, no cinematic colour grading.",
@@ -342,6 +369,7 @@ const FAL_VIDEO_ENDPOINTS = {
   "kling-2.5": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
   "seedance-1.5": "fal-ai/bytedance/seedance/v1.5/pro/image-to-video",
   "kling-3": "fal-ai/kling-video/v3/pro/image-to-video",
+  "kling-o1-ref": "fal-ai/kling-video/o1/video-to-video/reference",
 } as const satisfies Record<VideoModelId, string>;
 
 // Plans muets : le son sera ajouté au montage. `endImageUrl` (image de fin,
@@ -402,10 +430,35 @@ export async function createFalShotVideo(input: {
   return `fal:video:${input.videoModel}:${request_id}`;
 }
 
-// "fal:ref:<modèle>:<id>", "fal:text:<modèle>:<id>", "fal:video:<modèle>:<id>"
+// ---------------------------------------------------------------------------
+// Remplacement de personnage
+// ---------------------------------------------------------------------------
+
+// Wan Animate Replace : la personne du clip est rendue sous les traits du
+// personnage de l'image, avec ses mouvements, le décor et la lumière du clip.
+// Les coups, chutes, etc. viennent du clip filmé : rien à décrire au modèle.
+const FAL_SWAP_ENDPOINT = "fal-ai/wan/v2.2-14b/animate/replace";
+
+export async function createFalSwap(input: { videoUrl: string; imageUrl: string }) {
+  const { request_id } = await createFal().queue.submit(FAL_SWAP_ENDPOINT, {
+    input: {
+      video_url: input.videoUrl,
+      image_url: input.imageUrl,
+      resolution: "720p",
+      video_quality: "high",
+    },
+  });
+  return `fal:swap:${request_id}`;
+}
+
+// "fal:ref:<modèle>:<id>", "fal:text:<modèle>:<id>", "fal:video:<modèle>:<id>",
+// "fal:swap:<id>"
 // ou, avant le choix du modèle, "fal:video:<id>" (Kling 2.5).
 function parseFalId(id: string) {
   const parts = id.split(":");
+  if (parts[1] === "swap") {
+    return { endpoint: FAL_SWAP_ENDPOINT, kind: "video", requestId: parts[2] };
+  }
   if (parts[1] === "text") {
     const endpoint = FAL_TEXT_VIDEO_ENDPOINTS[parts[2] as VideoModelId];
     if (!endpoint) throw new Error(`Modèle vidéo fal inconnu : ${id}`);
@@ -432,6 +485,7 @@ export async function getFalPrediction(id: string): Promise<PredictionState> {
   }
 
   let url: string | undefined;
+  let refused = false;
   try {
     const { data } = await fal.queue.result(endpoint, { requestId });
     const output = data as { video?: { url?: string }; images?: { url?: string }[] };
@@ -441,7 +495,8 @@ export async function getFalPrediction(id: string): Promise<PredictionState> {
     // contenu, entrée refusée… Le détail aide à comprendre les échecs.
     if (!(e instanceof ApiError)) throw e;
     console.error("fal", endpoint, e.status, JSON.stringify(e.body).slice(0, 500));
+    refused = isContentRefused(e);
   }
   const done: PredictionStatus = url ? "succeeded" : "failed";
-  return { id, status: done, output: url ?? null };
+  return { id, status: done, output: url ?? null, refused };
 }

@@ -5,6 +5,7 @@ import {
   DIRECTOR_DAILY_LIMIT,
   MAX_DIRECTOR_MESSAGES,
   MAX_DIRECTOR_MESSAGE_LENGTH,
+  MAX_STYLE_REFERENCE_LENGTH,
   createDraftToken,
   directorTurn,
   readDraftToken,
@@ -35,6 +36,7 @@ import {
   type Preset,
 } from "@/lib/generation";
 import {
+  CONTENT_REFUSED_ERROR,
   applyImagePredictionResult,
   errorMessage,
   isOutOfCredit,
@@ -74,6 +76,7 @@ const LANGUAGES: Record<Locale, string> = { fr: "French", en: "English", es: "Sp
 function translateStoredError(error: string | null, t: Dictionary) {
   if (!error) return undefined;
   if (error === OUT_OF_CREDIT_ERROR) return t.generateErrors.outOfCredit;
+  if (error === CONTENT_REFUSED_ERROR) return t.generateErrors.contentRefused;
   return error;
 }
 
@@ -100,8 +103,11 @@ export async function generate(input: {
     return { error: fmt(t.common.maxChars, { max: MAX_PROMPT_LENGTH }) };
   }
   if (!isAspectRatio(input.aspectRatio)) return { error: errors.invalidFormat };
-  if (!isGenerationKind(input.kind)) return { error: errors.invalidKind };
-  const kind: GenerationKind = input.kind;
+  // Le remplacement de personnage a sa propre action (startSwap).
+  if (!isGenerationKind(input.kind) || input.kind === "swap") {
+    return { error: errors.invalidKind };
+  }
+  const kind: Exclude<GenerationKind, "swap"> = input.kind;
   const template = kind === "video" ? findTemplate(input.templateId) : undefined;
   if (kind === "video" && input.templateId && !template) {
     return { error: errors.invalidTemplate };
@@ -139,6 +145,8 @@ export async function launchDirectorVideo(input: {
   twinId?: string;
   characterId?: string;
   draftToken: string;
+  // Vidéo de référence préparée pour Kling O1 (analyzeReference).
+  referencePath?: string;
 }): Promise<Result<{ generationId: string }>> {
   const t = await getDictionary();
   const supabase = await createClient();
@@ -147,8 +155,18 @@ export async function launchDirectorVideo(input: {
 
   const draft = readDraftToken(input.draftToken, auth.claims.sub);
   if (!draft) return { error: t.generateErrors.draftExpired };
+  const userId = auth.claims.sub;
+  const referencePath =
+    typeof input.referencePath === "string" &&
+    input.referencePath.startsWith(`${userId}/`) &&
+    !input.referencePath.includes("..")
+      ? input.referencePath
+      : undefined;
   const preset = findPreset(draft.preset);
-  if (!preset || !availablePresets(falEnabled(), Boolean(input.twinId)).includes(preset)) {
+  if (
+    !preset ||
+    !availablePresets(falEnabled(), Boolean(input.twinId), Boolean(referencePath)).includes(preset)
+  ) {
     return { error: t.generateErrors.invalidPreset };
   }
 
@@ -163,6 +181,7 @@ export async function launchDirectorVideo(input: {
     template: findTemplate(draft.templateId),
     storyboard: { subject: draft.subject, shots: draft.shots },
     characterId: input.characterId,
+    referenceVideoPath: preset.id === "reference" ? referencePath : undefined,
   });
 }
 
@@ -182,6 +201,7 @@ async function startGeneration(
     template?: VideoTemplate;
     storyboard?: Storyboard;
     characterId?: string;
+    referenceVideoPath?: string;
   },
 ): Promise<Result<{ generationId: string }>> {
   const { prompt, kind, template, durationSeconds, pace, preset, twinId } = input;
@@ -241,6 +261,7 @@ async function startGeneration(
           }),
         }),
         ...(input.storyboard && { director: true }),
+        ...(input.referenceVideoPath && { reference_video_path: input.referenceVideoPath }),
       },
     },
   );
@@ -264,6 +285,7 @@ async function startGeneration(
         pace,
         soraCharacterId: character?.id,
         characterName: character?.name,
+        referenceVideoPath: input.referenceVideoPath,
         direction: template?.direction,
         storyboard: input.storyboard,
       });
@@ -413,6 +435,8 @@ export async function directorChat(input: {
   draftToken: string | null;
   // Jumeau choisi, ou rien pour une vidéo sans personnage.
   twinId?: string;
+  // Direction artistique d'une vidéo de référence (analyzeReference).
+  styleReference?: string;
 }): Promise<Result<DirectorResult>> {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   const supabase = await createClient();
@@ -447,7 +471,11 @@ export async function directorChat(input: {
     .select("plan")
     .eq("id", userId)
     .single();
-  const presets = availablePresets(falEnabled(), Boolean(input.twinId)).map((p) => p.id);
+  const presets = availablePresets(
+    falEnabled(),
+    Boolean(input.twinId),
+    Boolean(input.styleReference),
+  ).map((p) => p.id);
   const current = input.draftToken ? readDraftToken(input.draftToken, userId) : null;
 
   try {
@@ -459,6 +487,10 @@ export async function directorChat(input: {
       mode: input.twinId ? "twin" : "free",
       language: LANGUAGES[locale],
       refusal: t.generateErrors.directorRefusal,
+      styleReference:
+        typeof input.styleReference === "string"
+          ? input.styleReference.slice(0, MAX_STYLE_REFERENCE_LENGTH)
+          : undefined,
     });
     return {
       data: { reply, draft, draftToken: draft ? createDraftToken(userId, draft) : null },
