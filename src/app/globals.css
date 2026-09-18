@@ -1,20 +1,24 @@
 @import "tailwindcss";
 
-/* Thème TwinPost : noir profond, surfaces sobres, un seul accent bleu
-   électrique réservé à la sélection et au focus. Sombre uniquement. */
+/* Thème TwinPost : outil de production vidéo. Noir pur, contraste élevé,
+   surfaces vitrées, accent bleu électrique avec une pointe de cyan pour les
+   dégradés. Sombre uniquement. */
 :root {
   --bg: #000000;
-  --surface: #0b0b0d;
-  --surface-2: #131316;
-  --surface-3: #1b1b1f;
-  --line: rgb(255 255 255 / 0.08);
-  --line-strong: rgb(255 255 255 / 0.16);
-  --text: #f4f4f5;
-  --text-muted: #8b8b94;
-  --accent: #4f6bff;
-  --accent-light: #9aa9ff;
-  --accent-soft: rgb(79 107 255 / 0.14);
-  --success: #3ecf8e;
+  --surface: #0a0a0b;
+  --surface-2: #111113;
+  --surface-3: #19191c;
+  --line: rgb(255 255 255 / 0.09);
+  --line-strong: rgb(255 255 255 / 0.18);
+  --text: #fafafa;
+  --text-muted: #a1a1aa;
+  --text-faint: #63636b;
+  --accent: #5b7cff;
+  --accent-light: #a8b6ff;
+  --accent-2: #22d3ee;
+  --accent-soft: rgb(91 124 255 / 0.15);
+  --success: #34d399;
+  --warning: #fbbf24;
   --danger: #ff5d6c;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   color-scheme: dark;
@@ -29,10 +33,13 @@
   --color-line-strong: var(--line-strong);
   --color-text: var(--text);
   --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
   --color-accent: var(--accent);
   --color-accent-light: var(--accent-light);
+  --color-accent-2: var(--accent-2);
   --color-accent-soft: var(--accent-soft);
   --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-danger: var(--danger);
   --font-sans: var(--font-inter);
   --font-display: var(--font-archivo);
@@ -41,6 +48,9 @@
   --animate-aurora: aurora 18s ease-in-out infinite alternate;
   --animate-shine: shine 6s linear infinite;
   --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-scan: scan 3.2s ease-in-out infinite;
+  --animate-grow: grow 2.8s var(--ease-out) infinite;
 
   /* translate (et non transform) : l'effet de survol "lift" reste actif
      une fois l'apparition terminée. */
@@ -78,6 +88,35 @@
       transform: translateX(100%);
     }
   }
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  /* Ligne de balayage qui parcourt un aperçu en cours de rendu. */
+  @keyframes scan {
+    0% {
+      top: 0%;
+      opacity: 0;
+    }
+    15%,
+    85% {
+      opacity: 1;
+    }
+    100% {
+      top: 100%;
+      opacity: 0;
+    }
+  }
+  @keyframes grow {
+    0% {
+      width: 8%;
+    }
+    70%,
+    100% {
+      width: 100%;
+    }
+  }
 }
 
 @property --beam-angle {
@@ -93,16 +132,19 @@
 }
 
 body {
-  background:
-    radial-gradient(60rem 28rem at 50% -10rem, rgb(79 107 255 / 0.16), transparent 70%),
-    var(--bg);
-  background-repeat: no-repeat;
+  background: var(--bg);
   color: var(--text);
   font-feature-settings: "cv11", "ss01";
 }
 
 ::selection {
-  background: rgb(79 107 255 / 0.4);
+  background: rgb(91 124 255 / 0.4);
+}
+
+/* Barres de défilement discrètes, comme dans un logiciel. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
 }
 
 /* Titres larges et gras : logo, accueil, grands chiffres. */
@@ -111,6 +153,29 @@ body {
   font-stretch: 125%;
   font-weight: 800;
   letter-spacing: -0.01em;
+}
+
+/* Titre en dégradé blanc vers gris : relief sans couleur. */
+@utility text-gradient {
+  background: linear-gradient(180deg, #ffffff 30%, #a1a1aa 100%);
+  background-clip: text;
+  color: transparent;
+}
+
+/* Texte en dégradé bleu → cyan qui balaie lentement. */
+@utility text-shine {
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    var(--accent-2) 25%,
+    var(--accent-light) 50%,
+    var(--accent-2) 75%,
+    var(--accent) 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  color: transparent;
+  animation: var(--animate-shine);
 }
 
 /* Intitulé de champ ou de valeur. */
@@ -128,11 +193,12 @@ body {
   gap: 0.5rem;
   border-radius: 9999px;
   border: 1px solid var(--line);
-  background: var(--surface-2);
+  background: rgb(255 255 255 / 0.03);
   padding: 0.25rem 0.75rem 0.25rem 0.625rem;
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--text);
+  backdrop-filter: blur(8px);
   &::before {
     content: "";
     width: 0.375rem;
@@ -143,26 +209,32 @@ body {
   }
 }
 
-/* Texte en dégradé bleu qui balaie lentement. */
-@utility text-shine {
-  background: linear-gradient(
-    90deg,
-    var(--accent) 0%,
-    var(--accent-light) 25%,
-    var(--accent) 50%,
-    var(--accent-light) 75%,
-    var(--accent) 100%
-  );
-  background-size: 200% auto;
-  background-clip: text;
-  color: transparent;
-  animation: var(--animate-shine);
+/* Quadrillage qui s'estompe vers les bords. */
+@utility grid-bg {
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 20%, transparent 75%);
+}
+
+/* Trame de points, pour les zones d'aperçu. */
+@utility dot-bg {
+  background-image: radial-gradient(rgb(255 255 255 / 0.1) 1px, transparent 1px);
+  background-size: 18px 18px;
 }
 
 @utility panel {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 1rem;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+/* Surface vitrée : laisse deviner le fond. */
+@utility glass {
+  background: rgb(10 10 11 / 0.65);
+  backdrop-filter: blur(16px) saturate(140%);
 }
 
 /* Carte qui s'élève au survol. */
@@ -174,7 +246,29 @@ body {
   &:hover {
     transform: translateY(-3px);
     border-color: var(--line-strong);
-    box-shadow: 0 16px 40px -20px rgb(0 0 0 / 0.9);
+    box-shadow: 0 20px 48px -24px rgb(0 0 0 / 0.95);
+  }
+}
+
+/* Halo qui suit la souris (position fournie par <Spotlight />). */
+@utility spotlight {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms;
+    background: radial-gradient(
+      420px circle at var(--mx, 50%) var(--my, 50%),
+      rgb(91 124 255 / 0.13),
+      transparent 45%
+    );
+  }
+  &:hover::after {
+    opacity: 1;
   }
 }
 
@@ -182,10 +276,10 @@ body {
    de la bordure. */
 @utility glow {
   position: relative;
-  border-color: rgb(79 107 255 / 0.35);
+  border-color: rgb(91 124 255 / 0.35);
   box-shadow:
-    0 0 32px -8px rgb(79 107 255 / 0.55),
-    inset 0 0 24px -14px rgb(79 107 255 / 0.6);
+    0 0 40px -10px rgb(91 124 255 / 0.6),
+    inset 0 0 24px -14px rgb(91 124 255 / 0.6);
   &::before {
     content: "";
     position: absolute;
@@ -195,9 +289,9 @@ body {
     background: conic-gradient(
       from var(--beam-angle),
       transparent 0deg,
-      var(--accent) 60deg,
-      var(--accent-light) 90deg,
-      var(--accent) 120deg,
+      var(--accent) 50deg,
+      var(--accent-2) 90deg,
+      var(--accent) 130deg,
       transparent 180deg,
       transparent 360deg
     );
@@ -220,12 +314,21 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.25rem;
+  white-space: nowrap;
   transition:
     background-color 150ms,
     border-color 150ms,
     box-shadow 200ms,
     transform 120ms var(--ease-out),
     opacity 150ms;
+  & svg {
+    width: 1rem;
+    height: 1rem;
+    transition: transform 200ms var(--ease-out);
+  }
+  &:hover:not(:disabled) svg:last-child:not(:first-child) {
+    transform: translateX(2px);
+  }
   &:active:not(:disabled) {
     transform: scale(0.97);
   }
@@ -238,11 +341,28 @@ body {
 @utility btn-primary {
   background: var(--text);
   color: #000;
+  box-shadow: inset 0 -1px 0 rgb(0 0 0 / 0.15);
   &:hover:not(:disabled) {
     background: #ffffff;
     box-shadow:
       0 0 0 4px rgb(255 255 255 / 0.08),
-      0 8px 28px -8px rgb(255 255 255 / 0.35);
+      0 8px 28px -8px rgb(255 255 255 / 0.4);
+  }
+}
+
+/* Bouton d'action forte : dégradé bleu lumineux. */
+@utility btn-accent {
+  color: #fff;
+  background: linear-gradient(180deg, #6d8bff, var(--accent));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.25),
+    0 0 0 1px rgb(91 124 255 / 0.6),
+    0 8px 24px -8px rgb(91 124 255 / 0.8);
+  &:hover:not(:disabled) {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.3),
+      0 0 0 1px var(--accent-light),
+      0 10px 32px -6px rgb(91 124 255 / 0.95);
   }
 }
 
@@ -252,7 +372,7 @@ body {
   color: var(--text);
   &:hover:not(:disabled) {
     border-color: var(--line-strong);
-    background: #222228;
+    background: #222226;
   }
 }
 
@@ -277,7 +397,7 @@ body {
     border-color 150ms,
     box-shadow 200ms;
   &::placeholder {
-    color: var(--text-muted);
+    color: var(--text-faint);
   }
   &:hover {
     border-color: var(--line-strong);
@@ -286,12 +406,13 @@ body {
     border-color: var(--accent);
     box-shadow:
       0 0 0 3px var(--accent-soft),
-      0 0 24px -8px rgb(79 107 255 / 0.6);
+      0 0 24px -8px rgb(91 124 255 / 0.6);
   }
 }
 
 /* Carte de choix (type, format, qualité…) : halo bleu une fois choisie. */
 @utility option {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -315,11 +436,11 @@ body {
   }
   &[aria-pressed="true"],
   &[aria-selected="true"] {
-    background: rgb(79 107 255 / 0.08);
+    background: linear-gradient(180deg, rgb(91 124 255 / 0.14), rgb(91 124 255 / 0.04));
     border-color: var(--accent);
     box-shadow:
       0 0 0 1px var(--accent),
-      0 0 28px -8px rgb(79 107 255 / 0.85);
+      0 0 28px -8px rgb(91 124 255 / 0.85);
   }
 }
 
@@ -338,6 +459,10 @@ body {
     color 150ms,
     background-color 150ms,
     transform 150ms var(--ease-out);
+  & svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
   &:hover {
     color: var(--text);
     border-color: var(--line-strong);
@@ -346,7 +471,7 @@ body {
   &[aria-pressed="true"] {
     color: var(--text);
     border-color: var(--accent);
-    background: rgb(79 107 255 / 0.12);
+    background: rgb(91 124 255 / 0.14);
   }
 }
 
@@ -354,6 +479,7 @@ body {
 @utility tag {
   display: inline-flex;
   align-items: center;
+  gap: 0.25rem;
   border-radius: 0.375rem;
   border: 1px solid var(--line);
   background: var(--surface-3);
@@ -362,6 +488,27 @@ body {
   font-weight: 500;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+  & svg {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+}
+
+/* Touche de clavier. */
+@utility kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0.3125rem;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  background: var(--surface-3);
+  padding: 0 0.3125rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 @media (prefers-reduced-motion: reduce) {

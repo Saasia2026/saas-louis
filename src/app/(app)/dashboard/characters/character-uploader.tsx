@@ -1,5 +1,6 @@
 "use client";
 
+import { UserPlus } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
 import {
   ACCEPTED_CHARACTER_VIDEO_TYPES as ACCEPTED_TYPES,
@@ -56,8 +57,11 @@ export function CharacterUploader({ userId }: { userId: string }) {
   }
 
   return (
-    <section className="panel lift animate-fade-up p-6">
-      <h2 className="text-base font-semibold">Nouveau personnage</h2>
+    <section className="panel spotlight animate-fade-up p-6">
+      <span className="flex size-9 items-center justify-center rounded-lg border border-accent/40 bg-accent/15 text-accent-light">
+        <UserPlus className="size-4" />
+      </span>
+      <h2 className="mt-4 text-base font-semibold">Nouveau personnage</h2>
       <p className="mt-1 text-sm leading-relaxed text-muted">
         Une vidéo MP4 du sujet (720p minimum ; seules les 4 premières secondes comptent), bien éclairée, sans autre visage.
       </p>
@@ -89,7 +93,7 @@ export function CharacterUploader({ userId }: { userId: string }) {
           type="button"
           onClick={submit}
           disabled={pending || !file || !name.trim()}
-          className="btn btn-primary w-full py-3"
+          className="btn btn-accent w-full py-3"
         >
           {pending ? "Création du personnage… (~30 s)" : "Créer le personnage"}
         </button>

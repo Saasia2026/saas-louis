@@ -7,7 +7,7 @@ import { PageHeader } from "../../page-header";
 import { GenerateForm, type Job } from "./generate-form";
 
 export const metadata: Metadata = {
-  title: "Générer — TwinPost",
+  title: "Studio — TwinPost",
 };
 
 // Le storyboard, le lancement des plans et le montage passent par les
@@ -67,7 +67,17 @@ export default async function GeneratePage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Studio" title="Crée ta vidéo">
+      <PageHeader
+        eyebrow="Studio"
+        title="Crée ta vidéo"
+        actions={
+          <>
+            <span className="tag">Sora 2</span>
+            <span className="tag">Wan 2.7</span>
+            <span className="tag">Seedance</span>
+          </>
+        }
+      >
         Discute avec le Director ou règle tout toi-même : storyboard, plans et montage sont
         faits pour toi.
       </PageHeader>

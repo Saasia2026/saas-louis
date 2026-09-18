@@ -66,7 +66,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
       <div className="mt-8 flex animate-fade-up flex-wrap items-end justify-between gap-4">
         <div>
           <p className="label">Solde actuel</p>
-          <p className="mt-1 font-wide text-4xl">
+          <p className="mt-1 font-wide text-5xl">
             {profile?.credits_remaining ?? 0}
             <span className="ml-2 font-sans text-base font-normal text-muted">crédits</span>
           </p>
@@ -93,7 +93,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
           return (
             <li
               key={pack.id}
-              className={`panel lift relative flex animate-fade-up flex-col p-6 ${featured ? "glow" : ""}`}
+              className={`panel lift spotlight relative flex animate-fade-up flex-col p-6 ${featured ? "glow" : ""}`}
               style={{ animationDelay: `${100 + i * 90}ms` }}
             >
               <div className="flex items-center justify-between">
@@ -124,7 +124,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                 <button
                   type="submit"
                   disabled={!enabled}
-                  className={`btn w-full ${featured ? "btn-primary" : "btn-secondary"}`}
+                  className={`btn w-full ${featured ? "btn-accent" : "btn-secondary"}`}
                 >
                   Acheter
                 </button>

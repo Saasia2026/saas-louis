@@ -1,6 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import {
+  Download,
+  MessageSquareText,
+  RefreshCw,
+  SlidersHorizontal,
+  WandSparkles,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   DEFAULT_PACE,
@@ -169,7 +177,7 @@ export function GenerateForm({
     phase.kind === "generating" || phase.kind === "done" ? phase.job.aspectRatio : aspectRatio;
 
   return (
-    <div className="mt-8 grid animate-fade-up gap-8 lg:grid-cols-[1fr_minmax(0,22rem)]">
+    <div className="mt-8 grid animate-fade-up items-start gap-8 [animation-delay:80ms] lg:grid-cols-[1fr_minmax(0,24rem)]">
       <div className="flex flex-col gap-5">
         <div
           role="tablist"
@@ -178,8 +186,18 @@ export function GenerateForm({
         >
           {(
             [
-              { value: "director", label: "Director", hint: "Construis ta vidéo en discutant" },
-              { value: "form", label: "Formulaire", hint: "Tous les réglages à la main" },
+              {
+                value: "director",
+                label: "Director",
+                hint: "Construis ta vidéo en discutant",
+                icon: MessageSquareText,
+              },
+              {
+                value: "form",
+                label: "Formulaire",
+                hint: "Tous les réglages à la main",
+                icon: SlidersHorizontal,
+              },
             ] as const
           ).map((m) => (
             <button
@@ -188,12 +206,25 @@ export function GenerateForm({
               role="tab"
               aria-selected={mode === m.value}
               onClick={() => setMode(m.value)}
-              className={`rounded-lg px-3 py-2 text-left transition-colors ${
-                mode === m.value ? "bg-surface-3 shadow-sm" : "hover:bg-surface-2"
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all ${
+                mode === m.value
+                  ? "bg-surface-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]"
+                  : "opacity-70 hover:bg-surface-2 hover:opacity-100"
               }`}
             >
-              <span className="block text-sm font-medium">{m.label}</span>
-              <span className="block text-xs text-muted">{m.hint}</span>
+              <span
+                className={`flex size-8 shrink-0 items-center justify-center rounded-lg border transition-colors ${
+                  mode === m.value
+                    ? "border-accent/50 bg-accent/15 text-accent-light"
+                    : "border-line bg-surface-2 text-muted"
+                }`}
+              >
+                <m.icon className="size-4" />
+              </span>
+              <span>
+                <span className="block text-sm font-medium">{m.label}</span>
+                <span className="block text-xs text-muted">{m.hint}</span>
+              </span>
             </button>
           ))}
         </div>
@@ -423,8 +454,9 @@ export function GenerateForm({
             <button
               type="submit"
               disabled={!canSubmit}
-              className="btn btn-primary w-full py-3"
+              className="btn btn-accent w-full py-3"
             >
+              <WandSparkles />
               {busy
                 ? "Génération en cours…"
                 : kind === "video"
@@ -470,86 +502,105 @@ function Result({
   onRegenerate: () => void;
   onCancel: () => void;
 }) {
+  const status =
+    phase.kind === "generating"
+      ? { label: "Rendu en cours", dot: "bg-accent", text: "text-accent-light", pulse: true }
+      : phase.kind === "done"
+        ? { label: "Terminé", dot: "bg-success", text: "text-success", pulse: false }
+        : phase.kind === "error"
+          ? { label: "Échec", dot: "bg-danger", text: "text-danger", pulse: false }
+          : { label: "En attente", dot: "bg-faint", text: "text-muted", pulse: false };
+
   return (
-    <div className="flex flex-col gap-3">
-      <div
-        className={`relative mx-auto flex w-full max-w-sm items-center justify-center overflow-hidden rounded-2xl border bg-surface ${
-          phase.kind === "generating" ? "glow" : "border-line"
-        }`}
-        style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
-      >
-        {phase.kind === "done" ? (
-          phase.job.kind === "video" ? (
-            <video
-              src={phase.view.mediaUrl}
-              poster={phase.view.posterUrl}
-              controls
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="size-full object-cover"
-            />
-          ) : (
-            // URL signée d'un bucket privé : pas d'optimisation Next.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={phase.view.mediaUrl} alt="Image générée" className="size-full object-cover" />
-          )
-        ) : phase.kind === "generating" ? (
-          <>
-            {phase.view?.posterUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={phase.view.posterUrl}
-                alt=""
-                className="absolute inset-0 size-full object-cover opacity-40"
+    <div className="panel sticky top-24 flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between border-b border-line px-4 py-3">
+        <span className="flex items-center gap-2 text-sm font-medium">
+          <span
+            className={`size-1.5 rounded-full ${status.dot} ${status.pulse ? "animate-pulse" : ""}`}
+          />
+          <span className={status.text}>{status.label}</span>
+        </span>
+        <span className="tag">{aspectRatio}</span>
+      </div>
+
+      <div className="dot-bg flex items-center justify-center p-6">
+        <div
+          className={`relative flex w-full max-w-[18rem] items-center justify-center overflow-hidden rounded-xl border bg-black ${
+            phase.kind === "generating" ? "glow" : "border-line"
+          }`}
+          style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
+        >
+          {phase.kind === "done" ? (
+            phase.job.kind === "video" ? (
+              <video
+                src={phase.view.mediaUrl}
+                poster={phase.view.posterUrl}
+                controls
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="size-full object-cover"
               />
-            )}
-            <div className="relative flex w-full flex-col items-center gap-3 px-6 text-center text-sm">
-              <span className="size-9 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
-              <ProgressLabel phase={phase} />
+            ) : (
+              // URL signée d'un bucket privé : pas d'optimisation Next.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={phase.view.mediaUrl} alt="Image générée" className="size-full object-cover" />
+            )
+          ) : phase.kind === "generating" ? (
+            <>
+              {phase.view?.posterUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={phase.view.posterUrl}
+                  alt=""
+                  className="absolute inset-0 size-full object-cover opacity-40"
+                />
+              )}
+              <span className="pointer-events-none absolute inset-x-0 h-16 animate-scan bg-gradient-to-b from-transparent via-accent/25 to-transparent" />
+              <div className="relative flex w-full flex-col items-center gap-3 px-5 text-center text-sm">
+                <span className="size-9 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
+                <ProgressLabel phase={phase} />
+              </div>
+            </>
+          ) : phase.kind === "error" ? (
+            <p className="px-5 text-center text-sm text-danger">{phase.message}</p>
+          ) : (
+            <div className="flex flex-col items-center gap-3 px-5 text-center">
+              <span className="flex size-10 items-center justify-center rounded-xl border border-line bg-surface-2">
+                <WandSparkles className="size-4 text-accent-light" />
+              </span>
+              <p className="text-sm text-muted">Ta vidéo apparaîtra ici.</p>
             </div>
-          </>
-        ) : phase.kind === "error" ? (
-          <p className="px-6 text-center text-sm text-danger">{phase.message}</p>
-        ) : (
-          <div className="flex flex-col items-center gap-2 px-6 text-center">
-            <span className="eyebrow">Aperçu</span>
-            <p className="text-sm text-muted">Ton résultat apparaîtra ici.</p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {phase.kind === "generating" && phase.job.kind === "video" && phase.id && (
-        <button
-          type="button"
-          onClick={onCancel}
-          className="btn btn-secondary mx-auto"
-        >
-          Annuler · crédits rendus
-        </button>
+        <div className="border-t border-line p-3">
+          <button type="button" onClick={onCancel} className="btn btn-secondary w-full">
+            <X />
+            Annuler · crédits rendus
+          </button>
+        </div>
       )}
 
       {phase.kind === "done" && (
-        <>
-          <div className="mx-auto flex w-full max-w-sm gap-2">
-            <a
-              href={phase.view.downloadUrl ?? phase.view.mediaUrl}
-              className="btn btn-primary flex-1"
-            >
-              Télécharger
-            </a>
-            <button
-              type="button"
-              onClick={onRegenerate}
-              disabled={!canRegenerate}
-              className="btn btn-secondary flex-1"
-            >
-              Regénérer
-            </button>
-          </div>
-          <p className="text-center text-xs text-muted">Enregistrée dans ta galerie.</p>
-        </>
+        <div className="flex gap-2 border-t border-line p-3">
+          <a href={phase.view.downloadUrl ?? phase.view.mediaUrl} className="btn btn-primary flex-1">
+            <Download />
+            Télécharger
+          </a>
+          <button
+            type="button"
+            onClick={onRegenerate}
+            disabled={!canRegenerate}
+            className="btn btn-secondary flex-1"
+          >
+            <RefreshCw />
+            Regénérer
+          </button>
+        </div>
       )}
     </div>
   );

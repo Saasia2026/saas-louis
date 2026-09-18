@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ArrowRight, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -40,8 +41,11 @@ export default async function CharactersPage() {
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <CharacterUploader userId={auth.claims.sub} />
 
-        <section className="panel lift animate-fade-up p-6 [animation-delay:100ms]">
-          <h2 className="text-base font-semibold">Déjà créés</h2>
+        <section className="panel spotlight animate-fade-up p-6 [animation-delay:100ms]">
+          <span className="flex size-9 items-center justify-center rounded-lg border border-line bg-surface-2 text-muted">
+            <Users className="size-4" />
+          </span>
+          <h2 className="mt-4 text-base font-semibold">Déjà créés</h2>
           {characters?.length ? (
             <ul className="mt-4 flex flex-col divide-y divide-line border-y border-line">
               {characters.map((c) => (
@@ -74,7 +78,8 @@ export default async function CharactersPage() {
             href="/dashboard/generate"
             className="btn btn-secondary mt-5"
           >
-            Aller à la génération →
+            Aller au studio
+            <ArrowRight />
           </Link>
         </section>
       </div>

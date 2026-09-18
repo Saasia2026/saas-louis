@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowUp, Clapperboard, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { DirectorDraft, DirectorMessage } from "@/lib/director";
 import {
@@ -76,7 +77,20 @@ export function DirectorChat({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="panel flex h-[28rem] animate-fade-up flex-col overflow-hidden">
+      <div className="panel flex h-[32rem] flex-col overflow-hidden">
+        <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-accent-2 shadow-[0_0_16px_-2px_var(--accent)]">
+            <Sparkles className="size-4 text-white" />
+          </span>
+          <span className="flex-1">
+            <span className="block text-sm font-medium">Director</span>
+            <span className="block text-xs text-muted">Réalisateur IA · écrit ton storyboard</span>
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-success">
+            <span className="size-1.5 animate-pulse rounded-full bg-success" />
+            En ligne
+          </span>
+        </div>
         <div ref={listRef} className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
           <Bubble role="assistant">
             Salut, je suis ton Director. Raconte-moi ta vidéo : le sujet, le lieu, l&apos;ambiance.
@@ -117,7 +131,7 @@ export function DirectorChat({
             e.preventDefault();
             send(text);
           }}
-          className="flex items-end gap-2 border-t border-line bg-surface-2/60 p-3"
+          className="flex items-end gap-2 border-t border-line bg-surface-2/60 p-3 focus-within:bg-surface-2"
         >
           <textarea
             value={text}
@@ -141,9 +155,11 @@ export function DirectorChat({
           <button
             type="submit"
             disabled={pending || !text.trim()}
-            className="btn btn-primary"
+            title="Envoyer"
+            className="btn btn-accent size-10 p-0"
           >
-            Envoyer
+            <ArrowUp />
+            <span className="sr-only">Envoyer</span>
           </button>
         </form>
       </div>
@@ -203,7 +219,10 @@ function DraftCard({
 
   return (
     <section className="panel glow animate-fade-up p-5">
-      <span className="eyebrow">Brouillon prêt</span>
+      <span className="flex items-center justify-between">
+        <span className="eyebrow">Brouillon prêt</span>
+        <Clapperboard className="size-4 text-accent-light" />
+      </span>
       <h2 className="mt-3 text-lg font-semibold tracking-tight">{draft.title}</h2>
       <p className="mt-1 text-sm text-muted">{draft.brief}</p>
       <div className="mt-3 flex flex-wrap gap-1.5">
@@ -225,7 +244,7 @@ function DraftCard({
         type="button"
         onClick={onLaunch}
         disabled={!canLaunch}
-        className="btn btn-primary mt-4 w-full py-3"
+        className="btn btn-accent mt-4 w-full py-3"
       >
         Lancer la vidéo · {cost} crédit{cost > 1 ? "s" : ""}
       </button>

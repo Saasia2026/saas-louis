@@ -15,7 +15,7 @@ export function AuthForm({
   const [mode, setMode] = useState<Mode>("signin");
 
   return (
-    <div className="panel animate-fade-up p-6 [animation-delay:150ms]">
+    <div className="panel glass animate-fade-up p-6 shadow-[0_30px_80px_-30px_rgb(91_124_255/0.45)] [animation-delay:150ms]">
       <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface-2 p-1 text-sm">
         {(["signin", "signup"] as const).map((m) => (
           <button
@@ -89,7 +89,7 @@ function CredentialsForm({
       <button
         type="submit"
         disabled={pending}
-        className="btn btn-primary w-full"
+        className="btn btn-accent w-full"
       >
         {pending
           ? "Un instant…"
