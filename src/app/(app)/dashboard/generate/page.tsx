@@ -3,8 +3,7 @@ import { redirect } from "next/navigation";
 import { falEnabled } from "@/lib/fal";
 import { availablePresets, isAspectRatio, maxVideoSeconds } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
-import { PageHeader } from "../../page-header";
-import { GenerateForm, type Job } from "./generate-form";
+import { Studio, type Job } from "./studio";
 
 export const metadata: Metadata = {
   title: "Studio — TwinPost",
@@ -66,29 +65,12 @@ export default async function GeneratePage() {
       : undefined;
 
   return (
-    <div>
-      <PageHeader
-        eyebrow="Studio"
-        title="Crée ta vidéo"
-        actions={
-          <>
-            <span className="tag">Sora 2</span>
-            <span className="tag">Wan 2.7</span>
-            <span className="tag">Seedance</span>
-          </>
-        }
-      >
-        Discute avec le Director ou règle tout toi-même : storyboard, plans et montage sont
-        faits pour toi.
-      </PageHeader>
-
-      <GenerateForm
-        resume={resume}
-        credits={profile?.credits_remaining ?? 0}
-        maxVideoSeconds={maxVideoSeconds(profile?.plan ?? "free")}
-        presets={availablePresets(falEnabled(), false).map((p) => p.id)}
-        characters={characters ?? []}
-      />
-    </div>
+    <Studio
+      resume={resume}
+      credits={profile?.credits_remaining ?? 0}
+      maxVideoSeconds={maxVideoSeconds(profile?.plan ?? "free")}
+      presets={availablePresets(falEnabled(), false).map((p) => p.id)}
+      characters={characters ?? []}
+    />
   );
 }
