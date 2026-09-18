@@ -37,9 +37,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </nav>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <span className="rounded-full border border-neon-cyan/40 px-3 py-1 text-neon-cyan">
+          <Link
+            href="/dashboard/credits"
+            className="rounded-full border border-neon-cyan/40 px-3 py-1 text-neon-cyan hover:bg-neon-cyan/10"
+          >
             {profile?.credits_remaining ?? 0} crédits
-          </span>
+          </Link>
           <span
             title={displayName}
             className="flex size-8 items-center justify-center rounded-full bg-neon-purple/20 font-semibold uppercase text-neon-purple"

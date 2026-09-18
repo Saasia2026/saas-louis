@@ -53,7 +53,7 @@ type Result<T> = { data: T; error?: never } | { data?: never; error: string };
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 const RPC_ERRORS: Record<string, string> = {
-  insufficient_credits: "Pas assez de crédits.",
+  insufficient_credits: "Pas assez de crédits. Recharge-les depuis la page Crédits (en haut à droite).",
   duration_exceeds_plan: "Cette durée dépasse la limite de ton abonnement.",
   invalid_duration: "Durée invalide.",
   invalid_preset: "Qualité indisponible.",

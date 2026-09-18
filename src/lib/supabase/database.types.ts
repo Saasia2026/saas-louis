@@ -57,6 +57,44 @@ export type Database = {
           },
         ]
       }
+      credit_purchases: {
+        Row: {
+          amount_total: number
+          created_at: string
+          credits: number
+          currency: string
+          pack_id: string
+          stripe_session_id: string
+          user_id: string
+        }
+        Insert: {
+          amount_total: number
+          created_at?: string
+          credits: number
+          currency: string
+          pack_id: string
+          stripe_session_id: string
+          user_id: string
+        }
+        Update: {
+          amount_total?: number
+          created_at?: string
+          credits?: number
+          currency?: string
+          pack_id?: string
+          stripe_session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       director_usage: {
         Row: {
           day: string
@@ -385,6 +423,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_credit_purchase: {
+        Args: {
+          p_amount_total: number
+          p_credits: number
+          p_currency: string
+          p_pack_id: string
+          p_session_id: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       fail_generation: { Args: { p_generation_id: string }; Returns: undefined }
       max_video_seconds: { Args: { p_plan: string }; Returns: number }
       start_generation: {
