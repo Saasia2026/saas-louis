@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Logo } from "@/app/logo";
+import { LogoMark } from "@/app/logo-mark";
 import { AuthForm } from "./auth-form";
 
 export const metadata: Metadata = {
@@ -17,8 +17,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         className="pointer-events-none absolute top-0 left-1/2 -z-10 h-[26rem] w-[44rem] -translate-x-1/2 animate-aurora rounded-full bg-[radial-gradient(closest-side,rgb(91_124_255/0.3),transparent)] blur-3xl"
       />
       <div className="w-full max-w-sm">
-        <div className="flex animate-fade-up justify-center">
-          <Logo />
+        <div className="flex justify-center">
+          <LogoMark className="size-16" />
         </div>
         <h1 className="text-gradient mt-8 animate-fade-up text-center text-3xl font-semibold tracking-tight [animation-delay:80ms]">
           Bienvenue dans le studio

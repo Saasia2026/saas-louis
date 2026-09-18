@@ -572,6 +572,84 @@ body {
   animation-duration: 180ms;
 }
 
+/* Emblème TwinPost (logo-mark.tsx). */
+.logo-mark {
+  overflow: visible;
+  filter: drop-shadow(0 0 3px rgb(120 150 255 / 0.8)) drop-shadow(0 0 10px rgb(139 61 255 / 0.45));
+}
+
+.logo-mark .logo-bar,
+.logo-mark .logo-tip {
+  transform-box: fill-box;
+  transition:
+    scale 350ms var(--ease-out),
+    translate 350ms var(--ease-out);
+}
+
+.logo-mark .logo-bar {
+  transform-origin: left center;
+}
+
+.logo-mark .logo-tip {
+  transform-origin: top center;
+}
+
+.logo-animated {
+  animation: logo-glow 4.5s ease-in-out infinite;
+}
+
+.logo-animated .logo-bar {
+  animation: logo-bar-in 0.8s var(--ease-out) both;
+}
+
+.logo-animated .logo-tip {
+  animation: logo-tip-in 0.8s var(--ease-out) 0.3s both;
+}
+
+.logo-animated .logo-shine {
+  animation: logo-shine 5.5s ease-in-out 1.4s infinite;
+}
+
+/* Au survol du lien qui contient le logo : la barre s'étire, la pointe
+   descend. */
+.group:hover .logo-mark .logo-bar {
+  scale: 1.06 1;
+}
+
+.group:hover .logo-mark .logo-tip {
+  translate: 0 3px;
+}
+
+@keyframes logo-glow {
+  50% {
+    filter: drop-shadow(0 0 5px rgb(142 240 255 / 0.85)) drop-shadow(0 0 18px rgb(139 61 255 / 0.65));
+  }
+}
+
+@keyframes logo-bar-in {
+  from {
+    scale: 0 1;
+    opacity: 0;
+  }
+}
+
+@keyframes logo-tip-in {
+  from {
+    translate: 0 -14px;
+    opacity: 0;
+  }
+}
+
+@keyframes logo-shine {
+  0% {
+    translate: 0 0;
+  }
+  45%,
+  100% {
+    translate: 175px 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

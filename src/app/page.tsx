@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/app/logo";
+import { LogoMark } from "@/app/logo-mark";
 import { CREDIT_PACKS, formatPrice } from "@/lib/credit-packs";
 import { createClient } from "@/lib/supabase/server";
 
@@ -110,6 +111,10 @@ export default async function Home() {
           </div>
 
           <div className="mx-auto max-w-6xl px-4 pt-20 pb-10 text-center sm:px-6 sm:pt-28">
+            <div className="relative mx-auto mb-8 size-24 sm:size-28">
+              <div aria-hidden className="absolute inset-0 -z-10 scale-150 animate-aurora rounded-full bg-[radial-gradient(closest-side,rgb(139_61_255/0.45),transparent)] blur-2xl" />
+              <LogoMark className="size-full" />
+            </div>
             <p className="eyebrow animate-fade-up">Studio vidéo IA · du texte au montage final</p>
             <h1 className="mx-auto mt-7 max-w-5xl animate-fade-up font-wide text-[2.6rem] leading-[1.02] uppercase [animation-delay:80ms] sm:text-7xl">
               <span className="text-gradient">Décris-la.</span>

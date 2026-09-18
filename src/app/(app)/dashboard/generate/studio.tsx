@@ -30,6 +30,7 @@ import {
   type Pace,
   type PresetId,
 } from "@/lib/generation";
+import { LogoMark } from "@/app/logo-mark";
 import { findTemplate, VIDEO_TEMPLATES, type VideoTemplate } from "@/lib/templates";
 import {
   cancelVideo,
@@ -387,7 +388,7 @@ export function Studio({
       {!started ? (
         <div className="flex flex-1 flex-col items-center justify-center py-12">
           <h1 className="flex animate-fade-up items-center gap-3 text-center text-4xl font-semibold tracking-tight sm:text-5xl">
-            <Sparkles className="size-9 shrink-0 text-accent-light drop-shadow-[0_0_14px_var(--accent)] sm:size-11" />
+            <LogoMark className="size-11 shrink-0 sm:size-14" />
             <span className="text-gradient">Qu&apos;est-ce qu&apos;on tourne ?</span>
           </h1>
           <p className="mt-4 animate-fade-up text-center text-[0.9375rem] text-muted [animation-delay:80ms]">
