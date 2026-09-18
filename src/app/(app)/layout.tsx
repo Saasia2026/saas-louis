@@ -1,11 +1,12 @@
-import { LogOut, Plus, Zap } from "lucide-react";
+import { Coins, LogOut, Plus } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/login/actions";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { Logo } from "@/app/logo";
 import { ThemeToggle } from "@/app/theme-toggle";
-import { getDictionary } from "@/i18n/server";
+import { INTL_LOCALES } from "@/i18n/config";
+import { getDictionary, getLocale } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { Breadcrumb, SidebarNav, TopNav } from "./nav-links";
 
@@ -24,9 +25,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq("id", data.claims.sub)
     .single();
 
-  const t = await getDictionary();
+  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   const displayName = profile?.full_name || profile?.email || "";
   const credits = profile?.credits_remaining ?? 0;
+  const creditsLabel = new Intl.NumberFormat(INTL_LOCALES[locale]).format(credits);
 
   const avatar = (
     <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-surface-3 to-surface-2 text-xs font-semibold uppercase ring-1 ring-line-strong">
@@ -50,25 +52,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <SidebarNav />
 
         <div className="mt-auto flex flex-col gap-3">
-          <Link
-            href="/dashboard/credits"
-            className="spotlight group rounded-xl border border-line bg-surface-2 p-3 transition-colors hover:border-line-strong"
-          >
-            <span className="flex items-center justify-between text-xs text-muted">
-              {t.shell.nav.credits}
-              <Zap className="size-3.5 text-accent-light" />
+          <div className="flex items-center gap-3 rounded-xl border border-line bg-surface-2 px-3 py-2.5">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-3 text-muted">
+              <Coins className="size-4" />
             </span>
-            <span className="mt-1 block font-wide text-2xl tabular-nums">{credits}</span>
-            <span className="mt-2 block h-1 overflow-hidden rounded-full bg-surface-3">
-              <span
-                className="block h-full rounded-full bg-gradient-to-r from-accent to-accent-2"
-                style={{ width: `${Math.min(100, Math.max(4, (credits / 150) * 100))}%` }}
-              />
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs text-muted">{t.shell.nav.credits}</span>
+              <span className="block truncate text-sm font-medium tabular-nums" title={creditsLabel}>
+                {creditsLabel}
+              </span>
             </span>
-            <span className="mt-2 block text-xs text-faint transition-colors group-hover:text-muted">
-              {t.shell.recharge}
-            </span>
-          </Link>
+            <Link
+              href="/dashboard/credits"
+              title={t.shell.recharge}
+              className="btn btn-secondary size-8 shrink-0 p-0"
+            >
+              <Plus />
+              <span className="sr-only">{t.shell.recharge}</span>
+            </Link>
+          </div>
 
           <div className="flex items-center justify-between border-t border-line px-1 pt-3">
             <ThemeToggle />
@@ -102,7 +104,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="flex items-center gap-2">
               <Link href="/dashboard/credits" className="chip">
                 <span className="size-1.5 animate-pulse rounded-full bg-accent shadow-[0_0_8px_var(--accent)]" />
-                <span className="font-medium text-text tabular-nums">{credits}</span>
+                <span className="font-medium text-text tabular-nums">{creditsLabel}</span>
                 {t.common.credits}
               </Link>
               <div className="flex items-center md:hidden">

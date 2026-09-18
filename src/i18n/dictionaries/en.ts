@@ -24,7 +24,7 @@ export const en: Dictionary = {
   shell: {
     newVideo: "New video",
     workspace: "Workspace",
-    recharge: "Top up →",
+    recharge: "Top up",
     nav: { studio: "Studio", characters: "Characters", credits: "Credits" },
   },
 
