@@ -1,9 +1,11 @@
 "use client";
 
 import {
+  ArrowRight,
   ArrowUp,
   Check,
   ChevronDown,
+  Copy,
   Download,
   Plus,
   RefreshCw,
@@ -13,7 +15,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import type { DirectorDraft, DirectorMessage } from "@/lib/director";
+import type { Conversation } from "@/lib/conversations";
+import type { DirectorHandoff, DirectorMessage } from "@/lib/director";
 import {
   DEFAULT_PACE,
   DEFAULT_PRESET,
@@ -22,12 +25,15 @@ import {
   MAX_PROMPT_LENGTH,
   PACES,
   PRESETS,
-  SWAP_MAX_SECONDS,
+  SWAP_ENGINES,
   costOf,
+  swapCredits,
+  swapShotCredits,
   findPreset,
   formatDuration,
   type AspectRatio,
   type GenerationKind,
+  type SwapEngine,
   type Pace,
   type PresetId,
 } from "@/lib/generation";
@@ -40,13 +46,12 @@ import {
   directorChat,
   generate,
   getGeneration,
-  launchDirectorVideo,
   type GenerationView,
 } from "./actions";
 import type { StyleReference } from "@/lib/reference";
 import { ReferenceBanner, ReferenceButton } from "./reference-picker";
-import { SwapInput, type SwapFile } from "./swap-input";
-import { startSwap } from "./swap-actions";
+import { SwapInput, clampedStart, type SwapFile } from "./swap-input";
+import { redoSwapShot, startSwap } from "./swap-actions";
 
 const POLL_INTERVAL_MS: Record<GenerationKind, number> = { image: 3_000, video: 4_000, swap: 5_000 };
 const MAX_MESSAGE_LENGTH = 2000;
@@ -54,8 +59,9 @@ const MAX_MESSAGE_LENGTH = 2000;
 // Environ 10 min de marge, plus le temps de rendu des plans.
 function pollTimeoutMs(job: Job) {
   if (job.kind === "image") return 5 * 60_000;
-  // Le remplacement rend le clip entier d'un coup : compter large.
-  if (job.kind === "swap") return 20 * 60_000;
+  // Le remplacement rend le clip entier d'un coup : compter large (Genjutsu
+  // met environ 45 s par seconde de clip).
+  if (job.kind === "swap") return 20 * 60_000 + job.durationSeconds * 60_000;
   return 10 * 60_000 + job.durationSeconds * 5_000;
 }
 
@@ -64,14 +70,15 @@ export type Job = { kind: GenerationKind; aspectRatio: AspectRatio; durationSeco
 type Phase =
   | { kind: "idle" }
   | { kind: "generating"; job: Job; id: string; view?: GenerationView }
-  | { kind: "done"; job: Job; view: GenerationView }
+  | { kind: "done"; job: Job; id: string; view: GenerationView }
   | { kind: "error"; message: string };
 
 type Active = { id: string; job: Job };
 type Mode = "director" | "direct" | "swap";
 
-// Studio : une seule zone de saisie. En mode Director, la discussion avec
-// Claude construit un brouillon ; en mode Direct, la demande part telle
+// Studio : une seule zone de saisie. En mode Director, Claude sert de
+// coéquipier : il aide à préciser l'idée et prépare un brief que le créateur
+// envoie au mode Direct ou Remplacer. En mode Direct, la demande part telle
 // quelle avec les réglages de la barre d'outils. Les réglages secondaires
 // (style, rythme, personnage) restent repliés derrière le bouton +.
 export function Studio({
@@ -80,7 +87,9 @@ export function Studio({
   maxVideoSeconds,
   presets,
   characters,
+  swapEngines,
   resume,
+  conversation,
 }: {
   userId: string;
   credits: number;
@@ -89,11 +98,15 @@ export function Studio({
   presets: PresetId[];
   // Personnages prêts (Sora), réutilisables d'une vidéo à l'autre.
   characters: { id: string; name: string }[];
+  // Moteurs du mode Remplacer disponibles, le meilleur en premier.
+  swapEngines: SwapEngine[];
   // Vidéo encore en cours, reprise à l'ouverture de la page.
   resume?: Active;
+  // Discussion du Director rouverte (?c=), ou rien pour une nouvelle.
+  conversation: Conversation | null;
 }) {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [mode, setMode] = useState<Mode>("director");
   const [text, setText] = useState("");
   const [showSettings, setShowSettings] = useState(false);
@@ -111,13 +124,21 @@ export function Studio({
   // Mode Remplacer : clip filmé et image du personnage, déjà déposés.
   const [swapVideo, setSwapVideo] = useState<SwapFile | null>(null);
   const [swapImage, setSwapImage] = useState<SwapFile | null>(null);
+  const [swapTarget, setSwapTarget] = useState("");
+  const [swapEngine, setSwapEngine] = useState<SwapEngine>(swapEngines[0] ?? "kling");
 
   // Discussion avec le Director.
-  const [messages, setMessages] = useState<DirectorMessage[]>([]);
-  const [draft, setDraft] = useState<{ value: DirectorDraft; token: string } | null>(null);
+  const [conversationId, setConversationId] = useState(conversation?.id ?? null);
+  const [messages, setMessages] = useState<DirectorMessage[]>(conversation?.messages ?? []);
+  const [handoff, setHandoff] = useState<DirectorHandoff | null>(conversation?.handoff ?? null);
+  // Réponses rapides proposées par le Director à son dernier message.
+  const [ideas, setIdeas] = useState<string[]>(conversation?.ideas ?? []);
+  // Brief déjà reporté dans le mode Direct ou Remplacer.
+  const [applied, setApplied] = useState<DirectorHandoff | null>(null);
   const [pending, setPending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
-  // Vidéo de référence : son style s'applique à tous les plans du Director.
+  // Vidéo de référence : le Director écrit dans son style, et en mode Direct
+  // Kling O1 la reçoit à chaque plan (seul préréglage possible).
   const [reference, setReference] = useState<
     (StyleReference & { referencePath: string }) | null
   >(null);
@@ -129,27 +150,62 @@ export function Studio({
   );
   const [active, setActive] = useState<Active | null>(resume ?? null);
 
+  // Autre discussion choisie dans la barre latérale (ou « Nouvelle vidéo ») :
+  // on repart de son contenu. Quand l'URL suit simplement la discussion
+  // en cours (création au premier message), rien ne change.
+  const incomingId = conversation?.id ?? null;
+  const [syncedId, setSyncedId] = useState(incomingId);
+  if (incomingId !== syncedId) {
+    setSyncedId(incomingId);
+    if (incomingId !== conversationId) {
+      setConversationId(incomingId);
+      setMessages(conversation?.messages ?? []);
+      setHandoff(conversation?.handoff ?? null);
+      setIdeas(conversation?.ideas ?? []);
+      setApplied(null);
+      setChatError(null);
+      setText("");
+      setMode("director");
+      if (phase.kind !== "generating") setPhase({ kind: "idle" });
+    }
+  }
+
   const threadEnd = useRef<HTMLDivElement>(null);
   const busy = phase.kind === "generating";
 
-  // La durée tombe toujours juste sur la longueur d'un plan.
-  const step = keptSeconds(preset, pace);
-  const duration = Math.max(step, Math.round(durationSeconds / step) * step);
-  const directCost = costOf("video", duration, preset, pace);
+  const directPresets: PresetId[] = reference && presets.length ? ["reference"] : presets;
+  const activePreset = directPresets.includes(preset) ? preset : (directPresets[0] ?? preset);
 
-  // Durée illisible dans le navigateur : on affiche le coût maximal, le
-  // serveur débite d'après sa propre mesure.
-  const swapSeconds = Number.isFinite(swapVideo?.seconds)
-    ? Math.max(1, Math.round(swapVideo!.seconds!))
-    : SWAP_MAX_SECONDS;
-  const swapCost = costOf("swap", swapSeconds);
-  const swapTooLong = swapSeconds > SWAP_MAX_SECONDS;
+  // La durée tombe toujours juste sur la longueur d'un plan.
+  const step = keptSeconds(activePreset, pace);
+  const duration = Math.max(step, Math.round(durationSeconds / step) * step);
+  const directCost = costOf("video", duration, activePreset, pace);
+
+  // Durée illisible dans le navigateur : on affiche le coût maximal. Le prix
+  // affiché suppose un clip à 30 images/s ; le serveur débite d'après sa
+  // propre mesure de la durée et de la cadence.
+  // Un clip plus long est découpé au passage choisi.
+  const swapMaxSeconds = SWAP_ENGINES[swapEngine].maxSeconds;
+  // Même arrondi que le serveur (voir startSwap) : Genjutsu se paie à la
+  // seconde entamée.
+  const swapDurationKnown = Number.isFinite(swapVideo?.seconds);
+  const swapClipSeconds = Math.min(swapMaxSeconds, swapDurationKnown ? swapVideo!.seconds! : NaN);
+  const swapSeconds = swapDurationKnown
+    ? Math.max(
+        1,
+        swapEngine === "genjutsu" ? Math.ceil(swapClipSeconds - 0.05) : Math.round(swapClipSeconds),
+      )
+    : swapMaxSeconds;
+  const swapCost = swapCredits(swapSeconds, swapEngine);
+  // Durée illisible : le serveur mesure le clip et refuse lui-même faute de
+  // crédits ; on ne bloque ici que sous le prix le plus bas.
+  const swapGate = swapDurationKnown ? swapCost : swapCredits(1, swapEngine);
 
   const started = messages.length > 0 || phase.kind !== "idle";
 
   useEffect(() => {
     threadEnd.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, pending, draft, phase.kind]);
+  }, [messages, pending, handoff, phase.kind]);
 
   // Suivi de la génération active. Sans webhook joignable (dev local), c'est
   // aussi ce suivi qui la fait avancer.
@@ -173,7 +229,7 @@ export function Studio({
 
       const view = res.data;
       if (view.status === "completed" && view.mediaUrl) {
-        return finish({ kind: "done", job, view });
+        return finish({ kind: "done", job, id, view });
       }
       if (view.status === "failed") {
         return finish({
@@ -225,9 +281,11 @@ export function Studio({
         aspectRatio,
         durationSeconds: duration,
         templateId: template.id,
-        preset,
+        preset: activePreset,
         pace,
         characterId,
+        referencePath: reference?.referencePath,
+        styleReference: reference?.direction,
       }),
     );
   }
@@ -239,7 +297,13 @@ export function Studio({
       job: { kind: "swap", aspectRatio: "9:16", durationSeconds: swapSeconds },
       id: "",
     });
-    const res = await startSwap({ videoPath: swapVideo.path, imagePath: swapImage.path });
+    const res = await startSwap({
+      videoPath: swapVideo.path,
+      imagePath: swapImage.path,
+      start: clampedStart(swapVideo, swapMaxSeconds),
+      target: swapTarget.trim() || undefined,
+      engine: swapEngine,
+    });
     router.refresh();
     if (res.error !== undefined) {
       setPhase({ kind: "error", message: res.error });
@@ -254,15 +318,22 @@ export function Studio({
     setActive({ id: res.data.generationId, job });
   }
 
-  function launchDraft(value: DirectorDraft, token: string) {
-    const job: Job = {
-      kind: "video",
-      aspectRatio: value.aspectRatio,
-      durationSeconds: value.shots.length * keptSeconds(value.preset, value.pace),
-    };
-    return launch(job, () =>
-      launchDirectorVideo({ characterId, draftToken: token, referencePath: reference?.referencePath }),
-    );
+  // Reporte le brief du Director dans le mode choisi, sans rien lancer :
+  // le créateur relit, ajuste et lance lui-même.
+  function applyHandoff(value: DirectorHandoff) {
+    setShowSettings(false);
+    setApplied(value);
+    if (value.mode === "swap") {
+      setMode("swap");
+      return;
+    }
+    setMode("direct");
+    setText(value.prompt);
+    setTemplate(findTemplate(value.templateId) ?? VIDEO_TEMPLATES[0]);
+    if (presets.includes(value.preset)) setPreset(value.preset);
+    setPace(value.pace);
+    setAspectRatio(value.aspectRatio);
+    setDurationSeconds(Math.min(value.durationSeconds, maxVideoSeconds));
   }
 
   async function sendToDirector(content: string) {
@@ -270,9 +341,11 @@ export function Studio({
     setMessages(next);
     setChatError(null);
     setPending(true);
+    setIdeas([]);
     const res = await directorChat({
       messages: next,
-      draftToken: draft?.token ?? null,
+      conversationId,
+      current: handoff,
       styleReference: reference?.direction,
     });
     setPending(false);
@@ -284,14 +357,20 @@ export function Studio({
       return;
     }
     setMessages([...next, { role: "assistant", content: res.data.reply }]);
-    if (res.data.draft && res.data.draftToken) {
-      setDraft({ value: res.data.draft, token: res.data.draftToken });
+    setIdeas(res.data.ideas);
+    setHandoff(res.data.handoff);
+    if (res.data.conversationId) {
+      if (res.data.conversationId !== conversationId) {
+        setConversationId(res.data.conversationId);
+        window.history.replaceState(null, "", `?c=${res.data.conversationId}`);
+      }
+      router.refresh(); // titre et ordre de la barre latérale
     }
   }
 
   const canSend =
     mode === "swap"
-      ? !busy && Boolean(swapVideo && swapImage) && !swapTooLong && credits >= swapCost
+      ? !busy && Boolean(swapVideo && swapImage) && credits >= swapGate
       : text.trim().length > 0 &&
         (mode === "director" ? !pending : !busy && credits >= directCost);
 
@@ -320,8 +399,8 @@ export function Studio({
       canSend={canSend}
       placeholder={
         mode === "director"
-          ? draft
-            ? t.studio.placeholderDirectorDraft
+          ? handoff
+            ? t.studio.placeholderDirectorBrief
             : t.studio.placeholderDirector
           : t.templates[template.id as keyof typeof t.templates]?.placeholder ?? template.placeholder
       }
@@ -329,7 +408,7 @@ export function Studio({
       onToggleSettings={() => setShowSettings((v) => !v)}
       openUp={started}
       banner={
-        mode === "director" && reference ? (
+        mode !== "swap" && reference ? (
           <ReferenceBanner reference={reference} onRemove={() => setReference(null)} />
         ) : undefined
       }
@@ -341,6 +420,9 @@ export function Studio({
             image={swapImage}
             onVideo={setSwapVideo}
             onImage={setSwapImage}
+            target={swapTarget}
+            onTarget={setSwapTarget}
+            maxSeconds={swapMaxSeconds}
             compact={started}
           />
         ) : undefined
@@ -349,14 +431,14 @@ export function Studio({
         mode === "direct" ? (
           <>
             <Menu
-              label={t.presets[preset].label}
+              label={t.presets[activePreset].label}
               openUp={started}
-              options={PRESETS.filter((p) => presets.includes(p.id)).map((p) => ({
+              options={PRESETS.filter((p) => directPresets.includes(p.id)).map((p) => ({
                 value: p.id,
                 label: t.presets[p.id].label,
                 hint: t.presets[p.id].hint,
               }))}
-              value={preset}
+              value={activePreset}
               onChange={(v) => setPreset(v as PresetId)}
             />
             <Menu
@@ -368,6 +450,14 @@ export function Studio({
               }))}
               value={String(duration)}
               onChange={(v) => setDurationSeconds(Number(v))}
+            />
+            <ReferenceButton
+              userId={userId}
+              busy={analyzing}
+              onBusy={setAnalyzing}
+              onReference={setReference}
+              onError={setChatError}
+              compact
             />
             <Menu
               label={aspectRatio}
@@ -389,16 +479,29 @@ export function Studio({
             onReference={setReference}
             onError={setChatError}
           />
+        ) : swapEngines.length > 1 ? (
+          <Menu
+            label={t.swapEngines[swapEngine].label}
+            openUp={started}
+            options={swapEngines.map((e) => ({
+              value: e,
+              label: t.swapEngines[e].label,
+              hint: fmt(t.swapEngines[e].hint, {
+                max: SWAP_ENGINES[e].maxSeconds,
+                rate: SWAP_ENGINES[e].creditsPerSecond.toLocaleString(locale),
+              }),
+            }))}
+            value={swapEngine}
+            onChange={(v) => setSwapEngine(v as SwapEngine)}
+          />
         ) : null
       }
       status={
         mode === "swap"
           ? !swapVideo || !swapImage
             ? t.studio.swapPick
-            : swapTooLong
-              ? fmt(t.studio.swapTooLongLocal, { max: SWAP_MAX_SECONDS })
-              : credits >= swapCost
-                ? `${swapCost} ${plural(swapCost, t.common.credit, t.common.credits)}`
+            : credits >= swapGate
+                ? `${swapDurationKnown ? "≈" : "≤"} ${swapCost} ${plural(swapCost, t.common.credit, t.common.credits)}`
                 : t.studio.notEnoughCredits
           : mode === "direct"
           ? credits >= directCost
@@ -536,12 +639,29 @@ export function Studio({
             )}
             {chatError && <p className="text-sm text-danger">{chatError}</p>}
 
-            {draft && phase.kind === "idle" && (
-              <DraftCard
-                draft={draft.value}
-                credits={credits}
-                disabled={busy || pending}
-                onLaunch={() => launchDraft(draft.value, draft.token)}
+            {!pending && ideas.length > 0 && (
+              <div className="ml-10 flex animate-fade-up flex-wrap gap-2">
+                {ideas.map((idea) => (
+                  <button
+                    key={idea}
+                    type="button"
+                    onClick={() => {
+                      setMode("director");
+                      sendToDirector(idea);
+                    }}
+                    className="chip"
+                  >
+                    {idea}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {handoff && (
+              <HandoffCard
+                handoff={handoff}
+                applied={applied === handoff && mode === handoff.mode}
+                onApply={() => applyHandoff(handoff)}
               />
             )}
 
@@ -555,6 +675,20 @@ export function Studio({
                   setActive(null);
                   setPhase({ kind: "idle" });
                   router.refresh();
+                }}
+                credits={credits}
+                onRedo={async (index) => {
+                  if (phase.kind !== "done") return;
+                  const id = phase.id;
+                  const res = await redoSwapShot({ generationId: id, index });
+                  router.refresh();
+                  if (res.error !== undefined) {
+                    setPhase({ kind: "error", message: res.error });
+                    return;
+                  }
+                  const job: Job = { kind: "swap", ...res.data };
+                  setPhase({ kind: "generating", job, id });
+                  setActive({ id, job });
                 }}
               />
             )}
@@ -786,49 +920,47 @@ function AssistantMessage({ children }: { children: React.ReactNode }) {
   );
 }
 
-function DraftCard({
-  draft,
-  credits,
-  disabled,
-  onLaunch,
+// Brief préparé par le Director : le créateur l'envoie lui-même au mode
+// Direct (prompt et réglages préremplis) ou Remplacer (quoi filmer).
+function HandoffCard({
+  handoff,
+  applied,
+  onApply,
 }: {
-  draft: DirectorDraft;
-  credits: number;
-  disabled: boolean;
-  onLaunch: () => void;
+  handoff: DirectorHandoff;
+  applied: boolean;
+  onApply: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const { t } = useI18n();
-  const durationSeconds = draft.shots.length * keptSeconds(draft.preset, draft.pace);
-  const cost = costOf("video", durationSeconds, draft.preset, draft.pace);
-  const template = findTemplate(draft.templateId);
-  const tags = [
-    findPreset(draft.preset) && t.presets[draft.preset].label,
-    formatDuration(durationSeconds),
-    draft.aspectRatio,
-    fmt(t.studio.shots, { count: draft.shots.length }),
-    PACES.some((p) => p.id === draft.pace) && t.paces[draft.pace].label,
-    template && (t.templates[template.id as keyof typeof t.templates]?.label ?? template.label),
-  ].filter((tag): tag is string => Boolean(tag));
+  const [copied, setCopied] = useState(false);
+  const swap = handoff.mode === "swap";
+  const template = findTemplate(handoff.templateId);
+  const tags = swap
+    ? [t.studio.modeSwap]
+    : [
+        t.studio.modeDirect,
+        findPreset(handoff.preset) && t.presets[handoff.preset].label,
+        formatDuration(handoff.durationSeconds),
+        handoff.aspectRatio,
+        PACES.some((p) => p.id === handoff.pace) && t.paces[handoff.pace].label,
+        template && (t.templates[template.id as keyof typeof t.templates]?.label ?? template.label),
+      ].filter((tag): tag is string => Boolean(tag));
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(handoff.prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Presse-papiers refusé : le texte reste sélectionnable.
+    }
+  }
 
   return (
     <section className="panel glow ml-10 animate-fade-up p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-accent-light">{t.studio.draftReady}</p>
-          <h2 className="mt-1 text-lg font-semibold tracking-tight">{draft.title}</h2>
-          <p className="mt-1 text-sm text-muted">{draft.brief}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onLaunch}
-          disabled={disabled || credits < cost}
-          className="btn btn-accent"
-        >
-          <WandSparkles />
-          {fmt(t.studio.launch, { cost, credits: plural(cost, t.common.credit, t.common.credits) })}
-        </button>
-      </div>
+      <p className="text-xs font-medium text-accent-light">{t.studio.briefReady}</p>
+      <h2 className="mt-1 text-lg font-semibold tracking-tight">{handoff.title}</h2>
+      {handoff.why && <p className="mt-1 text-sm text-muted">{handoff.why}</p>}
 
       <div className="mt-4 flex flex-wrap gap-1.5">
         {tags.map((tag) => (
@@ -838,32 +970,23 @@ function DraftCard({
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="mt-4 flex items-center gap-1 text-sm text-muted hover:text-text"
-      >
-        <ChevronDown className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
-        {open ? t.studio.hideStoryboard : t.studio.showStoryboard}
-      </button>
-      {open && (
-        <ol className="mt-3 flex flex-col divide-y divide-line border-y border-line">
-          {draft.shots.map((shot, i) => (
-            <li key={i} className="flex gap-3 py-2.5 text-sm">
-              <span className="w-14 shrink-0 text-xs font-medium text-accent-light tabular-nums">
-                {fmt(t.studio.shot, { n: i + 1 })}
-              </span>
-              <span className="text-muted">{shot.summary}</span>
-            </li>
-          ))}
-        </ol>
-      )}
-      {credits < cost && (
-        <p className="mt-3 text-xs text-danger">
-          {fmt(t.studio.notEnough, { count: credits })}
-        </p>
-      )}
+      <p className="mt-4 text-xs font-medium text-muted">
+        {swap ? t.studio.briefToFilm : t.studio.briefPrompt}
+      </p>
+      <p className="mt-1.5 rounded-xl border border-line bg-surface-2/70 px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap select-text">
+        {handoff.prompt}
+      </p>
+
+      <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+        <button type="button" onClick={copy} className="btn btn-secondary">
+          {copied ? <Check /> : <Copy />}
+          {copied ? t.studio.copied : t.studio.copy}
+        </button>
+        <button type="button" onClick={onApply} className="btn btn-accent">
+          {applied ? <Check /> : <ArrowRight />}
+          {applied ? t.studio.briefApplied : swap ? t.studio.useInSwap : t.studio.useInDirect}
+        </button>
+      </div>
     </section>
   );
 }
@@ -872,10 +995,15 @@ function Result({
   phase,
   onReset,
   onCancel,
+  credits,
+  onRedo,
 }: {
   phase: Exclude<Phase, { kind: "idle" }>;
   onReset: () => void;
   onCancel: () => void;
+  credits: number;
+  // Refait un plan d'un remplacement terminé.
+  onRedo: (index: number) => void;
 }) {
   const { t } = useI18n();
   const aspectRatio = phase.kind === "error" ? "9:16" : phase.job.aspectRatio;
@@ -930,6 +1058,35 @@ function Result({
         )}
       </div>
 
+      {phase.kind === "done" && phase.view.swapParts && phase.view.swapParts.length > 1 && (
+        <div className="border-t border-line px-4 py-3">
+          <p className="mb-2 text-xs text-muted">{t.studio.swapRedoTitle}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {phase.view.swapParts.map((part, i) => {
+              const cost = swapShotCredits(part.seconds);
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  disabled={credits < cost}
+                  onClick={() => onRedo(i)}
+                  title={fmt(t.studio.swapRedo, {
+                    n: i + 1,
+                    cost,
+                    credits: plural(cost, t.common.credit, t.common.credits),
+                  })}
+                  className={`chip ${part.flagged ? "border-amber-500/60 text-amber-300" : ""}`}
+                >
+                  {fmt(t.studio.swapShot, { n: i + 1 })} · {part.start.toFixed(1)}–
+                  {(part.start + part.seconds).toFixed(1)} s
+                  {part.flagged && ` · ${t.studio.swapShotFlagged}`}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line p-3">
         {phase.kind === "generating" && phase.job.kind === "video" && phase.id && (
           <button type="button" onClick={onCancel} className="btn btn-secondary">
@@ -957,11 +1114,41 @@ function Result({
 function ProgressLabel({ phase }: { phase: Extract<Phase, { kind: "generating" }> }) {
   const { t } = useI18n();
   const view = phase.view;
-  if (phase.job.kind === "swap") {
+  // Remplacement : images clés des plans, puis vidéo et contrôle de chacun.
+  if (
+    phase.job.kind === "swap" &&
+    view &&
+    view.swapEngine !== "genjutsu" &&
+    view.shotsTotal > 0 &&
+    view.stage !== "assembling"
+  ) {
+    const keyframes = view.framesDone < view.shotsTotal;
+    const done = keyframes ? view.framesDone : view.shotsDone;
+    const progress = (done / view.shotsTotal / 2 + (keyframes ? 0 : 0.5)) * 100;
+    return (
+      <span className="w-full">
+        {keyframes ? t.studio.swapKeyframes : t.studio.swapShots} · {done}/{view.shotsTotal}
+        <span className="mt-3 block h-1 overflow-hidden rounded-full bg-surface-3">
+          <span
+            className="block h-full rounded-full bg-accent transition-all duration-700"
+            style={{ width: `${Math.max(progress, 4)}%` }}
+          />
+        </span>
+        <span className="mt-2 block text-xs text-muted">{t.studio.progressHint}</span>
+      </span>
+    );
+  }
+  if (phase.job.kind === "swap" && view?.stage !== "assembling") {
     return (
       <span className="w-full">
         {t.studio.swapping}
-        <span className="mt-2 block text-xs text-muted">{t.studio.progressHint}</span>
+        <span className="mt-2 block text-xs text-muted">
+          {view?.swapEngine === "genjutsu"
+            ? fmt(t.studio.swapGenjutsuHint, {
+                minutes: Math.max(2, Math.ceil(phase.job.durationSeconds * 0.75)),
+              })
+            : t.studio.progressHint}
+        </span>
       </span>
     );
   }

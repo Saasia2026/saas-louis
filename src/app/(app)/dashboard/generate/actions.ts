@@ -5,11 +5,11 @@ import {
   DIRECTOR_DAILY_LIMIT,
   MAX_DIRECTOR_MESSAGES,
   MAX_DIRECTOR_MESSAGE_LENGTH,
+  HandoffSchema,
   MAX_STYLE_REFERENCE_LENGTH,
-  createDraftToken,
   directorTurn,
-  readDraftToken,
-  type DirectorDraft,
+  sanitizeHandoff,
+  type DirectorHandoff,
   type DirectorMessage,
 } from "@/lib/director";
 import { fmt, type Locale } from "@/i18n/config";
@@ -34,9 +34,11 @@ import {
   type GenerationStatus,
   type Pace,
   type Preset,
+  type SwapEngine,
 } from "@/lib/generation";
 import {
   CONTENT_REFUSED_ERROR,
+  OUT_OF_CREDIT_ERROR,
   applyImagePredictionResult,
   errorMessage,
   isOutOfCredit,
@@ -44,11 +46,10 @@ import {
 } from "@/lib/predictions";
 import { getPrediction, imagePrompt, startTwinImage } from "@/lib/providers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { Storyboard } from "@/lib/storyboard";
+import { advanceSwap } from "@/lib/swap";
 import { createClient } from "@/lib/supabase/server";
 import { findTemplate, type VideoTemplate } from "@/lib/templates";
 import {
-  OUT_OF_CREDIT_ERROR,
   advanceVideoGeneration,
   cancelFrames,
   startVideoGeneration,
@@ -69,6 +70,8 @@ function rpcErrors(t: Dictionary): Record<string, string> {
     not_authenticated: t.common.sessionExpired,
   };
 }
+
+const CONVERSATION_TITLE_LENGTH = 80;
 
 const LANGUAGES: Record<Locale, string> = { fr: "French", en: "English", es: "Spanish" };
 
@@ -94,9 +97,18 @@ export async function generate(input: {
   pace?: string;
   // Personnage Sora réutilisé dans la vidéo.
   characterId?: string;
+  // Vidéo de référence préparée pour Kling O1 (analyzeReference), et sa
+  // direction artistique appliquée au storyboard.
+  referencePath?: string;
+  styleReference?: string;
 }): Promise<Result<{ generationId: string }>> {
   const t = await getDictionary();
   const errors = t.generateErrors;
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  if (!auth?.claims) return { error: t.common.sessionExpired };
+  const userId = auth.claims.sub;
+
   const prompt = input.prompt.trim();
   if (!prompt) return { error: errors.emptyPrompt };
   if (prompt.length > MAX_PROMPT_LENGTH) {
@@ -112,9 +124,22 @@ export async function generate(input: {
   if (kind === "video" && input.templateId && !template) {
     return { error: errors.invalidTemplate };
   }
+  const referencePath =
+    kind === "video" &&
+    typeof input.referencePath === "string" &&
+    input.referencePath.startsWith(`${userId}/`) &&
+    !input.referencePath.includes("..")
+      ? input.referencePath
+      : undefined;
   const preset = findPreset(input.preset ?? DEFAULT_PRESET);
   // Une photo n'utilise que le modèle d'image du préréglage.
-  if (!preset || (kind === "video" && !availablePresets(falEnabled(), Boolean(input.twinId)).includes(preset))) {
+  if (
+    !preset ||
+    (kind === "video" &&
+      !availablePresets(falEnabled(), Boolean(input.twinId), Boolean(referencePath)).includes(
+        preset,
+      ))
+  ) {
     return { error: errors.invalidPreset };
   }
   const pace = input.pace ?? DEFAULT_PACE;
@@ -123,11 +148,7 @@ export async function generate(input: {
   const step = keptSeconds(preset.id, pace);
   const durationSeconds = Math.max(step, Math.round(input.durationSeconds / step) * step);
 
-  const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getClaims();
-  if (!auth?.claims) return { error: t.common.sessionExpired };
-
-  return startGeneration(supabase, auth.claims.sub, t, {
+  return startGeneration(supabase, userId, t, {
     twinId: input.twinId,
     prompt,
     kind,
@@ -137,51 +158,11 @@ export async function generate(input: {
     pace,
     template,
     characterId: input.characterId,
-  });
-}
-
-// Lance la vidéo d'un brouillon du mode Director, avec son storyboard.
-export async function launchDirectorVideo(input: {
-  twinId?: string;
-  characterId?: string;
-  draftToken: string;
-  // Vidéo de référence préparée pour Kling O1 (analyzeReference).
-  referencePath?: string;
-}): Promise<Result<{ generationId: string }>> {
-  const t = await getDictionary();
-  const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getClaims();
-  if (!auth?.claims) return { error: t.common.sessionExpired };
-
-  const draft = readDraftToken(input.draftToken, auth.claims.sub);
-  if (!draft) return { error: t.generateErrors.draftExpired };
-  const userId = auth.claims.sub;
-  const referencePath =
-    typeof input.referencePath === "string" &&
-    input.referencePath.startsWith(`${userId}/`) &&
-    !input.referencePath.includes("..")
-      ? input.referencePath
-      : undefined;
-  const preset = findPreset(draft.preset);
-  if (
-    !preset ||
-    !availablePresets(falEnabled(), Boolean(input.twinId), Boolean(referencePath)).includes(preset)
-  ) {
-    return { error: t.generateErrors.invalidPreset };
-  }
-
-  return startGeneration(supabase, auth.claims.sub, t, {
-    twinId: input.twinId,
-    prompt: `${draft.title} : ${draft.brief}`.slice(0, MAX_PROMPT_LENGTH),
-    kind: "video",
-    aspectRatio: draft.aspectRatio,
-    durationSeconds: draft.shots.length * keptSeconds(draft.preset, draft.pace),
-    preset,
-    pace: draft.pace,
-    template: findTemplate(draft.templateId),
-    storyboard: { subject: draft.subject, shots: draft.shots },
-    characterId: input.characterId,
     referenceVideoPath: preset.id === "reference" ? referencePath : undefined,
+    styleReference:
+      referencePath && typeof input.styleReference === "string"
+        ? input.styleReference.slice(0, MAX_STYLE_REFERENCE_LENGTH)
+        : undefined,
   });
 }
 
@@ -199,9 +180,10 @@ async function startGeneration(
     preset: Preset;
     pace: Pace;
     template?: VideoTemplate;
-    storyboard?: Storyboard;
     characterId?: string;
     referenceVideoPath?: string;
+    // Direction artistique de la vidéo de référence, en anglais.
+    styleReference?: string;
   },
 ): Promise<Result<{ generationId: string }>> {
   const { prompt, kind, template, durationSeconds, pace, preset, twinId } = input;
@@ -260,7 +242,6 @@ async function startGeneration(
             character_name: character.name,
           }),
         }),
-        ...(input.storyboard && { director: true }),
         ...(input.referenceVideoPath && { reference_video_path: input.referenceVideoPath }),
       },
     },
@@ -286,8 +267,13 @@ async function startGeneration(
         soraCharacterId: character?.id,
         characterName: character?.name,
         referenceVideoPath: input.referenceVideoPath,
-        direction: template?.direction,
-        storyboard: input.storyboard,
+        direction: [
+          template?.direction,
+          input.styleReference &&
+            `Art direction of the creator's reference video, to apply to every shot: ${input.styleReference}`,
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
       });
     } else {
       const predictionId = await startTwinImage({
@@ -329,6 +315,10 @@ export type GenerationView = {
   downloadUrl?: string;
   // Raison de l'échec, quand elle est connue.
   error?: string;
+  // Remplacement : ses plans, refaisables un par un (redoSwapShot).
+  swapParts?: { start: number; seconds: number; flagged: boolean }[];
+  // Remplacement : son moteur (genjutsu rend le passage d'un bloc, sans étapes).
+  swapEngine?: SwapEngine;
 };
 
 // État d'une génération. Sans webhook joignable (dev local), c'est aussi ici
@@ -341,7 +331,7 @@ export async function getGeneration(
     supabase
       .from("generations")
       .select(
-        "kind, stage, status, storage_path, poster_path, replicate_prediction_id, error, generation_shots(position, stage)",
+        "kind, stage, status, storage_path, poster_path, replicate_prediction_id, error, metadata, generation_shots(position, stage)",
       )
       .eq("id", generationId)
       .maybeSingle();
@@ -354,6 +344,8 @@ export async function getGeneration(
     try {
       if (generation.kind === "video") {
         await advanceVideoGeneration(generationId);
+      } else if (generation.kind === "swap") {
+        await advanceSwap(generationId);
       } else if (generation.replicate_prediction_id) {
         await applyImagePredictionResult(
           await getPrediction(generation.replicate_prediction_id),
@@ -371,14 +363,44 @@ export async function getGeneration(
   );
   const bucket = supabase.storage.from(GENERATIONS_BUCKET);
 
+  // Remplacement : ses plans sont suivis dans les métadonnées (voir swap.ts).
+  const swapParts =
+    generation.kind === "swap"
+      ? ((
+          generation.metadata as {
+            swap_parts?: {
+              start: number;
+              seconds: number;
+              keyframeUrl?: string;
+              stage?: string;
+              check?: string;
+            }[];
+          } | null
+        )?.swap_parts ?? [])
+      : null;
   const view: GenerationView = {
     kind: generation.kind as GenerationKind,
     status: generation.status as GenerationStatus,
     stage: generation.stage as GenerationView["stage"],
-    shotsTotal: shots.length,
-    framesDone: shots.filter((s) => ["framed", "video", "done"].includes(s.stage)).length,
-    shotsDone: shots.filter((s) => s.stage === "done").length,
+    shotsTotal: swapParts ? swapParts.length : shots.length,
+    framesDone: swapParts
+      ? swapParts.filter((p) => p.keyframeUrl).length
+      : shots.filter((s) => ["framed", "video", "done"].includes(s.stage)).length,
+    shotsDone: swapParts
+      ? swapParts.filter((p) => p.stage === "done").length
+      : shots.filter((s) => s.stage === "done").length,
     error: translateStoredError(generation.error, await getDictionary()),
+    ...(swapParts && {
+      swapEngine:
+        (generation.metadata as { engine?: unknown } | null)?.engine === "genjutsu"
+          ? "genjutsu"
+          : "kling",
+      swapParts: swapParts.map((p) => ({
+        start: p.start,
+        seconds: p.seconds,
+        flagged: Boolean(p.check),
+      })),
+    }),
   };
 
   if (generation.poster_path) {
@@ -424,15 +446,21 @@ export async function cancelVideo(generationId: string): Promise<Result<null>> {
 
 export type DirectorResult = {
   reply: string;
-  draft: DirectorDraft | null;
-  // Jeton signé du brouillon, à renvoyer au tour suivant et au lancement.
-  draftToken: string | null;
+  // Réponses rapides proposées au créateur.
+  ideas: string[];
+  // Brief à envoyer au mode Direct ou Remplacer.
+  handoff: DirectorHandoff | null;
+  // Discussion enregistrée (créée au premier message).
+  conversationId: string | null;
 };
 
-// Un tour du mode Director : réponse de Claude et brouillon mis à jour.
+// Un tour du mode Director : réponse de Claude, idées et brief mis à jour.
 export async function directorChat(input: {
   messages: DirectorMessage[];
-  draftToken: string | null;
+  // Discussion à mettre à jour, ou rien pour en créer une.
+  conversationId?: string | null;
+  // Dernier brief proposé, renvoyé comme simple contexte.
+  current: DirectorHandoff | null;
   // Jumeau choisi, ou rien pour une vidéo sans personnage.
   twinId?: string;
   // Direction artistique d'une vidéo de référence (analyzeReference).
@@ -466,35 +494,42 @@ export async function directorChat(input: {
     };
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("plan")
-    .eq("id", userId)
-    .single();
-  const presets = availablePresets(
-    falEnabled(),
-    Boolean(input.twinId),
-    Boolean(input.styleReference),
-  ).map((p) => p.id);
-  const current = input.draftToken ? readDraftToken(input.draftToken, userId) : null;
+  const [{ data: profile }, { data: characters }] = await Promise.all([
+    supabase.from("profiles").select("plan").eq("id", userId).single(),
+    supabase.from("characters").select("name").eq("status", "ready"),
+  ]);
+  const limits = {
+    maxVideoSeconds: maxVideoSeconds(profile?.plan ?? "free"),
+    presets: availablePresets(
+      falEnabled(),
+      Boolean(input.twinId),
+      Boolean(input.styleReference),
+    ).map((p) => p.id),
+  };
+  const parsed = HandoffSchema.safeParse(input.current);
+  const current = parsed.success ? sanitizeHandoff(parsed.data, limits) : null;
 
   try {
-    const { reply, draft } = await directorTurn({
+    const { reply, ideas, handoff } = await directorTurn({
+      ...limits,
       messages,
       current,
-      maxVideoSeconds: maxVideoSeconds(profile?.plan ?? "free"),
-      presets,
       mode: input.twinId ? "twin" : "free",
       language: LANGUAGES[locale],
       refusal: t.generateErrors.directorRefusal,
+      characters: (characters ?? []).map((c) => c.name),
       styleReference:
         typeof input.styleReference === "string"
           ? input.styleReference.slice(0, MAX_STYLE_REFERENCE_LENGTH)
           : undefined,
     });
-    return {
-      data: { reply, draft, draftToken: draft ? createDraftToken(userId, draft) : null },
-    };
+    const conversationId = await saveConversation(supabase, userId, {
+      id: input.conversationId ?? null,
+      messages: [...messages, { role: "assistant", content: reply }],
+      handoff,
+      ideas,
+    });
+    return { data: { reply, ideas, handoff, conversationId } };
   } catch (e) {
     console.error("directorChat", errorMessage(e));
     return {
@@ -504,4 +539,35 @@ export async function directorChat(input: {
           : t.generateErrors.directorDown,
     };
   }
+}
+
+// Enregistre la discussion après un tour. Un échec d'enregistrement ne
+// bloque pas la réponse : la discussion continue, simplement non sauvée.
+async function saveConversation(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  conversation: {
+    id: string | null;
+    messages: DirectorMessage[];
+    handoff: DirectorHandoff | null;
+    ideas: string[];
+  },
+): Promise<string | null> {
+  const firstMessage = conversation.messages.find((m) => m.role === "user")?.content ?? "";
+  const row = {
+    title: (conversation.handoff?.title || firstMessage).trim().slice(0, CONVERSATION_TITLE_LENGTH),
+    messages: conversation.messages,
+    handoff: conversation.handoff,
+    ideas: conversation.ideas,
+    updated_at: new Date().toISOString(),
+  };
+  const query = conversation.id
+    ? supabase.from("director_conversations").update(row).eq("id", conversation.id)
+    : supabase.from("director_conversations").insert({ ...row, user_id: userId });
+  const { data, error } = await query.select("id").maybeSingle();
+  if (error || !data) {
+    console.error("saveConversation", error?.message ?? "discussion introuvable");
+    return conversation.id;
+  }
+  return data.id;
 }

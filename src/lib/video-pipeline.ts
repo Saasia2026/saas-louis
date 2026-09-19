@@ -23,6 +23,7 @@ import {
 } from "@/lib/generation";
 import {
   CONTENT_REFUSED_ERROR,
+  OUT_OF_CREDIT_ERROR,
   copyOutputToStorage,
   errorMessage,
   isContentRefused,
@@ -62,8 +63,6 @@ const MAX_VIDEO_ATTEMPTS = 2;
 const MAX_END_IMAGE_ATTEMPTS = 2;
 // Marge sous la limite de taille d'un fichier dans Supabase Storage (50 Mo).
 const MAX_VIDEO_MB = 40;
-export const OUT_OF_CREDIT_ERROR =
-  "Le compte du service de génération n'a plus de crédit. Tes crédits ont été rendus.";
 const FRAME_URL_TTL_SECONDS = 60 * 60;
 // Le mouvement rapide n'est pas banni : seuls l'identité, les déformations et
 // le rendu « film » le sont.

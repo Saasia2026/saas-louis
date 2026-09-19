@@ -8,20 +8,23 @@ import type { StyleReference } from "@/lib/reference";
 import { createClient } from "@/lib/supabase/client";
 import { analyzeReference } from "./reference-actions";
 
-// Bouton du mode Director : dépose une vidéo de référence et en fait
-// analyser le style.
+// Bouton des modes Director et Direct : dépose une vidéo de référence et en
+// fait analyser le style.
 export function ReferenceButton({
   userId,
   busy,
   onBusy,
   onReference,
   onError,
+  compact = false,
 }: {
   userId: string;
   busy: boolean;
   onBusy: (busy: boolean) => void;
   onReference: (reference: StyleReference & { referencePath: string }) => void;
   onError: (message: string | null) => void;
+  // Icône seule, quand la barre d'outils est déjà chargée.
+  compact?: boolean;
 }) {
   const [supabase] = useState(createClient);
   const { t } = useI18n();
@@ -68,7 +71,7 @@ export function ReferenceButton({
         className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm text-muted transition-colors hover:bg-surface-3 hover:text-text disabled:opacity-60"
       >
         <Clapperboard className="size-4" />
-        <span className="hidden sm:inline">
+        <span className={compact ? "sr-only" : "hidden sm:inline"}>
           {busy ? t.studio.referenceAnalyzing : t.studio.reference}
         </span>
       </button>

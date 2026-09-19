@@ -434,18 +434,130 @@ export async function createFalShotVideo(input: {
 // Remplacement de personnage
 // ---------------------------------------------------------------------------
 
-// Wan Animate Replace : la personne du clip est rendue sous les traits du
-// personnage de l'image, avec ses mouvements, le décor et la lumière du clip.
-// Les coups, chutes, etc. viennent du clip filmé : rien à décrire au modèle.
-const FAL_SWAP_ENDPOINT = "fal-ai/wan/v2.2-14b/animate/replace";
+// La personne du clip est rendue sous les traits du personnage, avec ses
+// mouvements, le décor et la lumière du clip : les coups, chutes, etc.
+// viennent du clip filmé, rien à décrire au modèle. Kling O3 Pro Edit : meilleur que O1 et que Wan Animate au même prix
+// (0,168 $ la seconde), comparés sur le même clip le 2026-09-18.
+const FAL_SWAP_ENDPOINT = "fal-ai/kling-video/o3/pro/video-to-video/edit";
 
-export async function createFalSwap(input: { videoUrl: string; imageUrl: string }) {
+// Kling (O1, O3) ne sait pas télécharger les URLs signées de Supabase
+// ("Failed to load video") : les fichiers qu'il reçoit passent par le
+// stockage de fal.
+export async function uploadToFal(data: Buffer | ArrayBuffer, contentType: string) {
+  return createFal().storage.upload(new Blob([new Uint8Array(data as ArrayBuffer)], { type: contentType }));
+}
+
+// Fiche personnage : à partir de l'image déposée, le personnage debout en
+// posture humaine, de face puis de trois quarts. Un animal à quatre pattes
+// recopié tel quel reste planté sur ses pattes au lieu de suivre les gestes
+// de la personne remplacée ; debout, il les reprend (tête d'animal sur un
+// corps qui bouge comme celui d'un humain). Deux angles gardent cette
+// silhouette stable d'un plan à l'autre.
+export async function createFalCharacterSheet(imageUrl: string) {
+  const fal = createFal();
+  const { data: front } = await fal.subscribe("fal-ai/nano-banana-pro/edit", {
+    input: {
+      prompt:
+        "Photorealistic full-body picture of this exact same character, same head, face, colours and skin, fur or surface. If it is an animal or a creature, it now stands upright on its hind legs with a human posture: straight back, two arms hanging at its sides with paws or hands, like an anthropomorphic athlete, keeping its natural animal head and fur. If it is a person, keep them as they are. Facing the camera, neutral pose, plain light grey background, soft even light.",
+      image_urls: [imageUrl],
+      aspect_ratio: "3:4",
+    },
+  });
+  const frontUrl = front.images[0]?.url;
+  if (!frontUrl) return null;
+  const { data: side } = await fal.subscribe("fal-ai/nano-banana-pro/edit", {
+    input: {
+      prompt:
+        "The same character, identical head, face, fur or skin, body and clothing, in the same upright posture, now seen from a three-quarter angle, full body, same plain light grey background and lighting.",
+      image_urls: [frontUrl],
+      aspect_ratio: "3:4",
+    },
+  });
+  return { frontUrl, sideUrl: side.images[0]?.url };
+}
+
+// Formats d'image acceptés par Nano Banana Pro.
+const KEYFRAME_RATIOS = ["21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"] as const;
+
+function nearestKeyframeRatio(width: number, height: number) {
+  const value = (r: string) => {
+    const [w, h] = r.split(":").map(Number);
+    return w / h;
+  };
+  return KEYFRAME_RATIOS.reduce((best, r) =>
+    Math.abs(Math.log(value(r) / (width / height))) < Math.abs(Math.log(value(best) / (width / height)))
+      ? r
+      : best,
+  );
+}
+
+// Image clé d'un plan : sa première image, la personne remplacée par le
+// personnage de la fiche. Une image fixe se contrôle et se garde cohérente
+// bien plus facilement qu'une vidéo : Kling part ensuite de cette image
+// (voir createFalSwap). `anchorUrl` : image clé du premier plan, pour que le
+// personnage soit le même dans toute la vidéo.
+export async function createFalSwapKeyframe(input: {
+  firstFrameUrl: string;
+  width: number;
+  height: number;
+  frontUrl: string;
+  sideUrl?: string;
+  anchorUrl?: string;
+  target?: string;
+}) {
+  const target = input.target?.trim() || "the main person";
+  const references = [input.frontUrl, input.sideUrl, input.anchorUrl].filter(
+    (u): u is string => Boolean(u),
+  );
+  const { request_id } = await createFal().queue.submit(FAL_REFERENCE_MODELS["nano-banana-pro"], {
+    input: {
+      prompt: [
+        `Edit the first image only: replace ${target} with the character shown in the next reference images (same head, face, fur or skin and body shape).`,
+        input.anchorUrl
+          ? "The last reference image shows this character in an earlier shot of the same video: it must look exactly the same."
+          : "",
+        "Keep exactly the same pose, gestures, position and size in the frame, facing direction and clothing as the replaced person. Keep the camera framing, crop, background, every other person, objects and lighting of the first image strictly unchanged. Photorealistic, same image quality as the first image.",
+      ]
+        .filter(Boolean)
+        .join(" "),
+      image_urls: [input.firstFrameUrl, ...references],
+      aspect_ratio: nearestKeyframeRatio(input.width, input.height),
+      output_format: "png",
+    },
+  });
+  return `fal:ref:nano-banana-pro:${request_id}`;
+}
+
+// Un plan de 3 à 10 s (voir swap.ts), rendu à partir de son image clé.
+// `target` : qui remplacer quand plusieurs personnes sont à l'image.
+export async function createFalSwap(input: {
+  videoUrl: string;
+  frontUrl: string;
+  sideUrl?: string;
+  keyframeUrl: string;
+  anchorUrl?: string;
+  target?: string;
+}) {
+  const target = input.target?.trim() || "the main person";
+  const anchor = input.anchorUrl && input.anchorUrl !== input.keyframeUrl;
   const { request_id } = await createFal().queue.submit(FAL_SWAP_ENDPOINT, {
     input: {
+      prompt: [
+        `Replace ${target} with @Element1, exactly as it appears in @Image1, which is the first frame of the result: same head, face, fur or skin, body and clothing.`,
+        anchor ? "@Image2 shows the same character in another shot of this video: it must look identical." : "",
+        "It performs exactly the same movements, gestures and head turns as the replaced person, with the same timing, posture, contact and weight, through the whole shot. Its hands or paws keep the same natural look as in @Image1. Keep every other person, the place, the camera and its moves, the lighting, the framing and everything else exactly unchanged.",
+      ]
+        .filter(Boolean)
+        .join(" "),
       video_url: input.videoUrl,
-      image_url: input.imageUrl,
-      resolution: "720p",
-      video_quality: "high",
+      elements: [
+        {
+          frontal_image_url: input.frontUrl,
+          reference_image_urls: [input.sideUrl ?? input.frontUrl],
+        },
+      ],
+      image_urls: anchor ? [input.keyframeUrl, input.anchorUrl!] : [input.keyframeUrl],
+      keep_audio: true,
     },
   });
   return `fal:swap:${request_id}`;

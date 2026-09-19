@@ -1,4 +1,5 @@
 import { Coins, LogOut, Plus } from "lucide-react";
+import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/login/actions";
@@ -7,7 +8,9 @@ import { Logo } from "@/app/logo";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
+import { listConversations } from "@/lib/conversations";
 import { createClient } from "@/lib/supabase/server";
+import { ConversationList } from "./conversation-list";
 import { Breadcrumb, SidebarNav, TopNav } from "./nav-links";
 
 // Espace connecté. Le proxy redirige déjà, mais on revérifie ici :
@@ -25,7 +28,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq("id", data.claims.sub)
     .single();
 
-  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
+  const [t, locale, conversations] = await Promise.all([
+    getDictionary(),
+    getLocale(),
+    listConversations(),
+  ]);
   const displayName = profile?.full_name || profile?.email || "";
   const credits = profile?.credits_remaining ?? 0;
   const creditsLabel = new Intl.NumberFormat(INTL_LOCALES[locale]).format(credits);
@@ -51,7 +58,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <p className="mt-6 mb-2 px-3 text-xs font-medium text-faint">{t.shell.workspace}</p>
         <SidebarNav />
 
-        <div className="mt-auto flex flex-col gap-3">
+        <p className="mt-6 mb-2 px-3 text-xs font-medium text-faint">{t.shell.conversations}</p>
+        <Suspense>
+          <ConversationList conversations={conversations} />
+        </Suspense>
+
+        <div className="mt-auto flex flex-col gap-3 pt-4">
           <div className="flex items-center gap-3 rounded-xl border border-line bg-surface-2 px-3 py-2.5">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-3 text-muted">
               <Coins className="size-4" />

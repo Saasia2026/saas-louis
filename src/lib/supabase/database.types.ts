@@ -95,6 +95,47 @@ export type Database = {
           },
         ]
       }
+      director_conversations: {
+        Row: {
+          created_at: string
+          handoff: Json | null
+          id: string
+          ideas: Json
+          messages: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          handoff?: Json | null
+          id?: string
+          ideas?: Json
+          messages?: Json
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          handoff?: Json | null
+          id?: string
+          ideas?: Json
+          messages?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "director_conversations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       director_usage: {
         Row: {
           day: string
@@ -449,10 +490,20 @@ export type Database = {
       start_swap_generation: {
         Args: {
           p_duration_seconds: number
+          p_engine?: string
+          p_frames_per_second: number
           p_metadata?: Json
           p_user_id: string
         }
         Returns: string
+      }
+      start_swap_redo: {
+        Args: { p_credits: number; p_generation_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      refund_swap_redo: {
+        Args: { p_credits: number; p_generation_id: string }
+        Returns: undefined
       }
       use_director_message: { Args: never; Returns: number }
       video_model_credits_per_second: {

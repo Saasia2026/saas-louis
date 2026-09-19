@@ -40,9 +40,13 @@ export type PredictionState = {
   output: unknown;
   // Refus du filtre de contenu : relancer le même prompt ne sert à rien.
   refused?: boolean;
+  // Solde du compte du fournisseur épuisé (Higgsfield le signale ainsi).
+  outOfCredit?: boolean;
 };
 
-// Message enregistré en base (traduit à l'affichage, voir generate/actions.ts).
+// Messages enregistrés en base (traduits à l'affichage, voir generate/actions.ts).
+export const OUT_OF_CREDIT_ERROR =
+  "Le compte du service de génération n'a plus de crédit. Tes crédits ont été rendus.";
 export const CONTENT_REFUSED_ERROR =
   "Le filtre de contenu du modèle vidéo a refusé une scène. Tes crédits ont été rendus.";
 

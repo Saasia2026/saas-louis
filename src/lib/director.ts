@@ -1,5 +1,4 @@
 import "server-only";
-import { createHmac, timingSafeEqual } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
@@ -7,22 +6,24 @@ import {
   DEFAULT_PACE,
   DEFAULT_PRESET,
   FORMATS,
+  MAX_PROMPT_LENGTH,
   PACES,
   PRESETS,
-  VIDEO_STEP_SECONDS,
+  SWAP_ENGINES,
   isPace,
   keptSeconds,
-  shotCount,
   type Pace,
   type PresetId,
 } from "@/lib/generation";
-import { ShotSchema, storyboardRules, type SubjectMode } from "@/lib/storyboard";
+import { higgsfieldEnabled } from "@/lib/higgsfield";
+import type { SubjectMode } from "@/lib/storyboard";
 import { FREE_TEMPLATE_ID, VIDEO_TEMPLATES } from "@/lib/templates";
 
-// Mode Director : le créateur construit sa vidéo en discutant avec Claude,
-// qui tient à jour un brouillon (réglages + storyboard). Le brouillon est
-// renvoyé au navigateur avec un jeton signé : au lancement, seul un brouillon
-// écrit ici, pour cet utilisateur, est accepté (voir readDraftToken).
+// Mode Director : un coéquipier, pas un producteur. Il discute avec le
+// créateur pour cerner ce qu'il veut vraiment, propose des idées, et prépare
+// un brief (prompt + réglages) que le créateur envoie lui-même au mode
+// Direct ou Remplacer. Il ne lance jamais rien : tout ce qu'il écrit repasse
+// par generate() ou startSwap(), qui valident à nouveau.
 
 export const MAX_DIRECTOR_MESSAGES = 40;
 export const MAX_DIRECTOR_MESSAGE_LENGTH = 2000;
@@ -31,25 +32,29 @@ export const MAX_DIRECTOR_MESSAGE_LENGTH = 2000;
 export const DIRECTOR_DAILY_LIMIT = 20;
 // Direction artistique tirée d'une vidéo de référence (voir reference.ts).
 export const MAX_STYLE_REFERENCE_LENGTH = 4000;
-const TOKEN_TTL_MS = 24 * 60 * 60_000;
+const MAX_IDEAS = 4;
 
-const DraftSchema = z.object({
+export const HandoffSchema = z.object({
+  mode: z.enum(["direct", "swap"]),
   title: z.string(),
-  brief: z.string(),
+  why: z.string(),
+  prompt: z.string(),
   aspectRatio: z.enum(FORMATS.map((f) => f.value) as [string, ...string[]]),
   preset: z.enum(PRESETS.map((p) => p.id) as [string, ...string[]]),
   pace: z.enum(PACES.map((p) => p.id) as [string, ...string[]]),
   templateId: z.enum(VIDEO_TEMPLATES.map((t) => t.id) as [string, ...string[]]),
-  subject: z.string(),
-  shots: z.array(ShotSchema),
+  durationSeconds: z.number(),
 });
 
 const TurnSchema = z.object({
   reply: z.string(),
-  draft: DraftSchema.nullable(),
+  ideas: z.array(z.string()),
+  handoff: HandoffSchema.nullable(),
 });
 
-export type DirectorDraft = z.infer<typeof DraftSchema> & {
+// Brief prêt à passer à un autre mode. Pour "swap", `prompt` dit quoi
+// filmer et quelle image de personnage choisir ; les réglages sont ignorés.
+export type DirectorHandoff = z.infer<typeof HandoffSchema> & {
   aspectRatio: (typeof FORMATS)[number]["value"];
   preset: PresetId;
   pace: Pace;
@@ -57,74 +62,92 @@ export type DirectorDraft = z.infer<typeof DraftSchema> & {
 
 export type DirectorMessage = { role: "user" | "assistant"; content: string };
 
-const systemPrompt = (mode: SubjectMode, language: string) => `You are the Director of TwinPost, an app where creators make social media videos. ${mode === "twin" ? "This video stars the creator's own AI twin." : "This video has no fixed character: it shows whatever the creator describes."} You chat with the creator in ${language}, in a warm, concise and practical tone, to shape their video, and you keep an up-to-date draft of it.
+// Durée d'un clip à remplacer, selon les moteurs disponibles (SWAP_ENGINES).
+const swapLimit = () =>
+  higgsfieldEnabled()
+    ? `at most ${SWAP_ENGINES.kling.maxSeconds} s with the budget engine (about ${SWAP_ENGINES.kling.creditsPerSecond} credits per second) or ${SWAP_ENGINES.genjutsu.maxSeconds} s with the max-quality engine (about ${SWAP_ENGINES.genjutsu.creditsPerSecond} credits per second); keep swap briefs within ${SWAP_ENGINES.kling.maxSeconds} s unless the creator asks for a longer clip, and tell them it then needs the max-quality engine`
+    : `at most ${SWAP_ENGINES.kling.maxSeconds} s`;
 
-What these videos must look like: a real video someone actually filmed with an ordinary camera, the kind that gets posted on Instagram or TikTok. Natural, lively movement and scenes that hold together matter far more than polish: never aim for a cinematic look unless the creator explicitly asks for one.
+const systemPrompt = (mode: SubjectMode, language: string) => `You are the Director of TwinPost, an app where creators make short social media videos with AI. ${mode === "twin" ? "This video stars the creator's own AI twin." : "The video has no fixed character unless the creator picks one."} You chat with the creator in ${language}.
 
-How a video is made: the video is a sequence of shots, each generated on its own by a video model and then edited together. The length of a shot depends on the chosen preset (see the context). Once launched, the whole video is produced without further input.
+Your role: a creative coworker, like a senior video producer sitting next to the creator. You do not make the video yourself. You help the creator figure out what they really want, bring ideas, point out what will or will not work with AI video, and write the brief they will hand to one of the app's production modes. The creator stays in charge: they decide, you advise and write.
+
+The production modes you prepare briefs for:
+- "direct": the creator sends a text prompt (at most ${MAX_PROMPT_LENGTH} characters) with settings. A storyboard writer turns the prompt into shots (one shot per ${keptSeconds(DEFAULT_PRESET, "normal")} s or so, half that at pace "fast"), each shot is generated on its own by a video model, then everything is edited together. Best for anything that can be imagined from scratch: ads, vlogs, teasers, stories, product shots, absurd or impossible ideas. Its weak points: many different faces, precise choreography, dialogue with exact words, text on screen, physical violence (refused by the models), the same person looking exactly identical from shot to shot unless a saved character is used.
+- "swap": the creator films a real clip (${swapLimit()}, one person clearly visible) and uploads an image of a character; the character replaces the person, keeping their exact gestures, timing, place and light. Best when the creator can act it out themself: a precise performance, a dance, a sketch, a real place, a real product in hand.
+
+How to work, like a good coworker:
+- First understand the goal, not just the idea: who the video is for, where it will be posted, what the viewer should feel or do at the end, and what the creator already has (a product, a place, a character, footage). Ask about what matters most, one or two questions at a time, never a questionnaire. If the creator arrives with a clear idea, do not slow them down: go straight to a brief.
+- Bring ideas. When the idea is vague, propose two or three genuinely different angles (a hook, a format, a twist), each in one line, and say which one you would pick and why. Suggest what makes a short video work: a hook in the first second, one clear idea, a payoff or a loop at the end, movement in every shot.
+- Be honest: if something is likely to fail or look fake with AI video, say so briefly and offer a way around it (another mode, fewer characters, a simpler action).
+- Refine with the creator: when they react to a brief, update it instead of starting over, and keep what they liked.
+- Speak simply, in short paragraphs. No jargon unless the creator uses it.
 
 On every turn:
-- "reply": your message to the creator, in ${language}, a few short sentences. Briefly say what you changed in the draft, and ask at most one question when something important is missing (the idea, the product, the place, the mood). Do not repeat the whole storyboard: the app displays it next to the chat.
-- "draft": the complete updated draft, or null only while there is not yet enough to propose a first version. As soon as the idea is clear enough, propose a full draft rather than asking more questions; the creator will refine it.
+- "reply": your message to the creator, in ${language}. Short and concrete. When you write or update a brief, say in a sentence or two what you went for; do not paste the prompt into the reply, the app shows the brief next to the chat with a button to send it to the right mode.
+- "ideas": 0 to ${MAX_IDEAS} short suggestions the creator can click to answer you, in ${language}, written as the creator would say them (e.g. "Plutôt drôle", "Ajoute un plan produit à la fin", "Version 30 s"). They are answers to your question or next steps worth trying. Empty when nothing useful fits.
+- "handoff": the complete brief, or null while the idea is still too vague to write one. As soon as you know enough, write one: the creator can always refine it. Keep the previous brief unchanged (copy it back) when the turn does not change it.
 
-Draft fields:
-- "title": a short title for the video, in ${language}.
-- "brief": the creator's idea in one or two sentences, in ${language}.
-- "aspectRatio": "9:16" (Story, default for social media), "1:1" (square) or "16:9" (landscape).
-- "preset": the quality preset, only among the available ones listed in the context. Default to "balanced". Use "fast" when the creator wants it quicker or cheaper. Keep the current one unless the creator asks for another.
-- "pace": "fast" cuts every shot in half for a punchy social media edit (twice as many shots for the same length, twice the cost), "normal" keeps whole shots. Some presets ignore it (see the context). Default to "fast" for ads, teasers and energetic videos, "normal" for calm or intimate ones.
-- "templateId": the video style that best fits the idea, among: ${VIDEO_TEMPLATES.map((t) => `"${t.id}" (${t.label}: ${t.direction || "free style"})`).join("; ")}. Follow the chosen style's direction when writing the shots.
-- "subject" and "shots": the storyboard, following the rules below. The number of shots sets the length of the video (one shot lasts ${VIDEO_STEP_SECONDS} s at pace "normal", 2.5 s at pace "fast"): aim for a 15-second video by default, and never exceed the maximum number of shots given in the context. When the creator asks for a duration, use the matching number of shots for the chosen pace.
+Brief fields:
+- "mode": "direct" or "swap", whichever fits the idea best (see above).
+- "title": a short title, in ${language}.
+- "why": one sentence in ${language} on why this approach should work (the hook, the mode, the style).
+- "prompt":
+  - For "direct": the prompt the creator will send, in ${language}, at most ${MAX_PROMPT_LENGTH} characters. Write it as a clear shot-by-shot story the storyboard writer can follow: the hook, then each moment in order, then the ending. Give the place and light, the people or product with concrete, repeatable details (colours, brand, outfit), the actions, the camera feel and the mood. It must look like a real video filmed with an ordinary camera unless the creator wants another look. Only things a video model can show: no on-screen text, no exact dialogue.
+  - For "swap": in ${language}, what the creator should film (place, framing, action beat by beat, duration, phone held how) and what character image to upload (full body, sharp, facing the camera). Keep it under ${MAX_PROMPT_LENGTH} characters.
+- "aspectRatio": "9:16" (Story, default for social media), "1:1" or "16:9".
+- "preset": the quality preset for "direct", only among the available ones listed in the context.
+- "pace": "fast" cuts every shot in half for a punchy edit (twice as many shots, twice the cost), "normal" keeps whole shots. "fast" for ads, teasers and energetic videos, "normal" for calm or intimate ones.
+- "templateId": the video style that fits best, among: ${VIDEO_TEMPLATES.map((t) => `"${t.id}" (${t.label}: ${t.direction || "free style"})`).join("; ")}. The style's direction is added to the prompt automatically: do not repeat it.
+- "durationSeconds": the length of the video in seconds. 15 by default, never more than the maximum given in the context.
 
-Storyboard rules:
-${storyboardRules(mode)}
+Action and fiction are welcome: fights, chases, duels, battles, heists, horror, as in an action movie or a video game. The video models' filters refuse visible blows, contact between people, blood, gore and weapons aimed at someone, so write these scenes the way action trailers suggest them: the build-up and the stand-off, fast camera moves, dodges and near misses, a cut right before the impact, the reaction and the aftermath (someone landing on the ground, objects flying, dust, debris), sound-free energy through speed and framing. Tell the creator briefly that this is how the scene will pass the filters, and suggest the "swap" mode when they want a real choreographed fight they can film with friends.
 
-Do not explain the storyboard rules or the image model's limits to the creator unless they ask why something looks the way it does.
-
-Only change what the creator asks for, and keep everything else exactly as in the current draft (same wording, same shots). Never write anything that breaks the storyboard rules, even when asked: explain kindly what you can do instead.`;
+Keep everything suitable for a public social media feed. Never write a brief that uses real people's likeness without their consent, sexual content, gore, or violence against real people or animals; explain kindly what you can do instead.`;
 
 // Un tour de conversation. `messages` se termine par le message du
-// créateur ; `current` est le brouillon en cours (déjà vérifié).
+// créateur ; `current` est le dernier brief proposé (renvoyé par le
+// navigateur, simple contexte : rien n'est lancé à partir de lui).
 export async function directorTurn(input: {
   messages: DirectorMessage[];
-  current: DirectorDraft | null;
+  current: DirectorHandoff | null;
   maxVideoSeconds: number;
   presets: PresetId[];
   mode: SubjectMode;
   // Langue des réponses ("French", "English"…) et message en cas de refus.
   language: string;
   refusal: string;
+  // Personnages enregistrés, utilisables en mode Direct.
+  characters: string[];
   // Direction artistique d'une vidéo de référence déposée par le créateur.
   styleReference?: string;
-}): Promise<{ reply: string; draft: DirectorDraft | null }> {
+}): Promise<{ reply: string; ideas: string[]; handoff: DirectorHandoff | null }> {
   const history = input.messages.slice(-MAX_DIRECTOR_MESSAGES);
   const last = history.at(-1);
   if (!last || last.role !== "user") throw new Error("Le dernier message doit venir du créateur");
 
   const presets = PRESETS.filter((p) => input.presets.includes(p.id));
   const context = [
-    `Available quality presets: ${presets
-      .map((p) => `"${p.id}" (${p.label}, ${p.hint})`)
-      .join("; ")}.`,
-    ...presets.map(
-      (p) =>
-        `With preset "${p.id}": each shot lasts ${keptSeconds(p.id, "normal")} s, at most ${shotCount(input.maxVideoSeconds, p.id, "normal")} shots${
-          keptSeconds(p.id, "fast") < keptSeconds(p.id, "normal")
-            ? `, or ${shotCount(input.maxVideoSeconds, p.id, "fast")} shots at pace "fast"`
-            : ` (pace "fast" has no effect)`
-        }.`,
-    ),
-    `Current draft: ${input.current ? JSON.stringify(input.current) : "none yet"}.`,
+    presets.length
+      ? `Available quality presets for "direct": ${presets
+          .map((p) => `"${p.id}" (${p.label}, ${p.hint})`)
+          .join("; ")}.`
+      : `No quality preset is available right now: video generation is down, but you can still prepare the brief.`,
+    `Maximum video length for this creator: ${input.maxVideoSeconds} s.`,
+    input.characters.length
+      ? `Saved characters the creator can pick in "direct" mode (they keep the same look in every shot): ${input.characters.map((c) => `"${c}"`).join(", ")}. Mention one when it fits the idea.`
+      : `The creator has no saved character yet.`,
+    `Current brief: ${input.current ? JSON.stringify(input.current) : "none yet"}.`,
     ...(input.styleReference
       ? [
-          `Reference video: the creator uploaded a video whose art direction every shot must follow, whatever the subject or story. Apply it to each shot's "scene" and "motion" (camera and its speed, speed and energy of movement, framing, lighting, colours, texture) and to the editing rhythm (choose "pace" and the shot count accordingly). It counts as the creator explicitly asking for this look, so it overrides the default "ordinary camera" look where they differ; the storyboard rules still apply. If the current draft does not follow it yet, rewrite the shots so it does. Art direction:\n${input.styleReference}`,
+          `Reference video: the creator uploaded a video whose art direction they want to copy. In "direct" mode the video model receives it and the only preset is "reference". Write the prompt so the story fits this style (camera, speed, framing, light, colours, editing rhythm) and choose "pace" accordingly. Art direction:\n${input.styleReference}`,
         ]
       : []),
   ].join("\n");
 
   const response = await new Anthropic().beta.messages.parse({
     model: "claude-opus-5",
-    max_tokens: 16000,
+    max_tokens: 8000,
     cache_control: { type: "ephemeral" },
     output_config: {
       effort: "low",
@@ -141,77 +164,49 @@ export async function directorTurn(input: {
 
   if (response.stop_reason === "refusal" || !response.parsed_output) {
     console.error("directorTurn: pas de réponse", response.stop_reason);
-    return {
-      reply: input.refusal,
-      draft: input.current,
-    };
+    return { reply: input.refusal, ideas: [], handoff: input.current };
   }
 
-  const { reply, draft } = response.parsed_output;
-  return { reply, draft: draft ? sanitizeDraft(draft, input) : input.current };
+  const { reply, ideas, handoff } = response.parsed_output;
+  return {
+    reply,
+    ideas: ideas.map((i) => i.trim()).filter(Boolean).slice(0, MAX_IDEAS),
+    handoff: handoff ? sanitizeHandoff(handoff, input) : input.current,
+  };
 }
 
-// Borne le brouillon aux limites de l'utilisateur, quoi qu'ait écrit Claude.
-function sanitizeDraft(
-  draft: z.infer<typeof DraftSchema>,
+// Borne le brief aux limites de l'utilisateur, quoi qu'ait écrit Claude (ou
+// renvoyé le navigateur).
+export function sanitizeHandoff(
+  handoff: z.infer<typeof HandoffSchema>,
   limits: { maxVideoSeconds: number; presets: PresetId[] },
-): DirectorDraft | null {
-  const pace: Pace = isPace(draft.pace) ? draft.pace : DEFAULT_PACE;
+): DirectorHandoff | null {
+  const prompt = handoff.prompt.trim().slice(0, MAX_PROMPT_LENGTH);
+  if (!prompt) return null;
+  const pace: Pace = isPace(handoff.pace) ? handoff.pace : DEFAULT_PACE;
   // Sinon le premier disponible : avec une vidéo de référence, c'est le seul.
   const preset =
-    limits.presets.find((p) => p === draft.preset) ?? limits.presets[0] ?? DEFAULT_PRESET;
-  const shots = draft.shots.slice(0, shotCount(limits.maxVideoSeconds, preset, pace));
-  // En rythme rapide, deux plans coupés font une durée entière : le compte
-  // doit rester pair pour que la durée facturée tombe juste.
-  if (keptSeconds(preset, pace) < keptSeconds(preset, "normal") && shots.length % 2 === 1) {
-    shots.pop();
-  }
-  if (!shots.length) return null;
-  const aspectRatio = FORMATS.find((f) => f.value === draft.aspectRatio)?.value ?? "9:16";
-  const templateId = VIDEO_TEMPLATES.some((t) => t.id === draft.templateId)
-    ? draft.templateId
+    limits.presets.find((p) => p === handoff.preset) ?? limits.presets[0] ?? DEFAULT_PRESET;
+  // La durée tombe juste sur la longueur d'un plan.
+  const step = keptSeconds(preset, pace);
+  const max = Math.max(step, Math.floor(limits.maxVideoSeconds / step) * step);
+  const durationSeconds = Math.min(
+    max,
+    Math.max(step, Math.round((handoff.durationSeconds || 15) / step) * step),
+  );
+  const aspectRatio = FORMATS.find((f) => f.value === handoff.aspectRatio)?.value ?? "9:16";
+  const templateId = VIDEO_TEMPLATES.some((t) => t.id === handoff.templateId)
+    ? handoff.templateId
     : FREE_TEMPLATE_ID;
-  return { ...draft, shots, preset, aspectRatio, templateId, pace };
-}
-
-// ---------------------------------------------------------------------------
-// Jeton de brouillon
-// ---------------------------------------------------------------------------
-
-function signingKey() {
-  const key = process.env.DIRECTOR_SIGNING_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error("Aucune clé de signature pour le mode Director");
-  return key;
-}
-
-function sign(payload: string) {
-  return createHmac("sha256", signingKey()).update(payload).digest("base64url");
-}
-
-export function createDraftToken(userId: string, draft: DirectorDraft) {
-  const payload = Buffer.from(
-    JSON.stringify({ userId, issuedAt: Date.now(), draft }),
-  ).toString("base64url");
-  return `${payload}.${sign(payload)}`;
-}
-
-// Brouillon d'un jeton valide, émis pour cet utilisateur il y a moins de 24 h.
-export function readDraftToken(token: string, userId: string): DirectorDraft | null {
-  const [payload, signature] = token.split(".");
-  if (!payload || !signature) return null;
-  const expected = Buffer.from(sign(payload));
-  const given = Buffer.from(signature);
-  if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
-
-  try {
-    const data = JSON.parse(Buffer.from(payload, "base64url").toString()) as {
-      userId: string;
-      issuedAt: number;
-      draft: DirectorDraft;
-    };
-    if (data.userId !== userId || Date.now() - data.issuedAt > TOKEN_TTL_MS) return null;
-    return data.draft;
-  } catch {
-    return null;
-  }
+  return {
+    mode: handoff.mode === "swap" ? "swap" : "direct",
+    title: handoff.title.slice(0, 120),
+    why: handoff.why.slice(0, 400),
+    prompt,
+    aspectRatio,
+    preset,
+    pace,
+    templateId,
+    durationSeconds,
+  };
 }

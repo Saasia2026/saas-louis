@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getConversation } from "@/lib/conversations";
 import { falEnabled } from "@/lib/fal";
 import { availablePresets, isAspectRatio, maxVideoSeconds } from "@/lib/generation";
+import { higgsfieldEnabled } from "@/lib/higgsfield";
 import { createClient } from "@/lib/supabase/server";
 import { Studio, type Job } from "./studio";
 
@@ -20,7 +22,9 @@ function resumeSince() {
   return new Date(Date.now() - RESUME_WINDOW_MS).toISOString();
 }
 
-export default async function GeneratePage() {
+export default async function GeneratePage(props: PageProps<"/dashboard/generate">) {
+  // ?c= : discussion du Director rouverte depuis la barre latérale.
+  const { c } = await props.searchParams;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) {
@@ -39,6 +43,8 @@ export default async function GeneratePage() {
     .eq("status", "ready")
     .order("created_at", { ascending: false });
 
+  const conversation = typeof c === "string" ? await getConversation(c) : null;
+
   // Vidéo encore en cours (elle s'enchaîne toute seule) : on la reprend
   // plutôt que d'afficher un formulaire vide.
   const running = await supabase
@@ -46,7 +52,9 @@ export default async function GeneratePage() {
     .select("id, kind, metadata, duration_seconds")
     .in("kind", ["video", "swap"])
     .eq("status", "processing")
-    .gte("created_at", resumeSince())
+    // Un remplacement n'avance que suivi : il est repris même longtemps
+    // après, pour récupérer son rendu ou le rembourser (voir advanceSwap).
+    .or(`kind.eq.swap,created_at.gte.${resumeSince()}`)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -72,6 +80,8 @@ export default async function GeneratePage() {
       maxVideoSeconds={maxVideoSeconds(profile?.plan ?? "free")}
       presets={availablePresets(falEnabled(), false).map((p) => p.id)}
       characters={characters ?? []}
+      swapEngines={higgsfieldEnabled() ? ["genjutsu", "kling"] : ["kling"]}
+      conversation={conversation}
     />
   );
 }

@@ -12,11 +12,11 @@ export const VIDEO_STEP_SECONDS = 5;
 export const VIDEO_MODELS = [
   {
     // Sora 2 : plans de 8 s avec le son généré (ambiance, voix), et
-    // personnages réutilisables. Le plus cher, et le plus réaliste.
+    // personnages réutilisables. fal : 0,10 $ la seconde (720p).
     id: "sora-2",
     label: "Sora 2",
     hint: "Avec le son, plans de 8 s",
-    creditsPerSecond: 5,
+    creditsPerSecond: 1,
     endFrames: false,
     direct: true,
     shotSeconds: 8,
@@ -25,10 +25,11 @@ export const VIDEO_MODELS = [
   {
     // Modèles « références → vidéo » : ils reçoivent les photos du jumeau et
     // la scène, et rendent le plan directement, sans image intermédiaire.
+    // fal : 0,15 $ la seconde en 1080p (texte → vidéo, Wan 2.5).
     id: "wan-2.7",
     label: "Wan 2.7",
     hint: "Vidéo directe, 1080p",
-    creditsPerSecond: 1,
+    creditsPerSecond: 2,
     endFrames: false,
     direct: true,
   },
@@ -199,8 +200,27 @@ export function isGenerationKind(value: unknown): value is GenerationKind {
 
 // Remplacement de personnage. Alignés avec public.start_swap_generation.
 export const SWAP_INPUTS_BUCKET = "swap-inputs";
-export const SWAP_CREDITS_PER_SECOND = 1;
-export const SWAP_MAX_SECONDS = 15;
+// Moteurs du remplacement :
+// - genjutsu (Higgsfield Genjutsu Object Swap) : 0,681 $ la seconde en 720p,
+//   le passage entier en un seul rendu, coupes comprises, sans nouvel essai
+//   automatique : 7 crédits la seconde, 30 s au plus ;
+// - kling (Kling O3 Pro Edit) : 0,168 $ la seconde, plus l'image clé de
+//   chaque plan (~0,15 $) et les plans refaits après contrôle : 2,5 crédits
+//   la seconde, 15 s au plus.
+// La fiche personnage (deux images Nano Banana Pro, ~0,30 $) : 3 crédits.
+export const SWAP_ENGINES = {
+  genjutsu: { creditsPerSecond: 7, maxSeconds: 30 },
+  kling: { creditsPerSecond: 2.5, maxSeconds: 15 },
+} as const;
+
+export type SwapEngine = keyof typeof SWAP_ENGINES;
+export const DEFAULT_SWAP_ENGINE: SwapEngine = "kling";
+
+export function isSwapEngine(value: unknown): value is SwapEngine {
+  return typeof value === "string" && value in SWAP_ENGINES;
+}
+
+export const SWAP_SHEET_CREDITS = 3;
 // Taille alignée avec le bucket swap-inputs.
 export const SWAP_MAX_BYTES = 50 * 1024 * 1024;
 export const SWAP_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
@@ -245,7 +265,7 @@ export function costOf(
   pace: Pace = DEFAULT_PACE,
 ) {
   if (kind === "image") return IMAGE_COST;
-  if (kind === "swap") return Math.ceil(durationSeconds) * SWAP_CREDITS_PER_SECOND;
+  if (kind === "swap") return swapCredits(durationSeconds);
   const preset = findPreset(presetId) ?? PRESETS[0];
   const shots = shotCount(durationSeconds, presetId, pace);
   const perSecond = findVideoModel(preset.videoModel)?.creditsPerSecond ?? 1;
@@ -291,3 +311,16 @@ export const PROMPT_SUGGESTIONS = [
 ];
 
 export type GenerationStatus = "pending" | "processing" | "completed" | "failed";
+
+// Prix d'un plan refait (voir redoSwapShot, moteur kling seulement).
+export function swapShotCredits(seconds: number) {
+  return Math.max(1, Math.ceil(Math.ceil(seconds) * SWAP_ENGINES.kling.creditsPerSecond));
+}
+
+// Prix d'un remplacement. Aligné avec public.start_swap_generation.
+export function swapCredits(durationSeconds: number, engine: SwapEngine = DEFAULT_SWAP_ENGINE) {
+  return (
+    Math.ceil(Math.ceil(durationSeconds) * SWAP_ENGINES[engine].creditsPerSecond) +
+    SWAP_SHEET_CREDITS
+  );
+}
