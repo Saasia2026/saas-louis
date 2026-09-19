@@ -41,6 +41,9 @@ export const KLING_MIN_PART_SECONDS = 3.2;
 // vidéo dure ainsi à peu près celui d'une séquence (quelques minutes), quelle
 // que soit sa longueur, et les rendus courts sont les plus fidèles.
 // Higgsfield accepte jusqu'à 30 s par envoi.
+// Higgsfield refuse une séquence de moins de 4 s (« Your video is too short »,
+// constaté le 2026-09-19) : les séquences gardent une marge au-dessus.
+export const GENJUTSU_MIN_SECONDS = 4.5;
 export const GENJUTSU_BLOCK_SECONDS = 6;
 // Un plan un peu plus long reste entier : deux moitiés de 3 s se raccordent
 // moins bien, et chacune se paie à la seconde entamée.
@@ -56,8 +59,9 @@ export function genjutsuFrames(seconds: number) {
   const frames = Math.floor(seconds * 30 + 1e-6);
   const rest = frames % 30;
   const shaved = rest === 0 ? frames - 2 : rest === 29 ? frames - 1 : frames;
-  // Jamais sous les 3 s que Genjutsu accepte.
-  return Math.max(Math.min(frames, 90), shaved, 1);
+  // Jamais sous les 4 s que Genjutsu accepte : mieux vaut payer la seconde
+  // entamée que se faire refuser la séquence.
+  return Math.max(shaved, 120);
 }
 
 // Secondes facturées par Higgsfield pour des séquences de ces durées, en

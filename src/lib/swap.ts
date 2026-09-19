@@ -12,6 +12,7 @@ import {
   GENJUTSU_BLOCK_MAX_SECONDS,
   GENJUTSU_BLOCK_SECONDS,
   GENJUTSU_BLOCK_WHOLE_SECONDS,
+  GENJUTSU_MIN_SECONDS,
   KLING_MIN_PART_SECONDS,
   genjutsuFrames,
   swapShotCredits,
@@ -256,7 +257,7 @@ export async function splitIntoParts(
 // de plan : Genjutsu suit les coupes à l'intérieur d'une séquence, et une
 // jonction qui tombe sur une vraie coupe ne se voit pas. Un plan plus long est
 // coupé en parts égales (la jonction peut alors se voir). Une séquence de
-// moins de 3 s (minimum accepté) rejoint sa voisine la plus courte, dans la
+// moins de GENJUTSU_MIN_SECONDS rejoint sa voisine la plus courte, dans la
 // limite de GENJUTSU_BLOCK_MAX_SECONDS. Une coupe manquée par la détection ne
 // gêne pas : Genjutsu la suit ; une coupe imaginée ne fait que finir une
 // séquence plus tôt.
@@ -290,7 +291,7 @@ export function groupIntoBlocks(bounds: number[]): SwapPart[] {
       b !== undefined && b.seconds + block.seconds <= GENJUTSU_BLOCK_MAX_SECONDS + 1e-9;
     const before = fits(blocks[i - 1]) ? blocks[i - 1] : undefined;
     const after = fits(blocks[i + 1]) ? blocks[i + 1] : undefined;
-    if (block.seconds >= SWAP_PART_MIN_SECONDS || (!before && !after)) {
+    if (block.seconds >= GENJUTSU_MIN_SECONDS || (!before && !after)) {
       i++;
       continue;
     }

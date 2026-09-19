@@ -7,6 +7,7 @@ import {
   DEFAULT_SWAP_ENGINE,
   SWAP_ENGINES,
   SWAP_INPUTS_BUCKET,
+  GENJUTSU_MIN_SECONDS,
   genjutsuBilledSeconds,
   isSwapEngine,
   klingBilledSeconds,
@@ -108,8 +109,10 @@ export async function startSwap(input: {
       ? Math.max(SWAP_PART_MIN_SECONDS, input.seconds)
       : Infinity,
   );
-  if (clipSeconds < SWAP_PART_MIN_SECONDS) {
-    return { error: fmt(errors.swapTooShort, { min: SWAP_PART_MIN_SECONDS }) };
+  // Genjutsu refuse une vidéo de moins de 4 s.
+  const minSeconds = genjutsu ? GENJUTSU_MIN_SECONDS : SWAP_PART_MIN_SECONDS;
+  if (clipSeconds < minSeconds) {
+    return { error: fmt(errors.swapTooShort, { min: Math.ceil(minSeconds) }) };
   }
   const durationSeconds = Math.max(1, Math.round(clipSeconds));
   const target = typeof input.target === "string" ? input.target.slice(0, 200) : undefined;
