@@ -27,10 +27,16 @@ assuming one exists.
   PostCSS plugin is `@tailwindcss/postcss`. Add design tokens there, not in a JS config.
 - Fonts are wired as CSS variables (`--font-geist-sans`, `--font-geist-mono`) in
   `layout.tsx` and mapped to `--font-sans` / `--font-mono` in `globals.css`.
-- App routes: `login/`, `auth/confirm/`, `(app)/dashboard/` (twins, train, generate,
-  characters) and webhooks under `api/`. Server logic lives in `src/lib/` (Supabase
-  clients in `src/lib/supabase/`, providers `fal.ts` / `replicate.ts`, video assembly
-  in `video-pipeline.ts`). Session refresh runs in `src/proxy.ts`.
+- The app does one thing: replace a person in a filmed clip with a character given
+  as a photo, keeping gestures, set, camera and sound. App routes: `login/`,
+  `auth/confirm/`, `(app)/dashboard/` (`generate` = the studio, `videos`, `credits`)
+  and webhooks under `api/`. Server logic lives in `src/lib/`: `swap.ts` (the
+  replacement pipeline and its ffmpeg assembly), providers `higgsfield.ts` (Genjutsu,
+  "max quality" engine, needs `HF_CREDENTIALS`) and `fal.ts` (character sheet, Kling
+  "budget" engine), pricing in `generation.ts`, Supabase clients in
+  `src/lib/supabase/`. Session refresh runs in `src/proxy.ts`. Older tables (twins,
+  characters, director_conversations, generation_shots) still exist in the database
+  but the code no longer uses them.
 
 ### Next.js 16 specifics that differ from older versions
 

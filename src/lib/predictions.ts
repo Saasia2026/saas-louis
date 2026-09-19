@@ -47,6 +47,10 @@ export type PredictionState = {
 // Messages enregistrés en base (traduits à l'affichage, voir generate/actions.ts).
 export const OUT_OF_CREDIT_ERROR =
   "Le compte du service de génération n'a plus de crédit. Tes crédits ont été rendus.";
+// Moteur Qualité max (Higgsfield) à court de crédit chez le fournisseur : le
+// studio propose de relancer en Économique.
+export const GENJUTSU_UNAVAILABLE_ERROR =
+  "Le moteur Qualité max est momentanément indisponible. Tes crédits ont été rendus.";
 export const CONTENT_REFUSED_ERROR =
   "Le filtre de contenu du modèle vidéo a refusé une scène. Tes crédits ont été rendus.";
 
@@ -106,44 +110,4 @@ export async function copyOutputToStorage(
     });
   if (error) throw error;
   return storagePath;
-}
-
-// Applique l'état final d'une génération en une seule requête (photo, ou
-// remplacement de personnage) : copie le résultat ou rembourse les crédits.
-// Idempotent : ne touche qu'une génération encore en cours.
-export async function applyImagePredictionResult(prediction: PredictionState) {
-  if (!isTerminal(prediction.status)) return;
-
-  const admin = createAdminClient();
-  const { data: generation } = await admin
-    .from("generations")
-    .select("id, user_id")
-    .in("kind", ["image", "swap"])
-    .eq("replicate_prediction_id", prediction.id)
-    .in("status", ["pending", "processing"])
-    .maybeSingle();
-  if (!generation) return;
-
-  const outputUrl = outputUrlOf(prediction);
-  if (prediction.status !== "succeeded" || !outputUrl) {
-    await admin.rpc("fail_generation", { p_generation_id: generation.id });
-    if (prediction.refused) {
-      await admin
-        .from("generations")
-        .update({ error: CONTENT_REFUSED_ERROR })
-        .eq("id", generation.id);
-    }
-    return;
-  }
-
-  const storagePath = await copyOutputToStorage(
-    outputUrl,
-    `${generation.user_id}/${generation.id}`,
-  );
-  const { error } = await admin
-    .from("generations")
-    .update({ status: "completed", storage_path: storagePath })
-    .eq("id", generation.id)
-    .in("status", ["pending", "processing"]);
-  if (error) throw error;
 }

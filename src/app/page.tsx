@@ -2,12 +2,13 @@ import {
   ArrowRight,
   AudioLines,
   Check,
+  Clapperboard,
   Film,
   Infinity as InfinityIcon,
-  MessageSquareText,
   Scissors,
   ShieldCheck,
   Sparkles,
+  UserRound,
   WandSparkles,
   type LucideIcon,
 } from "lucide-react";
@@ -16,18 +17,19 @@ import { LanguageSwitcher } from "@/app/language-switcher";
 import { Logo } from "@/app/logo";
 import { LogoMark } from "@/app/logo-mark";
 import { ThemeToggle } from "@/app/theme-toggle";
-import { INTL_LOCALES } from "@/i18n/config";
+import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { CREDIT_PACKS, formatPrice } from "@/lib/credit-packs";
+import { SWAP_ENGINES, SWAP_SHEET_CREDITS } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
 
 // Icône et largeur de chaque carte de fonctionnalité, dans l'ordre des
 // textes de landing.featureList.
 const FEATURE_ICONS: { icon: LucideIcon; wide?: boolean }[] = [
-  { icon: MessageSquareText, wide: true },
+  { icon: Clapperboard, wide: true },
+  { icon: UserRound },
   { icon: AudioLines },
   { icon: Scissors },
-  { icon: Film },
   { icon: ShieldCheck, wide: true },
 ];
 
@@ -121,31 +123,46 @@ export default async function Home() {
 
               <div className="grid text-left md:grid-cols-[1.25fr_1fr]">
                 <div className="min-w-0 border-b border-line p-5 md:border-r md:border-b-0">
-                  <div className="rounded-xl border border-line bg-surface-2 p-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    {(
+                      [
+                        { icon: Film, title: L.mockClip, meta: L.mockClipMeta },
+                        { icon: UserRound, title: L.mockCharacter, meta: L.mockCharacterMeta },
+                      ] as const
+                    ).map(({ icon: Icon, title, meta }) => (
+                      <div
+                        key={title}
+                        className="flex h-24 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-line-strong bg-surface-2/60 text-center"
+                      >
+                        <Icon className="size-5 text-accent-light" />
+                        <span className="text-sm font-medium">{title}</span>
+                        <span className="text-xs text-faint">{meta}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 rounded-xl border border-line bg-surface-2 p-4">
                     <p className="text-[0.9375rem] leading-relaxed">
-                      {L.mockPrompt}
+                      {L.mockTarget}
                       <span className="ml-0.5 inline-block h-4 w-px translate-y-0.5 animate-pulse bg-text" />
                     </p>
                     <div className="mt-4 flex flex-wrap gap-1.5">
                       <span className="chip" aria-pressed="true">
                         <Sparkles />
-                        Sora 2
+                        {L.mockEngine}
                       </span>
-                      <span className="tag">9:16</span>
-                      <span className="tag">32 s</span>
-                      <span className="tag">{L.mockPace}</span>
+                      <span className="tag">{L.mockBadge}</span>
                     </div>
                   </div>
 
-                  <p className="mt-5 mb-3 text-xs font-medium text-muted">{L.mockStoryboard}</p>
+                  <p className="mt-5 mb-3 text-xs font-medium text-muted">{L.mockPipeline}</p>
                   <ol className="flex flex-col gap-2">
-                    {L.mockShots.map((shot, i) => (
-                      <li key={shot} className="rounded-lg border border-line bg-surface-2/60 px-3 py-2.5">
+                    {L.mockSteps.map((step, i) => (
+                      <li key={step} className="rounded-lg border border-line bg-surface-2/60 px-3 py-2.5">
                         <div className="flex min-w-0 items-center gap-3 text-sm">
-                          <span className="w-14 shrink-0 text-xs font-medium text-accent-light tabular-nums">
-                            {L.mockShot} {i + 1}
+                          <span className="w-5 shrink-0 text-xs font-medium text-accent-light tabular-nums">
+                            {i + 1}
                           </span>
-                          <span className="truncate text-muted">{shot}</span>
+                          <span className="truncate text-muted">{step}</span>
                         </div>
                         <span className="mt-2 block h-0.5 overflow-hidden rounded-full bg-surface-3">
                           <span
@@ -163,7 +180,7 @@ export default async function Home() {
                     <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-accent/30 to-transparent" />
                     <div className="absolute top-1/2 left-1/2 size-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/30 blur-2xl" />
                     <span className="pointer-events-none absolute inset-x-0 h-14 animate-scan bg-gradient-to-b from-transparent via-accent-2/30 to-transparent" />
-                    <span className="absolute bottom-3 left-3 tag bg-black/60">{L.mockShotCount}</span>
+                    <span className="absolute bottom-3 left-3 tag bg-black/60">{L.mockBadge}</span>
                   </div>
                 </div>
               </div>
@@ -244,7 +261,13 @@ export default async function Home() {
           <h2 className="text-gradient mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
             {L.pricingTitle}
           </h2>
-          <p className="mt-4 max-w-xl text-[0.9375rem] leading-relaxed text-muted">{L.pricingText}</p>
+          <p className="mt-4 max-w-xl text-[0.9375rem] leading-relaxed text-muted">
+            {fmt(L.pricingText, {
+              max: SWAP_ENGINES.genjutsu.creditsPerSecond.toLocaleString(INTL_LOCALES[locale]),
+              budget: SWAP_ENGINES.kling.creditsPerSecond.toLocaleString(INTL_LOCALES[locale]),
+              sheet: SWAP_SHEET_CREDITS,
+            })}
+          </p>
           <ul className="mt-10 grid gap-4 md:grid-cols-3">
             {CREDIT_PACKS.map((pack, i) => {
               const featured = "highlight" in pack && pack.highlight;

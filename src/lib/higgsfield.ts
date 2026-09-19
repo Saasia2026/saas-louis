@@ -55,6 +55,14 @@ export async function uploadToHiggsfield(data: Buffer | ArrayBuffer, contentType
   return target.public_url;
 }
 
+// Qui remplacer, tel que le créateur l'a écrit (souvent en français, parfois
+// sous forme d'ordre : « remplace l'homme torse nu ») : cité tel quel plutôt
+// que glissé dans la phrase, pour que le modèle le lise comme une description.
+export function describeTarget(target?: string) {
+  const text = target?.trim().replace(/"/g, "'");
+  return text ? `the person described as "${text}"` : "the main person";
+}
+
 // Un passage de 3 à 30 s, coupes comprises. Les images montrent toutes le
 // même personnage, sur fond uni et sans accessoire : tout objet d'une image
 // de référence se retrouve dans la scène. `target` : qui remplacer quand
@@ -66,7 +74,7 @@ export async function createGenjutsuSwap(input: {
   imageUrls: string[];
   target?: string;
 }) {
-  const target = input.target?.trim() || "the main person";
+  const target = describeTarget(input.target);
   const response = await fetch(`${BASE_URL}/${GENJUTSU_SWAP_ENDPOINT}`, {
     method: "POST",
     headers: headers(),

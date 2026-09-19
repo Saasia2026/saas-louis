@@ -9,6 +9,12 @@ import { createFalSwap, createFalSwapKeyframe, getFalPrediction } from "@/lib/fa
 import {
   FORMATS,
   GENERATIONS_BUCKET,
+  GENJUTSU_BLOCK_MAX_SECONDS,
+  GENJUTSU_BLOCK_SECONDS,
+  GENJUTSU_BLOCK_WHOLE_SECONDS,
+  KLING_MIN_PART_SECONDS,
+  genjutsuFrames,
+  swapShotCredits,
   SWAP_INPUTS_BUCKET,
   type AspectRatio,
   type SwapEngine,
@@ -16,6 +22,7 @@ import {
 import { createGenjutsuSwap, getHiggsfieldPrediction } from "@/lib/higgsfield";
 import {
   CONTENT_REFUSED_ERROR,
+  GENJUTSU_UNAVAILABLE_ERROR,
   OUT_OF_CREDIT_ERROR,
   copyOutputToStorage,
   errorMessage,
@@ -42,10 +49,11 @@ import { checkSwapShot } from "@/lib/swap-check";
 // 3. contrôle : Claude vérifie le plan rendu, refait une fois s'il est raté.
 //
 // Moteur genjutsu (Higgsfield, voir createGenjutsuSwap) : il suit les coupes
-// tout seul. Le passage entier est un seul plan, rendu en une fois à partir
-// de la fiche personnage, sans image clé ni contrôle : un rendu raté n'est
-// pas facturé par Higgsfield et se retente, un rendu réussi coûte trop cher
-// pour être refait d'office.
+// tout seul. Le passage est découpé en séquences de quelques secondes (voir
+// groupIntoBlocks), rendues toutes en même temps à partir de la fiche
+// personnage, sans image clé. Un rendu raté n'est pas facturé par Higgsfield
+// et se retente ; un rendu réussi coûte trop cher pour être refait d'office :
+// le contrôle le signale, et le créateur peut refaire la séquence seule.
 
 const execFileAsync = promisify(execFile);
 
@@ -53,7 +61,7 @@ const execFileAsync = promisify(execFile);
 export const SWAP_PART_MIN_SECONDS = 3;
 const PART_MAX_SECONDS = 10;
 // Durée envoyée à Kling pour un plan trop court (aller-retour).
-const PART_SEND_MIN_SECONDS = 3.2;
+const PART_SEND_MIN_SECONDS = KLING_MIN_PART_SECONDS;
 // Changement de plan : pic du score de scène de ffmpeg, au-dessus d'un
 // plancher et nettement au-dessus du mouvement autour (un fond uni donne des
 // coupes à ~0,2 seulement, une caméra rapide un bruit de fond élevé).
@@ -71,7 +79,7 @@ const OUTPUT_FPS: Record<SwapEngine, number> = { kling: 30, genjutsu: 24 };
 // d'échec ou de contrôle refusé.
 const MAX_ATTEMPTS = 2;
 // Contrôles par passage d'advanceSwap : chacun appelle Claude (~5-10 s).
-const CHECKS_PER_CALL = 2;
+const CHECKS_PER_CALL = 6;
 const CHECK_FRAMES = 4;
 // Verrou d'advanceSwap, au-delà duquel un appel bloqué est ignoré.
 const LOCK_SECONDS = 150;
@@ -81,10 +89,25 @@ const LOCK_SECONDS = 150;
 const MAX_STATUS_ERRORS = 24;
 // Compte Higgsfield saturé : essais espacés, abandon au bout de 10 min.
 const GENJUTSU_RETRY_MS = 30_000;
+// Solde Higgsfield épuisé en cours de vidéo : les séquences refusées (non
+// facturées) attendent une recharge du compte, jusqu'à l'échéance.
+const GENJUTSU_TOPUP_RETRY_MS = 5 * 60_000;
+// Montage : essais avant d'abandonner, et délai au-delà duquel un montage
+// interrompu (fonction coupée) est repris. Plus long que maxDuration (300 s).
+const ASSEMBLE_ATTEMPTS = 3;
+const ASSEMBLE_STALE_MS = 6 * 60_000;
+// Marge sous la limite de taille d'un fichier dans Supabase Storage (50 Mo).
+const MAX_VIDEO_MB = 40;
 const GENJUTSU_WAIT_MAX_MS = 10 * 60_000;
-// Un rendu Genjutsu de 30 s prend une vingtaine de minutes, file d'attente
-// en plus. Au-delà, le remplacement est abandonné et remboursé.
-const GENJUTSU_DEADLINE_MS = 90 * 60_000;
+// Une séquence Genjutsu se rend en quelques minutes, file d'attente en plus.
+// Au-delà de ce délai, le remplacement est abandonné et remboursé.
+const GENJUTSU_DEADLINE_MS = 60 * 60_000;
+// Séquences Genjutsu rendues en même temps pour une vidéo (Higgsfield en
+// accepte 20 par clé, tous utilisateurs confondus). Les envois d'un passage
+// d'advanceSwap s'arrêtent au bout d'une minute : chacun peut en prendre une,
+// et le verrou en dure deux et demie.
+const GENJUTSU_IN_FLIGHT = 16;
+const GENJUTSU_POST_WINDOW_MS = 60_000;
 
 // Plan du passage : début relatif au passage et durée, puis son avancement.
 // Les fichiers envoyés à fal (vidéo du plan, première image) sont chez fal :
@@ -106,6 +129,11 @@ export type SwapPart = {
   // Genjutsu : compte Higgsfield saturé, en attente d'une place.
   waitingSince?: number;
   retryAt?: number;
+  // Genjutsu : envoi en cours. Resté vrai au suivi suivant, son résultat n'a
+  // jamais été connu : la séquence n'est pas renvoyée (elle serait payée deux fois).
+  posting?: boolean;
+  // Genjutsu : séquence non rendue, livrée avec ses images d'origine (prix rendu).
+  original?: boolean;
   clipPath?: string;
   // Raison du dernier contrôle refusé.
   check?: string;
@@ -127,6 +155,10 @@ export type SwapMetadata = {
   character_urls?: string[];
   // Image clé du premier plan, modèle des suivantes.
   anchor_url?: string;
+  // Début du remplacement, ou du dernier plan refait (échéance, voir advanceSwap).
+  started_at?: string;
+  assemble_attempts?: number;
+  assembling_since?: string | null;
   rev?: number;
   busy_until?: string | null;
 };
@@ -168,9 +200,15 @@ function nearestFormat(ratio: number): AspectRatio {
   );
 }
 
-// Découpe le passage [start, start + seconds] plan par plan. Un plan de plus
-// de 10 s est coupé en parts égales.
-export async function splitIntoParts(url: string, start: number, seconds: number) {
+// Découpe le passage [start, start + seconds]. Kling : plan par plan, un plan
+// de plus de 10 s coupé en parts égales. Genjutsu : en séquences (voir
+// groupIntoBlocks).
+export async function splitIntoParts(
+  url: string,
+  start: number,
+  seconds: number,
+  engine: SwapEngine = "kling",
+) {
   const { stderr } = await execFileAsync(
     ffmpegPath!,
     [
@@ -183,7 +221,7 @@ export async function splitIntoParts(url: string, start: number, seconds: number
       "-f", "null",
       "-",
     ],
-    { timeout: 90_000, maxBuffer: 32 * 1024 * 1024 },
+    { timeout: 150_000, maxBuffer: 64 * 1024 * 1024 },
   );
   const scores: { time: number; score: number }[] = [];
   let time = 0;
@@ -203,6 +241,7 @@ export async function splitIntoParts(url: string, start: number, seconds: number
     .map((c) => c.time);
 
   const bounds = [0, ...cuts, seconds];
+  if (engine === "genjutsu") return groupIntoBlocks(bounds);
   return bounds.slice(1).flatMap((end, i): SwapPart[] => {
     const length = end - bounds[i];
     const count = Math.ceil(length / PART_MAX_SECONDS);
@@ -211,6 +250,59 @@ export async function splitIntoParts(url: string, start: number, seconds: number
       seconds: length / count,
     }));
   });
+}
+
+// Séquences Genjutsu d'au plus GENJUTSU_BLOCK_SECONDS, coupées aux changements
+// de plan : Genjutsu suit les coupes à l'intérieur d'une séquence, et une
+// jonction qui tombe sur une vraie coupe ne se voit pas. Un plan plus long est
+// coupé en parts égales (la jonction peut alors se voir). Une séquence de
+// moins de 3 s (minimum accepté) rejoint sa voisine la plus courte, dans la
+// limite de GENJUTSU_BLOCK_MAX_SECONDS. Une coupe manquée par la détection ne
+// gêne pas : Genjutsu la suit ; une coupe imaginée ne fait que finir une
+// séquence plus tôt.
+export function groupIntoBlocks(bounds: number[]): SwapPart[] {
+  // Plans, les plus longs coupés en parts égales.
+  const pieces = bounds.slice(1).flatMap((end, i) => {
+    const length = end - bounds[i];
+    const count =
+      length <= GENJUTSU_BLOCK_WHOLE_SECONDS
+        ? 1
+        : Math.ceil(length / GENJUTSU_BLOCK_SECONDS - 1e-9);
+    return Array.from({ length: count }, (_, k) => ({
+      start: bounds[i] + (k * length) / count,
+      seconds: length / count,
+    }));
+  });
+  // Plans consécutifs regroupés tant que la séquence reste courte.
+  const blocks: SwapPart[] = [];
+  for (const piece of pieces) {
+    const last = blocks.at(-1);
+    if (last && last.seconds + piece.seconds <= GENJUTSU_BLOCK_SECONDS + 1e-9) {
+      last.seconds += piece.seconds;
+    } else {
+      blocks.push({ ...piece });
+    }
+  }
+  // Séquences trop courtes fusionnées avec leur voisine la plus courte.
+  for (let i = 0; i < blocks.length; ) {
+    const block = blocks[i];
+    const fits = (b?: SwapPart) =>
+      b !== undefined && b.seconds + block.seconds <= GENJUTSU_BLOCK_MAX_SECONDS + 1e-9;
+    const before = fits(blocks[i - 1]) ? blocks[i - 1] : undefined;
+    const after = fits(blocks[i + 1]) ? blocks[i + 1] : undefined;
+    if (block.seconds >= SWAP_PART_MIN_SECONDS || (!before && !after)) {
+      i++;
+      continue;
+    }
+    if (before && (!after || before.seconds <= after.seconds)) {
+      before.seconds += block.seconds;
+    } else {
+      after!.start = block.start;
+      after!.seconds += block.seconds;
+    }
+    blocks.splice(i, 1);
+  }
+  return blocks;
 }
 
 // Un plan du passage, réencodé aux contraintes du moteur. Kling : petit côté
@@ -252,7 +344,8 @@ export async function preparePart(
         // Genjutsu se paie à la seconde entamée : la coupe se fait à l'image
         // près, pour ne jamais déborder sur la seconde suivante.
         ...(engine === "genjutsu"
-          ? ["-frames:v", String(Math.floor(seconds * 30 + 1e-6)), "-shortest"]
+          ? // apad : sans lui, un passage au-delà de la fin du son serait tronqué.
+            ["-af", "apad", "-frames:v", String(genjutsuFrames(seconds)), "-shortest"]
           : []),
         "-c:v", "libx264",
         "-preset", "veryfast",
@@ -339,7 +432,20 @@ export async function advanceSwap(generationId: string) {
     .eq("kind", "swap")
     .eq("status", "processing")
     .maybeSingle();
-  if (!generation || generation.stage !== "image") return;
+  if (!generation) return;
+  if (generation.stage === "assembling") {
+    // Montage interrompu (fonction coupée) : repris au bout de quelques minutes.
+    const since = (generation.metadata as SwapMetadata | null)?.assembling_since;
+    if (since && Date.now() - Date.parse(since) < ASSEMBLE_STALE_MS) return;
+    await admin
+      .from("generations")
+      .update({ stage: "image" })
+      .eq("id", generation.id)
+      .eq("stage", "assembling")
+      .eq("status", "processing");
+    return;
+  }
+  if (generation.stage !== "image") return;
 
   const current = (generation.metadata ?? {}) as SwapMetadata;
   if (!current.swap_parts?.length) return;
@@ -375,44 +481,109 @@ export async function advanceSwap(generationId: string) {
     return false;
   };
 
+  // Échéance Genjutsu : elle ne vise que les séquences encore en attente de
+  // rendu (voir advanceParts). Un rendu fini reste récupéré par qui revient tard.
+  const expired =
+    metadata.engine === "genjutsu" &&
+    Date.now() - Date.parse(metadata.started_at ?? generation.created_at) > GENJUTSU_DEADLINE_MS;
+
   let outcome: "continue" | "failed" | "assemble" = "continue";
   try {
-    outcome = await advanceParts(generation, metadata, persist);
+    outcome = await advanceParts(generation, metadata, persist, expired);
   } catch (e) {
     console.error("advanceSwap", errorMessage(e));
-  }
-
-  // Rendu Genjutsu jamais revenu (suivi ou copie en panne durable) : abandon,
-  // crédits rendus. Après advanceParts, pour qu'un rendu fini soit encore
-  // récupéré par qui revient tard.
-  if (
-    outcome === "continue" &&
-    metadata.engine === "genjutsu" &&
-    Date.now() - Date.parse(generation.created_at) > GENJUTSU_DEADLINE_MS
-  ) {
-    outcome = "failed";
+    // Compte fal bloqué à l'envoi d'une image clé ou d'un plan : sans cela,
+    // le remplacement réessaierait à chaque suivi, sans fin. Plan refait à la
+    // demande : l'ancien reprend sa place, la vidéo reste entière.
+    if (isOutOfCredit(e)) {
+      const redone = metadata.swap_parts!.filter((p) => p.redo && p.stage !== "done");
+      for (const part of redone) await abandonRedo(generation.id, part);
+      outcome = redone.length ? "assemble" : await fail(generation.id, OUT_OF_CREDIT_ERROR);
+    }
   }
 
   // Libère le verrou et enregistre l'avancement.
   await persist({ busy_until: null });
 
   if (outcome === "failed") {
+    await removeParts(generation);
     await admin.rpc("fail_generation", { p_generation_id: generation.id });
     return;
   }
   if (outcome === "assemble") await assembleSwap(generation, metadata);
 }
 
+// Remplacement abandonné et remboursé : ses morceaux rendus ne restent pas
+// téléchargeables.
+async function removeParts(generation: { id: string; user_id: string }) {
+  try {
+    const bucket = createAdminClient().storage.from(GENERATIONS_BUCKET);
+    const folder = `${generation.user_id}/${generation.id}`;
+    const { data: files } = await bucket.list(folder, { limit: 1000 });
+    if (files?.length) await bucket.remove(files.map((f) => `${folder}/${f.name}`));
+  } catch (e) {
+    console.error("removeParts", errorMessage(e));
+  }
+}
+
 async function advanceParts(
   generation: { id: string; user_id: string },
   metadata: SwapMetadata,
   persist: () => Promise<boolean>,
+  // Échéance Genjutsu dépassée : les séquences encore en attente sont abandonnées.
+  expired: boolean,
 ): Promise<"continue" | "failed" | "assemble"> {
   const parts = metadata.swap_parts!;
   const sheet = metadata.sheet!;
   const target = metadata.target;
   const genjutsu = metadata.engine === "genjutsu";
-  let checks = 0;
+  const calledAt = Date.now();
+  // Séquences Genjutsu en cours de rendu.
+  let inFlight = parts.filter((p) => p.stage === "video" && p.predictionId).length;
+  // Séquences refusées faute de solde chez Higgsfield (refus non facturé).
+  const starved: SwapPart[] = [];
+  // Rendus finis, copiés dans le stockage tous en même temps.
+  const copies: Promise<void>[] = [];
+
+  // Abandon d'un plan.
+  // - Refait à la demande : l'ancien reprend sa place, la vidéo reste entière.
+  // - Genjutsu, quand d'autres séquences sont déjà envoyées (donc payées) :
+  //   celle-ci garde ses images d'origine, son prix est rendu, la vidéo est
+  //   livrée ; elle reste signalée et peut être refaite seule.
+  // - Sinon tout le remplacement échoue, crédits rendus.
+  const giveUp = async (part: SwapPart, i: number, error?: string) => {
+    if (part.redo) {
+      await abandonRedo(generation.id, part);
+      return null;
+    }
+    const othersPaid = parts.some(
+      (p) => p !== part && (p.predictionId || (p.clipPath && !p.original)),
+    );
+    if (genjutsu && othersPaid && part.videoUrl) {
+      try {
+        part.clipPath = await copyOutputToStorage(
+          part.videoUrl,
+          `${generation.user_id}/${generation.id}/part-${String(i).padStart(2, "0")}-source`,
+        );
+      } catch (e) {
+        console.error("swap: séquence d'origine", errorMessage(e));
+        return error ? fail(generation.id, error) : ("failed" as const);
+      }
+      part.predictionId = undefined;
+      part.posting = false;
+      part.original = true;
+      part.check = error ?? "non rendue";
+      part.stage = "done";
+      // Enregistré avant de rendre son prix : jamais deux fois.
+      if (!(await persist())) return "continue" as const;
+      await createAdminClient().rpc("refund_swap_redo", {
+        p_generation_id: generation.id,
+        p_credits: swapShotCredits(part.seconds, "genjutsu"),
+      });
+      return null;
+    }
+    return error ? fail(generation.id, error) : ("failed" as const);
+  };
 
   for (const [i, part] of parts.entries()) {
     const stage = part.stage ?? "keyframe";
@@ -437,6 +608,11 @@ async function advanceParts(
       if (!isTerminal(prediction.status)) continue;
       const url = outputUrlOf(prediction);
       if (prediction.status !== "succeeded" || !url) {
+        if (prediction.outOfCredit) {
+          const out = await giveUp(part, i, OUT_OF_CREDIT_ERROR);
+          if (out) return out;
+          continue;
+        }
         if (part.redo && (prediction.refused || (part.keyframeAttempts ?? 1) >= MAX_ATTEMPTS)) {
           await abandonRedo(generation.id, part);
           continue;
@@ -454,15 +630,30 @@ async function advanceParts(
     if (part.stage === "video") {
       if (!part.predictionId) {
         if (genjutsu) {
+          // Envoi précédent au résultat inconnu (fonction coupée en plein
+          // envoi), ou échéance dépassée : on n'envoie plus.
+          if (part.posting || expired) {
+            const out = await giveUp(part, i);
+            if (out) return out;
+            continue;
+          }
           if (part.retryAt && Date.now() < part.retryAt) continue;
-          if ((part.attempts ?? 0) >= MAX_ATTEMPTS) return "failed";
+          if (inFlight >= GENJUTSU_IN_FLIGHT) continue;
+          if (Date.now() - calledAt > GENJUTSU_POST_WINDOW_MS) continue;
+          if ((part.attempts ?? 0) >= MAX_ATTEMPTS) {
+            const out = await giveUp(part, i);
+            if (out) return out;
+            continue;
+          }
           // L'essai est compté et enregistré avant l'envoi : si l'appel meurt
-          // pendant l'envoi, le suivi suivant ne repart pas de zéro. Sans
-          // cette écriture (verrou perdu), rien n'est envoyé.
+          // pendant l'envoi, le suivi suivant ne renvoie rien. Sans cette
+          // écriture (verrou perdu), rien n'est envoyé.
           part.attempts = (part.attempts ?? 0) + 1;
+          part.posting = true;
           if (!(await persist())) {
             part.attempts -= 1;
-            continue;
+            part.posting = false;
+            return "continue";
           }
           try {
             part.predictionId = await createGenjutsuSwap({
@@ -472,25 +663,43 @@ async function advanceParts(
             });
           } catch (e) {
             console.error("createGenjutsuSwap", errorMessage(e));
+            const status = (e as { status?: unknown } | null)?.status;
+            const rejected = typeof status === "number" && status >= 400 && status < 500;
+            // Refus net : rien n'a été créé ni facturé.
+            if (rejected || higgsfieldBusy(e)) part.posting = false;
             if (higgsfieldBusy(e)) {
-              // Rien n'a été créé ni facturé : on attend une place.
+              // Compte saturé : on attend une place.
               part.attempts -= 1;
               part.waitingSince ??= Date.now();
-              if (Date.now() - part.waitingSince > GENJUTSU_WAIT_MAX_MS) return "failed";
+              if (Date.now() - part.waitingSince > GENJUTSU_WAIT_MAX_MS) {
+                const out = await giveUp(part, i);
+                if (out) return out;
+                continue;
+              }
               part.retryAt = Date.now() + GENJUTSU_RETRY_MS;
+              // Inutile d'envoyer les séquences suivantes pendant ce passage.
+              inFlight = GENJUTSU_IN_FLIGHT;
               continue;
             }
-            // Solde Higgsfield épuisé (403 dès la création) : inutile de retenter.
-            if (isOutOfCredit(e)) return fail(generation.id, OUT_OF_CREDIT_ERROR);
+            // Solde Higgsfield épuisé (403 dès la création).
+            if (isOutOfCredit(e) && !part.redo) {
+              part.attempts -= 1;
+              starved.push(part);
+              inFlight = GENJUTSU_IN_FLIGHT;
+              continue;
+            }
             // Seul un refus net (4xx) se retente : après une coupure, un délai
             // dépassé ou un 5xx, la requête a pu être acceptée, et un second
             // envoi serait payé deux fois.
-            const status = (e as { status?: unknown } | null)?.status;
-            const rejected = typeof status === "number" && status >= 400 && status < 500;
-            if (!rejected || part.attempts >= MAX_ATTEMPTS) return "failed";
+            if (isOutOfCredit(e) || !rejected || part.attempts >= MAX_ATTEMPTS) {
+              const out = await giveUp(part, i, isOutOfCredit(e) ? GENJUTSU_UNAVAILABLE_ERROR : undefined);
+              if (out) return out;
+            }
             continue;
           }
+          part.posting = false;
           part.retryAt = undefined;
+          inFlight++;
           // Enregistré tout de suite : une requête perdue serait relancée,
           // donc payée deux fois.
           await persist();
@@ -516,58 +725,116 @@ async function advanceParts(
       } catch (e) {
         console.error("swap: suivi", errorMessage(e));
         part.statusErrors = (part.statusErrors ?? 0) + 1;
-        if (part.statusErrors < MAX_STATUS_ERRORS) continue;
-        if (part.redo) {
-          await abandonRedo(generation.id, part);
-          continue;
-        }
-        return "failed";
+        if (part.statusErrors < MAX_STATUS_ERRORS && !expired) continue;
+        const out = await giveUp(part, i);
+        if (out) return out;
+        continue;
       }
-      if (!isTerminal(prediction.status)) continue;
+      if (!isTerminal(prediction.status)) {
+        if (!expired) continue;
+        // Rendu jamais revenu avant l'échéance.
+        const out = await giveUp(part, i);
+        if (out) return out;
+        continue;
+      }
+      if (genjutsu) inFlight--;
       const url = outputUrlOf(prediction);
       if (prediction.status !== "succeeded" || !url) {
-        if (prediction.outOfCredit) return fail(generation.id, OUT_OF_CREDIT_ERROR);
-        if (part.redo && (prediction.refused || (part.attempts ?? 1) >= MAX_ATTEMPTS)) {
-          await abandonRedo(generation.id, part);
+        if (prediction.outOfCredit) {
+          // Genjutsu : refus non facturé, l'essai ne compte pas. La séquence
+          // attend une recharge du compte si d'autres sont déjà payées.
+          if (genjutsu && !part.redo) {
+            part.predictionId = undefined;
+            part.attempts = Math.max((part.attempts ?? 1) - 1, 0);
+            starved.push(part);
+            inFlight = GENJUTSU_IN_FLIGHT;
+            continue;
+          }
+          const out = await giveUp(part, i, genjutsu ? GENJUTSU_UNAVAILABLE_ERROR : OUT_OF_CREDIT_ERROR);
+          if (out) return out;
           continue;
         }
-        if (prediction.refused) return refuse(generation.id);
-        if ((part.attempts ?? 1) >= MAX_ATTEMPTS) return "failed";
+        if (prediction.refused || (part.attempts ?? 1) >= MAX_ATTEMPTS) {
+          const out = await giveUp(part, i, prediction.refused ? CONTENT_REFUSED_ERROR : undefined);
+          if (out) return out;
+          continue;
+        }
         part.predictionId = undefined;
         continue;
       }
-      part.clipPath = await copyOutputToStorage(
-        url,
-        `${generation.user_id}/${generation.id}/part-${String(i).padStart(2, "0")}-${part.attempts ?? 1}`,
+      // Un plan refait ne prend pas le fichier de l'ancien, gardé en secours.
+      const name = `part-${String(i).padStart(2, "0")}-${part.attempts ?? 1}${part.redo ? `-${Date.now()}` : ""}`;
+      copies.push(
+        copyOutputToStorage(url, `${generation.user_id}/${generation.id}/${name}`).then(
+          (clipPath) => {
+            part.clipPath = clipPath;
+            part.stage = "check";
+          },
+          // Copie ratée : le plan reste à l'étape vidéo, le suivi suivant la
+          // retente sans rien renvoyer au fournisseur.
+          (e) => console.error("swap: copie", errorMessage(e)),
+        ),
       );
-      part.stage = genjutsu ? "done" : "check";
     }
+  }
+  await Promise.all(copies);
 
-    if (part.stage === "check") {
-      if (checks >= CHECKS_PER_CALL) continue;
-      checks++;
-      const result = await checkFrames(part.clipPath!)
-        .then((frames) => checkSwapShot({ frames, characterUrl: sheet.frontUrl, target }))
-        .catch((e) => {
-          console.error("checkSwapShot", errorMessage(e));
-          return null;
-        });
-      const ok = !result || (result.replaced && result.sameCharacter);
-      if (!ok && (part.attempts ?? 1) < MAX_ATTEMPTS) {
-        // Nouvel essai de la vidéo, à partir de la même image clé.
-        part.check = result?.reason;
-        part.predictionId = undefined;
-        part.stage = "video";
-        continue;
-      }
-      if (!ok) part.check = result?.reason;
-      else part.check = undefined;
-      part.stage = "done";
-      part.redo = undefined;
+  // Échéance dépassée et rendu fini impossible à copier : séquence abandonnée.
+  if (expired) {
+    for (const [i, part] of parts.entries()) {
+      if (part.stage !== "video" || !part.predictionId) continue;
+      const out = await giveUp(part, i);
+      if (out) return out;
     }
   }
 
-  return parts.every((p) => p.stage === "done" && p.clipPath) ? "assemble" : "continue";
+  if (starved.length) {
+    // Rien de payé ni en cours : échec immédiat, sans frais.
+    if (!parts.some((p) => p.predictionId || (p.clipPath && !p.original))) {
+      return fail(generation.id, GENJUTSU_UNAVAILABLE_ERROR);
+    }
+    // Des séquences sont déjà payées : on attend une recharge du compte
+    // plutôt que de les perdre (jusqu'à l'échéance).
+    console.error(
+      "ALERTE : solde Higgsfield épuisé, remplacement en attente de recharge",
+      generation.id,
+      `${starved.length} séquence(s)`,
+    );
+    for (const part of starved) part.retryAt = Date.now() + GENJUTSU_TOPUP_RETRY_MS;
+  }
+
+  // Contrôles menés de front : des séquences lancées ensemble finissent
+  // ensemble. Genjutsu : toutes d'un coup, un contrôle raté ne fait que signaler.
+  await Promise.all(
+    parts
+      .filter((p) => p.stage === "check")
+      .slice(0, genjutsu ? GENJUTSU_IN_FLIGHT : CHECKS_PER_CALL)
+      .map(async (part) => {
+        const result = await checkFrames(part.clipPath!)
+          .then((frames) => checkSwapShot({ frames, characterUrl: sheet.frontUrl, target }))
+          .catch((e) => {
+            console.error("checkSwapShot", errorMessage(e));
+            return null;
+          });
+        const ok = !result || (result.replaced && result.sameCharacter);
+        // Kling : nouvel essai de la vidéo, à partir de la même image clé.
+        // Genjutsu : une séquence rendue est payée, elle est seulement signalée.
+        if (!ok && !genjutsu && (part.attempts ?? 1) < MAX_ATTEMPTS) {
+          part.check = result?.reason;
+          part.predictionId = undefined;
+          part.stage = "video";
+          return;
+        }
+        part.check = ok ? undefined : result?.reason;
+        // `redo` est gardé jusqu'au montage réussi (voir assembleSwap).
+        part.stage = "done";
+      }),
+  );
+
+  if (!parts.every((p) => p.stage === "done" && p.clipPath)) return "continue";
+  // Aucune séquence rendue : rien à livrer, tout est rendu.
+  if (genjutsu && parts.every((p) => p.original)) return "failed";
+  return "assemble";
 }
 
 // Plan refait qui a raté : l'ancien plan reprend sa place, son prix est rendu.
@@ -601,14 +868,56 @@ async function fail(generationId: string, error: string): Promise<"failed"> {
 
 async function assembleSwap(generation: { id: string; user_id: string }, metadata: SwapMetadata) {
   const admin = createAdminClient();
-  // Verrou : un seul appelant fait le montage.
+  // Verrou : un seul appelant fait le montage. Les essais sont comptés : un
+  // montage coupé en route est repris (voir advanceSwap), pas indéfiniment.
+  const attempts = (metadata.assemble_attempts ?? 0) + 1;
   const { data: claimed } = await admin
     .from("generations")
-    .update({ stage: "assembling" })
+    .update({
+      stage: "assembling",
+      metadata: {
+        ...metadata,
+        busy_until: null,
+        assemble_attempts: attempts,
+        assembling_since: new Date().toISOString(),
+      },
+    })
     .eq("id", generation.id)
     .eq("stage", "image")
-    .select("id");
+    .eq("status", "processing")
+    .select("id, storage_path");
   if (!claimed?.length) return;
+  // Vidéo déjà livrée : c'est un plan refait.
+  const delivered = claimed[0].storage_path;
+  const settled = { busy_until: null, assemble_attempts: 0, assembling_since: null };
+
+  const giveUpAssembly = async () => {
+    const parts = metadata.swap_parts ?? [];
+    if (delivered) {
+      // La vidéo livrée reste en place ; seul le plan refait est rendu.
+      for (const part of parts.filter((p) => p.redo)) await abandonRedo(generation.id, part);
+      await admin
+        .from("generations")
+        .update({ status: "completed", metadata: { ...metadata, ...settled } })
+        .eq("id", generation.id)
+        .eq("status", "processing");
+      return;
+    }
+    // Genjutsu, une seule séquence : le rendu, déjà payé, est livré tel quel
+    // plutôt que perdu.
+    if (metadata.engine === "genjutsu" && parts.length === 1 && parts[0].clipPath) {
+      await admin
+        .from("generations")
+        .update({ status: "completed", storage_path: parts[0].clipPath })
+        .eq("id", generation.id)
+        .eq("status", "processing");
+      return;
+    }
+    await removeParts(generation);
+    await admin.rpc("fail_generation", { p_generation_id: generation.id });
+  };
+
+  if (attempts > ASSEMBLE_ATTEMPTS) return giveUpAssembly();
 
   try {
     // Son d'origine du passage, continu d'un plan à l'autre.
@@ -625,23 +934,28 @@ async function assembleSwap(generation: { id: string; user_id: string }, metadat
       sourceUrl: source?.signedUrl,
       sourceStart: metadata.source_start ?? 0,
     });
+    for (const part of metadata.swap_parts!) part.redo = undefined;
     await admin
       .from("generations")
-      .update({ status: "completed", storage_path: storagePath })
+      .update({
+        status: "completed",
+        storage_path: storagePath,
+        metadata: { ...metadata, ...settled },
+      })
       .eq("id", generation.id);
   } catch (e) {
     console.error("advanceSwap: montage", errorMessage(e));
-    // Genjutsu : le rendu, déjà payé, est livré tel quel plutôt que perdu.
-    const [part] = metadata.swap_parts ?? [];
-    if (metadata.engine === "genjutsu" && part?.clipPath) {
+    if (attempts < ASSEMBLE_ATTEMPTS) {
+      // Les rendus, payés, sont toujours dans le stockage : le suivi suivant
+      // retente le montage.
       await admin
         .from("generations")
-        .update({ status: "completed", storage_path: part.clipPath })
+        .update({ stage: "image" })
         .eq("id", generation.id)
-        .eq("status", "processing");
+        .eq("stage", "assembling");
       return;
     }
-    await admin.rpc("fail_generation", { p_generation_id: generation.id });
+    await giveUpAssembly();
   }
 }
 
@@ -676,15 +990,26 @@ async function concatenateParts(input: {
     const size = firstInfo.match(/Stream #.*Video:.*?, (\d{2,5})x(\d{2,5})[ ,[]/);
     const [width, height] = size ? [Number(size[1]), Number(size[2])] : [1080, 1920];
     const total = input.parts.reduce((sum, p) => sum + p.seconds, 0);
+    const maxKbps = Math.floor(Math.min(8000, (MAX_VIDEO_MB * 8192) / Math.max(total, 1)));
 
+    // Chaque morceau occupe exactement ses images dans la vidéo finale,
+    // comptées d'après ses bornes dans le passage : les arrondis ne
+    // s'additionnent pas d'une jonction à l'autre, l'image reste calée sur le
+    // son. Un rendu plus court que son morceau (Genjutsu rend un nombre
+    // d'images imposé) est complété par sa dernière image.
+    const frameAt = (seconds: number) => Math.round(seconds * input.fps);
     const filter =
       files
-        .map(
-          (_, i) =>
-            `[${i}:v]trim=duration=${input.parts[i].seconds.toFixed(3)},setpts=PTS-STARTPTS,` +
+        .map((_, i) => {
+          const part = input.parts[i];
+          const frames = Math.max(1, frameAt(part.start + part.seconds) - frameAt(part.start));
+          return (
+            `[${i}:v]fps=${input.fps},tpad=stop_mode=clone:stop_duration=3,` +
+            `trim=end_frame=${frames},setpts=PTS-STARTPTS,` +
             `scale=${width}:${height}:force_original_aspect_ratio=decrease,` +
-            `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=${input.fps}[v${i}];`,
-        )
+            `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,setsar=1[v${i}];`
+          );
+        })
         .join("") +
       files.map((_, i) => `[v${i}]`).join("") +
       `concat=n=${files.length}:v=1:a=0[outv]`;
@@ -702,10 +1027,15 @@ async function concatenateParts(input: {
         ...source,
         "-filter_complex", filter,
         "-map", "[outv]",
-        ...(input.sourceUrl ? ["-map", `${files.length}:a?`, "-c:a", "aac", "-shortest"] : []),
+        // apad : la vidéo fixe la durée, même si le son du clip s'arrête avant.
+        ...(input.sourceUrl
+          ? ["-map", `${files.length}:a?`, "-c:a", "aac", "-af", "apad", "-shortest"]
+          : []),
         "-c:v", "libx264",
         "-preset", "veryfast",
         "-crf", "20",
+        "-maxrate", `${maxKbps}k`,
+        "-bufsize", `${maxKbps * 2}k`,
         "-pix_fmt", "yuv420p",
         "-movflags", "+faststart",
         output,

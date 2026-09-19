@@ -489,6 +489,7 @@ export type Database = {
       }
       start_swap_generation: {
         Args: {
+          p_billed_seconds?: number
           p_duration_seconds: number
           p_engine?: string
           p_frames_per_second: number

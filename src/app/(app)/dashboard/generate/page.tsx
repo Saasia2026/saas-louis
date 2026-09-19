@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getConversation } from "@/lib/conversations";
-import { falEnabled } from "@/lib/fal";
-import { availablePresets, isAspectRatio, maxVideoSeconds } from "@/lib/generation";
+import { isAspectRatio } from "@/lib/generation";
 import { higgsfieldEnabled } from "@/lib/higgsfield";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { Studio, type Job } from "./studio";
 
@@ -11,64 +10,63 @@ export const metadata: Metadata = {
   title: "Studio — TwinPost", // Même nom dans les trois langues.
 };
 
-// Le storyboard, le lancement des plans et le montage passent par les
+// Le découpage du clip, le suivi des plans et le montage passent par les
 // server actions de cette page.
 export const maxDuration = 300;
 
-const RESUME_WINDOW_MS = 24 * 60 * 60_000;
+const STALE_PENDING_MS = 10 * 60_000;
 
 // Rendu serveur à chaque requête : l'heure courante est celle de la requête.
-function resumeSince() {
-  return new Date(Date.now() - RESUME_WINDOW_MS).toISOString();
+function stalePendingBefore() {
+  return new Date(Date.now() - STALE_PENDING_MS).toISOString();
 }
 
 export default async function GeneratePage(props: PageProps<"/dashboard/generate">) {
-  // ?c= : discussion du Director rouverte depuis la barre latérale.
-  const { c } = await props.searchParams;
+  // ?v= : remplacement en cours rouvert depuis Mes vidéos.
+  const { v } = await props.searchParams;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) {
     redirect("/login");
   }
 
+  // Lancement coupé en route (fonction interrompue pendant la préparation) :
+  // la génération est restée « pending », débitée. Au-delà de 10 min, soit
+  // deux fois la durée maximale d'un lancement, elle est remboursée.
+  const admin = createAdminClient();
+  const { data: stale } = await admin
+    .from("generations")
+    .select("id")
+    .eq("user_id", auth.claims.sub)
+    .eq("kind", "swap")
+    .eq("status", "pending")
+    .lt("created_at", stalePendingBefore());
+  for (const g of stale ?? []) await admin.rpc("fail_generation", { p_generation_id: g.id });
+
   const { data: profile } = await supabase
     .from("profiles")
-    .select("credits_remaining, plan")
+    .select("credits_remaining")
     .eq("id", auth.claims.sub)
     .single();
 
-  const { data: characters } = await supabase
-    .from("characters")
-    .select("id, name")
-    .eq("status", "ready")
-    .order("created_at", { ascending: false });
-
-  const conversation = typeof c === "string" ? await getConversation(c) : null;
-
-  // Vidéo encore en cours (elle s'enchaîne toute seule) : on la reprend
-  // plutôt que d'afficher un formulaire vide.
-  const running = await supabase
+  // Remplacement encore en cours : il n'avance que suivi, on le reprend donc
+  // plutôt que d'afficher un studio vide, même longtemps après (son rendu est
+  // récupéré, ou ses crédits rendus : voir advanceSwap).
+  const query = supabase
     .from("generations")
-    .select("id, kind, metadata, duration_seconds")
-    .in("kind", ["video", "swap"])
-    .eq("status", "processing")
-    // Un remplacement n'avance que suivi : il est repris même longtemps
-    // après, pour récupérer son rendu ou le rembourser (voir advanceSwap).
-    .or(`kind.eq.swap,created_at.gte.${resumeSince()}`)
+    .select("id, metadata, duration_seconds")
+    .eq("kind", "swap")
+    .eq("status", "processing");
+  const { data: running } = await (typeof v === "string" ? query.eq("id", v) : query)
     .order("created_at", { ascending: false })
     .limit(1)
-    .maybeSingle()
-    .then(({ data }) => data);
+    .maybeSingle();
   const aspectRatio = (running?.metadata as { aspect_ratio?: unknown } | null)?.aspect_ratio;
   const resume =
     running?.duration_seconds && isAspectRatio(aspectRatio)
       ? {
           id: running.id,
-          job: {
-            kind: running.kind === "swap" ? "swap" : "video",
-            aspectRatio,
-            durationSeconds: running.duration_seconds,
-          } satisfies Job,
+          job: { aspectRatio, durationSeconds: running.duration_seconds } satisfies Job,
         }
       : undefined;
 
@@ -77,11 +75,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
       userId={auth.claims.sub}
       resume={resume}
       credits={profile?.credits_remaining ?? 0}
-      maxVideoSeconds={maxVideoSeconds(profile?.plan ?? "free")}
-      presets={availablePresets(falEnabled(), false).map((p) => p.id)}
-      characters={characters ?? []}
-      swapEngines={higgsfieldEnabled() ? ["genjutsu", "kling"] : ["kling"]}
-      conversation={conversation}
+      engines={higgsfieldEnabled() ? ["genjutsu", "kling"] : ["kling"]}
     />
   );
 }

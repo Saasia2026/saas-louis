@@ -1,13 +1,13 @@
 "use client";
 
-import { Clapperboard, Coins, Users, type LucideIcon } from "lucide-react";
+import { Clapperboard, Coins, Film, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/i18n/provider";
 
-const NAV_LINKS: { href: string; key: "studio" | "characters" | "credits"; icon: LucideIcon }[] = [
+const NAV_LINKS: { href: string; key: "studio" | "videos" | "credits"; icon: LucideIcon }[] = [
   { href: "/dashboard/generate", key: "studio", icon: Clapperboard },
-  { href: "/dashboard/characters", key: "characters", icon: Users },
+  { href: "/dashboard/videos", key: "videos", icon: Film },
   { href: "/dashboard/credits", key: "credits", icon: Coins },
 ];
 

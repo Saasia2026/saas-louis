@@ -27,7 +27,7 @@ export function clampedStart(file: SwapFile, maxSeconds: number) {
     : start;
 }
 
-// Zone de saisie du mode Remplacer : le clip filmé à reprendre et l'image du
+// Zone de saisie du studio : le clip filmé à reprendre et l'image du
 // personnage qui prendra la place de la personne du clip.
 export function SwapInput({
   userId,
@@ -115,27 +115,27 @@ export function SwapInput({
               <img src={file.previewUrl} alt="" className="absolute inset-0 size-full object-contain" />
             )}
             <span className="absolute right-2 bottom-2 rounded-full bg-black/70 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-              {t.studio.swapChange}
+              {t.studio.change}
             </span>
           </>
         ) : (
           <>
             <Icon className="size-5 text-muted" />
             <span className="text-sm font-medium">
-              {kind === "video" ? t.studio.swapVideo : t.studio.swapImage}
+              {kind === "video" ? t.studio.video : t.studio.image}
             </span>
             {!compact && (
               <span className="px-3 text-xs text-faint">
                 {kind === "video"
-                  ? fmt(t.studio.swapVideoHint, { max: maxSeconds })
-                  : t.studio.swapImageHint}
+                  ? fmt(t.studio.videoHint, { max: maxSeconds })
+                  : t.studio.imageHint}
               </span>
             )}
           </>
         )}
         {uploading === kind && (
           <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm text-white">
-            {t.studio.swapUploading}
+            {t.studio.uploading}
           </span>
         )}
       </label>
@@ -153,8 +153,8 @@ export function SwapInput({
           value={target}
           onChange={(e) => onTarget(e.target.value)}
           maxLength={200}
-          placeholder={t.studio.swapTargetPlaceholder}
-          aria-label={t.studio.swapTarget}
+          placeholder={t.studio.targetPlaceholder}
+          aria-label={t.studio.target}
           className="mt-3 w-full rounded-lg border border-line bg-surface-2/60 px-3 py-2 text-sm outline-none placeholder:text-faint focus:border-accent/60"
         />
       )}
@@ -168,7 +168,7 @@ export function SwapInput({
       {error ? (
         <p className="mt-2 text-xs text-danger">{error}</p>
       ) : (
-        !compact && <p className="mt-2 text-xs text-faint">{t.studio.swapExplain}</p>
+        !compact && <p className="mt-2 text-xs text-faint">{t.studio.explain}</p>
       )}
     </div>
   );
@@ -230,7 +230,7 @@ function SegmentPicker({
     <label className="mt-3 block">
       <span className="flex items-baseline justify-between gap-3 text-xs">
         <span className="font-medium text-muted">
-          {fmt(t.studio.swapSegment, { max: maxSeconds })}
+          {fmt(t.studio.segment, { max: maxSeconds })}
         </span>
         <span className="text-faint tabular-nums">
           {clock(start)} → {clock(start + maxSeconds)} / {clock(total)}

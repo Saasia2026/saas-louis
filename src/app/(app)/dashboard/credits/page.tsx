@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CREDIT_PACKS, formatPrice } from "@/lib/credit-packs";
+import { SWAP_ENGINES, SWAP_SHEET_CREDITS, swapSecondsFor } from "@/lib/generation";
 import { createStripe, fulfillCheckoutSession, stripeEnabled } from "@/lib/stripe";
-import { INTL_LOCALES } from "@/i18n/config";
+import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "../../page-header";
@@ -54,7 +55,11 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
   return (
     <div>
       <PageHeader eyebrow={P.eyebrow} title={P.title}>
-        {P.intro}
+        {fmt(P.intro, {
+          max: SWAP_ENGINES.genjutsu.creditsPerSecond.toLocaleString(INTL_LOCALES[locale]),
+          budget: SWAP_ENGINES.kling.creditsPerSecond.toLocaleString(INTL_LOCALES[locale]),
+          sheet: SWAP_SHEET_CREDITS,
+        })}
       </PageHeader>
 
       <div className="mt-8 flex animate-fade-up flex-wrap items-end justify-between gap-4">
@@ -109,8 +114,12 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                   <dd className="font-medium tabular-nums">{price(Math.round(pack.amount / pack.credits))}</dd>
                 </div>
                 <div className="flex justify-between py-2.5">
-                  <dt className="text-muted">{P.soraShots}</dt>
-                  <dd className="font-medium tabular-nums">{Math.floor(pack.credits / 40)}</dd>
+                  <dt className="text-muted">{P.secondsMaxRow}</dt>
+                  <dd className="font-medium tabular-nums">{swapSecondsFor(pack.credits, "genjutsu")}</dd>
+                </div>
+                <div className="flex justify-between py-2.5">
+                  <dt className="text-muted">{P.secondsBudgetRow}</dt>
+                  <dd className="font-medium tabular-nums">{swapSecondsFor(pack.credits, "kling")}</dd>
                 </div>
               </dl>
               <form action={buyCredits} className="mt-6">
