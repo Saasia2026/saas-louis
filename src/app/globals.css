@@ -212,9 +212,6 @@
 body {
   background: var(--bg);
   color: var(--text);
-  /* Encoches et barre gestuelle des téléphones (app installée). */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
   transition:
     background-color 300ms,
     color 300ms;
@@ -385,6 +382,13 @@ body {
     mask-composite: exclude;
     pointer-events: none;
     animation: beam 5s linear infinite;
+  }
+}
+
+@media (display-mode: standalone) {
+  body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
   }
 }
 
