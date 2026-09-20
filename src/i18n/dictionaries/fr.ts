@@ -177,6 +177,65 @@ export const fr = {
     tooLong: "C'est plus long que prévu. Reviens dans quelques minutes : la vidéo sera dans Mes vidéos.",
   },
 
+  terms: {
+    eyebrow: "Conditions",
+    title: "Conditions d'utilisation",
+    updated: "Dernière mise à jour : 20 septembre 2026",
+    link: "Conditions d'utilisation",
+    accept: "En créant un compte, tu acceptes les",
+    back: "Retour à l'accueil",
+    sections: [
+      {
+        title: "Ce que fait le service",
+        paragraphs: [
+          "TwinPost remplace une personne d'un clip vidéo que tu déposes par un personnage que tu fournis en photo. Les gestes, le décor, la caméra et le son viennent de ton clip.",
+          "Le résultat est généré par une intelligence artificielle : il n'est jamais garanti conforme à ce que tu imagines, et il peut comporter des défauts visibles.",
+        ],
+      },
+      {
+        title: "Ce que tu garantis en déposant un clip",
+        paragraphs: [
+          "Tu détiens les droits sur le clip, ou tu as l'autorisation écrite de son auteur et des personnes qui y apparaissent.",
+          "Les personnes filmées ont donné leur accord pour que leur image soit modifiée par une IA.",
+          "Ton clip ne provient pas d'une œuvre protégée (film, série, clip musical, retransmission sportive) sans l'accord du titulaire des droits.",
+        ],
+      },
+      {
+        title: "Ce qui est interdit",
+        paragraphs: [
+          "Utiliser le visage ou la voix d'une personne connue, ou de toute personne qui n'a pas donné son accord.",
+          "Faire croire qu'une personne réelle a dit ou fait quelque chose qu'elle n'a pas dit ou fait.",
+          "Créer du contenu sexuel, haineux, violent envers une personne réelle, ou mettant en scène des mineurs.",
+          "Publier une vidéo générée ici sans indiquer qu'elle a été créée par une intelligence artificielle, comme la loi l'exige en Europe.",
+          "Contourner les filtres des modèles utilisés ou tenter de les tromper.",
+        ],
+      },
+      {
+        title: "Crédits et paiement",
+        paragraphs: [
+          "Les crédits s'achètent par packs, sans abonnement, et n'expirent pas. Ils ne sont ni remboursables en argent ni transférables.",
+          "Une vidéo est débitée au lancement. Si elle échoue, les crédits correspondants sont automatiquement rendus.",
+          "Une vidéo dont le résultat ne te plaît pas n'est pas remboursée : le service a bien été rendu. Tu peux refaire une séquence, à son prix.",
+        ],
+      },
+      {
+        title: "Tes fichiers",
+        paragraphs: [
+          "Tes clips, tes images et tes vidéos générées t'appartiennent. Tu en fais l'usage commercial que tu veux, dans le respect des règles ci-dessus.",
+          "Ils sont stockés pour te permettre de les retrouver, et transmis aux prestataires techniques nécessaires à la génération. Tu peux demander leur suppression à tout moment.",
+        ],
+      },
+      {
+        title: "Responsabilité et suspension",
+        paragraphs: [
+          "Tu es seul responsable des vidéos que tu produis et publies avec le service.",
+          "Un compte qui enfreint ces règles peut être suspendu sans préavis et sans remboursement des crédits restants.",
+          "Le service peut être interrompu, modifié ou arrêté, notamment si un prestataire de génération cesse son activité.",
+        ],
+      },
+    ],
+  },
+
   swapEngines: {
     genjutsu: {
       label: "Qualité max",

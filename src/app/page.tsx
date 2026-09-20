@@ -323,6 +323,9 @@ export default async function Home() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 sm:px-6">
           <Logo />
           <div className="flex items-center gap-3">
+            <Link href="/conditions" className="text-xs text-muted hover:text-text">
+              {t.terms.link}
+            </Link>
             <ThemeToggle />
             <LanguageSwitcher up />
             <span className="text-xs text-faint">© {new Date().getFullYear()} TwinPost</span>

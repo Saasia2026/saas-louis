@@ -175,6 +175,65 @@ export const es: Dictionary = {
     tooLong: "Está tardando más de lo previsto. Vuelve en unos minutos: el vídeo estará en Mis vídeos.",
   },
 
+  terms: {
+    eyebrow: "Condiciones",
+    title: "Condiciones de uso",
+    updated: "Última actualización: 20 de septiembre de 2026",
+    link: "Condiciones de uso",
+    accept: "Al crear una cuenta, aceptas las",
+    back: "Volver al inicio",
+    sections: [
+      {
+        title: "Qué hace el servicio",
+        paragraphs: [
+          "TwinPost reemplaza a una persona de un clip de vídeo que subes por un personaje que aportas en foto. Los movimientos, el escenario, la cámara y el sonido vienen de tu clip.",
+          "El resultado lo genera una inteligencia artificial: nunca se garantiza que coincida con lo que imaginas y puede tener defectos visibles.",
+        ],
+      },
+      {
+        title: "Qué garantizas al subir un clip",
+        paragraphs: [
+          "Tienes los derechos del clip, o cuentas con el permiso por escrito de su autor y de las personas que aparecen en él.",
+          "Las personas grabadas han dado su consentimiento para que su imagen sea modificada por una IA.",
+          "Tu clip no procede de una obra protegida (película, serie, videoclip, retransmisión deportiva) sin el permiso del titular de los derechos.",
+        ],
+      },
+      {
+        title: "Qué está prohibido",
+        paragraphs: [
+          "Usar la cara o la voz de una persona conocida, o de cualquiera que no haya dado su consentimiento.",
+          "Hacer creer que una persona real dijo o hizo algo que no dijo ni hizo.",
+          "Crear contenido sexual, de odio, violento hacia una persona real o que incluya a menores.",
+          "Publicar un vídeo generado aquí sin indicar que lo ha creado una inteligencia artificial, como exige la ley en Europa.",
+          "Eludir o intentar engañar los filtros de los modelos utilizados.",
+        ],
+      },
+      {
+        title: "Créditos y pago",
+        paragraphs: [
+          "Los créditos se compran en packs, sin suscripción, y no caducan. No son reembolsables en dinero ni transferibles.",
+          "Un vídeo se cobra al lanzarlo. Si falla, los créditos correspondientes se devuelven automáticamente.",
+          "Un vídeo cuyo resultado no te guste no se reembolsa: el servicio se prestó. Puedes repetir una secuencia, a su precio.",
+        ],
+      },
+      {
+        title: "Tus archivos",
+        paragraphs: [
+          "Tus clips, tus imágenes y tus vídeos generados son tuyos. Puedes darles el uso comercial que quieras, respetando las reglas anteriores.",
+          "Se almacenan para que puedas recuperarlos y se envían a los proveedores técnicos necesarios para generarlos. Puedes pedir su eliminación en cualquier momento.",
+        ],
+      },
+      {
+        title: "Responsabilidad y suspensión",
+        paragraphs: [
+          "Eres el único responsable de los vídeos que produces y publicas con el servicio.",
+          "Una cuenta que incumpla estas reglas puede suspenderse sin aviso y sin devolución de los créditos restantes.",
+          "El servicio puede interrumpirse, modificarse o cerrarse, en particular si un proveedor de generación deja de operar.",
+        ],
+      },
+    ],
+  },
+
   swapEngines: {
     genjutsu: {
       label: "Calidad máx.",

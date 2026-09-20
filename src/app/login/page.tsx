@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { LogoMark } from "@/app/logo-mark";
 import { ThemeToggle } from "@/app/theme-toggle";
@@ -44,6 +45,13 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           }
         />
         <p className="mt-6 text-center text-xs text-faint">{t.login.freeCredits}</p>
+        <p className="mt-2 text-center text-xs text-faint">
+          {t.terms.accept}{" "}
+          <Link href="/conditions" className="underline hover:text-text">
+            {t.terms.link.toLowerCase()}
+          </Link>
+          .
+        </p>
       </div>
     </main>
   );
