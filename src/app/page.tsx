@@ -45,8 +45,8 @@ export default async function Home() {
     <div className="flex flex-1 flex-col overflow-x-clip">
       <header className="glass sticky top-0 z-30 border-b border-line">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
-          <Logo />
-          <nav className="flex min-w-0 items-center gap-0.5 text-sm sm:gap-1">
+          <Logo className="min-w-0 shrink" />
+          <nav className="flex shrink-0 items-center gap-0.5 text-sm sm:gap-1">
             <a href="#fonctionnalites" className="btn btn-ghost hidden px-3 sm:inline-flex">
               {L.features}
             </a>
@@ -55,7 +55,7 @@ export default async function Home() {
             </a>
             <ThemeToggle />
             <LanguageSwitcher />
-            <Link href={start} className="btn btn-primary ml-0.5 px-3 sm:ml-1 sm:px-4">
+            <Link href={start} className="btn btn-primary ml-0.5 shrink-0 px-2.5 text-[0.8125rem] sm:ml-1 sm:px-4 sm:text-sm">
               {loggedIn ? L.studioShort : L.start}
               <ArrowRight className="hidden sm:inline-flex" />
             </Link>

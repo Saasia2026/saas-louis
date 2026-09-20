@@ -33,10 +33,10 @@ export function LanguageSwitcher({ up = false }: { up?: boolean }) {
         aria-expanded={open}
         aria-label={t.common.language}
         title={t.common.language}
-        className={`btn btn-ghost gap-1.5 px-2.5 ${pending ? "opacity-60" : ""}`}
+        className={`btn btn-ghost shrink-0 gap-1.5 px-2 min-[380px]:gap-1.5 min-[380px]:px-2.5 ${pending ? "opacity-60" : ""}`}
       >
         <Globe />
-        <span className="text-xs font-semibold uppercase">{locale}</span>
+        <span className="hidden text-xs font-semibold uppercase min-[380px]:inline">{locale}</span>
       </button>
       {open && (
         <div className={`menu right-0 min-w-40 ${up ? "bottom-full mb-2" : "top-full mt-2"}`}>

@@ -95,14 +95,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="glass sticky top-0 z-20 border-b border-line">
           <div className="flex items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-8">
-            <div className="md:hidden">
+            <div className="min-w-0 shrink md:hidden">
               <Logo href="/dashboard" />
             </div>
             <div className="hidden md:block">
               <Breadcrumb />
             </div>
-            <div className="flex items-center gap-2">
-              <Link href="/dashboard/credits" className="chip min-w-0">
+            <div className="flex shrink-0 items-center gap-2">
+              <Link href="/dashboard/credits" className="chip min-w-0 shrink">
                 <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-accent shadow-[0_0_8px_var(--accent)]" />
                 <span className="truncate font-medium text-text tabular-nums">{creditsLabel}</span>
                 <span className="hidden sm:inline">{t.common.credits}</span>
