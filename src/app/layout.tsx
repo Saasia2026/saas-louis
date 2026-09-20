@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Archivo, Inter } from "next/font/google";
 import { cookies } from "next/headers";
 import { I18nProvider } from "@/i18n/provider";
+import { siteUrl } from "@/lib/site";
 import { getDictionary, getLocale } from "@/i18n/server";
 import "./globals.css";
 import { Spotlight } from "./spotlight";
@@ -20,8 +21,26 @@ const archivo = Archivo({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getDictionary();
-  return { title: "TwinPost", description: t.meta.description };
+  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
+  const title = `TwinPost — ${t.landing.eyebrow}`;
+  return {
+    // Base des liens absolus : vignette de partage, sitemap, adresse canonique.
+    metadataBase: new URL(siteUrl()),
+    title: { default: title, template: "%s" },
+    description: t.meta.description,
+    applicationName: "TwinPost",
+    alternates: { canonical: "/" },
+    openGraph: {
+      type: "website",
+      siteName: "TwinPost",
+      locale,
+      title,
+      description: t.meta.description,
+      url: "/",
+    },
+    twitter: { card: "summary_large_image", title, description: t.meta.description },
+    robots: { index: true, follow: true },
+  };
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
