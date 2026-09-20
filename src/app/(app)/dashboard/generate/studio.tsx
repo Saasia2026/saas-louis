@@ -242,8 +242,8 @@ export function Studio({
           />
         )}
 
-        <div className="ml-auto flex items-center gap-2">
-          <span className="px-1 text-xs text-faint">
+        <div className="ml-auto flex min-w-0 items-center gap-2">
+          <span className="truncate px-1 text-xs text-faint">
             {!video || !image
               ? t.studio.pick
               : credits >= gate
@@ -256,7 +256,7 @@ export function Studio({
                   : `≤ ${cost} ${plural(cost, t.common.credit, t.common.credits)}`
                 : t.studio.notEnoughCredits}
           </span>
-          <button type="submit" disabled={!canSend} className="btn btn-accent">
+          <button type="submit" disabled={!canSend} className="btn btn-accent shrink-0">
             <WandSparkles />
             {t.studio.launch}
           </button>
@@ -277,8 +277,8 @@ export function Studio({
 
       {!started ? (
         <div className="flex flex-1 flex-col items-center justify-center py-12">
-          <h1 className="flex animate-fade-up items-center gap-3 text-center text-4xl font-semibold tracking-tight sm:text-5xl">
-            <LogoMark className="size-11 shrink-0 sm:size-14" />
+          <h1 className="flex animate-fade-up items-center gap-2 text-center text-[1.75rem] font-semibold tracking-tight sm:gap-3 sm:text-5xl">
+            <LogoMark className="size-9 shrink-0 sm:size-14" />
             <span className="text-gradient">{t.studio.title}</span>
           </h1>
           <p className="mt-4 max-w-xl animate-fade-up text-center text-[0.9375rem] text-muted [animation-delay:80ms]">

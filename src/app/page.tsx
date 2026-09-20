@@ -44,9 +44,9 @@ export default async function Home() {
   return (
     <div className="flex flex-1 flex-col overflow-x-clip">
       <header className="glass sticky top-0 z-30 border-b border-line">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
           <Logo />
-          <nav className="flex items-center gap-1 text-sm">
+          <nav className="flex min-w-0 items-center gap-0.5 text-sm sm:gap-1">
             <a href="#fonctionnalites" className="btn btn-ghost hidden px-3 sm:inline-flex">
               {L.features}
             </a>
@@ -55,9 +55,9 @@ export default async function Home() {
             </a>
             <ThemeToggle />
             <LanguageSwitcher />
-            <Link href={start} className="btn btn-primary ml-1 px-3 sm:px-4">
+            <Link href={start} className="btn btn-primary ml-0.5 px-3 sm:ml-1 sm:px-4">
               {loggedIn ? L.studioShort : L.start}
-              <ArrowRight />
+              <ArrowRight className="hidden sm:inline-flex" />
             </Link>
           </nav>
         </div>
@@ -72,28 +72,28 @@ export default async function Home() {
             <div className="absolute top-24 left-[12%] h-[20rem] w-[26rem] animate-aurora rounded-full bg-[radial-gradient(closest-side,rgb(34_211_238/0.16),transparent)] blur-3xl [animation-delay:-7s]" />
           </div>
 
-          <div className="mx-auto max-w-6xl px-4 pt-20 pb-10 text-center sm:px-6 sm:pt-28">
-            <div className="relative mx-auto mb-8 size-24 sm:size-28">
+          <div className="mx-auto max-w-6xl px-4 pt-12 pb-10 text-center sm:px-6 sm:pt-28">
+            <div className="relative mx-auto mb-6 size-20 sm:mb-8 sm:size-28">
               <div aria-hidden className="absolute inset-0 -z-10 scale-150 animate-aurora rounded-full bg-[radial-gradient(closest-side,rgb(139_61_255/0.45),transparent)] blur-2xl" />
               <LogoMark className="size-full" />
             </div>
             <p className="eyebrow animate-fade-up">{L.eyebrow}</p>
-            <h1 className="mx-auto mt-7 max-w-5xl animate-fade-up font-wide text-[2.6rem] leading-[1.02] uppercase [animation-delay:80ms] sm:text-7xl">
+            <h1 className="mx-auto mt-7 max-w-5xl animate-fade-up font-wide text-[2rem] leading-[1.05] uppercase [animation-delay:80ms] min-[420px]:text-[2.6rem] sm:text-7xl">
               <span className="text-gradient">{L.titleTop}</span>
               <br />
               <span className="text-shine [filter:drop-shadow(0_0_28px_rgb(91_124_255/0.5))]">
                 {L.titleBottom}
               </span>
             </h1>
-            <p className="mx-auto mt-7 max-w-xl animate-fade-up text-base leading-relaxed text-muted [animation-delay:160ms] sm:text-lg">
+            <p className="mx-auto mt-5 max-w-xl animate-fade-up text-[0.9375rem] leading-relaxed text-muted [animation-delay:160ms] sm:mt-7 sm:text-lg">
               {L.subtitle}
             </p>
-            <div className="mt-9 flex animate-fade-up flex-wrap justify-center gap-3 [animation-delay:240ms]">
-              <Link href={start} className="btn btn-accent px-5 py-3 text-[0.9375rem]">
+            <div className="mt-8 flex animate-fade-up flex-col justify-center gap-3 [animation-delay:240ms] sm:mt-9 sm:flex-row sm:flex-wrap">
+              <Link href={start} className="btn btn-accent w-full px-5 py-3 text-[0.9375rem] sm:w-auto">
                 <WandSparkles />
                 {L.ctaFirst}
               </Link>
-              <a href="#tarifs" className="btn btn-secondary px-5 py-3 text-[0.9375rem]">
+              <a href="#tarifs" className="btn btn-secondary w-full px-5 py-3 text-[0.9375rem] sm:w-auto">
                 {L.ctaPricing}
               </a>
             </div>
@@ -203,7 +203,7 @@ export default async function Home() {
         </section>
 
         {/* Fonctionnalités */}
-        <section id="fonctionnalites" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
+        <section id="fonctionnalites" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
           <p className="eyebrow">{L.features}</p>
           <h2 className="text-gradient mt-5 max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
             {L.featuresTitle}
@@ -237,7 +237,7 @@ export default async function Home() {
         </section>
 
         {/* Étapes */}
-        <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
+        <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-24">
           <p className="eyebrow">{L.howItWorks}</p>
           <ol className="mt-8 divide-y divide-line border-y border-line">
             {L.steps.map((step, i) => (
@@ -256,7 +256,7 @@ export default async function Home() {
         </section>
 
         {/* Tarifs */}
-        <section id="tarifs" className="mx-auto max-w-6xl scroll-mt-20 px-4 pb-24 sm:px-6">
+        <section id="tarifs" className="mx-auto max-w-6xl scroll-mt-20 px-4 pb-16 sm:px-6 sm:pb-24">
           <p className="eyebrow">{L.pricing}</p>
           <h2 className="text-gradient mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
             {L.pricingTitle}
@@ -303,8 +303,8 @@ export default async function Home() {
         </section>
 
         {/* Appel final */}
-        <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
-          <div className="panel glow relative isolate overflow-hidden px-6 py-16 text-center">
+        <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-24">
+          <div className="panel glow relative isolate overflow-hidden px-5 py-12 text-center sm:px-6 sm:py-16">
             <div aria-hidden className="grid-bg pointer-events-none absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_at_center,#000,transparent_70%)]" />
             <div aria-hidden className="pointer-events-none absolute top-1/2 left-1/2 -z-10 h-64 w-[36rem] -translate-x-1/2 -translate-y-1/2 animate-aurora rounded-full bg-[radial-gradient(closest-side,rgb(91_124_255/0.35),transparent)] blur-3xl" />
             <h2 className="mx-auto max-w-3xl font-wide text-3xl uppercase sm:text-5xl">

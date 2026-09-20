@@ -94,7 +94,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="glass sticky top-0 z-20 border-b border-line">
-          <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-8">
+          <div className="flex items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-8">
             <div className="md:hidden">
               <Logo href="/dashboard" />
             </div>
@@ -102,10 +102,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <Breadcrumb />
             </div>
             <div className="flex items-center gap-2">
-              <Link href="/dashboard/credits" className="chip">
-                <span className="size-1.5 animate-pulse rounded-full bg-accent shadow-[0_0_8px_var(--accent)]" />
-                <span className="font-medium text-text tabular-nums">{creditsLabel}</span>
-                {t.common.credits}
+              <Link href="/dashboard/credits" className="chip min-w-0">
+                <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-accent shadow-[0_0_8px_var(--accent)]" />
+                <span className="truncate font-medium text-text tabular-nums">{creditsLabel}</span>
+                <span className="hidden sm:inline">{t.common.credits}</span>
               </Link>
               <div className="flex items-center md:hidden">
                 <ThemeToggle />
@@ -124,7 +124,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="relative isolate flex-1 px-4 py-10 sm:px-8">
+        <main className="relative isolate flex-1 px-4 py-6 sm:px-8 sm:py-10">
           <div aria-hidden className="grid-bg pointer-events-none absolute inset-x-0 top-0 -z-10 h-96" />
           <div
             aria-hidden

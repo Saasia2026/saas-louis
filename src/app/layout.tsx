@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Archivo, Inter } from "next/font/google";
 import { cookies } from "next/headers";
 import { I18nProvider } from "@/i18n/provider";
@@ -40,8 +40,21 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: { card: "summary_large_image", title, description: t.meta.description },
     robots: { index: true, follow: true },
+    // Installation sur l'écran d'accueil (voir manifest.ts).
+    manifest: "/manifest.webmanifest",
+    appleWebApp: { capable: true, title: "TwinPost", statusBarStyle: "black-translucent" },
+    icons: { apple: "/apple-icon.png" },
   };
 }
+
+// Barre d'état du téléphone assortie au thème, et zoom laissé libre.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f8fc" },
+    { media: "(prefers-color-scheme: dark)", color: "#05060f" },
+  ],
+  viewportFit: "cover",
+};
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();
