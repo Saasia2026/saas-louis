@@ -37,7 +37,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   );
 
   return (
-    <div className="flex flex-1">
+    <div className="flex flex-1 overflow-x-clip">
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-surface/80 px-3 py-4 md:flex">
         <div className="px-2">
           <Logo href="/dashboard" />
@@ -124,11 +124,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="relative isolate flex-1 px-4 py-6 sm:px-8 sm:py-10">
+        <main className="relative isolate min-w-0 flex-1 overflow-x-clip px-4 py-6 sm:px-8 sm:py-10">
           <div aria-hidden className="grid-bg pointer-events-none absolute inset-x-0 top-0 -z-10 h-96" />
           <div
             aria-hidden
-            className="pointer-events-none absolute top-0 left-1/2 -z-10 h-72 w-[40rem] -translate-x-1/2 bg-[radial-gradient(closest-side,rgb(91_124_255/0.14),transparent)] blur-2xl"
+            className="pointer-events-none absolute top-0 left-1/2 -z-10 h-72 w-[40rem] max-w-full -translate-x-1/2 bg-[radial-gradient(closest-side,rgb(91_124_255/0.14),transparent)] blur-2xl"
           />
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>

@@ -277,18 +277,18 @@ export function Studio({
 
       {!started ? (
         <div className="flex flex-1 flex-col items-center justify-center py-12">
-          <h1 className="flex animate-fade-up items-center gap-2 text-center text-[1.75rem] font-semibold tracking-tight sm:gap-3 sm:text-5xl">
-            <LogoMark className="size-9 shrink-0 sm:size-14" />
+          <h1 className="flex animate-fade-up flex-col items-center gap-3 text-center text-[1.75rem] leading-tight font-semibold tracking-tight sm:flex-row sm:text-5xl">
+            <LogoMark className="size-10 shrink-0 sm:size-14" />
             <span className="text-gradient">{t.studio.title}</span>
           </h1>
-          <p className="mt-4 max-w-xl animate-fade-up text-center text-[0.9375rem] text-muted [animation-delay:80ms]">
+          <p className="mt-3 max-w-xl animate-fade-up px-1 text-center text-sm leading-relaxed text-muted [animation-delay:80ms] sm:mt-4 sm:text-[0.9375rem]">
             {t.studio.subtitle}
           </p>
 
-          <div className="relative z-20 mt-10 w-full max-w-3xl animate-fade-up [animation-delay:160ms]">
+          <div className="relative z-20 mt-6 w-full max-w-3xl animate-fade-up [animation-delay:160ms] sm:mt-10">
             <div
               aria-hidden
-              className="pointer-events-none absolute -inset-x-16 -inset-y-12 -z-10 animate-aurora rounded-full bg-[radial-gradient(closest-side,rgb(91_124_255/0.28),transparent)] blur-2xl"
+              className="pointer-events-none absolute -inset-x-2 -inset-y-12 -z-10 animate-aurora sm:-inset-x-16 rounded-full bg-[radial-gradient(closest-side,rgb(91_124_255/0.28),transparent)] blur-2xl"
             />
             {composer}
           </div>

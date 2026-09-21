@@ -209,6 +209,13 @@
   }
 }
 
+/* Aucun décor ne doit élargir la page : sur iPhone, un débordement fait
+   dézoomer tout le site, qui paraît alors décalé à gauche. */
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
