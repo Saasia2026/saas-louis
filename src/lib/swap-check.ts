@@ -19,20 +19,24 @@ export type SwapCheck = z.infer<typeof CheckSchema>;
 export async function checkSwapShot(input: {
   // Images JPEG (base64) réparties sur le plan rendu, dans l'ordre.
   frames: string[];
-  characterUrl: string;
-  target?: string;
+  // Un personnage, ou plusieurs dans le même clip (moteur genjutsu).
+  characters: { url: string; target?: string }[];
 }): Promise<SwapCheck> {
-  const target = input.target?.trim() || "the main person";
+  const several = input.characters.length > 1;
+  const who = (t?: string) => (t?.trim() ? `"${t.trim().replace(/"/g, "'")}"` : "the main person");
+  const target = several
+    ? input.characters.map((c, i) => `${who(c.target)} (character ${i + 1})`).join(", ")
+    : who(input.characters[0]?.target);
   const response = await new Anthropic().beta.messages.parse({
     model: "claude-sonnet-5",
     max_tokens: 1000,
     output_config: { effort: "low", format: betaZodOutputFormat(CheckSchema) },
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
-    system: `You check the output of an AI video tool that replaces a person in a real clip with a character. You receive the character reference image first, then frames taken in order across one generated shot.
+    system: `You check the output of an AI video tool that replaces a person in a real clip with a character. You receive the character reference ${several ? "images (one per character, in order)" : "image"} first, then frames taken in order across one generated shot.
 
-- "replaced": true only if, in every frame where that person is visible, ${target} has been turned into the character (not left as the original human, not half-changed). False if any frame still shows the original person in their place.
-- "sameCharacter": true if the character in the frames clearly looks like the reference (same kind of head, face, fur or skin, colours), allowing for pose, angle, clothing and lighting. False if it turned into something else or changes identity between frames.
+- "replaced": true only if, in every frame where ${several ? "these people are" : "that person is"} visible, ${target} ${several ? "have each" : "has"} been turned into ${several ? "their own" : "the"} character (not left as the original human, not half-changed). False if any frame still shows the original person in their place.
+- "sameCharacter": true if ${several ? "each character" : "the character"} in the frames clearly looks like ${several ? "its" : "the"} reference (same kind of head, face, fur or skin, colours), allowing for pose, angle, clothing and lighting. False if it turned into something else or changes identity between frames.
 - "reason": one short sentence explaining a false answer, or "ok".
 
 Ignore image quality, the background, other people and small glitches.`,
@@ -40,8 +44,10 @@ Ignore image quality, the background, other people and small glitches.`,
       {
         role: "user",
         content: [
-          { type: "text", text: "Character reference:" },
-          { type: "image", source: { type: "url", url: input.characterUrl } },
+          ...input.characters.flatMap((c, i) => [
+            { type: "text" as const, text: several ? `Character ${i + 1} reference:` : "Character reference:" },
+            { type: "image" as const, source: { type: "url" as const, url: c.url } },
+          ]),
           { type: "text", text: "Frames of the generated shot:" },
           ...input.frames.map((data) => ({
             type: "image" as const,

@@ -63,6 +63,36 @@ export function describeTarget(target?: string) {
   return text ? `the person described as "${text}"` : "the main person";
 }
 
+// Consigne Genjutsu. Plusieurs personnages : les images de référence sont
+// envoyées à la suite, personnage par personnage ; la consigne dit lesquelles
+// montrent qui, et qui chacun remplace.
+function genjutsuPrompt(characters: { imageUrls: string[]; target?: string }[]) {
+  const rest =
+    "Keep every other person, the place, the objects, the camera framing and its moves, the cuts and the lighting exactly unchanged. Add nothing to the scene.";
+  if (characters.length <= 1) {
+    return (
+      `Replace ${describeTarget(characters[0]?.target)} with the character shown in the reference images (every reference image shows the same character): same head, face, fur or skin and body. ` +
+      "It reproduces exactly the movements, gestures, head turns, facial expressions and mouth movements of the replaced person, with the same timing, posture, contact and weight, in every shot. " +
+      rest
+    );
+  }
+  let next = 1;
+  const lines = characters.map((c, i) => {
+    const first = next;
+    next += c.imageUrls.length;
+    const images =
+      c.imageUrls.length > 1 ? `reference images ${first} to ${next - 1}` : `reference image ${first}`;
+    return `Character ${i + 1}, shown in ${images}, replaces ${describeTarget(c.target)}.`;
+  });
+  return (
+    `Replace ${characters.length} different people in this video, each with their own character. ` +
+    lines.join(" ") +
+    " Each character keeps its own head, face, fur or skin and body exactly as in its reference images, never mixed with another character. " +
+    "Each one reproduces exactly the movements, gestures, head turns, facial expressions and mouth movements of the person it replaces, with the same timing, posture, contact and weight, in every shot. " +
+    rest
+  );
+}
+
 // Un passage de 3 à 30 s, coupes comprises. Les images montrent toutes le
 // même personnage, sur fond uni et sans accessoire : tout objet d'une image
 // de référence se retrouve dans la scène. `target` : qui remplacer quand
@@ -71,21 +101,17 @@ export function describeTarget(target?: string) {
 // dans le verrou au lieu d'être doublé par le suivi suivant.
 export async function createGenjutsuSwap(input: {
   videoUrl: string;
-  imageUrls: string[];
-  target?: string;
+  // Un personnage, ou plusieurs (chacun avec qui il remplace).
+  characters: { imageUrls: string[]; target?: string }[];
 }) {
-  const target = describeTarget(input.target);
   const response = await fetch(`${BASE_URL}/${GENJUTSU_SWAP_ENDPOINT}`, {
     method: "POST",
     headers: headers(),
     signal: AbortSignal.timeout(60_000),
     body: JSON.stringify({
-      prompt:
-        `Replace ${target} with the character shown in the reference images (every reference image shows the same character): same head, face, fur or skin and body. ` +
-        "It reproduces exactly the movements, gestures, head turns, facial expressions and mouth movements of the replaced person, with the same timing, posture, contact and weight, in every shot. " +
-        "Keep every other person, the place, the objects, the camera framing and its moves, the cuts and the lighting exactly unchanged. Add nothing to the scene.",
+      prompt: genjutsuPrompt(input.characters),
       video_url: input.videoUrl,
-      image_urls: input.imageUrls,
+      image_urls: input.characters.flatMap((c) => c.imageUrls),
       resolution: "720p",
     }),
   });

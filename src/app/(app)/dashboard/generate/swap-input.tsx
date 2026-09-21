@@ -1,7 +1,7 @@
 "use client";
 
-import { Film, UserRound } from "lucide-react";
-import { useRef, useState } from "react";
+import { Film, Plus, UserRound, X } from "lucide-react";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -18,6 +18,9 @@ import { createClient } from "@/lib/supabase/client";
 // long que la durée du moteur (`maxSeconds`), découpé par le serveur.
 export type SwapFile = { path: string; previewUrl: string; seconds?: number; start?: number };
 
+// Un personnage et qui il remplace dans le clip (facultatif s'il est seul).
+export type SwapCharacter = { image: SwapFile | null; target: string };
+
 // Début du passage gardé, ramené dans le clip : la durée gardée change avec
 // le moteur, le début choisi reste tel quel dans l'état.
 export function clampedStart(file: SwapFile, maxSeconds: number) {
@@ -27,44 +30,54 @@ export function clampedStart(file: SwapFile, maxSeconds: number) {
     : start;
 }
 
-// Zone de saisie du studio : le clip filmé à reprendre et l'image du
-// personnage qui prendra la place de la personne du clip.
+// Zone de saisie du studio : le clip filmé à reprendre et l'image de chaque
+// personnage qui prendra la place d'une personne du clip.
 export function SwapInput({
   userId,
   video,
-  image,
   onVideo,
-  onImage,
-  target,
-  onTarget,
+  characters,
+  onCharacters,
+  maxCharacters,
   maxSeconds,
   compact,
 }: {
   userId: string;
   video: SwapFile | null;
-  image: SwapFile | null;
   onVideo: (file: SwapFile | null) => void;
-  onImage: (file: SwapFile | null) => void;
-  // Qui remplacer, quand plusieurs personnes sont à l'image.
-  target: string;
-  onTarget: (target: string) => void;
+  // Au moins un personnage ; plusieurs si le moteur Qualité max est là.
+  characters: SwapCharacter[];
+  onCharacters: Dispatch<SetStateAction<SwapCharacter[]>>;
+  maxCharacters: number;
   // Durée gardée au plus, selon le moteur choisi.
   maxSeconds: number;
   compact: boolean;
 }) {
   const [supabase] = useState(createClient);
   const { t } = useI18n();
-  const [uploading, setUploading] = useState<"video" | "image" | null>(null);
+  // Case en cours d'envoi : le clip, ou le numéro du personnage.
+  const [uploading, setUploading] = useState<"video" | number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const several = characters.length > 1;
 
-  async function pick(kind: "video" | "image", file: File | undefined) {
+  const setCharacter = (index: number, change: Partial<SwapCharacter>) =>
+    onCharacters((list) => list.map((c, i) => (i === index ? { ...c, ...change } : c)));
+
+  function removeCharacter(index: number) {
+    const image = characters[index]?.image;
+    if (image) URL.revokeObjectURL(image.previewUrl);
+    onCharacters((list) => list.filter((_, i) => i !== index));
+  }
+
+  async function pick(slot: "video" | number, file: File | undefined) {
     if (!file) return;
+    const kind = slot === "video" ? "video" : "image";
     setError(null);
     const types = kind === "video" ? SWAP_VIDEO_TYPES : SWAP_IMAGE_TYPES;
     if (!types.includes(file.type)) return setError(t.generateErrors.swapFormat);
     if (file.size > SWAP_MAX_BYTES) return setError(t.generateErrors.swapTooBig);
 
-    setUploading(kind);
+    setUploading(slot);
     const previewUrl = URL.createObjectURL(file);
     const [seconds, upload] = await Promise.all([
       kind === "video" ? readDuration(previewUrl) : undefined,
@@ -81,16 +94,24 @@ export function SwapInput({
       URL.revokeObjectURL(previewUrl);
       return setError(t.generateErrors.swapUpload);
     }
-    const current = kind === "video" ? video : image;
-    if (current) URL.revokeObjectURL(current.previewUrl);
-    (kind === "video" ? onVideo : onImage)({ path: upload, previewUrl, seconds, start: 0 });
+    const next = { path: upload, previewUrl, seconds, start: 0 };
+    if (slot === "video") {
+      if (video) URL.revokeObjectURL(video.previewUrl);
+      onVideo(next);
+    } else {
+      const current = characters[slot]?.image;
+      if (current) URL.revokeObjectURL(current.previewUrl);
+      setCharacter(slot, { image: next });
+    }
   }
 
-  const tile = (kind: "video" | "image") => {
-    const file = kind === "video" ? video : image;
+  const tile = (slot: "video" | number) => {
+    const kind = slot === "video" ? "video" : "image";
+    const file = slot === "video" ? video : characters[slot]?.image;
     const Icon = kind === "video" ? Film : UserRound;
     return (
       <label
+        key={slot}
         className={`group relative flex cursor-pointer flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl border border-dashed text-center transition-colors ${
           file ? "border-line bg-black" : "border-line-strong bg-surface-2/60 hover:border-accent/60"
         } ${compact ? "h-24" : "h-36"}`}
@@ -101,7 +122,7 @@ export function SwapInput({
           className="sr-only"
           disabled={uploading !== null}
           onChange={(e) => {
-            pick(kind, e.target.files?.[0]);
+            pick(slot, e.target.files?.[0]);
             e.target.value = "";
           }}
         />
@@ -124,7 +145,7 @@ export function SwapInput({
             <span className="text-sm font-medium">
               {kind === "video" ? t.studio.video : t.studio.image}
             </span>
-            {!compact && (
+            {!compact && !(several && kind === "image") && (
               <span className="px-3 text-xs text-faint">
                 {kind === "video"
                   ? fmt(t.studio.videoHint, { max: maxSeconds })
@@ -133,7 +154,27 @@ export function SwapInput({
             )}
           </>
         )}
-        {uploading === kind && (
+        {several && typeof slot === "number" && (
+          <>
+            <span className="absolute top-2 left-2 flex size-6 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white tabular-nums">
+              {slot + 1}
+            </span>
+            <button
+              type="button"
+              aria-label={t.studio.removeCharacter}
+              title={t.studio.removeCharacter}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                removeCharacter(slot);
+              }}
+              className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black"
+            >
+              <X className="size-4" />
+            </button>
+          </>
+        )}
+        {uploading === slot && (
           <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm text-white">
             {t.studio.uploading}
           </span>
@@ -142,21 +183,53 @@ export function SwapInput({
     );
   };
 
+  const targetField =
+    "w-full rounded-lg border border-line bg-surface-2/60 px-3 py-2 text-sm outline-none placeholder:text-faint focus:border-accent/60";
+
   return (
     <div className="px-4 pt-4 pb-2">
       <div className="grid grid-cols-2 gap-3">
         {tile("video")}
-        {tile("image")}
+        {characters.map((_, i) => tile(i))}
       </div>
-      {video && (
-        <input
-          value={target}
-          onChange={(e) => onTarget(e.target.value)}
-          maxLength={200}
-          placeholder={t.studio.targetPlaceholder}
-          aria-label={t.studio.target}
-          className="mt-3 w-full rounded-lg border border-line bg-surface-2/60 px-3 py-2 text-sm outline-none placeholder:text-faint focus:border-accent/60"
-        />
+      {characters.length < maxCharacters && characters[0]?.image && (
+        <button
+          type="button"
+          onClick={() => onCharacters((list) => [...list, { image: null, target: "" }])}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-dashed border-line-strong px-3 py-1.5 text-sm text-muted transition-colors hover:border-accent/60 hover:text-text"
+        >
+          <Plus className="size-4" />
+          {t.studio.addCharacter}
+        </button>
+      )}
+      {several ? (
+        <div className="mt-3 space-y-2">
+          {characters.map((c, i) => (
+            <label key={i} className="flex items-center gap-2">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white tabular-nums">
+                {i + 1}
+              </span>
+              <input
+                value={c.target}
+                onChange={(e) => setCharacter(i, { target: e.target.value })}
+                maxLength={200}
+                placeholder={fmt(t.studio.characterTarget, { n: i + 1 })}
+                className={targetField}
+              />
+            </label>
+          ))}
+        </div>
+      ) : (
+        video && (
+          <input
+            value={characters[0]?.target ?? ""}
+            onChange={(e) => setCharacter(0, { target: e.target.value })}
+            maxLength={200}
+            placeholder={t.studio.targetPlaceholder}
+            aria-label={t.studio.target}
+            className={`mt-3 ${targetField}`}
+          />
+        )
       )}
       {video && (video.seconds ?? 0) > maxSeconds + 0.5 && (
         <SegmentPicker

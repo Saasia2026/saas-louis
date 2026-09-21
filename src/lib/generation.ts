@@ -31,6 +31,9 @@ export function isSwapEngine(value: unknown): value is SwapEngine {
 }
 
 export const SWAP_SHEET_CREDITS = 3;
+// Personnages remplacés dans un même clip, au plus (moteur genjutsu ; kling
+// n'en remplace qu'un). Aligné avec public.start_swap_generation.
+export const SWAP_MAX_CHARACTERS = 3;
 // Kling refuse un plan de moins de 3 s : un plan plus court lui est envoyé
 // prolongé à cette durée (voir preparePart), et payé comme tel. Un clip très
 // coupé se paie donc au nombre de plans, pas à sa seule durée.
@@ -107,12 +110,14 @@ export function swapCredits(
   durationSeconds: number,
   engine: SwapEngine = DEFAULT_SWAP_ENGINE,
   billedSeconds?: number,
+  // Une fiche par personnage.
+  characters = 1,
 ) {
   const seconds =
     billedSeconds !== undefined
       ? Math.max(billedSeconds, Math.ceil(durationSeconds))
       : Math.ceil(durationSeconds);
-  return Math.ceil(seconds * SWAP_ENGINES[engine].creditsPerSecond) + SWAP_SHEET_CREDITS;
+  return Math.ceil(seconds * SWAP_ENGINES[engine].creditsPerSecond) + SWAP_SHEET_CREDITS * characters;
 }
 
 // Secondes de remplacement qu'un nombre de crédits permet, fiche comprise.

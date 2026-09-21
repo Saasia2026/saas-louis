@@ -8,6 +8,8 @@ import { fmt, plural } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import {
   SWAP_ENGINES,
+  SWAP_MAX_CHARACTERS,
+  SWAP_SHEET_CREDITS,
   swapCredits,
   swapShotCredits,
   type AspectRatio,
@@ -15,7 +17,7 @@ import {
 } from "@/lib/generation";
 import { getGeneration, type GenerationView } from "./actions";
 import { redoSwapShot, startSwap } from "./swap-actions";
-import { SwapInput, clampedStart, type SwapFile } from "./swap-input";
+import { SwapInput, clampedStart, type SwapCharacter, type SwapFile } from "./swap-input";
 
 const POLL_INTERVAL_MS = 5_000;
 // Durée annoncée d'un rendu Genjutsu. Les séquences se rendent en même temps
@@ -65,11 +67,18 @@ export function Studio({
   const router = useRouter();
   const { t, locale } = useI18n();
 
-  // Clip filmé et image du personnage, déjà déposés.
+  // Clip filmé et image de chaque personnage, déjà déposés.
   const [video, setVideo] = useState<SwapFile | null>(null);
-  const [image, setImage] = useState<SwapFile | null>(null);
-  const [target, setTarget] = useState("");
-  const [engine, setEngine] = useState<SwapEngine>(engines[0] ?? "kling");
+  const [characters, setCharacters] = useState<SwapCharacter[]>([{ image: null, target: "" }]);
+  const [chosenEngine, setEngine] = useState<SwapEngine>(engines[0] ?? "kling");
+  // Plusieurs personnages : seul Genjutsu sait les placer.
+  const several = characters.length > 1;
+  const maxCharacters = engines.includes("genjutsu") ? SWAP_MAX_CHARACTERS : 1;
+  const engine: SwapEngine = several ? "genjutsu" : chosenEngine;
+  const imagesReady = characters.every((c) => c.image);
+  // Seul, le personnage remplace la personne principale ; à plusieurs, il
+  // faut dire qui chacun remplace.
+  const targetsReady = !several || characters.every((c) => c.target.trim());
   // Durée du passage choisie ; rien = tout le clip, dans la limite du moteur.
   const [length, setLength] = useState<number | null>(null);
 
@@ -94,11 +103,11 @@ export function Studio({
   const seconds = durationKnown
     ? Math.max(1, Math.round(clipSeconds))
     : maxSeconds;
-  const cost = swapCredits(seconds, engine);
+  const cost = swapCredits(seconds, engine, undefined, characters.length);
   // Durée illisible dans le navigateur : le serveur mesure le clip et refuse
   // lui-même faute de crédits ; on ne bloque ici que sous le prix le plus bas.
-  const gate = durationKnown ? cost : swapCredits(1, engine);
-  const canSend = !busy && Boolean(video && image) && credits >= gate;
+  const gate = durationKnown ? cost : swapCredits(1, engine, undefined, characters.length);
+  const canSend = !busy && Boolean(video) && imagesReady && targetsReady && credits >= gate;
 
   useEffect(() => {
     resultEnd.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -132,7 +141,7 @@ export function Studio({
         return finish({
           kind: "error",
           message: view.error ?? t.studio.failed,
-          tryBudget: view.tryBudget && engines.includes("kling"),
+          tryBudget: view.tryBudget && engines.includes("kling") && !several,
         });
       }
       setPhase({ kind: "generating", job, id, view });
@@ -145,17 +154,16 @@ export function Studio({
       stopped = true;
       clearTimeout(timer);
     };
-  }, [active, resume, router, t, engines]);
+  }, [active, resume, router, t, engines, several]);
 
   async function launch() {
-    if (!canSend || !video || !image) return;
+    if (!canSend || !video) return;
     setPhase({ kind: "generating", job: { aspectRatio: "9:16", durationSeconds: seconds }, id: "" });
     const res = await startSwap({
       videoPath: video.path,
-      imagePath: image.path,
+      characters: characters.map((c) => ({ imagePath: c.image!.path, target: c.target.trim() || undefined })),
       start: clampedStart(video, maxSeconds),
       seconds: maxSeconds,
-      target: target.trim() || undefined,
       engine,
     });
     router.refresh();
@@ -195,21 +203,25 @@ export function Studio({
       <SwapInput
         userId={userId}
         video={video}
-        image={image}
         onVideo={(file) => {
           setVideo(file);
           // Autre clip : la durée choisie pour le précédent ne vaut plus.
           if (file?.path !== video?.path) setLength(null);
         }}
-        onImage={setImage}
-        target={target}
-        onTarget={setTarget}
+        characters={characters}
+        onCharacters={setCharacters}
+        maxCharacters={maxCharacters}
         maxSeconds={maxSeconds}
         compact={started}
       />
 
       <div className="flex flex-wrap items-center gap-2 px-3 pb-3">
-        {engines.length > 1 && (
+        {several && (
+          <span className="px-1 text-xs text-muted">
+            {fmt(t.studio.severalHint, { sheet: SWAP_SHEET_CREDITS })}
+          </span>
+        )}
+        {engines.length > 1 && !several && (
           <Menu
             label={t.swapEngines[engine].label}
             openUp={started}
@@ -244,9 +256,11 @@ export function Studio({
 
         <div className="ml-auto flex min-w-0 items-center gap-2">
           <span className="truncate px-1 text-xs text-faint">
-            {!video || !image
+            {!video || !imagesReady
               ? t.studio.pick
-              : credits >= gate
+              : !targetsReady
+                ? t.studio.targetsMissing
+                : credits >= gate
                 ? durationKnown
                   ? // Prix final connu une fois le clip découpé (voir swapCredits).
                     fmt(t.studio.costFrom, {

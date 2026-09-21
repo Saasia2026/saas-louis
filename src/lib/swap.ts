@@ -154,6 +154,10 @@ export type SwapMetadata = {
   sheet?: { frontUrl: string; sideUrl?: string };
   // Images de la fiche déposées chez Higgsfield (moteur genjutsu).
   character_urls?: string[];
+  // Plusieurs personnages (moteur genjutsu seulement) : chacun avec qui il
+  // remplace et sa fiche. Le premier est aussi dans target, sheet et
+  // character_urls.
+  characters?: { target: string; image_path: string; front_url: string; urls: string[] }[];
   // Image clé du premier plan, modèle des suivantes.
   anchor_url?: string;
   // Début du remplacement, ou du dernier plan refait (échéance, voir advanceSwap).
@@ -659,8 +663,9 @@ async function advanceParts(
           try {
             part.predictionId = await createGenjutsuSwap({
               videoUrl: part.videoUrl!,
-              imageUrls: metadata.character_urls ?? [sheet.frontUrl],
-              target,
+              characters: metadata.characters?.map((c) => ({ imageUrls: c.urls, target: c.target })) ?? [
+                { imageUrls: metadata.character_urls ?? [sheet.frontUrl], target },
+              ],
             });
           } catch (e) {
             console.error("createGenjutsuSwap", errorMessage(e));
@@ -812,7 +817,14 @@ async function advanceParts(
       .slice(0, genjutsu ? GENJUTSU_IN_FLIGHT : CHECKS_PER_CALL)
       .map(async (part) => {
         const result = await checkFrames(part.clipPath!)
-          .then((frames) => checkSwapShot({ frames, characterUrl: sheet.frontUrl, target }))
+          .then((frames) =>
+            checkSwapShot({
+              frames,
+              characters: metadata.characters?.map((c) => ({ url: c.front_url, target: c.target })) ?? [
+                { url: sheet.frontUrl, target },
+              ],
+            }),
+          )
           .catch((e) => {
             console.error("checkSwapShot", errorMessage(e));
             return null;
