@@ -21,11 +21,6 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         <ThemeToggle />
         <LanguageSwitcher />
       </div>
-      <div aria-hidden className="grid-bg pointer-events-none absolute inset-0 -z-10" />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-0 left-1/2 -z-10 h-[26rem] w-[44rem] -translate-x-1/2 animate-aurora rounded-full bg-[radial-gradient(closest-side,rgb(91_124_255/0.3),transparent)] blur-3xl"
-      />
       <div className="w-full max-w-sm">
         <div className="flex justify-center">
           <LogoMark className="size-16" />

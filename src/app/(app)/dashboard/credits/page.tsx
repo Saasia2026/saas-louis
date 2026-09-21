@@ -98,7 +98,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold">{P.packs[pack.id]}</h2>
                 {featured && (
-                  <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-white shadow-[0_0_16px_var(--accent)]">
+                  <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-white">
                     {P.popular}
                   </span>
                 )}

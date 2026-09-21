@@ -281,14 +281,6 @@ export function Studio({
 
   return (
     <div className="relative isolate -mt-10 flex min-h-[calc(100dvh-8.5rem)] flex-col">
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="starfield absolute inset-0" />
-        <div
-          className="starfield absolute inset-0 opacity-60"
-          style={{ backgroundSize: "420px 420px", animationDuration: "220s", backgroundPosition: "140px 90px" }}
-        />
-      </div>
-
       {!started ? (
         <div className="flex flex-1 flex-col items-center justify-center py-12">
           <h1 className="flex animate-fade-up flex-col items-center gap-3 text-center text-[1.75rem] leading-tight font-semibold tracking-tight sm:flex-row sm:text-5xl">
@@ -300,10 +292,6 @@ export function Studio({
           </p>
 
           <div className="relative z-20 mt-6 w-full max-w-3xl animate-fade-up [animation-delay:160ms] sm:mt-10">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -inset-x-2 -inset-y-12 -z-10 animate-aurora sm:-inset-x-16 rounded-full bg-[radial-gradient(closest-side,rgb(91_124_255/0.28),transparent)] blur-2xl"
-            />
             {composer}
           </div>
 

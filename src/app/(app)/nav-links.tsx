@@ -36,7 +36,7 @@ export function SidebarNav() {
             }`}
           >
             {active && (
-              <span className="absolute top-1.5 bottom-1.5 -left-3 w-0.5 rounded-full bg-accent shadow-[0_0_12px_var(--accent)]" />
+              <span className="absolute top-1.5 bottom-1.5 -left-3 w-0.5 rounded-full bg-accent" />
             )}
             <Icon
               className={`size-4 transition-colors ${active ? "text-accent-light" : "text-faint group-hover:text-muted"}`}

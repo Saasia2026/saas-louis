@@ -61,10 +61,10 @@ export const fr = {
     mockWindow: "twinpost · Studio",
     mockRendering: "Remplacement en cours",
     mockClip: "Clip filmé",
-    mockClipMeta: "12 s · 3 plans",
+    mockClipMeta: "17 s · interview",
     mockCharacter: "Personnage",
     mockCharacterMeta: "1 photo",
-    mockTarget: "Remplacer : le combattant en short noir",
+    mockTarget: "Remplacer : l'homme au micro",
     mockEngine: "Qualité max",
     mockPipeline: "Remplacement · 4 étapes",
     mockSteps: [
@@ -73,7 +73,7 @@ export const fr = {
       "Le personnage prend la place de la personne",
       "Montage sur le son d'origine",
     ],
-    mockBadge: "720p · 12 s",
+    mockBadge: "720p · 17 s",
     models: [
       "Genjutsu",
       "Kling O3",

@@ -59,10 +59,10 @@ export const en: Dictionary = {
     mockWindow: "twinpost · Studio",
     mockRendering: "Replacing",
     mockClip: "Filmed clip",
-    mockClipMeta: "12 s · 3 shots",
+    mockClipMeta: "17 s · interview",
     mockCharacter: "Character",
     mockCharacterMeta: "1 photo",
-    mockTarget: "Replace: the fighter in black shorts",
+    mockTarget: "Replace: the man at the mic",
     mockEngine: "Max quality",
     mockPipeline: "Replacement · 4 steps",
     mockSteps: [
@@ -71,7 +71,7 @@ export const en: Dictionary = {
       "The character takes the person's place",
       "Edited to the original sound",
     ],
-    mockBadge: "720p · 12 s",
+    mockBadge: "720p · 17 s",
     models: [
       "Genjutsu",
       "Kling O3",

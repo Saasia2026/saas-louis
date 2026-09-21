@@ -103,7 +103,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <Link href="/dashboard/credits" className="chip min-w-0 shrink">
-                <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-accent shadow-[0_0_8px_var(--accent)]" />
+                <span className="size-1.5 shrink-0 rounded-full bg-accent" />
                 <span className="truncate font-medium text-text tabular-nums">{creditsLabel}</span>
                 <span className="hidden sm:inline">{t.common.credits}</span>
               </Link>
@@ -125,11 +125,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </header>
 
         <main className="relative isolate min-w-0 flex-1 overflow-x-clip px-4 py-6 sm:px-8 sm:py-10">
-          <div aria-hidden className="grid-bg pointer-events-none absolute inset-x-0 top-0 -z-10 h-96" />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute top-0 left-1/2 -z-10 h-72 w-[40rem] max-w-full -translate-x-1/2 bg-[radial-gradient(closest-side,rgb(91_124_255/0.14),transparent)] blur-2xl"
-          />
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>
       </div>

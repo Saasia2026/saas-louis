@@ -16,7 +16,6 @@ import Link from "next/link";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { ExampleVideo } from "@/app/example-video";
 import { Logo } from "@/app/logo";
-import { LogoMark } from "@/app/logo-mark";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
@@ -74,22 +73,12 @@ export default async function Home() {
       <main className="flex-1">
         {/* Accroche */}
         <section className="relative isolate">
-          <div aria-hidden className="grid-bg pointer-events-none absolute inset-0 -z-10" />
-          <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[40rem] overflow-hidden">
-            <div className="absolute top-[-6rem] left-1/2 h-[30rem] w-[52rem] -translate-x-1/2 animate-aurora rounded-full bg-[radial-gradient(closest-side,rgb(91_124_255/0.4),transparent)] blur-3xl" />
-            <div className="absolute top-24 left-[12%] h-[20rem] w-[26rem] animate-aurora rounded-full bg-[radial-gradient(closest-side,rgb(34_211_238/0.16),transparent)] blur-3xl [animation-delay:-7s]" />
-          </div>
-
           <div className="mx-auto max-w-6xl px-4 pt-12 pb-10 text-center sm:px-6 sm:pt-28">
-            <div className="relative mx-auto mb-6 size-20 sm:mb-8 sm:size-28">
-              <div aria-hidden className="absolute inset-0 -z-10 scale-150 animate-aurora rounded-full bg-[radial-gradient(closest-side,rgb(139_61_255/0.45),transparent)] blur-2xl" />
-              <LogoMark className="size-full" />
-            </div>
             <p className="eyebrow animate-fade-up">{L.eyebrow}</p>
             <h1 className="mx-auto mt-7 max-w-5xl animate-fade-up font-wide text-[2rem] leading-[1.05] uppercase [animation-delay:80ms] min-[420px]:text-[2.6rem] sm:text-7xl">
               <span className="text-gradient">{L.titleTop}</span>
               <br />
-              <span className="text-shine [filter:drop-shadow(0_0_28px_rgb(91_124_255/0.5))]">
+              <span className="text-shine">
                 {L.titleBottom}
               </span>
             </h1>
@@ -117,16 +106,10 @@ export default async function Home() {
 
           {/* Maquette du studio */}
           <div className="mx-auto max-w-5xl animate-fade-up px-4 pb-20 [animation-delay:380ms] sm:px-6">
-            <div className="panel glow overflow-hidden shadow-[0_40px_120px_-40px_rgb(91_124_255/0.55)]">
+            <div className="panel overflow-hidden">
               <div className="flex items-center gap-2 border-b border-line bg-surface-2 px-4 py-2.5">
-                <span className="size-2.5 rounded-full bg-[#ff5f57]" />
-                <span className="size-2.5 rounded-full bg-[#febc2e]" />
-                <span className="size-2.5 rounded-full bg-[#28c840]" />
-                <span className="ml-3 text-xs text-faint">{L.mockWindow}</span>
-                <span className="ml-auto flex items-center gap-1.5 text-xs text-accent-light">
-                  <span className="size-1.5 animate-pulse rounded-full bg-accent" />
-                  {L.mockRendering}
-                </span>
+                <span className="text-xs text-faint">{L.mockWindow}</span>
+                <span className="ml-auto text-xs text-muted">{L.mockRendering}</span>
               </div>
 
               <div className="grid text-left md:grid-cols-[1.25fr_1fr]">
@@ -151,7 +134,6 @@ export default async function Home() {
                   <div className="mt-3 rounded-xl border border-line bg-surface-2 p-4">
                     <p className="text-[0.9375rem] leading-relaxed">
                       {L.mockTarget}
-                      <span className="ml-0.5 inline-block h-4 w-px translate-y-0.5 animate-pulse bg-text" />
                     </p>
                     <div className="mt-4 flex flex-wrap gap-1.5">
                       <span className="chip" aria-pressed="true">
@@ -174,7 +156,7 @@ export default async function Home() {
                         </div>
                         <span className="mt-2 block h-0.5 overflow-hidden rounded-full bg-surface-3">
                           <span
-                            className="block h-full animate-grow rounded-full bg-gradient-to-r from-accent to-accent-2"
+                            className="block h-full animate-grow rounded-full bg-accent"
                             style={{ animationDelay: `${i * 0.45}s` }}
                           />
                         </span>
@@ -183,12 +165,21 @@ export default async function Home() {
                   </ol>
                 </div>
 
-                <div className="dot-bg flex min-w-0 items-center justify-center p-8">
-                  <div className="glow relative aspect-[9/16] w-40 overflow-hidden rounded-xl border bg-gradient-to-b from-[#0d1330] via-[#101a45] to-[#05070f] sm:w-48">
-                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-accent/30 to-transparent" />
-                    <div className="absolute top-1/2 left-1/2 size-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/30 blur-2xl" />
-                    <span className="pointer-events-none absolute inset-x-0 h-14 animate-scan bg-gradient-to-b from-transparent via-accent-2/30 to-transparent" />
-                    <span className="absolute bottom-3 left-3 tag bg-black/60">{L.mockBadge}</span>
+                {/* Un vrai rendu du site plutôt qu'un aperçu dessiné. */}
+                <div className="flex min-w-0 items-center justify-center bg-surface-2 p-4 sm:p-6">
+                  <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-line bg-black">
+                    <video
+                      src="/examples/ours.mp4"
+                      poster="/examples/ours.jpg"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      aria-hidden
+                      className="size-full object-cover"
+                    />
+                    <span className="absolute bottom-2 left-2 tag bg-black/70 text-white">{L.mockBadge}</span>
                   </div>
                 </div>
               </div>
@@ -197,17 +188,12 @@ export default async function Home() {
         </section>
 
         {/* Modèles */}
-        <section className="border-y border-line bg-surface/60 py-5">
-          <div className="relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
-            <div className="flex w-max animate-marquee gap-12 pr-12">
-              {[...L.models, ...L.models, ...L.models, ...L.models].map((model, i) => (
-                <span key={i} className="flex items-center gap-3 text-sm font-medium whitespace-nowrap text-muted">
-                  <span className="size-1 rounded-full bg-accent" />
-                  {model}
-                </span>
-              ))}
-            </div>
-          </div>
+        <section className="border-y border-line py-5">
+          <ul className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-8 gap-y-2 px-4 text-sm text-muted sm:px-6">
+            {L.models.map((model) => (
+              <li key={model}>{model}</li>
+            ))}
+          </ul>
         </section>
 
         {/* Exemples */}
@@ -247,7 +233,7 @@ export default async function Home() {
                   key={title}
                   className={`panel spotlight lift group p-6 ${wide ? "md:col-span-2" : ""}`}
                 >
-                  <span className="flex size-10 items-center justify-center rounded-xl border border-accent/40 bg-accent/15 text-accent-light transition-shadow duration-300 group-hover:shadow-[0_0_24px_-4px_var(--accent)]">
+                  <span className="flex size-10 items-center justify-center rounded-lg border border-line bg-surface-2 text-text">
                     <Icon className="size-5" />
                   </span>
                   <h3 className="mt-5 text-lg font-semibold">{title}</h3>
@@ -256,7 +242,7 @@ export default async function Home() {
               );
             })}
             <li className="panel spotlight lift group flex flex-col justify-between p-6">
-              <span className="flex size-10 items-center justify-center rounded-xl border border-accent/40 bg-accent/15 text-accent-light">
+              <span className="flex size-10 items-center justify-center rounded-lg border border-line bg-surface-2 text-text">
                 <InfinityIcon className="size-5" />
               </span>
               <div>
@@ -311,7 +297,7 @@ export default async function Home() {
                   <div className="flex items-center justify-between">
                     <h3 className="text-base font-semibold">{t.creditsPage.packs[pack.id]}</h3>
                     {featured && (
-                      <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-white shadow-[0_0_16px_var(--accent)]">
+                      <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-white">
                         {L.popular}
                       </span>
                     )}
@@ -335,9 +321,7 @@ export default async function Home() {
 
         {/* Appel final */}
         <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-24">
-          <div className="panel glow relative isolate overflow-hidden px-5 py-12 text-center sm:px-6 sm:py-16">
-            <div aria-hidden className="grid-bg pointer-events-none absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_at_center,#000,transparent_70%)]" />
-            <div aria-hidden className="pointer-events-none absolute top-1/2 left-1/2 -z-10 h-64 w-[36rem] -translate-x-1/2 -translate-y-1/2 animate-aurora rounded-full bg-[radial-gradient(closest-side,rgb(91_124_255/0.35),transparent)] blur-3xl" />
+          <div className="panel px-5 py-12 text-center sm:px-6 sm:py-16">
             <h2 className="mx-auto max-w-3xl font-wide text-3xl uppercase sm:text-5xl">
               <span className="text-gradient">{L.finalTitleTop}</span>{" "}
               <span className="text-shine">{L.finalTitleBottom}</span>

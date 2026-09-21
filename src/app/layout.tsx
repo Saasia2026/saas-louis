@@ -5,7 +5,6 @@ import { I18nProvider } from "@/i18n/provider";
 import { siteUrl } from "@/lib/site";
 import { getDictionary, getLocale } from "@/i18n/server";
 import "./globals.css";
-import { Spotlight } from "./spotlight";
 import { isTheme, THEME_COOKIE } from "./theme";
 
 const inter = Inter({
@@ -69,7 +68,6 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${archivo.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">
-        <Spotlight />
         <I18nProvider locale={locale}>{children}</I18nProvider>
       </body>
     </html>
