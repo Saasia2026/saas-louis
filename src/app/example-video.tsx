@@ -22,7 +22,9 @@ export function ExampleVideo({
   const [muted, setMuted] = useState(true);
 
   return (
-    <div className="relative aspect-video overflow-hidden rounded-xl border border-line bg-black">
+    <div className="relative isolate">
+      <video src={src} autoPlay muted loop playsInline preload="metadata" aria-hidden className="ambient" />
+      <div className="relative aspect-video overflow-hidden rounded-xl border border-line bg-black">
       <video
         ref={ref}
         src={src}
@@ -50,6 +52,7 @@ export function ExampleVideo({
       >
         {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
       </button>
+      </div>
     </div>
   );
 }

@@ -16,6 +16,7 @@ import Link from "next/link";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { ExampleVideo } from "@/app/example-video";
 import { Logo } from "@/app/logo";
+import { LogoMark } from "@/app/logo-mark";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
@@ -74,6 +75,7 @@ export default async function Home() {
         {/* Accroche */}
         <section className="relative isolate">
           <div className="mx-auto max-w-6xl px-4 pt-12 pb-10 text-center sm:px-6 sm:pt-28">
+            <LogoMark className="mx-auto mb-6 size-16 sm:mb-8 sm:size-20" />
             <p className="eyebrow animate-fade-up">{L.eyebrow}</p>
             <h1 className="mx-auto mt-7 max-w-5xl animate-fade-up font-wide text-[2rem] leading-[1.05] uppercase [animation-delay:80ms] min-[420px]:text-[2.6rem] sm:text-7xl">
               <span className="text-gradient">{L.titleTop}</span>
@@ -106,7 +108,7 @@ export default async function Home() {
 
           {/* Maquette du studio */}
           <div className="mx-auto max-w-5xl animate-fade-up px-4 pb-20 [animation-delay:380ms] sm:px-6">
-            <div className="panel overflow-hidden">
+            <div className="panel glow overflow-hidden">
               <div className="flex items-center gap-2 border-b border-line bg-surface-2 px-4 py-2.5">
                 <span className="text-xs text-faint">{L.mockWindow}</span>
                 <span className="ml-auto text-xs text-muted">{L.mockRendering}</span>
@@ -166,7 +168,9 @@ export default async function Home() {
                 </div>
 
                 {/* Un vrai rendu du site plutôt qu'un aperçu dessiné. */}
-                <div className="flex min-w-0 items-center justify-center bg-surface-2 p-4 sm:p-6">
+                <div className="flex min-w-0 items-center justify-center overflow-hidden bg-surface-2 p-4 sm:p-6">
+                  <div className="relative isolate w-full">
+                  <video src="/examples/ours.mp4" autoPlay muted loop playsInline preload="metadata" aria-hidden className="ambient" />
                   <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-line bg-black">
                     <video
                       src="/examples/ours.mp4"
@@ -180,6 +184,7 @@ export default async function Home() {
                       className="size-full object-cover"
                     />
                     <span className="absolute bottom-2 left-2 tag bg-black/70 text-white">{L.mockBadge}</span>
+                  </div>
                   </div>
                 </div>
               </div>
@@ -199,12 +204,12 @@ export default async function Home() {
         {/* Exemples */}
         <section id="exemples" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-16 sm:px-6 sm:pt-24">
           <p className="eyebrow">{L.examples}</p>
-          <h2 className="text-gradient mt-5 max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h2 className="reveal text-gradient mt-5 max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
             {L.examplesTitle}
           </h2>
           <ul className="mt-12 grid gap-4 md:grid-cols-2">
             {L.exampleList.map(({ title, text }, i) => (
-              <li key={title} className="panel p-3 sm:p-4">
+              <li key={title} className="panel lift reveal p-3 sm:p-4">
                 <ExampleVideo
                   src={`/examples/${EXAMPLES[i]}.mp4`}
                   poster={`/examples/${EXAMPLES[i]}.jpg`}
@@ -222,7 +227,7 @@ export default async function Home() {
         {/* Fonctionnalités */}
         <section id="fonctionnalites" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
           <p className="eyebrow">{L.features}</p>
-          <h2 className="text-gradient mt-5 max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h2 className="reveal text-gradient mt-5 max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
             {L.featuresTitle}
           </h2>
           <ul className="mt-12 grid gap-4 md:grid-cols-3">
@@ -231,9 +236,9 @@ export default async function Home() {
               return (
                 <li
                   key={title}
-                  className={`panel spotlight lift group p-6 ${wide ? "md:col-span-2" : ""}`}
+                  className={`panel spotlight lift reveal group p-6 ${wide ? "md:col-span-2" : ""}`}
                 >
-                  <span className="flex size-10 items-center justify-center rounded-lg border border-line bg-surface-2 text-text">
+                  <span className="flex size-10 items-center justify-center rounded-lg border border-accent/50 bg-accent-soft text-accent-light">
                     <Icon className="size-5" />
                   </span>
                   <h3 className="mt-5 text-lg font-semibold">{title}</h3>
@@ -242,7 +247,7 @@ export default async function Home() {
               );
             })}
             <li className="panel spotlight lift group flex flex-col justify-between p-6">
-              <span className="flex size-10 items-center justify-center rounded-lg border border-line bg-surface-2 text-text">
+              <span className="flex size-10 items-center justify-center rounded-lg border border-accent/50 bg-accent-soft text-accent-light">
                 <InfinityIcon className="size-5" />
               </span>
               <div>
@@ -275,7 +280,7 @@ export default async function Home() {
         {/* Tarifs */}
         <section id="tarifs" className="mx-auto max-w-6xl scroll-mt-20 px-4 pb-16 sm:px-6 sm:pb-24">
           <p className="eyebrow">{L.pricing}</p>
-          <h2 className="text-gradient mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h2 className="reveal text-gradient mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
             {L.pricingTitle}
           </h2>
           <p className="mt-4 max-w-xl text-[0.9375rem] leading-relaxed text-muted">
@@ -321,7 +326,7 @@ export default async function Home() {
 
         {/* Appel final */}
         <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-24">
-          <div className="panel px-5 py-12 text-center sm:px-6 sm:py-16">
+          <div className="panel glow reveal px-5 py-12 text-center sm:px-6 sm:py-16">
             <h2 className="mx-auto max-w-3xl font-wide text-3xl uppercase sm:text-5xl">
               <span className="text-gradient">{L.finalTitleTop}</span>{" "}
               <span className="text-shine">{L.finalTitleBottom}</span>
