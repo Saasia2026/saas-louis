@@ -29,6 +29,20 @@ export const en: Dictionary = {
   },
 
   landing: {
+    examples: "Examples",
+    examplesTitle: "Filmed with a person. Played by your character.",
+    exampleList: [
+      {
+        title: "The bear at the mic",
+        text: "A filmed interview: the bear replays every gesture, head turn and mouth movement. Mic, set and original voice kept.",
+      },
+      {
+        title: "The dog on stage",
+        text: "On stage, mic in hand, in front of the audience: only the speaker changes, the rest of the room is untouched.",
+      },
+    ],
+    soundOn: "Turn sound on",
+    soundOff: "Mute",
     features: "Features",
     pricing: "Pricing",
     openStudio: "Open the studio",

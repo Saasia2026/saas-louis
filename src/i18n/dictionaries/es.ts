@@ -29,6 +29,20 @@ export const es: Dictionary = {
   },
 
   landing: {
+    examples: "Ejemplos",
+    examplesTitle: "Grabado con una persona. Interpretado por tu personaje.",
+    exampleList: [
+      {
+        title: "El oso al micrófono",
+        text: "Una entrevista grabada: el oso repite cada gesto, cada giro de cabeza y movimiento de boca. Micrófono, decorado y voz original intactos.",
+      },
+      {
+        title: "El perro en el escenario",
+        text: "En el escenario, micrófono en mano, frente al público: solo cambia el orador, el resto de la sala queda intacto.",
+      },
+    ],
+    soundOn: "Activar el sonido",
+    soundOff: "Silenciar",
     features: "Funciones",
     pricing: "Precios",
     openStudio: "Abrir el estudio",

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { LanguageSwitcher } from "@/app/language-switcher";
+import { ExampleVideo } from "@/app/example-video";
 import { Logo } from "@/app/logo";
 import { LogoMark } from "@/app/logo-mark";
 import { ThemeToggle } from "@/app/theme-toggle";
@@ -22,6 +23,10 @@ import { getDictionary, getLocale } from "@/i18n/server";
 import { CREDIT_PACKS, formatPrice } from "@/lib/credit-packs";
 import { SWAP_ENGINES, SWAP_SHEET_CREDITS } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
+
+// Vidéos d'exemple (public/examples), dans l'ordre des textes de
+// landing.exampleList : de vrais rendus du site.
+const EXAMPLES = ["ours", "chien"];
 
 // Icône et largeur de chaque carte de fonctionnalité, dans l'ordre des
 // textes de landing.featureList.
@@ -47,6 +52,9 @@ export default async function Home() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
           <Logo className="min-w-0 shrink" />
           <nav className="flex shrink-0 items-center gap-0.5 text-sm sm:gap-1">
+            <a href="#exemples" className="btn btn-ghost hidden px-3 sm:inline-flex">
+              {L.examples}
+            </a>
             <a href="#fonctionnalites" className="btn btn-ghost hidden px-3 sm:inline-flex">
               {L.features}
             </a>
@@ -200,6 +208,29 @@ export default async function Home() {
               ))}
             </div>
           </div>
+        </section>
+
+        {/* Exemples */}
+        <section id="exemples" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-16 sm:px-6 sm:pt-24">
+          <p className="eyebrow">{L.examples}</p>
+          <h2 className="text-gradient mt-5 max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
+            {L.examplesTitle}
+          </h2>
+          <ul className="mt-12 grid gap-4 md:grid-cols-2">
+            {L.exampleList.map(({ title, text }, i) => (
+              <li key={title} className="panel p-3 sm:p-4">
+                <ExampleVideo
+                  src={`/examples/${EXAMPLES[i]}.mp4`}
+                  poster={`/examples/${EXAMPLES[i]}.jpg`}
+                  label={title}
+                  soundOn={L.soundOn}
+                  soundOff={L.soundOff}
+                />
+                <h3 className="mt-4 px-1 text-lg font-semibold">{title}</h3>
+                <p className="mt-1 px-1 pb-1 text-sm leading-relaxed text-muted">{text}</p>
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* Fonctionnalités */}

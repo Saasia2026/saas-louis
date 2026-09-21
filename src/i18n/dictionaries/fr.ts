@@ -31,6 +31,20 @@ export const fr = {
   },
 
   landing: {
+    examples: "Exemples",
+    examplesTitle: "Filmé par une personne. Joué par ton personnage.",
+    exampleList: [
+      {
+        title: "L'ours au micro",
+        text: "Une interview filmée : l'ours reprend chaque geste, chaque mouvement de tête et de bouche. Micro, décor et voix d'origine gardés.",
+      },
+      {
+        title: "Le chien sur scène",
+        text: "Sur scène, micro en main, devant le public : seul l'orateur change, tout le reste de la salle est intact.",
+      },
+    ],
+    soundOn: "Activer le son",
+    soundOff: "Couper le son",
     features: "Fonctionnalités",
     pricing: "Tarifs",
     openStudio: "Ouvrir le studio",
