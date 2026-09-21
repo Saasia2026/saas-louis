@@ -45,7 +45,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("credits_remaining")
+    .select("credits_remaining, auto_recharge_pack, auto_recharge_failed")
     .eq("id", auth.claims.sub)
     .single();
 
@@ -75,6 +75,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
       userId={auth.claims.sub}
       resume={resume}
       credits={profile?.credits_remaining ?? 0}
+      autoRecharge={Boolean(profile?.auto_recharge_pack) && !profile?.auto_recharge_failed}
       engines={higgsfieldEnabled() ? ["genjutsu", "kling"] : ["kling"]}
     />
   );

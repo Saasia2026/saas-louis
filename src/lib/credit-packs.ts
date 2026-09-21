@@ -12,6 +12,30 @@ export const CREDIT_PACKS = [
   { id: "studio", label: "Studio", credits: 500, amount: 11999 },
 ] as const;
 
+// Abonnements : des crédits chaque mois, un peu moins chers qu'en packs.
+// L'annuel vaut 10 mois (2 offerts) et livre les 12 mois de crédits d'un
+// coup. Crédit le moins cher : 999,90 € / 6 000 ≈ 0,167 € TTC, soit ~0,15 $
+// hors TVA et frais, pour ~0,097 $ de coût Genjutsu : marge ~35 %.
+export const SUBSCRIPTION_PLANS = [
+  { id: "creator", credits: 150, month: 3499, year: 34990 },
+  { id: "studio", credits: 500, month: 9999, year: 99990, highlight: true },
+] as const;
+
+export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];
+export type BillingInterval = "month" | "year";
+
+export function findSubscriptionPlan(id: unknown): SubscriptionPlan | undefined {
+  return SUBSCRIPTION_PLANS.find((p) => p.id === id);
+}
+
+// Crédits livrés à chaque paiement de l'abonnement.
+export function planCredits(plan: SubscriptionPlan, interval: BillingInterval) {
+  return interval === "year" ? plan.credits * 12 : plan.credits;
+}
+
+// Seuils proposés pour la recharge automatique.
+export const AUTO_RECHARGE_THRESHOLDS = [10, 20, 50, 100] as const;
+
 export type CreditPack = (typeof CREDIT_PACKS)[number];
 export type CreditPackId = CreditPack["id"];
 

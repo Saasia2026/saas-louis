@@ -54,11 +54,15 @@ type Active = { id: string; job: Job };
 export function Studio({
   userId,
   credits,
+  autoRecharge = false,
   engines,
   resume,
 }: {
   userId: string;
   credits: number;
+  // Recharge automatique activée : un solde trop bas ne bloque pas le
+  // lancement, la carte est débitée au besoin (voir startSwap).
+  autoRecharge?: boolean;
   // Moteurs disponibles, le meilleur en premier.
   engines: SwapEngine[];
   // Remplacement encore en cours, repris à l'ouverture de la page.
@@ -107,7 +111,7 @@ export function Studio({
   // Durée illisible dans le navigateur : le serveur mesure le clip et refuse
   // lui-même faute de crédits ; on ne bloque ici que sous le prix le plus bas.
   const gate = durationKnown ? cost : swapCredits(1, engine, undefined, characters.length);
-  const canSend = !busy && Boolean(video) && imagesReady && targetsReady && credits >= gate;
+  const canSend = !busy && Boolean(video) && imagesReady && targetsReady && (credits >= gate || autoRecharge);
 
   useEffect(() => {
     resultEnd.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -260,7 +264,7 @@ export function Studio({
               ? t.studio.pick
               : !targetsReady
                 ? t.studio.targetsMissing
-                : credits >= gate
+                : credits >= gate || autoRecharge
                 ? durationKnown
                   ? // Prix final connu une fois le clip découpé (voir swapCredits).
                     fmt(t.studio.costFrom, {

@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { fmt } from "@/i18n/config";
 import { getDictionary } from "@/i18n/server";
 import { createFalCharacterSheet, falEnabled, uploadToFal } from "@/lib/fal";
@@ -12,6 +13,7 @@ import {
   genjutsuBilledSeconds,
   isSwapEngine,
   klingBilledSeconds,
+  swapCredits,
   swapShotCredits,
   type AspectRatio,
   type SwapEngine,
@@ -23,6 +25,7 @@ import {
   isOutOfCredit,
   isRateLimited,
 } from "@/lib/predictions";
+import { autoRecharge } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -184,20 +187,31 @@ export async function startSwap(input: {
     started_at: new Date().toISOString(),
     ...(target && { target }),
   };
-  const { data: generationId, error: rpcError } = await admin.rpc("start_swap_generation", {
-    p_user_id: userId,
-    p_duration_seconds: durationSeconds,
-    // Les morceaux sont réencodés à 30 images/s.
-    p_frames_per_second: 30,
-    p_metadata: metadata,
-    p_engine: engine,
-    // Secondes réellement facturées par le moteur, une fois le clip découpé.
-    p_billed_seconds: (genjutsu ? genjutsuBilledSeconds : klingBilledSeconds)(
-      shots.map((s) => s.seconds),
-    ),
-    // Une fiche par personnage.
-    p_characters: characters.length,
-  });
+  // Secondes réellement facturées par le moteur, une fois le clip découpé.
+  const billedSeconds = (genjutsu ? genjutsuBilledSeconds : klingBilledSeconds)(
+    shots.map((s) => s.seconds),
+  );
+  const debit = () =>
+    admin.rpc("start_swap_generation", {
+      p_user_id: userId,
+      p_duration_seconds: durationSeconds,
+      // Les morceaux sont réencodés à 30 images/s.
+      p_frames_per_second: 30,
+      p_metadata: metadata,
+      p_engine: engine,
+      p_billed_seconds: billedSeconds,
+      // Une fiche par personnage.
+      p_characters: characters.length,
+    });
+  let { data: generationId, error: rpcError } = await debit();
+  // Solde trop bas et recharge automatique activée : la carte est débitée,
+  // puis on réessaie une fois.
+  if (
+    rpcError?.message.includes("insufficient_credits") &&
+    (await autoRecharge(userId, swapCredits(durationSeconds, engine, billedSeconds, characters.length)))
+  ) {
+    ({ data: generationId, error: rpcError } = await debit());
+  }
   if (rpcError || !generationId) {
     if (rpcError?.message.includes("insufficient_credits")) {
       return { error: errors.insufficientCredits };
@@ -265,6 +279,9 @@ export async function startSwap(input: {
     }
     // Lance tout de suite les premiers rendus ; le suivi fait le reste.
     await advanceSwap(generationId);
+    // Solde passé sous le seuil : recharge automatique, une fois la réponse
+    // partie.
+    after(() => autoRecharge(userId).catch(() => {}));
   } catch (e) {
     console.error("startSwap", errorMessage(e));
     await admin.rpc("fail_generation", { p_generation_id: generationId });
@@ -313,11 +330,16 @@ export async function redoSwapShot(input: {
   const genjutsu = metadata.engine === "genjutsu";
 
   const credits = swapShotCredits(part.seconds, genjutsu ? "genjutsu" : "kling");
-  const { error: rpcError } = await admin.rpc("start_swap_redo", {
-    p_user_id: userId,
-    p_generation_id: generation.id,
-    p_credits: credits,
-  });
+  const debit = () =>
+    admin.rpc("start_swap_redo", {
+      p_user_id: userId,
+      p_generation_id: generation.id,
+      p_credits: credits,
+    });
+  let { error: rpcError } = await debit();
+  if (rpcError?.message.includes("insufficient_credits") && (await autoRecharge(userId, credits))) {
+    ({ error: rpcError } = await debit());
+  }
   if (rpcError) {
     if (rpcError.message.includes("insufficient_credits")) {
       return { error: errors.insufficientCredits };

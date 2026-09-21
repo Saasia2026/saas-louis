@@ -325,6 +325,11 @@ export type Database = {
           full_name: string | null
           id: string
           plan: string
+          auto_recharge_at: string | null
+          auto_recharge_failed: boolean
+          auto_recharge_pack: string | null
+          auto_recharge_threshold: number
+          stripe_customer_id: string | null
           updated_at: string
         }
         Insert: {
@@ -335,6 +340,11 @@ export type Database = {
           full_name?: string | null
           id: string
           plan?: string
+          auto_recharge_at?: string | null
+          auto_recharge_failed?: boolean
+          auto_recharge_pack?: string | null
+          auto_recharge_threshold?: number
+          stripe_customer_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -345,6 +355,11 @@ export type Database = {
           full_name?: string | null
           id?: string
           plan?: string
+          auto_recharge_at?: string | null
+          auto_recharge_failed?: boolean
+          auto_recharge_pack?: string | null
+          auto_recharge_threshold?: number
+          stripe_customer_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -474,6 +489,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
+      }
+      claim_auto_recharge: {
+        Args: { p_needed?: number; p_user_id: string }
+        Returns: string
       }
       fail_generation: { Args: { p_generation_id: string }; Returns: undefined }
       max_video_seconds: { Args: { p_plan: string }; Returns: number }
