@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, Download, RefreshCw, WandSparkles } from "lucide-react";
+import { Check, ChevronDown, Download, RefreshCw, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LogoMark } from "@/app/logo-mark";
@@ -16,7 +16,7 @@ import {
   type SwapEngine,
 } from "@/lib/generation";
 import { getGeneration, type GenerationView } from "./actions";
-import { redoSwapShot, startSwap } from "./swap-actions";
+import { cancelSwap, redoSwapShot, startSwap } from "./swap-actions";
 import { SwapInput, clampedStart, type SwapCharacter, type SwapFile } from "./swap-input";
 
 const POLL_INTERVAL_MS = 5_000;
@@ -183,6 +183,26 @@ export function Studio({
     setActive({ id: res.data.generationId, job });
   }
 
+  async function cancel() {
+    if (phase.kind !== "generating" || !phase.id || !window.confirm(t.studio.cancelConfirm)) return;
+    const { id, job } = phase;
+    const res = await cancelSwap(id);
+    if (res.error !== undefined) {
+      // Déjà au montage : le suivi continue jusqu'à la vidéo.
+      window.alert(res.error);
+      return;
+    }
+    setActive(null);
+    // Plan refait annulé : la vidéo d'avant reste.
+    const latest = await getGeneration(id);
+    router.refresh();
+    setPhase(
+      latest.data?.status === "completed" && latest.data.mediaUrl
+        ? { kind: "done", job, id, view: latest.data }
+        : { kind: "error", message: t.studio.cancelled },
+    );
+  }
+
   async function redo(index: number) {
     if (phase.kind !== "done") return;
     const id = phase.id;
@@ -316,6 +336,7 @@ export function Studio({
               credits={credits}
               onReset={() => setPhase({ kind: "idle" })}
               onRedo={redo}
+              onCancel={cancel}
               onTryBudget={() => {
                 // Même clip, même personnage : il ne reste qu'à relancer.
                 setEngine("kling");
@@ -402,6 +423,7 @@ function Result({
   credits,
   onReset,
   onRedo,
+  onCancel,
   onTryBudget,
 }: {
   phase: Exclude<Phase, { kind: "idle" }>;
@@ -409,11 +431,16 @@ function Result({
   onReset: () => void;
   // Refait un plan d'un remplacement terminé (moteur kling).
   onRedo: (index: number) => void;
+  onCancel: () => Promise<void>;
   // Repasse en Économique après un échec du moteur Qualité max.
   onTryBudget: () => void;
 }) {
   const { t } = useI18n();
   const aspectRatio = phase.kind === "error" ? "9:16" : phase.job.aspectRatio;
+  const [cancelling, setCancelling] = useState(false);
+  // Pas pendant le montage : trop tard, la vidéo arrive.
+  const cancellable =
+    phase.kind === "generating" && Boolean(phase.id) && phase.view?.stage !== "assembling";
 
   return (
     <section className="panel animate-fade-up overflow-hidden">
@@ -494,6 +521,20 @@ function Result({
           <button type="button" onClick={onTryBudget} className="btn btn-accent">
             <WandSparkles />
             {t.studio.tryBudget}
+          </button>
+        )}
+        {cancellable && (
+          <button
+            type="button"
+            disabled={cancelling}
+            onClick={async () => {
+              setCancelling(true);
+              await onCancel().finally(() => setCancelling(false));
+            }}
+            className="btn btn-secondary"
+          >
+            <X />
+            {t.studio.cancel}
           </button>
         )}
         {phase.kind !== "generating" && (

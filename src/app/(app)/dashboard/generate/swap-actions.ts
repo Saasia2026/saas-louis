@@ -31,6 +31,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   SWAP_PART_MIN_SECONDS,
   advanceSwap,
+  cancelSwap as cancelSwapGeneration,
   firstFrame,
   preparePart,
   probeVideo,
@@ -389,4 +390,18 @@ export async function redoSwapShot(input: {
       durationSeconds: generation.duration_seconds ?? 15,
     },
   };
+}
+
+// Arrête un remplacement en cours (voir cancelSwap dans swap.ts).
+export async function cancelSwap(generationId: string): Promise<Result<null>> {
+  const t = await getDictionary();
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  const userId = auth?.claims?.sub;
+  if (!userId) return { error: t.common.sessionExpired };
+  const cancelled = await cancelSwapGeneration(generationId, userId).catch((e) => {
+    console.error("cancelSwap", errorMessage(e));
+    return false;
+  });
+  return cancelled ? { data: null } : { error: t.generateErrors.cancelUnavailable };
 }

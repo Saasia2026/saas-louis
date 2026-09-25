@@ -5,6 +5,7 @@ export const en: Dictionary = {
     description:
       "Put your character in any video: TwinPost replaces the person in a filmed clip while keeping their moves, the set, the camera and the sound.",
     login: "Sign in",
+    password: "New password",
     studio: "Studio",
     videos: "My videos",
     credits: "Credits",
@@ -135,15 +136,46 @@ export const en: Dictionary = {
     submitSignUp: "Create my account",
     freeCredits: "3 free credits when you sign up",
     invalidLink: "This confirmation link is invalid or has expired.",
+    google: "Continue with Google",
+    or: "or",
+    forgot: "Forgot your password?",
+    forgotTitle: "Reset your password",
+    forgotIntro:
+      "Enter your email and we'll send you a link to choose a new password.",
+    submitReset: "Send the link",
+    backToSignIn: "Back to sign in",
+    resetSent:
+      "If an account exists for that email, the link is on its way. Remember to check your spam folder.",
     errors: {
       missing: "Email and password are required.",
+      missingEmail: "Email is required.",
       notConfirmed: "Please confirm your email before signing in.",
       wrong: "Incorrect email or password.",
       tooShort: "Your password must be at least {min} characters long.",
       weak: "Password too weak.",
       signUpFailed: "Sign-up failed. Please try again in a moment.",
+      resetFailed: "Couldn't send the link. Please try again in a moment.",
+      unavailable:
+        "Sign-in is unavailable right now: the service is down. It is not your password.",
+      googleFailed: "Google sign-in failed. Please try again in a moment.",
     },
     created: "Account created! Click the link we emailed you to activate it.",
+  },
+
+  password: {
+    title: "New password",
+    intro: "Choose a password of at least {min} characters.",
+    newPassword: "New password",
+    confirm: "Confirm password",
+    submit: "Save",
+    wait: "One moment…",
+    errors: {
+      missing: "Both fields are required.",
+      mismatch: "The two passwords don't match.",
+      tooShort: "Your password must be at least {min} characters long.",
+      weak: "Password too weak.",
+      failed: "Couldn't change your password. Please try again in a moment.",
+    },
   },
 
   studio: {
@@ -190,6 +222,9 @@ export const en: Dictionary = {
     lengthAll: "Whole clip ({seconds} s)",
     download: "Download",
     newVideo: "New video",
+    cancel: "Cancel",
+    cancelConfirm: "Stop this swap? Credits for sequences not rendered yet will be refunded.",
+    cancelled: "Swap cancelled. Your credits were refunded, except for sequences already rendered.",
     failed: "The replacement failed. Your credits have been refunded.",
     tooLong: "This is taking longer than expected. Come back in a few minutes: the video will be in My videos.",
   },
@@ -283,6 +318,7 @@ export const en: Dictionary = {
       "The Max quality engine is temporarily unavailable. Your credits were refunded: run it again in Budget or try later.",
     swapTooShort: "The clip must be at least {min} s long.",
     swapRedoUnavailable: "This shot can't be redone.",
+    cancelUnavailable: "Too late to cancel: the video is already being assembled.",
     swapTargets: "Say who each character replaces (e.g. the man in the red t-shirt).",
     swapFiles: "Add a clip and a character image.",
     swapUnreadable: "This clip can't be read. Try an MP4.",

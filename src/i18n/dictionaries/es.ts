@@ -5,6 +5,7 @@ export const es: Dictionary = {
     description:
       "Pon a tu personaje en cualquier vídeo: TwinPost reemplaza a la persona de un clip grabado conservando sus gestos, el decorado, la cámara y el sonido.",
     login: "Iniciar sesión",
+    password: "Nueva contraseña",
     studio: "Studio",
     videos: "Mis vídeos",
     credits: "Créditos",
@@ -135,15 +136,46 @@ export const es: Dictionary = {
     submitSignUp: "Crear mi cuenta",
     freeCredits: "3 créditos gratis al registrarte",
     invalidLink: "Este enlace de confirmación no es válido o ha caducado.",
+    google: "Continuar con Google",
+    or: "o",
+    forgot: "¿Olvidaste tu contraseña?",
+    forgotTitle: "Restablecer la contraseña",
+    forgotIntro:
+      "Indica tu email: recibirás un enlace para elegir una nueva contraseña.",
+    submitReset: "Enviar el enlace",
+    backToSignIn: "Volver al inicio de sesión",
+    resetSent:
+      "Si existe una cuenta con ese email, el enlace ya está en camino. Revisa también tu carpeta de spam.",
     errors: {
       missing: "Se requieren email y contraseña.",
+      missingEmail: "Se requiere el email.",
       notConfirmed: "Confirma tu email antes de iniciar sesión.",
       wrong: "Email o contraseña incorrectos.",
       tooShort: "La contraseña debe tener al menos {min} caracteres.",
       weak: "Contraseña demasiado débil.",
       signUpFailed: "No se pudo completar el registro. Inténtalo de nuevo en un momento.",
+      resetFailed: "No se pudo enviar el enlace. Inténtalo de nuevo en un momento.",
+      unavailable:
+        "No se puede iniciar sesión ahora mismo: el servicio no está disponible. No es tu contraseña.",
+      googleFailed: "No se pudo iniciar sesión con Google. Inténtalo de nuevo en un momento.",
     },
     created: "¡Cuenta creada! Haz clic en el enlace que te enviamos por email para activarla.",
+  },
+
+  password: {
+    title: "Nueva contraseña",
+    intro: "Elige una contraseña de al menos {min} caracteres.",
+    newPassword: "Nueva contraseña",
+    confirm: "Confirma la contraseña",
+    submit: "Guardar",
+    wait: "Un momento…",
+    errors: {
+      missing: "Ambos campos son obligatorios.",
+      mismatch: "Las dos contraseñas no coinciden.",
+      tooShort: "La contraseña debe tener al menos {min} caracteres.",
+      weak: "Contraseña demasiado débil.",
+      failed: "No se pudo cambiar la contraseña. Inténtalo de nuevo en un momento.",
+    },
   },
 
   studio: {
@@ -190,6 +222,9 @@ export const es: Dictionary = {
     lengthAll: "Todo el clip ({seconds} s)",
     download: "Descargar",
     newVideo: "Nuevo vídeo",
+    cancel: "Cancelar",
+    cancelConfirm: "¿Detener este reemplazo? Se te devolverán los créditos de las secuencias aún no renderizadas.",
+    cancelled: "Reemplazo cancelado. Se te devolvieron los créditos, salvo los de las secuencias ya renderizadas.",
     failed: "El reemplazo ha fallado. Te hemos devuelto los créditos.",
     tooLong: "Está tardando más de lo previsto. Vuelve en unos minutos: el vídeo estará en Mis vídeos.",
   },
@@ -284,6 +319,7 @@ export const es: Dictionary = {
       "El motor Calidad máx. no está disponible por el momento. Te hemos devuelto los créditos: vuelve a lanzarlo en Económico o inténtalo más tarde.",
     swapTooShort: "El fragmento debe durar al menos {min} s.",
     swapRedoUnavailable: "Este plano no se puede rehacer.",
+    cancelUnavailable: "Demasiado tarde para cancelar: el vídeo ya se está montando.",
     swapTargets: "Indica a quién reemplaza cada personaje (ej.: el hombre de camiseta roja).",
     swapFiles: "Añade un clip y una imagen de personaje.",
     swapUnreadable: "No se puede leer este clip. Prueba con un MP4.",

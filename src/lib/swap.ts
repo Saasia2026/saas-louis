@@ -478,6 +478,8 @@ export async function advanceSwap(generationId: string) {
         .from("generations")
         .update({ metadata: { ...metadata, ...patch } })
         .eq("id", generation.id)
+        // Annulée en route (voir cancelSwap) : plus rien n'est envoyé.
+        .eq("status", "processing")
         .eq("metadata->>rev", String(rev + 1))
         .select("id");
       if (!error) return Boolean(data?.length);
@@ -862,6 +864,87 @@ async function abandonRedo(generationId: string, part: SwapPart) {
   part.redo = undefined;
 }
 
+// Annulation demandée par le créateur, avant le montage.
+// - Plan refait : l'ancien reprend sa place, son prix est rendu, la vidéo
+//   livrée reste.
+// - Sinon le remplacement s'arrête, ses morceaux sont effacés et les crédits
+//   rendus, sauf ceux des séquences déjà rendues (payées au fournisseur).
+// Faux si rien n'a été annulé (déjà fini, en cours de montage, ou inconnu).
+export async function cancelSwap(generationId: string, userId: string) {
+  const admin = createAdminClient();
+  const { data: generation } = await admin
+    .from("generations")
+    .select("id, user_id, status, stage, storage_path, credits_cost, metadata")
+    .eq("id", generationId)
+    .eq("user_id", userId)
+    .eq("kind", "swap")
+    .maybeSingle();
+  if (!generation) return false;
+  if (generation.status === "pending") {
+    // Encore en préparation : startSwap ne la relancera pas (voir son « pending »).
+    await admin.rpc("fail_generation", { p_generation_id: generation.id });
+    return true;
+  }
+  if (generation.status !== "processing" || generation.stage !== "image") return false;
+
+  const metadata = (generation.metadata ?? {}) as SwapMetadata;
+  const parts = metadata.swap_parts ?? [];
+
+  if (generation.storage_path) {
+    const redone = parts.filter((p) => p.redo);
+    for (const part of redone) {
+      part.clipPath = part.redo!.previousClipPath;
+      part.stage = "done";
+    }
+    const { data: claimed } = await admin
+      .from("generations")
+      .update({
+        status: "completed",
+        metadata: {
+          ...metadata,
+          swap_parts: parts.map((p) => ({ ...p, redo: undefined })),
+          busy_until: null,
+        },
+      })
+      .eq("id", generation.id)
+      .eq("status", "processing")
+      .eq("stage", "image")
+      .select("id");
+    if (!claimed?.length) return false;
+    for (const part of redone) {
+      await admin.rpc("refund_swap_redo", {
+        p_generation_id: generation.id,
+        p_credits: part.redo!.credits,
+      });
+    }
+    return true;
+  }
+
+  const engine = metadata.engine ?? "kling";
+  const kept = parts
+    .filter((p) => p.stage === "done" && !p.original)
+    .reduce((sum, p) => sum + swapShotCredits(p.seconds, engine), 0);
+  if (!kept) {
+    await removeParts(generation);
+    await admin.rpc("fail_generation", { p_generation_id: generation.id });
+    return true;
+  }
+  const { data: claimed } = await admin
+    .from("generations")
+    .update({ status: "failed" })
+    .eq("id", generation.id)
+    .eq("status", "processing")
+    .eq("stage", "image")
+    .select("id");
+  if (!claimed?.length) return false;
+  await removeParts(generation);
+  const refund = generation.credits_cost - kept;
+  if (refund > 0) {
+    await admin.rpc("refund_swap_redo", { p_generation_id: generation.id, p_credits: refund });
+  }
+  return true;
+}
+
 // Refus du filtre de contenu : message clair, crédits rendus.
 function refuse(generationId: string) {
   return fail(generationId, CONTENT_REFUSED_ERROR);
@@ -955,7 +1038,8 @@ async function assembleSwap(generation: { id: string; user_id: string }, metadat
         storage_path: storagePath,
         metadata: { ...metadata, ...settled },
       })
-      .eq("id", generation.id);
+      .eq("id", generation.id)
+      .eq("status", "processing");
   } catch (e) {
     console.error("advanceSwap: montage", errorMessage(e));
     if (attempts < ASSEMBLE_ATTEMPTS) {

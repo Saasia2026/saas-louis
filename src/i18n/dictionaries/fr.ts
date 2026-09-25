@@ -7,6 +7,7 @@ export const fr = {
     description:
       "Mets ton personnage dans n'importe quelle vidéo : TwinPost remplace la personne d'un clip filmé en gardant ses gestes, le décor, la caméra et le son.",
     login: "Connexion",
+    password: "Nouveau mot de passe",
     studio: "Studio",
     videos: "Mes vidéos",
     credits: "Crédits",
@@ -137,15 +138,46 @@ export const fr = {
     submitSignUp: "Créer mon compte",
     freeCredits: "3 crédits offerts à l'inscription",
     invalidLink: "Ce lien de confirmation est invalide ou a expiré.",
+    google: "Continuer avec Google",
+    or: "ou",
+    forgot: "Mot de passe oublié ?",
+    forgotTitle: "Réinitialiser le mot de passe",
+    forgotIntro:
+      "Indique ton email : tu recevras un lien pour choisir un nouveau mot de passe.",
+    submitReset: "Envoyer le lien",
+    backToSignIn: "Retour à la connexion",
+    resetSent:
+      "Si un compte existe pour cet email, le lien vient de partir. Pense à regarder tes spams.",
     errors: {
       missing: "Email et mot de passe requis.",
+      missingEmail: "Email requis.",
       notConfirmed: "Confirme ton email avant de te connecter.",
       wrong: "Email ou mot de passe incorrect.",
       tooShort: "Le mot de passe doit faire au moins {min} caractères.",
       weak: "Mot de passe trop faible.",
       signUpFailed: "Inscription impossible. Réessaie dans un instant.",
+      resetFailed: "Envoi impossible. Réessaie dans un instant.",
+      unavailable:
+        "Connexion impossible pour le moment : le service est indisponible. Ce n'est pas ton mot de passe.",
+      googleFailed: "Connexion Google impossible. Réessaie dans un instant.",
     },
     created: "Compte créé ! Clique sur le lien reçu par email pour l'activer.",
+  },
+
+  password: {
+    title: "Nouveau mot de passe",
+    intro: "Choisis un mot de passe d'au moins {min} caractères.",
+    newPassword: "Nouveau mot de passe",
+    confirm: "Confirme le mot de passe",
+    submit: "Enregistrer",
+    wait: "Un instant…",
+    errors: {
+      missing: "Les deux champs sont requis.",
+      mismatch: "Les deux mots de passe ne correspondent pas.",
+      tooShort: "Le mot de passe doit faire au moins {min} caractères.",
+      weak: "Mot de passe trop faible.",
+      failed: "Changement impossible. Réessaie dans un instant.",
+    },
   },
 
   studio: {
@@ -192,6 +224,9 @@ export const fr = {
     lengthAll: "Tout le clip ({seconds} s)",
     download: "Télécharger",
     newVideo: "Nouvelle vidéo",
+    cancel: "Annuler",
+    cancelConfirm: "Arrêter ce remplacement ? Les crédits des séquences pas encore rendues te seront rendus.",
+    cancelled: "Remplacement annulé. Tes crédits ont été rendus, sauf ceux des séquences déjà rendues.",
     failed: "Le remplacement a échoué. Tes crédits ont été rendus.",
     tooLong: "C'est plus long que prévu. Reviens dans quelques minutes : la vidéo sera dans Mes vidéos.",
   },
@@ -285,6 +320,7 @@ export const fr = {
       "Le moteur Qualité max est momentanément indisponible. Tes crédits ont été rendus : relance en Économique ou réessaie plus tard.",
     swapTooShort: "Le passage doit durer au moins {min} s.",
     swapRedoUnavailable: "Ce plan ne peut pas être refait.",
+    cancelUnavailable: "Trop tard pour annuler : la vidéo est déjà en cours de montage.",
     swapTargets: "Dis qui chaque personnage remplace (ex. : l'homme en t-shirt rouge).",
     swapFiles: "Ajoute un clip et une image de personnage.",
     swapUnreadable: "Impossible de lire ce clip. Essaie un MP4.",
