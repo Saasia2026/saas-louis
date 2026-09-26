@@ -154,5 +154,6 @@ export async function getHiggsfieldPrediction(id: string): Promise<PredictionSta
     // Solde du compte Higgsfield épuisé : le refus arrive ici, ou en 403 dès
     // la création (voir swap.ts).
     outOfCredit: /credit balance/i.test(error),
+    error: error.slice(0, 200) || undefined,
   };
 }

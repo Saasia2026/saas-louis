@@ -222,6 +222,9 @@ export const fr = {
     redoRefused:
       "{part} : le filtre de contenu du modèle a refusé le nouveau rendu. La vidéo n'a pas changé et tes crédits ont été rendus.",
     redoFailed: "{part} : le nouveau rendu a échoué. La vidéo n'a pas changé et tes crédits ont été rendus.",
+    partRefused: "Refusée par le filtre de contenu",
+    partNotRendered: "Non rendue, images d'origine",
+    lateHint: "Plus long que prévu · laisse cette page ouverte, le rendu continue",
     tryBudget: "Relancer en Économique",
     length: "Durée",
     lengthAll: "Tout le clip ({seconds} s)",

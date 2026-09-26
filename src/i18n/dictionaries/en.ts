@@ -220,6 +220,9 @@ export const en: Dictionary = {
     redoRefused:
       "{part}: the model's content filter refused the new take. The video is unchanged and your credits were refunded.",
     redoFailed: "{part}: the new take failed. The video is unchanged and your credits were refunded.",
+    partRefused: "Refused by the content filter",
+    partNotRendered: "Not rendered, original footage",
+    lateHint: "Taking longer than expected · keep this page open, the render is still running",
     tryBudget: "Run again in Budget",
     length: "Length",
     lengthAll: "Whole clip ({seconds} s)",

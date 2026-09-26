@@ -90,9 +90,8 @@ const LOCK_SECONDS = 150;
 const MAX_STATUS_ERRORS = 24;
 // Compte Higgsfield saturé : essais espacés, abandon au bout de 10 min.
 const GENJUTSU_RETRY_MS = 30_000;
-// Solde Higgsfield épuisé en cours de vidéo : les séquences refusées (non
-// facturées) attendent une recharge du compte, jusqu'à l'échéance.
-const GENJUTSU_TOPUP_RETRY_MS = 5 * 60_000;
+// Séquence livrée avec ses images d'origine sans autre raison enregistrée.
+export const PART_NOT_RENDERED = "non rendue";
 // Montage : essais avant d'abandonner, et délai au-delà duquel un montage
 // interrompu (fonction coupée) est repris. Plus long que maxDuration (300 s).
 const ASSEMBLE_ATTEMPTS = 3;
@@ -138,6 +137,8 @@ export type SwapPart = {
   clipPath?: string;
   // Raison du dernier contrôle refusé.
   check?: string;
+  // Début du dernier message d'erreur du fournisseur, pour le diagnostic.
+  lastError?: string;
   // Plan refait à la demande (voir redoSwapShot) : l'ancien plan est gardé
   // si le nouveau rate, avec son état (images d'origine, signalement), et
   // son prix rendu.
@@ -551,7 +552,8 @@ async function advanceParts(
   const calledAt = Date.now();
   // Séquences Genjutsu en cours de rendu.
   let inFlight = parts.filter((p) => p.stage === "video" && p.predictionId).length;
-  // Séquences refusées faute de solde chez Higgsfield (refus non facturé).
+  // Séquences refusées faute de solde chez Higgsfield (refus non facturé) :
+  // abandonnées sitôt le passage fini, sans attendre une recharge du compte.
   const starved: SwapPart[] = [];
   // Rendus finis, copiés dans le stockage tous en même temps.
   const copies: Promise<void>[] = [];
@@ -583,7 +585,7 @@ async function advanceParts(
       part.predictionId = undefined;
       part.posting = false;
       part.original = true;
-      part.check = error ?? "non rendue";
+      part.check = error ?? PART_NOT_RENDERED;
       part.stage = "done";
       // Enregistré avant de rendre son prix : jamais deux fois.
       if (!(await persist())) return "continue" as const;
@@ -693,11 +695,13 @@ async function advanceParts(
               inFlight = GENJUTSU_IN_FLIGHT;
               continue;
             }
-            // Solde Higgsfield épuisé (403 dès la création).
+            part.lastError = errorMessage(e).slice(0, 200);
+            // Solde Higgsfield épuisé (403 dès la création, non facturé). Les
+            // autres séquences partent quand même : le refus dépend du solde
+            // à l'instant de l'envoi.
             if (isOutOfCredit(e) && !part.redo) {
               part.attempts -= 1;
               starved.push(part);
-              inFlight = GENJUTSU_IN_FLIGHT;
               continue;
             }
             // Seul un refus net (4xx) se retente : après une coupure, un délai
@@ -752,14 +756,13 @@ async function advanceParts(
       if (genjutsu) inFlight--;
       const url = outputUrlOf(prediction);
       if (prediction.status !== "succeeded" || !url) {
+        part.lastError = prediction.error;
         if (prediction.outOfCredit) {
-          // Genjutsu : refus non facturé, l'essai ne compte pas. La séquence
-          // attend une recharge du compte si d'autres sont déjà payées.
+          // Genjutsu : refus non facturé, l'essai ne compte pas.
           if (genjutsu && !part.redo) {
             part.predictionId = undefined;
             part.attempts = Math.max((part.attempts ?? 1) - 1, 0);
             starved.push(part);
-            inFlight = GENJUTSU_IN_FLIGHT;
             continue;
           }
           const out = await giveUp(part, i, genjutsu ? GENJUTSU_UNAVAILABLE_ERROR : OUT_OF_CREDIT_ERROR);
@@ -801,18 +804,23 @@ async function advanceParts(
   }
 
   if (starved.length) {
+    console.error(
+      "ALERTE : solde Higgsfield épuisé",
+      generation.id,
+      `${starved.length} séquence(s)`,
+      starved[0].lastError ?? "",
+    );
     // Rien de payé ni en cours : échec immédiat, sans frais.
     if (!parts.some((p) => p.predictionId || (p.clipPath && !p.original))) {
       return fail(generation.id, GENJUTSU_UNAVAILABLE_ERROR);
     }
-    // Des séquences sont déjà payées : on attend une recharge du compte
-    // plutôt que de les perdre (jusqu'à l'échéance).
-    console.error(
-      "ALERTE : solde Higgsfield épuisé, remplacement en attente de recharge",
-      generation.id,
-      `${starved.length} séquence(s)`,
-    );
-    for (const part of starved) part.retryAt = Date.now() + GENJUTSU_TOPUP_RETRY_MS;
+    // Des séquences sont déjà payées : celles-ci sont livrées avec leurs
+    // images d'origine, prix rendu, sans faire attendre le créateur. Il
+    // pourra les refaire seules une fois le compte rechargé.
+    for (const part of starved) {
+      const out = await giveUp(part, parts.indexOf(part), GENJUTSU_UNAVAILABLE_ERROR);
+      if (out) return out;
+    }
   }
 
   // Contrôles menés de front : des séquences lancées ensemble finissent

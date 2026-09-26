@@ -220,6 +220,9 @@ export const es: Dictionary = {
     redoRefused:
       "{part}: el filtro de contenido del modelo rechazó la nueva toma. El vídeo no ha cambiado y se te han devuelto los créditos.",
     redoFailed: "{part}: la nueva toma ha fallado. El vídeo no ha cambiado y se te han devuelto los créditos.",
+    partRefused: "Rechazada por el filtro de contenido",
+    partNotRendered: "Sin renderizar, imágenes originales",
+    lateHint: "Está tardando más de lo previsto · deja esta página abierta, el render sigue en marcha",
     tryBudget: "Relanzar en Económico",
     length: "Duración",
     lengthAll: "Todo el clip ({seconds} s)",

@@ -506,7 +506,7 @@ function Result({
                   {fmt(sequence ? t.studio.sequence : t.studio.shot, { n: i + 1 })} ·{" "}
                   {part.start.toFixed(1)}–
                   {(part.start + part.seconds).toFixed(1)} s
-                  {part.flagged && ` · ${t.studio.shotFlagged}`}
+                  {part.flagged && ` · ${part.reason ?? t.studio.shotFlagged}`}
                 </button>
               );
             })}
@@ -555,6 +555,14 @@ function Result({
 function ProgressLabel({ phase }: { phase: Extract<Phase, { kind: "generating" }> }) {
   const { t } = useI18n();
   const view = phase.view;
+  // Passé le délai annoncé depuis que le créateur regarde ce rendu, on le dit
+  // plutôt que de répéter la même estimation.
+  const minutes = genjutsuMinutes(phase.job.durationSeconds);
+  const [late, setLate] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setLate(true), minutes * 60_000);
+    return () => clearTimeout(timer);
+  }, [minutes]);
   if (view?.stage === "assembling") return <span>{t.studio.assembling}</span>;
 
   // Kling : images clés des plans, puis vidéo et contrôle de chacun.
@@ -590,9 +598,11 @@ function ProgressLabel({ phase }: { phase: Extract<Phase, { kind: "generating" }
         </span>
       )}
       <span className="mt-2 block text-xs text-muted">
-        {view?.engine === "genjutsu"
-          ? fmt(t.studio.genjutsuHint, { minutes: genjutsuMinutes(phase.job.durationSeconds) })
-          : t.studio.progressHint}
+        {late
+          ? t.studio.lateHint
+          : view?.engine === "genjutsu"
+            ? fmt(t.studio.genjutsuHint, { minutes })
+            : t.studio.progressHint}
       </span>
     </span>
   );

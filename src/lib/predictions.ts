@@ -42,6 +42,8 @@ export type PredictionState = {
   refused?: boolean;
   // Solde du compte du fournisseur épuisé (Higgsfield le signale ainsi).
   outOfCredit?: boolean;
+  // Début du message d'erreur du fournisseur, pour le diagnostic.
+  error?: string;
 };
 
 // Messages enregistrés en base (traduits à l'affichage, voir generate/actions.ts).

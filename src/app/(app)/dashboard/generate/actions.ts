@@ -14,7 +14,7 @@ import {
   OUT_OF_CREDIT_ERROR,
   errorMessage,
 } from "@/lib/predictions";
-import { advanceSwap, type SwapMetadata } from "@/lib/swap";
+import { advanceSwap, PART_NOT_RENDERED, type SwapMetadata } from "@/lib/swap";
 import { createClient } from "@/lib/supabase/server";
 
 type Result<T> = { data: T; error?: never } | { data?: never; error: string };
@@ -30,6 +30,15 @@ function translateStoredError(error: string | null, t: Dictionary) {
   return error;
 }
 
+// Pourquoi un plan est signalé, en clair, quand la raison est connue.
+function partReason(check: string | undefined, t: Dictionary) {
+  if (check === CONTENT_REFUSED_ERROR) return t.studio.partRefused;
+  if (check === GENJUTSU_UNAVAILABLE_ERROR || check === PART_NOT_RENDERED) {
+    return t.studio.partNotRendered;
+  }
+  return undefined;
+}
+
 export type GenerationView = {
   status: GenerationStatus;
   stage: "image" | "assembling";
@@ -40,8 +49,9 @@ export type GenerationView = {
   shotsTotal: number;
   framesDone: number;
   shotsDone: number;
-  // Plans refaisables un par un (redoSwapShot).
-  parts: { start: number; seconds: number; flagged: boolean }[];
+  // Plans refaisables un par un (redoSwapShot), avec la raison du
+  // signalement quand elle est connue.
+  parts: { start: number; seconds: number; flagged: boolean; reason?: string }[];
   mediaUrl?: string;
   downloadUrl?: string;
   // Raison de l'échec, quand elle est connue.
@@ -90,7 +100,12 @@ export async function getGeneration(generationId: string): Promise<Result<Genera
     shotsTotal: parts.length,
     framesDone: parts.filter((p) => p.keyframeUrl).length,
     shotsDone: parts.filter((p) => p.stage === "done").length,
-    parts: parts.map((p) => ({ start: p.start, seconds: p.seconds, flagged: Boolean(p.check) })),
+    parts: parts.map((p) => ({
+      start: p.start,
+      seconds: p.seconds,
+      flagged: Boolean(p.check),
+      reason: partReason(p.check, t),
+    })),
     error: translateStoredError(generation.error, t),
     tryBudget: generation.error === GENJUTSU_UNAVAILABLE_ERROR,
     notice:
