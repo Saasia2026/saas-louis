@@ -1,5 +1,6 @@
 "use server";
 
+import { fmt } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { getDictionary } from "@/i18n/server";
 import {
@@ -47,6 +48,8 @@ export type GenerationView = {
   error?: string;
   // Échec du moteur Qualité max seul : le studio propose l'Économique.
   tryBudget?: boolean;
+  // Plan refait qui a raté : la vidéo n'a pas changé, et pourquoi.
+  notice?: string;
 };
 
 // État d'un remplacement. Sans webhook joignable, c'est aussi ici qu'il
@@ -78,16 +81,27 @@ export async function getGeneration(generationId: string): Promise<Result<Genera
 
   const metadata = (generation.metadata ?? {}) as SwapMetadata;
   const parts = metadata.swap_parts ?? [];
+  const genjutsu = metadata.engine === "genjutsu";
+  const failedRedo = parts.findIndex((p) => p.redoFailed);
   const view: GenerationView = {
     status: generation.status as GenerationStatus,
     stage: generation.stage === "assembling" ? "assembling" : "image",
-    engine: metadata.engine === "genjutsu" ? "genjutsu" : "kling",
+    engine: genjutsu ? "genjutsu" : "kling",
     shotsTotal: parts.length,
     framesDone: parts.filter((p) => p.keyframeUrl).length,
     shotsDone: parts.filter((p) => p.stage === "done").length,
     parts: parts.map((p) => ({ start: p.start, seconds: p.seconds, flagged: Boolean(p.check) })),
     error: translateStoredError(generation.error, t),
     tryBudget: generation.error === GENJUTSU_UNAVAILABLE_ERROR,
+    notice:
+      failedRedo < 0
+        ? undefined
+        : fmt(
+            parts[failedRedo].redoFailed === CONTENT_REFUSED_ERROR
+              ? t.studio.redoRefused
+              : t.studio.redoFailed,
+            { part: fmt(genjutsu ? t.studio.sequence : t.studio.shot, { n: failedRedo + 1 }) },
+          ),
   };
 
   if (view.status === "completed" && generation.storage_path) {

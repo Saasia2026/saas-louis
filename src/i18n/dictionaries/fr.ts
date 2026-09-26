@@ -219,6 +219,9 @@ export const fr = {
     sequence: "Séquence {n}",
     redoSequenceTitle: "Une séquence ratée ? Refais-la seule :",
     redoSequence: "Refaire la séquence {n} · {cost} {credits}",
+    redoRefused:
+      "{part} : le filtre de contenu du modèle a refusé le nouveau rendu. La vidéo n'a pas changé et tes crédits ont été rendus.",
+    redoFailed: "{part} : le nouveau rendu a échoué. La vidéo n'a pas changé et tes crédits ont été rendus.",
     tryBudget: "Relancer en Économique",
     length: "Durée",
     lengthAll: "Tout le clip ({seconds} s)",

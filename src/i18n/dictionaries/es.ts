@@ -217,6 +217,9 @@ export const es: Dictionary = {
     sequence: "Secuencia {n}",
     redoSequenceTitle: "¿Una secuencia ha salido mal? Repítela sola:",
     redoSequence: "Repetir la secuencia {n} · {cost} {credits}",
+    redoRefused:
+      "{part}: el filtro de contenido del modelo rechazó la nueva toma. El vídeo no ha cambiado y se te han devuelto los créditos.",
+    redoFailed: "{part}: la nueva toma ha fallado. El vídeo no ha cambiado y se te han devuelto los créditos.",
     tryBudget: "Relanzar en Económico",
     length: "Duración",
     lengthAll: "Todo el clip ({seconds} s)",

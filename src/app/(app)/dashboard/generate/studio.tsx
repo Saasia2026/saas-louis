@@ -477,6 +477,10 @@ function Result({
         )}
       </div>
 
+      {phase.kind === "done" && phase.view.notice && (
+        <p className="border-t border-line px-4 py-3 text-sm text-amber-300">{phase.view.notice}</p>
+      )}
+
       {phase.kind === "done" && phase.view.parts.length > 1 && (
         <div className="border-t border-line px-4 py-3">
           <p className="mb-2 text-xs text-muted">

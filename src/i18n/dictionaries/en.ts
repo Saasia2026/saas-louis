@@ -217,6 +217,9 @@ export const en: Dictionary = {
     sequence: "Sequence {n}",
     redoSequenceTitle: "A sequence went wrong? Redo it on its own:",
     redoSequence: "Redo sequence {n} · {cost} {credits}",
+    redoRefused:
+      "{part}: the model's content filter refused the new take. The video is unchanged and your credits were refunded.",
+    redoFailed: "{part}: the new take failed. The video is unchanged and your credits were refunded.",
     tryBudget: "Run again in Budget",
     length: "Length",
     lengthAll: "Whole clip ({seconds} s)",

@@ -139,8 +139,12 @@ export type SwapPart = {
   // Raison du dernier contrôle refusé.
   check?: string;
   // Plan refait à la demande (voir redoSwapShot) : l'ancien plan est gardé
-  // si le nouveau rate, et son prix rendu.
-  redo?: { previousClipPath: string; credits: number };
+  // si le nouveau rate, avec son état (images d'origine, signalement), et
+  // son prix rendu.
+  redo?: { previousClipPath: string; credits: number; original?: boolean; check?: string };
+  // Dernier plan refait qui a raté : raison (message enregistré, voir
+  // predictions.ts), montrée au créateur jusqu'au plan refait suivant.
+  redoFailed?: string;
 };
 
 export type SwapMetadata = {
@@ -504,7 +508,7 @@ export async function advanceSwap(generationId: string) {
     // demande : l'ancien reprend sa place, la vidéo reste entière.
     if (isOutOfCredit(e)) {
       const redone = metadata.swap_parts!.filter((p) => p.redo && p.stage !== "done");
-      for (const part of redone) await abandonRedo(generation.id, part);
+      for (const part of redone) await abandonRedo(generation.id, part, OUT_OF_CREDIT_ERROR);
       outcome = redone.length ? "assemble" : await fail(generation.id, OUT_OF_CREDIT_ERROR);
     }
   }
@@ -560,7 +564,7 @@ async function advanceParts(
   // - Sinon tout le remplacement échoue, crédits rendus.
   const giveUp = async (part: SwapPart, i: number, error?: string) => {
     if (part.redo) {
-      await abandonRedo(generation.id, part);
+      await abandonRedo(generation.id, part, error);
       return null;
     }
     const othersPaid = parts.some(
@@ -621,7 +625,7 @@ async function advanceParts(
           continue;
         }
         if (part.redo && (prediction.refused || (part.keyframeAttempts ?? 1) >= MAX_ATTEMPTS)) {
-          await abandonRedo(generation.id, part);
+          await abandonRedo(generation.id, part, prediction.refused ? CONTENT_REFUSED_ERROR : undefined);
           continue;
         }
         if (prediction.refused) return refuse(generation.id);
@@ -852,14 +856,19 @@ async function advanceParts(
   return "assemble";
 }
 
-// Plan refait qui a raté : l'ancien plan reprend sa place, son prix est rendu.
-async function abandonRedo(generationId: string, part: SwapPart) {
+// Plan refait qui a raté : l'ancien plan reprend sa place, avec son état, et
+// son prix est rendu. La raison est gardée pour prévenir le créateur : sans
+// elle, il retrouve la même vidéo sans savoir pourquoi.
+async function abandonRedo(generationId: string, part: SwapPart, error?: string) {
   const redo = part.redo!;
   await createAdminClient().rpc("refund_swap_redo", {
     p_generation_id: generationId,
     p_credits: redo.credits,
   });
   part.clipPath = redo.previousClipPath;
+  part.original = redo.original;
+  part.check = redo.check;
+  part.redoFailed = error ?? "failed";
   part.stage = "done";
   part.redo = undefined;
 }
@@ -894,6 +903,8 @@ export async function cancelSwap(generationId: string, userId: string) {
     const redone = parts.filter((p) => p.redo);
     for (const part of redone) {
       part.clipPath = part.redo!.previousClipPath;
+      part.original = part.redo!.original;
+      part.check = part.redo!.check;
       part.stage = "done";
     }
     const { data: claimed } = await admin
@@ -986,6 +997,17 @@ async function assembleSwap(generation: { id: string; user_id: string }, metadat
   // Vidéo déjà livrée : c'est un plan refait.
   const delivered = claimed[0].storage_path;
   const settled = { busy_until: null, assemble_attempts: 0, assembling_since: null };
+
+  // Plan refait qui a raté : l'ancien a repris sa place, la vidéo livrée n'a
+  // pas changé et n'est pas remontée.
+  if (delivered && !metadata.swap_parts?.some((p) => p.redo)) {
+    await admin
+      .from("generations")
+      .update({ status: "completed", metadata: { ...metadata, ...settled } })
+      .eq("id", generation.id)
+      .eq("status", "processing");
+    return;
+  }
 
   const giveUpAssembly = async () => {
     const parts = metadata.swap_parts ?? [];

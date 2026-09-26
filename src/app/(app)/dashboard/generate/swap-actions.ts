@@ -349,6 +349,8 @@ export async function redoSwapShot(input: {
     return { error: errors.swapRedoUnavailable };
   }
 
+  // L'échec d'un plan refait avant celui-ci n'est plus à signaler.
+  for (const p of parts) delete p.redoFailed;
   parts[input.index] = {
     start: part.start,
     seconds: part.seconds,
@@ -358,7 +360,7 @@ export async function redoSwapShot(input: {
     height: part.height,
     // Genjutsu repart de la séquence d'origine, sans image clé.
     stage: genjutsu ? "video" : "keyframe",
-    redo: { previousClipPath: part.clipPath, credits },
+    redo: { previousClipPath: part.clipPath, credits, original: part.original, check: part.check },
   };
   const { error: updateError } = await admin
     .from("generations")
