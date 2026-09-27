@@ -313,6 +313,10 @@ export const es: Dictionary = {
       label: "Calidad máx. 1080p",
       hint: "Genjutsu en Full HD · {rate} créditos/s · hasta {max} s",
     },
+    facefusion: {
+      label: "Face swap local",
+      hint: "FaceFusion · {rate} créditos/s · hasta {max} s · sin filtro",
+    },
   },
 
   videos: {

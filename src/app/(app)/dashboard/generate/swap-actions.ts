@@ -3,6 +3,7 @@
 import { after } from "next/server";
 import { fmt } from "@/i18n/config";
 import { getDictionary } from "@/i18n/server";
+import { facefusionEnabled } from "@/lib/facefusion";
 import { createFalCharacterSheet, falEnabled, uploadToFal } from "@/lib/fal";
 import {
   DEFAULT_SWAP_ENGINE,
@@ -128,6 +129,9 @@ export async function startSwap(input: {
   const engine = isSwapEngine(input.engine) ? input.engine : DEFAULT_SWAP_ENGINE;
   if (engine === "genjutsu" && !higgsfieldEnabled()) return { error: errors.startFailed };
   if (engine === "kling" && !falEnabled()) return { error: errors.startFailed };
+  if (engine === "facefusion" && !facefusionEnabled()) return { error: errors.startFailed };
+  if (engine === "facefusion" && !facefusionEnabled()) return { error: errors.startFailed };
+  if (engine === "facefusion" && !facefusionEnabled()) return { error: errors.startFailed };
   const genjutsu = engine === "genjutsu";
   const hd = genjutsu && input.hd === true;
 
@@ -279,6 +283,11 @@ export async function startSwap(input: {
       // chez fal (Kling ne lit pas les URLs signées de Supabase). Genjutsu :
       // chaque séquence, déposée chez Higgsfield.
       mapInBatches(shots, PREPARE_BATCH, async (shot): Promise<SwapPart> => {
+        if (engine === "facefusion") {
+          // Le serveur local lit les URLs signées directement, pas besoin
+          // de réencoder ni d'uploader.
+          return { ...shot, videoUrl: sourceUrl, stage: "video" };
+        }
         if (genjutsu) {
           const clip = await preparePart(sourceUrl, start + shot.start, shot.seconds, "genjutsu", hd);
           return { ...shot, videoUrl: await uploadToHiggsfield(clip, "video/mp4"), stage: "video" };
@@ -298,14 +307,16 @@ export async function startSwap(input: {
           stage: "keyframe",
         };
       }),
-      genjutsu
-        ? Promise.all(
-            photoUrls.map(async (urls) => ({
-              sheet: { frontUrl: urls[0] },
-              urls: await uploadPhotos(urls),
-            })),
-          )
-        : Promise.all(imageUrls.map((url) => prepareCharacter(url!))),
+      engine === "facefusion"
+        ? [{ sheet: { frontUrl: imageUrls[0]! }, urls: undefined }]
+        : genjutsu
+          ? Promise.all(
+              photoUrls.map(async (urls) => ({
+                sheet: { frontUrl: urls[0] },
+                urls: await uploadPhotos(urls),
+              })),
+            )
+          : Promise.all(imageUrls.map((url) => prepareCharacter(url!))),
     ]);
     // Gardé sur « pending » : une génération déjà remboursée (préparation
     // trop longue, voir GeneratePage) n'est pas relancée.

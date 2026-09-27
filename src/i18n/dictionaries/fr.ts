@@ -315,6 +315,10 @@ export const fr = {
       label: "Qualité max 1080p",
       hint: "Genjutsu en Full HD · {rate} crédits/s · jusqu'à {max} s",
     },
+    facefusion: {
+      label: "Face swap local",
+      hint: "FaceFusion · {rate} crédits/s · jusqu'à {max} s · sans filtre",
+    },
   },
 
   videos: {

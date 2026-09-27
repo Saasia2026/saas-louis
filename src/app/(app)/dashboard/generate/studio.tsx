@@ -260,7 +260,7 @@ export function Studio({
             {fmt(t.studio.severalHint, { sheet: SWAP_SHEET_CREDITS })}
           </span>
         )}
-        {(engines.length > 1 || engines.includes("genjutsu")) && (
+        {(engines.length > 1 || engines.includes("genjutsu") || engines.includes("facefusion")) && (
           <Menu
             label={hd ? t.swapEngines.genjutsuHd.label : t.swapEngines[engine].label}
             openUp={started}

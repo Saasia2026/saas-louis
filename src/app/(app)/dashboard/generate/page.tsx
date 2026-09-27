@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { isAspectRatio } from "@/lib/generation";
+import { facefusionEnabled } from "@/lib/facefusion";
 import { higgsfieldEnabled } from "@/lib/higgsfield";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -76,7 +77,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
       resume={resume}
       credits={profile?.credits_remaining ?? 0}
       autoRecharge={Boolean(profile?.auto_recharge_pack) && !profile?.auto_recharge_failed}
-      engines={higgsfieldEnabled() ? ["genjutsu", "kling"] : ["kling"]}
+      engines={[...(higgsfieldEnabled() ? ["genjutsu" as const] : []), "kling" as const, ...(facefusionEnabled() ? ["facefusion" as const] : [])]}
     />
   );
 }
