@@ -208,7 +208,7 @@ export const fr = {
     keyframes: "Personnage placé sur chaque plan",
     shots: "Tournage et vérification des plans",
     swapping: "Remplacement du personnage…",
-    genjutsuHint: "Environ {minutes} min · tu retrouveras la vidéo dans Mes vidéos",
+    genjutsuHint: "Environ {minutes} min · tu peux fermer cette page, la vidéo arrivera dans Mes vidéos",
     progressHint: "Quelques minutes · tu retrouveras la vidéo dans Mes vidéos",
     assembling: "Montage de la vidéo…",
     redoTitle: "Un plan raté ? Refais-le seul :",
@@ -224,7 +224,13 @@ export const fr = {
     redoFailed: "{part} : le nouveau rendu a échoué. La vidéo n'a pas changé et tes crédits ont été rendus.",
     partRefused: "Refusée par le filtre de contenu",
     partNotRendered: "Non rendue, images d'origine",
-    lateHint: "Plus long que prévu · laisse cette page ouverte, le rendu continue",
+    lateHint: "Plus long que prévu · le rendu continue même page fermée, la vidéo arrivera dans Mes vidéos",
+    morePhotos: "Autres photos du personnage {n} : visage, profil, dos (jusqu'à {max} en tout)",
+    morePhotosSingle: "Autres photos : visage, profil, dos (jusqu'à {max} en tout, plus de ressemblance)",
+    addPhoto: "Ajouter une photo",
+    removePhoto: "Retirer cette photo",
+    incomplete:
+      "Vidéo incomplète : {done} séquences remplacées sur {total}. Les autres gardent les images d'origine et leur prix t'a été rendu. Refais-les ci-dessous, ou choisis un autre passage.",
     tryBudget: "Relancer en Économique",
     length: "Durée",
     lengthAll: "Tout le clip ({seconds} s)",
@@ -305,6 +311,10 @@ export const fr = {
       label: "Économique",
       hint: "Kling · {rate} crédits/s · jusqu'à {max} s, plans refaisables un par un",
     },
+    genjutsuHd: {
+      label: "Qualité max 1080p",
+      hint: "Genjutsu en Full HD · {rate} crédits/s · jusqu'à {max} s",
+    },
   },
 
   videos: {
@@ -314,6 +324,7 @@ export const fr = {
     empty: "Aucune vidéo pour l'instant. Dépose un clip et un personnage dans le studio.",
     goStudio: "Aller au studio",
     running: "En cours…",
+    incomplete: "Incomplète · {done}/{total} séquences remplacées",
     resume: "Suivre dans le studio",
     download: "Télécharger",
     seconds: "{seconds} s",
@@ -325,6 +336,10 @@ export const fr = {
     genjutsuUnavailable:
       "Le moteur Qualité max est momentanément indisponible. Tes crédits ont été rendus : relance en Économique ou réessaie plus tard.",
     swapTooShort: "Le passage doit durer au moins {min} s.",
+    precheckMinor:
+      "Le modèle vidéo refuse les scènes avec des enfants. {reason} Choisis un clip ou une photo avec uniquement des adultes. Aucun crédit n'a été débité.",
+    precheckNudity:
+      "Le modèle vidéo refuse la nudité. {reason} Choisis un autre passage ou une autre photo. Aucun crédit n'a été débité.",
     swapRedoUnavailable: "Ce plan ne peut pas être refait.",
     cancelUnavailable: "Trop tard pour annuler : la vidéo est déjà en cours de montage.",
     swapTargets: "Dis qui chaque personnage remplace (ex. : l'homme en t-shirt rouge).",

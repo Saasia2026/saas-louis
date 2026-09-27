@@ -12,6 +12,7 @@ import {
   GENJUTSU_MIN_SECONDS,
   genjutsuBilledSeconds,
   isSwapEngine,
+  photosPerCharacter,
   klingBilledSeconds,
   swapCredits,
   swapShotCredits,
@@ -28,6 +29,7 @@ import {
 import { autoRecharge } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { precheckSwapInputs } from "@/lib/swap-check";
 import {
   SWAP_PART_MIN_SECONDS,
   advanceSwap,
@@ -35,6 +37,7 @@ import {
   firstFrame,
   preparePart,
   probeVideo,
+  sampleFrames,
   splitIntoParts,
   type SwapMetadata,
   type SwapPart,
@@ -55,10 +58,28 @@ type Result<T> = { data: T; error?: never } | { data?: never; error: string };
 
 const INPUT_URL_TTL_SECONDS = 60 * 60;
 
-// Fiche d'un personnage à partir de son image déposée (URL signée). Genjutsu
-// reçoit la fiche (fond uni, sans accessoire) depuis le stockage de
-// Higgsfield ; sans fiche, l'image déposée.
-async function prepareCharacter(imageUrl: string, genjutsu: boolean) {
+// Images du passage montrées au contrôle d'avant paiement.
+const PRECHECK_FRAMES = 6;
+
+// Genjutsu : les photos du personnage déposées par le créateur, telles
+// quelles, envoyées chez Higgsfield. Une fiche redessinée par un autre modèle
+// ressemble moins au personnage, et la faire passait 30 à 60 s avant le
+// premier rendu.
+async function uploadPhotos(urls: string[]) {
+  return Promise.all(
+    urls.map(async (url) => {
+      const file = await fetch(url);
+      if (!file.ok) throw new Error(`Photo du personnage : ${file.status}`);
+      return uploadToHiggsfield(
+        await file.arrayBuffer(),
+        file.headers.get("content-type")?.split(";")[0] ?? "image/png",
+      );
+    }),
+  );
+}
+
+// Kling : fiche d'un personnage à partir de son image déposée (URL signée).
+async function prepareCharacter(imageUrl: string) {
   const image = await fetch(imageUrl);
   if (!image.ok) throw new Error(`Image du personnage : ${image.status}`);
   const characterUrl = await uploadToFal(
@@ -72,35 +93,26 @@ async function prepareCharacter(imageUrl: string, genjutsu: boolean) {
     console.error("createFalCharacterSheet", errorMessage(e));
     return null;
   });
-  const urls = genjutsu
-    ? await Promise.all(
-        [sheet?.frontUrl ?? characterUrl, sheet?.sideUrl]
-          .filter((u): u is string => Boolean(u))
-          .map(async (u) => {
-            const file = await fetch(u);
-            if (!file.ok) throw new Error(`Image de la fiche : ${file.status}`);
-            return uploadToHiggsfield(
-              await file.arrayBuffer(),
-              file.headers.get("content-type")?.split(";")[0] ?? "image/png",
-            );
-          }),
-      )
-    : undefined;
-  return { sheet: { frontUrl: sheet?.frontUrl ?? characterUrl, sideUrl: sheet?.sideUrl }, urls };
+  return {
+    sheet: { frontUrl: sheet?.frontUrl ?? characterUrl, sideUrl: sheet?.sideUrl },
+    urls: undefined as string[] | undefined,
+  };
 }
 
-// Remplacement de personnage : le clip et l'image sont déjà déposés dans
-// swap-inputs par le navigateur. On mesure le clip, on le découpe plan par
-// plan, on débite, puis chaque plan avance en trois étapes (image clé,
+// Remplacement de personnage : le clip et les photos sont déjà déposés dans
+// swap-inputs par le navigateur. On mesure le clip, on le contrôle et on le
+// découpe (rien n'est débité si le contrôle le refuse), on débite, puis chaque plan avance en trois étapes (image clé,
 // vidéo, contrôle) à chaque suivi de getGeneration (voir advanceSwap). Avec
 // le moteur genjutsu, le passage est rendu en séquences (voir swap.ts),
 // avec un ou plusieurs personnages.
 export async function startSwap(input: {
   videoPath: string;
-  // Chaque personnage et qui il remplace (facultatif s'il est seul). Plus
-  // d'un : moteur genjutsu seulement.
-  characters: { imagePath: string; target?: string }[];
+  // Chaque personnage, ses autres photos (genjutsu : visage, profil…) et qui
+  // il remplace (facultatif s'il est seul). Plus d'un : genjutsu seulement.
+  characters: { imagePath: string; extraPaths?: string[]; target?: string }[];
   engine?: SwapEngine;
+  // Genjutsu en 1080p.
+  hd?: boolean;
   // Début du passage gardé, en secondes, pour un clip trop long.
   start?: number;
   // Durée du passage voulue, en secondes (au plus celle du moteur).
@@ -113,20 +125,29 @@ export async function startSwap(input: {
   const { data: auth } = await supabase.auth.getClaims();
   const userId = auth?.claims?.sub;
   if (!userId) return { error: t.common.sessionExpired };
-  if (!falEnabled()) return { error: errors.startFailed };
   const engine = isSwapEngine(input.engine) ? input.engine : DEFAULT_SWAP_ENGINE;
   if (engine === "genjutsu" && !higgsfieldEnabled()) return { error: errors.startFailed };
+  if (engine === "kling" && !falEnabled()) return { error: errors.startFailed };
   const genjutsu = engine === "genjutsu";
+  const hd = genjutsu && input.hd === true;
 
   // Chemins sous le dossier de l'utilisateur uniquement.
   const own = (p: unknown) =>
     typeof p === "string" && p.startsWith(`${userId}/`) && !p.includes("..");
-  const characters = (Array.isArray(input.characters) ? input.characters : []).map((c) => ({
+  const list = Array.isArray(input.characters) ? input.characters : [];
+  // Photos par personnage : 8 au plus en tout chez Higgsfield ; Kling n'en
+  // lit qu'une.
+  const perCharacter = genjutsu ? photosPerCharacter(list.length) : 1;
+  const characters = list.map((c) => ({
     imagePath: c?.imagePath,
+    extraPaths: (Array.isArray(c?.extraPaths) ? c.extraPaths : []).slice(0, perCharacter - 1),
     target: typeof c?.target === "string" ? c.target.trim().slice(0, 200) : "",
   }));
   if (!characters.length || characters.length > SWAP_MAX_CHARACTERS) return { error: errors.swapFiles };
-  if (!own(input.videoPath) || !characters.every((c) => own(c.imagePath))) {
+  if (
+    !own(input.videoPath) ||
+    !characters.every((c) => own(c.imagePath) && c.extraPaths.every(own))
+  ) {
     return { error: errors.swapFiles };
   }
   const several = characters.length > 1;
@@ -136,13 +157,18 @@ export async function startSwap(input: {
   if (several && characters.some((c) => !c.target)) return { error: errors.swapTargets };
 
   const admin = createAdminClient();
+  // Le clip, puis chaque personnage : sa photo principale et ses autres photos.
+  const photoPaths = characters.map((c) => [c.imagePath as string, ...c.extraPaths]);
   const { data: signed } = await admin.storage
     .from(SWAP_INPUTS_BUCKET)
-    .createSignedUrls([input.videoPath, ...characters.map((c) => c.imagePath)], INPUT_URL_TTL_SECONDS);
-  const [sourceUrl, ...imageUrls] = (signed ?? []).map((s) => s.signedUrl);
-  if (!sourceUrl || imageUrls.length !== characters.length || imageUrls.some((u) => !u)) {
+    .createSignedUrls([input.videoPath, ...photoPaths.flat()], INPUT_URL_TTL_SECONDS);
+  const [sourceUrl, ...flatUrls] = (signed ?? []).map((s) => s.signedUrl);
+  if (!sourceUrl || flatUrls.length !== photoPaths.flat().length || flatUrls.some((u) => !u)) {
     return { error: errors.swapFiles };
   }
+  let next = 0;
+  const photoUrls = photoPaths.map((paths) => paths.map(() => flatUrls[next++]!));
+  const imageUrls = photoUrls.map((urls) => urls[0]);
 
   const probe = await probeVideo(sourceUrl).catch((e) => {
     console.error("probeVideo", errorMessage(e));
@@ -171,16 +197,36 @@ export async function startSwap(input: {
   const durationSeconds = Math.max(1, Math.round(clipSeconds));
   const target = characters[0].target || undefined;
 
-  // Découpage seul (rien de payant) : il fixe le prix. Kling : un morceau par
-  // plan. Genjutsu : des séquences de quelques secondes.
-  const shots = await splitIntoParts(sourceUrl, start, clipSeconds, engine).catch((e) => {
-    console.error("startSwap: découpage", errorMessage(e));
-    return null;
-  });
+  // Avant de faire payer, en même temps : le découpage, qui fixe le prix
+  // (Kling : un morceau par plan ; Genjutsu : des séquences), et le contrôle
+  // du clip et des photos. Le filtre des moteurs refuse les enfants et la
+  // nudité : le créateur le sait tout de suite, sans rien débiter. Contrôle
+  // indisponible : le clip passe.
+  const [shots, precheck] = await Promise.all([
+    splitIntoParts(sourceUrl, start, clipSeconds, engine).catch((e) => {
+      console.error("startSwap: découpage", errorMessage(e));
+      return null;
+    }),
+    sampleFrames(sourceUrl, start, clipSeconds, PRECHECK_FRAMES)
+      .then((frames) => precheckSwapInputs({ frames, photoUrls: imageUrls }))
+      .catch((e) => {
+        console.error("startSwap: contrôle", errorMessage(e));
+        return null;
+      }),
+  ]);
+  if (precheck?.blocked) {
+    return {
+      error: fmt(precheck.cause === "minor" ? errors.precheckMinor : errors.precheckNudity, {
+        reason: precheck.reason,
+      }),
+    };
+  }
   if (!shots?.length) return { error: errors.swapUnreadable };
 
   const metadata = {
     engine,
+    ...(hd && { hd: true }),
+    ...(genjutsu && { photos: true }),
     aspect_ratio: probe.aspectRatio,
     source_video_path: input.videoPath,
     source_start: start,
@@ -203,13 +249,17 @@ export async function startSwap(input: {
       p_billed_seconds: billedSeconds,
       // Une fiche par personnage.
       p_characters: characters.length,
+      p_hd: hd,
     });
   let { data: generationId, error: rpcError } = await debit();
   // Solde trop bas et recharge automatique activée : la carte est débitée,
   // puis on réessaie une fois.
   if (
     rpcError?.message.includes("insufficient_credits") &&
-    (await autoRecharge(userId, swapCredits(durationSeconds, engine, billedSeconds, characters.length)))
+    (await autoRecharge(
+      userId,
+      swapCredits(durationSeconds, engine, billedSeconds, characters.length, hd),
+    ))
   ) {
     ({ data: generationId, error: rpcError } = await debit());
   }
@@ -222,15 +272,15 @@ export async function startSwap(input: {
   }
 
   try {
-    // En même temps, pour ne pas faire attendre : les morceaux du clip et la
-    // fiche de chaque personnage.
+    // En même temps, pour ne pas faire attendre : les morceaux du clip et les
+    // références de chaque personnage (Genjutsu : ses photos ; Kling : sa fiche).
     const [parts, prepared] = await Promise.all([
       // Kling : chaque plan avec sa première image (pour l'image clé), déposés
       // chez fal (Kling ne lit pas les URLs signées de Supabase). Genjutsu :
       // chaque séquence, déposée chez Higgsfield.
       mapInBatches(shots, PREPARE_BATCH, async (shot): Promise<SwapPart> => {
         if (genjutsu) {
-          const clip = await preparePart(sourceUrl, start + shot.start, shot.seconds, "genjutsu");
+          const clip = await preparePart(sourceUrl, start + shot.start, shot.seconds, "genjutsu", hd);
           return { ...shot, videoUrl: await uploadToHiggsfield(clip, "video/mp4"), stage: "video" };
         }
         const clip = await preparePart(sourceUrl, start + shot.start, shot.seconds);
@@ -248,7 +298,14 @@ export async function startSwap(input: {
           stage: "keyframe",
         };
       }),
-      Promise.all(imageUrls.map((url) => prepareCharacter(url!, genjutsu))),
+      genjutsu
+        ? Promise.all(
+            photoUrls.map(async (urls) => ({
+              sheet: { frontUrl: urls[0] },
+              urls: await uploadPhotos(urls),
+            })),
+          )
+        : Promise.all(imageUrls.map((url) => prepareCharacter(url!))),
     ]);
     // Gardé sur « pending » : une génération déjà remboursée (préparation
     // trop longue, voir GeneratePage) n'est pas relancée.
@@ -330,7 +387,7 @@ export async function redoSwapShot(input: {
   }
   const genjutsu = metadata.engine === "genjutsu";
 
-  const credits = swapShotCredits(part.seconds, genjutsu ? "genjutsu" : "kling");
+  const credits = swapShotCredits(part.seconds, genjutsu ? "genjutsu" : "kling", metadata.hd);
   const debit = () =>
     admin.rpc("start_swap_redo", {
       p_user_id: userId,

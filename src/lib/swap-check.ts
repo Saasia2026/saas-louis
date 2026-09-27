@@ -61,3 +61,61 @@ Ignore image quality, the background, other people and small glitches.`,
   // qu'une vidéo bloquée.
   return response.parsed_output ?? { replaced: true, sameCharacter: true, reason: "no check" };
 }
+
+// Contrôle du clip et des photos AVANT de faire payer (voir startSwap). Le
+// filtre de contenu des moteurs refuse les scènes avec des enfants et la
+// nudité, et il juge le clip lui-même : une séquence refusée l'est de nouveau
+// quand on la refait (constaté en base le 2026-09-26). Mieux vaut le dire au
+// créateur tout de suite, sans rien débiter, que 7 minutes plus tard.
+// Seuls les cas nets sont bloqués ; dans le doute, le clip passe.
+const PrecheckSchema = z.object({
+  minor: z.boolean(),
+  nudity: z.boolean(),
+  reason: z.string(),
+});
+
+export type SwapPrecheck = { blocked: false } | { blocked: true; cause: "minor" | "nudity"; reason: string };
+
+export async function precheckSwapInputs(input: {
+  // Images JPEG (base64) réparties sur le passage choisi.
+  frames: string[];
+  // Photos des personnages (URLs lisibles de l'extérieur).
+  photoUrls: string[];
+}): Promise<SwapPrecheck> {
+  const response = await new Anthropic().beta.messages.parse({
+    model: "claude-sonnet-5",
+    max_tokens: 800,
+    output_config: { effort: "low", format: betaZodOutputFormat(PrecheckSchema) },
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    system: `You screen inputs for an AI video tool that replaces a person in a real clip with a character from a photo. The video model's content filter refuses scenes with children and nudity. You receive photos of the character(s), then frames taken across the clip.
+
+- "minor": true only if a person who clearly looks like a child or a young teenager (roughly under 16) is visible in the clip frames or in a character photo. Adults, young-looking adults and cartoon or animal characters are not minors. When unsure, false.
+- "nudity": true only if there is visible nudity or sexual content (exposed genitals, buttocks or female breasts, sexual acts). Swimwear, sportswear, a shirtless man, dancing or a fight are not nudity. When unsure, false.
+- "reason": one short sentence in French saying what you saw, for the creator (for example "Un enfant est visible au premier plan de la troisième image."), or "ok".
+
+Do not identify anyone.`,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Character photos:" },
+          ...input.photoUrls.map((url) => ({
+            type: "image" as const,
+            source: { type: "url" as const, url },
+          })),
+          { type: "text", text: "Clip frames:" },
+          ...input.frames.map((data) => ({
+            type: "image" as const,
+            source: { type: "base64" as const, media_type: "image/jpeg" as const, data },
+          })),
+        ],
+      },
+    ],
+  });
+  const out = response.parsed_output;
+  if (!out) return { blocked: false };
+  if (out.minor) return { blocked: true, cause: "minor", reason: out.reason };
+  if (out.nudity) return { blocked: true, cause: "nudity", reason: out.reason };
+  return { blocked: false };
+}

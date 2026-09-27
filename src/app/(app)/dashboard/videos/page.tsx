@@ -46,12 +46,19 @@ export default async function VideosPage() {
           ])
         : [null, null];
       const aspectRatio = (g.metadata as { aspect_ratio?: unknown } | null)?.aspect_ratio;
+      // Séquences livrées avec leurs images d'origine : vidéo incomplète.
+      const parts = (g.metadata as { swap_parts?: { original?: boolean }[] } | null)?.swap_parts ?? [];
+      const unreplaced = parts.filter((p) => p.original).length;
       return {
         id: g.id,
         running: g.status === "processing",
         mediaUrl: media?.data?.signedUrl,
         downloadUrl: download?.data?.signedUrl,
         seconds: g.duration_seconds,
+        incomplete:
+          g.status === "completed" && unreplaced > 0
+            ? fmt(V.incomplete, { done: parts.length - unreplaced, total: parts.length })
+            : undefined,
         aspectRatio: isAspectRatio(aspectRatio) ? aspectRatio : "9:16",
         date: new Intl.DateTimeFormat(INTL_LOCALES[locale], { dateStyle: "medium" }).format(
           new Date(g.created_at),
@@ -116,6 +123,9 @@ export default async function VideosPage() {
                 <p className="text-xs text-muted tabular-nums">
                   {video.date}
                   {video.seconds ? ` · ${fmt(V.seconds, { seconds: video.seconds })}` : ""}
+                  {video.incomplete && (
+                    <span className="mt-1 block text-amber-300">{video.incomplete}</span>
+                  )}
                 </p>
                 {video.running ? (
                   <Link href={`/dashboard/generate?v=${video.id}`} className="btn btn-secondary">

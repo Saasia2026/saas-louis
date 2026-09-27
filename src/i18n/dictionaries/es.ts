@@ -206,7 +206,7 @@ export const es: Dictionary = {
     keyframes: "Colocando al personaje en cada plano",
     shots: "Rodaje y revisión de los planos",
     swapping: "Reemplazando al personaje…",
-    genjutsuHint: "Unos {minutes} min · encontrarás el vídeo en Mis vídeos",
+    genjutsuHint: "Unos {minutes} min · puedes cerrar esta página, el vídeo llegará a Mis vídeos",
     progressHint: "Unos minutos · encontrarás el vídeo en Mis vídeos",
     assembling: "Montando el vídeo…",
     redoTitle: "¿Un plano fallido? Rehazlo solo:",
@@ -222,7 +222,13 @@ export const es: Dictionary = {
     redoFailed: "{part}: la nueva toma ha fallado. El vídeo no ha cambiado y se te han devuelto los créditos.",
     partRefused: "Rechazada por el filtro de contenido",
     partNotRendered: "Sin renderizar, imágenes originales",
-    lateHint: "Está tardando más de lo previsto · deja esta página abierta, el render sigue en marcha",
+    lateHint: "Está tardando más de lo previsto · el render sigue aunque cierres la página, el vídeo llegará a Mis vídeos",
+    morePhotos: "Más fotos del personaje {n}: cara, perfil, espalda (hasta {max} en total)",
+    morePhotosSingle: "Más fotos: cara, perfil, espalda (hasta {max} en total, más parecido)",
+    addPhoto: "Añadir una foto",
+    removePhoto: "Quitar esta foto",
+    incomplete:
+      "Vídeo incompleto: {done} de {total} secuencias reemplazadas. Las demás conservan las imágenes originales y te hemos devuelto su precio. Rehazlas abajo o elige otro fragmento.",
     tryBudget: "Relanzar en Económico",
     length: "Duración",
     lengthAll: "Todo el clip ({seconds} s)",
@@ -303,6 +309,10 @@ export const es: Dictionary = {
       label: "Económico",
       hint: "Kling · {rate} créditos/s · hasta {max} s, planos repetibles uno a uno",
     },
+    genjutsuHd: {
+      label: "Calidad máx. 1080p",
+      hint: "Genjutsu en Full HD · {rate} créditos/s · hasta {max} s",
+    },
   },
 
   videos: {
@@ -312,12 +322,17 @@ export const es: Dictionary = {
     empty: "Todavía no hay vídeos. Sube un clip y un personaje en el estudio.",
     goStudio: "Ir al estudio",
     running: "En curso…",
+    incomplete: "Incompleto · {done}/{total} secuencias reemplazadas",
     resume: "Seguir en el estudio",
     download: "Descargar",
     seconds: "{seconds} s",
   },
 
   generateErrors: {
+    precheckMinor:
+      "El modelo de vídeo rechaza escenas con niños. {reason} Elige un clip o una foto solo con adultos. No se ha cobrado ningún crédito.",
+    precheckNudity:
+      "El modelo de vídeo rechaza la desnudez. {reason} Elige otro fragmento u otra foto. No se ha cobrado ningún crédito.",
     insufficientCredits: "No tienes créditos suficientes. Recárgalos desde la página Créditos.",
     outOfCredit:
       "La cuenta del servicio de generación se ha quedado sin crédito. Te hemos devuelto los créditos.",

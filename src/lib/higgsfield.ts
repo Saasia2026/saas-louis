@@ -8,8 +8,9 @@ const BASE_URL = "https://api.higgsfield.ai";
 
 // Genjutsu Object Swap remplace un élément du clip et garde le reste : jeu,
 // caméra, coupes et mouvements de bouche sont repris du clip. 0,681 $ la
-// seconde en 720p (maximum par l'API), durée du clip arrondie à la seconde
-// supérieure. L'identifiant officiel s'écrit bien « higgsfiled ».
+// seconde en 720p, 1,632 $ en 1080p (vérifié le 2026-09-26), durée du clip
+// arrondie à la seconde supérieure. L'identifiant officiel s'écrit bien
+// « higgsfiled ».
 const GENJUTSU_SWAP_ENDPOINT = "higgsfiled/genjutsu/object-swap/v1.0";
 
 // HF_CREDENTIALS : "identifiant:secret" de la clé (console.higgsfield.ai).
@@ -67,8 +68,10 @@ export function describeTarget(target?: string) {
 // envoyées à la suite, personnage par personnage ; la consigne dit lesquelles
 // montrent qui, et qui chacun remplace.
 function genjutsuPrompt(characters: { imageUrls: string[]; target?: string }[]) {
+  // Les références sont les photos du créateur : leur fond et leurs objets
+  // ne doivent pas entrer dans la scène.
   const rest =
-    "Keep every other person, the place, the objects, the camera framing and its moves, the cuts and the lighting exactly unchanged. Add nothing to the scene.";
+    "Take only the character from the reference images: ignore their background, objects and framing. Keep every other person, the place, the objects, the camera framing and its moves, the cuts and the lighting exactly unchanged. Add nothing to the scene.";
   if (characters.length <= 1) {
     return (
       `Replace ${describeTarget(characters[0]?.target)} with the character shown in the reference images (every reference image shows the same character): same head, face, fur or skin and body. ` +
@@ -93,9 +96,11 @@ function genjutsuPrompt(characters: { imageUrls: string[]; target?: string }[]) 
   );
 }
 
-// Un passage de 3 à 30 s, coupes comprises. Les images montrent toutes le
-// même personnage, sur fond uni et sans accessoire : tout objet d'une image
-// de référence se retrouve dans la scène. `target` : qui remplacer quand
+// Un passage de 4 à 30 s, coupes comprises. Les images sont les photos du
+// personnage déposées par le créateur (8 au plus, tous personnages confondus).
+// `webhookUrl` : Higgsfield y signale la fin du rendu (paramètre
+// hf_webhook), pour que la vidéo avance sans page ouverte (voir
+// /api/swap/webhook). `target` : qui remplacer quand
 // plusieurs personnes sont à l'image. Un seul envoi, jamais retenté ici, et
 // borné bien en dessous du verrou d'advanceSwap : un envoi qui traîne échoue
 // dans le verrou au lieu d'être doublé par le suivi suivant.
@@ -103,16 +108,19 @@ export async function createGenjutsuSwap(input: {
   videoUrl: string;
   // Un personnage, ou plusieurs (chacun avec qui il remplace).
   characters: { imageUrls: string[]; target?: string }[];
+  hd?: boolean;
+  webhookUrl?: string;
 }) {
-  const response = await fetch(`${BASE_URL}/${GENJUTSU_SWAP_ENDPOINT}`, {
+  const hook = input.webhookUrl ? `?hf_webhook=${encodeURIComponent(input.webhookUrl)}` : "";
+  const response = await fetch(`${BASE_URL}/${GENJUTSU_SWAP_ENDPOINT}${hook}`, {
     method: "POST",
     headers: headers(),
     signal: AbortSignal.timeout(60_000),
     body: JSON.stringify({
       prompt: genjutsuPrompt(input.characters),
       video_url: input.videoUrl,
-      image_urls: input.characters.flatMap((c) => c.imageUrls),
-      resolution: "720p",
+      image_urls: input.characters.flatMap((c) => c.imageUrls).slice(0, 8),
+      resolution: input.hd ? "1080p" : "720p",
     }),
   });
   if (!response.ok) throw await failure("création", response);

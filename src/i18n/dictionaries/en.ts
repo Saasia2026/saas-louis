@@ -206,7 +206,7 @@ export const en: Dictionary = {
     keyframes: "Placing the character in each shot",
     shots: "Filming and checking the shots",
     swapping: "Replacing the character…",
-    genjutsuHint: "About {minutes} min · you'll find the video in My videos",
+    genjutsuHint: "About {minutes} min · you can close this page, the video will arrive in My videos",
     progressHint: "A few minutes · you'll find the video in My videos",
     assembling: "Editing the video…",
     redoTitle: "A bad shot? Redo just that one:",
@@ -222,7 +222,13 @@ export const en: Dictionary = {
     redoFailed: "{part}: the new take failed. The video is unchanged and your credits were refunded.",
     partRefused: "Refused by the content filter",
     partNotRendered: "Not rendered, original footage",
-    lateHint: "Taking longer than expected · keep this page open, the render is still running",
+    lateHint: "Taking longer than expected · the render keeps going even if you close the page, the video will arrive in My videos",
+    morePhotos: "More photos of character {n}: face, profile, back (up to {max} in total)",
+    morePhotosSingle: "More photos: face, profile, back (up to {max} in total, better likeness)",
+    addPhoto: "Add a photo",
+    removePhoto: "Remove this photo",
+    incomplete:
+      "Incomplete video: {done} of {total} sequences replaced. The others keep the original footage and their price was refunded. Redo them below, or pick another part of the clip.",
     tryBudget: "Run again in Budget",
     length: "Length",
     lengthAll: "Whole clip ({seconds} s)",
@@ -303,6 +309,10 @@ export const en: Dictionary = {
       label: "Budget",
       hint: "Kling · {rate} credits/s · up to {max} s, shots can be redone one by one",
     },
+    genjutsuHd: {
+      label: "Max quality 1080p",
+      hint: "Genjutsu in Full HD · {rate} credits/s · up to {max} s",
+    },
   },
 
   videos: {
@@ -312,12 +322,17 @@ export const en: Dictionary = {
     empty: "No videos yet. Drop a clip and a character into the studio.",
     goStudio: "Go to the studio",
     running: "In progress…",
+    incomplete: "Incomplete · {done}/{total} sequences replaced",
     resume: "Follow in the studio",
     download: "Download",
     seconds: "{seconds} s",
   },
 
   generateErrors: {
+    precheckMinor:
+      "The video model refuses scenes with children. {reason} Pick a clip or photo with adults only. No credits were charged.",
+    precheckNudity:
+      "The video model refuses nudity. {reason} Pick another part of the clip or another photo. No credits were charged.",
     insufficientCredits: "Not enough credits. Top up from the Credits page.",
     outOfCredit: "The generation service account is out of credit. Your credits have been refunded.",
     genjutsuUnavailable:

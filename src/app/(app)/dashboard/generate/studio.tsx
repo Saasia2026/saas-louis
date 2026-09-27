@@ -10,7 +10,9 @@ import {
   SWAP_ENGINES,
   SWAP_MAX_CHARACTERS,
   SWAP_SHEET_CREDITS,
+  photosPerCharacter,
   swapCredits,
+  swapRate,
   swapShotCredits,
   type AspectRatio,
   type SwapEngine,
@@ -73,12 +75,19 @@ export function Studio({
 
   // Clip filmé et image de chaque personnage, déjà déposés.
   const [video, setVideo] = useState<SwapFile | null>(null);
-  const [characters, setCharacters] = useState<SwapCharacter[]>([{ image: null, target: "" }]);
+  const [characters, setCharacters] = useState<SwapCharacter[]>([
+    { image: null, extras: [], target: "" },
+  ]);
   const [chosenEngine, setEngine] = useState<SwapEngine>(engines[0] ?? "kling");
+  // Qualité max en 1080p.
+  const [hdChosen, setHd] = useState(false);
   // Plusieurs personnages : seul Genjutsu sait les placer.
   const several = characters.length > 1;
   const maxCharacters = engines.includes("genjutsu") ? SWAP_MAX_CHARACTERS : 1;
   const engine: SwapEngine = several ? "genjutsu" : chosenEngine;
+  const hd = engine === "genjutsu" && hdChosen;
+  // Photos par personnage : Genjutsu en lit plusieurs, Kling une seule.
+  const maxPhotos = engine === "genjutsu" ? photosPerCharacter(characters.length) : 1;
   const imagesReady = characters.every((c) => c.image);
   // Seul, le personnage remplace la personne principale ; à plusieurs, il
   // faut dire qui chacun remplace.
@@ -107,10 +116,10 @@ export function Studio({
   const seconds = durationKnown
     ? Math.max(1, Math.round(clipSeconds))
     : maxSeconds;
-  const cost = swapCredits(seconds, engine, undefined, characters.length);
+  const cost = swapCredits(seconds, engine, undefined, characters.length, hd);
   // Durée illisible dans le navigateur : le serveur mesure le clip et refuse
   // lui-même faute de crédits ; on ne bloque ici que sous le prix le plus bas.
-  const gate = durationKnown ? cost : swapCredits(1, engine, undefined, characters.length);
+  const gate = durationKnown ? cost : swapCredits(1, engine, undefined, characters.length, hd);
   const canSend = !busy && Boolean(video) && imagesReady && targetsReady && (credits >= gate || autoRecharge);
 
   useEffect(() => {
@@ -165,10 +174,15 @@ export function Studio({
     setPhase({ kind: "generating", job: { aspectRatio: "9:16", durationSeconds: seconds }, id: "" });
     const res = await startSwap({
       videoPath: video.path,
-      characters: characters.map((c) => ({ imagePath: c.image!.path, target: c.target.trim() || undefined })),
+      characters: characters.map((c) => ({
+        imagePath: c.image!.path,
+        extraPaths: c.extras.slice(0, maxPhotos - 1).map((f) => f.path),
+        target: c.target.trim() || undefined,
+      })),
       start: clampedStart(video, maxSeconds),
       seconds: maxSeconds,
       engine,
+      hd,
     });
     router.refresh();
     if (res.error !== undefined) {
@@ -235,6 +249,7 @@ export function Studio({
         characters={characters}
         onCharacters={setCharacters}
         maxCharacters={maxCharacters}
+        maxPhotos={maxPhotos}
         maxSeconds={maxSeconds}
         compact={started}
       />
@@ -245,20 +260,41 @@ export function Studio({
             {fmt(t.studio.severalHint, { sheet: SWAP_SHEET_CREDITS })}
           </span>
         )}
-        {engines.length > 1 && !several && (
+        {(engines.length > 1 || engines.includes("genjutsu")) && (
           <Menu
-            label={t.swapEngines[engine].label}
+            label={hd ? t.swapEngines.genjutsuHd.label : t.swapEngines[engine].label}
             openUp={started}
-            options={engines.map((e) => ({
-              value: e,
-              label: t.swapEngines[e].label,
-              hint: fmt(t.swapEngines[e].hint, {
-                max: SWAP_ENGINES[e].maxSeconds,
-                rate: SWAP_ENGINES[e].creditsPerSecond.toLocaleString(locale),
-              }),
-            }))}
-            value={engine}
-            onChange={(v) => setEngine(v as SwapEngine)}
+            options={[
+              // Qualité max en 1080p, puis les moteurs ; plusieurs
+              // personnages : Qualité max seulement.
+              ...(engines.includes("genjutsu")
+                ? [
+                    {
+                      value: "genjutsu_hd",
+                      label: t.swapEngines.genjutsuHd.label,
+                      hint: fmt(t.swapEngines.genjutsuHd.hint, {
+                        max: SWAP_ENGINES.genjutsu.maxSeconds,
+                        rate: swapRate("genjutsu", true).toLocaleString(locale),
+                      }),
+                    },
+                  ]
+                : []),
+              ...engines
+                .filter((e) => !several || e === "genjutsu")
+                .map((e) => ({
+                  value: e,
+                  label: t.swapEngines[e].label,
+                  hint: fmt(t.swapEngines[e].hint, {
+                    max: SWAP_ENGINES[e].maxSeconds,
+                    rate: swapRate(e).toLocaleString(locale),
+                  }),
+                })),
+            ]}
+            value={hd ? "genjutsu_hd" : engine}
+            onChange={(v) => {
+              setHd(v === "genjutsu_hd");
+              setEngine(v === "genjutsu_hd" ? "genjutsu" : (v as SwapEngine));
+            }}
           />
         )}
         {video && lengths.length > 0 && (
@@ -340,6 +376,7 @@ export function Studio({
               onTryBudget={() => {
                 // Même clip, même personnage : il ne reste qu'à relancer.
                 setEngine("kling");
+                setHd(false);
                 setPhase({ kind: "idle" });
               }}
             />
@@ -477,6 +514,15 @@ function Result({
         )}
       </div>
 
+      {phase.kind === "done" && phase.view.unreplaced > 0 && (
+        <p className="border-t border-line px-4 py-3 text-sm text-amber-300">
+          {fmt(t.studio.incomplete, {
+            done: phase.view.shotsTotal - phase.view.unreplaced,
+            total: phase.view.shotsTotal,
+          })}
+        </p>
+      )}
+
       {phase.kind === "done" && phase.view.notice && (
         <p className="border-t border-line px-4 py-3 text-sm text-amber-300">{phase.view.notice}</p>
       )}
@@ -489,7 +535,7 @@ function Result({
           <div className="flex flex-wrap gap-1.5">
             {phase.view.parts.map((part, i) => {
               const sequence = phase.view.engine === "genjutsu";
-              const cost = swapShotCredits(part.seconds, phase.view.engine);
+              const cost = swapShotCredits(part.seconds, phase.view.engine, phase.view.hd);
               return (
                 <button
                   key={i}

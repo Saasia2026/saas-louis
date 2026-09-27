@@ -11,8 +11,9 @@ import {
 // fal.ai : fiche du personnage et images clés (Nano Banana Pro), et moteur
 // kling du remplacement (Kling O3 Pro Edit). Les identifiants de requête sont
 // stockés préfixés ("fal:ref:nano-banana-pro:<id>", "fal:swap:<id>") : le
-// préfixe dit comment les suivre. fal n'a pas de webhook ici : ses requêtes
-// avancent par le suivi du studio (getGeneration).
+// préfixe dit comment les suivre. fal signale la fin d'une requête au
+// webhook du remplacement (voir /api/swap/webhook) ; le suivi du studio et la
+// relance serveur (/api/swap/tick) servent de filet.
 
 export function falEnabled() {
   return Boolean(process.env.FAL_KEY);
@@ -96,6 +97,7 @@ export async function createFalSwapKeyframe(input: {
   sideUrl?: string;
   anchorUrl?: string;
   target?: string;
+  webhookUrl?: string;
 }) {
   const target = describeTarget(input.target);
   const references = [input.frontUrl, input.sideUrl, input.anchorUrl].filter(
@@ -116,6 +118,7 @@ export async function createFalSwapKeyframe(input: {
       aspect_ratio: nearestKeyframeRatio(input.width, input.height),
       output_format: "png",
     },
+    webhookUrl: input.webhookUrl,
   });
   return `fal:ref:nano-banana-pro:${request_id}`;
 }
@@ -129,6 +132,7 @@ export async function createFalSwap(input: {
   keyframeUrl: string;
   anchorUrl?: string;
   target?: string;
+  webhookUrl?: string;
 }) {
   const target = describeTarget(input.target);
   const anchor = input.anchorUrl && input.anchorUrl !== input.keyframeUrl;
@@ -151,6 +155,7 @@ export async function createFalSwap(input: {
       image_urls: anchor ? [input.keyframeUrl, input.anchorUrl!] : [input.keyframeUrl],
       keep_audio: true,
     },
+    webhookUrl: input.webhookUrl,
   });
   return `fal:swap:${request_id}`;
 }

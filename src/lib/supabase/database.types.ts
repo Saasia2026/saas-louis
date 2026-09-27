@@ -513,6 +513,7 @@ export type Database = {
           p_duration_seconds: number
           p_engine?: string
           p_frames_per_second: number
+          p_hd?: boolean
           p_metadata?: Json
           p_user_id: string
         }

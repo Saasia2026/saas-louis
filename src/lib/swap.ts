@@ -12,6 +12,7 @@ import {
   GENJUTSU_BLOCK_MAX_SECONDS,
   GENJUTSU_BLOCK_SECONDS,
   GENJUTSU_BLOCK_WHOLE_SECONDS,
+  GENJUTSU_LONG_SHOT_PART_SECONDS,
   GENJUTSU_MIN_SECONDS,
   KLING_MIN_PART_SECONDS,
   genjutsuFrames,
@@ -34,6 +35,7 @@ import {
 } from "@/lib/predictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkSwapShot } from "@/lib/swap-check";
+import { swapWebhookUrl } from "@/lib/swap-webhook";
 
 // Remplacement de personnage dans un vrai clip (Kling O3 Pro Edit, voir
 // createFalSwap). Kling ne respecte pas les coupes d'un clip monté : il
@@ -52,9 +54,16 @@ import { checkSwapShot } from "@/lib/swap-check";
 // Moteur genjutsu (Higgsfield, voir createGenjutsuSwap) : il suit les coupes
 // tout seul. Le passage est découpé en séquences de quelques secondes (voir
 // groupIntoBlocks), rendues toutes en même temps à partir de la fiche
-// personnage, sans image clé. Un rendu raté n'est pas facturé par Higgsfield
-// et se retente ; un rendu réussi coûte trop cher pour être refait d'office :
-// le contrôle le signale, et le créateur peut refaire la séquence seule.
+// personnage (les photos déposées par le créateur), sans image clé. Un rendu
+// raté n'est pas facturé par Higgsfield et se retente ; un rendu réussi coûte
+// trop cher pour être refait d'office : le contrôle le signale, et le
+// créateur peut refaire la séquence seule.
+//
+// Le remplacement avance sans page ouverte : les fournisseurs appellent
+// /api/swap/webhook à la fin de chaque rendu, et /api/swap/tick relance les
+// remplacements en cours toutes les 30 s (pg_cron). Le suivi du studio fait
+// la même chose tant qu'il est ouvert ; le verrou d'advanceSwap rend ces
+// appels simultanés sans danger.
 
 const execFileAsync = promisify(execFile);
 
@@ -71,9 +80,11 @@ const CUT_PEAK_RATIO = 3;
 const CUT_WINDOW_SECONDS = 0.5;
 const FORMAT_FILTER =
   "scale='if(lt(iw,ih),max(720,min(iw,1080)),-2)':'if(lt(iw,ih),-2,max(720,min(ih,1080)))',setsar=1,fps=30,format=yuv420p";
-// Genjutsu rend en 720p au plus, à 24 images/s : inutile de lui envoyer plus.
-const GENJUTSU_FORMAT_FILTER =
-  "scale='if(lt(iw,ih),trunc(min(iw,720)/2)*2,-2)':'if(lt(iw,ih),-2,trunc(min(ih,720)/2)*2)',setsar=1,fps=30,format=yuv420p";
+// Genjutsu rend en 720p ou 1080p, à 24 images/s : inutile de lui envoyer plus.
+function genjutsuFormatFilter(hd?: boolean) {
+  const side = hd ? 1080 : 720;
+  return `scale='if(lt(iw,ih),trunc(min(iw,${side})/2)*2,-2)':'if(lt(iw,ih),-2,trunc(min(ih,${side})/2)*2)',setsar=1,fps=30,format=yuv420p`;
+}
 const OUTPUT_FPS: Record<SwapEngine, number> = { kling: 30, genjutsu: 24 };
 
 // Tentatives par plan (image clé comme vidéo) : un nouvel essai en cas
@@ -157,6 +168,12 @@ export type SwapPart = {
 export type SwapMetadata = {
   // Absent : remplacement lancé avant le choix du moteur (kling).
   engine?: SwapEngine;
+  // Genjutsu en 1080p.
+  hd?: boolean;
+  // Genjutsu : les références sont les photos déposées par le créateur, pas
+  // une fiche redessinée (depuis le 2026-09-26).
+  photos?: boolean;
+  character_image_path?: string;
   swap_parts?: SwapPart[];
   source_video_path?: string;
   source_start?: number;
@@ -268,10 +285,12 @@ export async function splitIntoParts(
   });
 }
 
-// Séquences Genjutsu d'au plus GENJUTSU_BLOCK_SECONDS, coupées aux changements
-// de plan : Genjutsu suit les coupes à l'intérieur d'une séquence, et une
-// jonction qui tombe sur une vraie coupe ne se voit pas. Un plan plus long est
-// coupé en parts égales (la jonction peut alors se voir). Une séquence de
+// Séquences Genjutsu : plans courts regroupés en séquences d'au plus
+// GENJUTSU_BLOCK_SECONDS, coupées aux changements de plan : Genjutsu suit les
+// coupes à l'intérieur d'une séquence, et une jonction qui tombe sur une
+// vraie coupe ne se voit pas. Un plan continu reste entier jusqu'à
+// GENJUTSU_BLOCK_WHOLE_SECONDS, au-delà il est coupé en parts égales (la
+// jonction peut alors se voir). Une séquence de
 // moins de GENJUTSU_MIN_SECONDS rejoint sa voisine la plus courte, dans la
 // limite de GENJUTSU_BLOCK_MAX_SECONDS. Une coupe manquée par la détection ne
 // gêne pas : Genjutsu la suit ; une coupe imaginée ne fait que finir une
@@ -283,7 +302,7 @@ export function groupIntoBlocks(bounds: number[]): SwapPart[] {
     const count =
       length <= GENJUTSU_BLOCK_WHOLE_SECONDS
         ? 1
-        : Math.ceil(length / GENJUTSU_BLOCK_SECONDS - 1e-9);
+        : Math.ceil(length / GENJUTSU_LONG_SHOT_PART_SECONDS - 1e-9);
     return Array.from({ length: count }, (_, k) => ({
       start: bounds[i] + (k * length) / count,
       seconds: length / count,
@@ -330,10 +349,11 @@ export async function preparePart(
   start: number,
   seconds: number,
   engine: SwapEngine = "kling",
+  hd = false,
 ) {
   if (!ffmpegPath) throw new Error("ffmpeg indisponible sur cette plateforme");
   const dir = await mkdtemp(path.join(tmpdir(), "twinpost-swap-"));
-  const format = engine === "genjutsu" ? GENJUTSU_FORMAT_FILTER : FORMAT_FILTER;
+  const format = engine === "genjutsu" ? genjutsuFormatFilter(hd) : FORMAT_FILTER;
   const pad = engine === "kling" && seconds < PART_SEND_MIN_SECONDS;
   const pingPong =
     `[0:v]${format},split[f][b];[b]reverse[r];[f][r]concat=n=2:v=1:a=0,` +
@@ -400,6 +420,58 @@ export async function firstFrame(part: Buffer) {
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+}
+
+// Images JPEG (base64) réparties sur le passage [start, start + seconds] d'un
+// clip (URL signée), pour le contrôle d'avant paiement (voir startSwap).
+export async function sampleFrames(url: string, start: number, seconds: number, count: number) {
+  if (!ffmpegPath) throw new Error("ffmpeg indisponible sur cette plateforme");
+  const dir = await mkdtemp(path.join(tmpdir(), "twinpost-swap-"));
+  try {
+    await execFileAsync(
+      ffmpegPath,
+      [
+        "-hide_banner",
+        "-loglevel", "error",
+        "-ss", start.toFixed(3),
+        "-t", seconds.toFixed(3),
+        "-i", url,
+        "-vf", `fps=${count}/${Math.max(seconds, 1).toFixed(3)},scale=512:-2`,
+        "-frames:v", String(count),
+        "-q:v", "4",
+        path.join(dir, "f%02d.jpg"),
+      ],
+      { timeout: 90_000 },
+    );
+    const files = (await readdir(dir)).filter((f) => f.endsWith(".jpg")).sort();
+    return Promise.all(files.map(async (f) => (await readFile(path.join(dir, f))).toString("base64")));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
+// Images de référence montrées au contrôle d'un plan rendu : la fiche
+// (kling), ou la première photo de chaque personnage (genjutsu), relue dans
+// le stockage parce que les URLs signées expirent.
+async function checkReferences(metadata: SwapMetadata) {
+  const target = metadata.target;
+  if (metadata.photos) {
+    const paths = metadata.characters?.map((c) => c.image_path) ?? [metadata.character_image_path];
+    const { data } = await createAdminClient()
+      .storage.from(SWAP_INPUTS_BUCKET)
+      .createSignedUrls(paths.filter((p): p is string => Boolean(p)), 60 * 60);
+    const urls = (data ?? []).map((d) => d.signedUrl);
+    if (urls.length === paths.length && urls.every(Boolean)) {
+      return metadata.characters
+        ? metadata.characters.map((c, i) => ({ url: urls[i]!, target: c.target }))
+        : [{ url: urls[0]!, target }];
+    }
+  }
+  return (
+    metadata.characters?.map((c) => ({ url: c.front_url, target: c.target })) ?? [
+      { url: metadata.sheet!.frontUrl, target },
+    ]
+  );
 }
 
 // Images JPEG (base64) réparties sur un plan rendu, pour son contrôle.
@@ -555,6 +627,7 @@ async function advanceParts(
   const sheet = metadata.sheet!;
   const target = metadata.target;
   const genjutsu = metadata.engine === "genjutsu";
+  const webhookUrl = swapWebhookUrl(generation.id);
   const calledAt = Date.now();
   // Séquences Genjutsu en cours de rendu.
   let inFlight = parts.filter((p) => p.stage === "video" && p.predictionId).length;
@@ -597,7 +670,7 @@ async function advanceParts(
       if (!(await persist())) return "continue" as const;
       await createAdminClient().rpc("refund_swap_redo", {
         p_generation_id: generation.id,
-        p_credits: swapShotCredits(part.seconds, "genjutsu"),
+        p_credits: swapShotCredits(part.seconds, "genjutsu", metadata.hd),
       });
       return null;
     }
@@ -619,6 +692,7 @@ async function advanceParts(
           sideUrl: sheet.sideUrl,
           anchorUrl: i > 0 || part.redo ? metadata.anchor_url : undefined,
           target,
+          webhookUrl,
         });
         part.keyframeAttempts = (part.keyframeAttempts ?? 0) + 1;
         continue;
@@ -680,6 +754,8 @@ async function advanceParts(
               characters: metadata.characters?.map((c) => ({ imageUrls: c.urls, target: c.target })) ?? [
                 { imageUrls: metadata.character_urls ?? [sheet.frontUrl], target },
               ],
+              hd: metadata.hd,
+              webhookUrl,
             });
           } catch (e) {
             console.error("createGenjutsuSwap", errorMessage(e));
@@ -745,6 +821,7 @@ async function advanceParts(
           keyframeUrl: part.keyframeUrl!,
           anchorUrl: i > 0 || part.redo ? metadata.anchor_url : undefined,
           target,
+          webhookUrl,
         });
         part.attempts = (part.attempts ?? 0) + 1;
         continue;
@@ -850,6 +927,9 @@ async function advanceParts(
 
   // Contrôles menés de front : des séquences lancées ensemble finissent
   // ensemble. Genjutsu : toutes d'un coup, un contrôle raté ne fait que signaler.
+  const references = parts.some((p) => p.stage === "check")
+    ? await checkReferences(metadata).catch(() => null)
+    : null;
   await Promise.all(
     parts
       .filter((p) => p.stage === "check")
@@ -859,9 +939,7 @@ async function advanceParts(
           .then((frames) =>
             checkSwapShot({
               frames,
-              characters: metadata.characters?.map((c) => ({ url: c.front_url, target: c.target })) ?? [
-                { url: sheet.frontUrl, target },
-              ],
+              characters: references ?? [{ url: sheet.frontUrl, target }],
             }),
           )
           .catch((e) => {
@@ -967,7 +1045,7 @@ export async function cancelSwap(generationId: string, userId: string) {
   const engine = metadata.engine ?? "kling";
   const kept = parts
     .filter((p) => p.stage === "done" && !p.original)
-    .reduce((sum, p) => sum + swapShotCredits(p.seconds, engine), 0);
+    .reduce((sum, p) => sum + swapShotCredits(p.seconds, engine, metadata.hd), 0);
   if (!kept) {
     await removeParts(generation);
     await admin.rpc("fail_generation", { p_generation_id: generation.id });

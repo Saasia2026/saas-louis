@@ -31,6 +31,27 @@ export function isSwapEngine(value: unknown): value is SwapEngine {
 }
 
 export const SWAP_SHEET_CREDITS = 3;
+// Genjutsu en 1080p : 1,632 $ la seconde chez Higgsfield (vérifié le
+// 2026-09-26), soit 17 crédits la seconde pour rester sous 0,10 $ par crédit.
+export const GENJUTSU_HD_CREDITS_PER_SECOND = 17;
+
+// Crédits par seconde d'un moteur, 1080p compris (genjutsu seulement).
+export function swapRate(engine: SwapEngine, hd = false) {
+  return engine === "genjutsu" && hd
+    ? GENJUTSU_HD_CREDITS_PER_SECOND
+    : SWAP_ENGINES[engine].creditsPerSecond;
+}
+
+// Photos d'un personnage envoyées à Genjutsu (en pied, visage, profil…) :
+// Higgsfield accepte 8 images de référence par envoi, tous personnages confondus.
+export const GENJUTSU_MAX_IMAGES = 8;
+export const SWAP_MAX_PHOTOS_PER_CHARACTER = 4;
+export function photosPerCharacter(characters: number) {
+  return Math.min(
+    SWAP_MAX_PHOTOS_PER_CHARACTER,
+    Math.floor(GENJUTSU_MAX_IMAGES / Math.max(1, characters)),
+  );
+}
 // Personnages remplacés dans un même clip, au plus (moteur genjutsu ; kling
 // n'en remplace qu'un). Aligné avec public.start_swap_generation.
 export const SWAP_MAX_CHARACTERS = 3;
@@ -39,18 +60,21 @@ export const SWAP_MAX_CHARACTERS = 3;
 // coupé se paie donc au nombre de plans, pas à sa seule durée.
 export const KLING_MIN_PART_SECONDS = 3.2;
 
-// Genjutsu : séquences de GENJUTSU_BLOCK_SECONDS au plus, coupées de préférence
-// aux changements de plan et rendues toutes en même temps : le rendu d'une
-// vidéo dure ainsi à peu près celui d'une séquence (quelques minutes), quelle
-// que soit sa longueur, et les rendus courts sont les plus fidèles.
+// Genjutsu : plans courts regroupés en séquences de GENJUTSU_BLOCK_SECONDS au
+// plus, coupées aux changements de plan (une jonction sur une vraie coupe ne
+// se voit pas) et rendues toutes en même temps : le rendu d'une vidéo dure à
+// peu près celui d'une séquence, quelle que soit sa longueur. Un plan continu
+// reste entier jusqu'à GENJUTSU_BLOCK_WHOLE_SECONDS : le couper ferait une
+// jonction visible au milieu d'un geste, et le personnage pourrait changer
+// d'une moitié à l'autre. Au-delà, il est coupé en parts égales d'au plus
+// GENJUTSU_LONG_SHOT_PART_SECONDS.
 // Higgsfield accepte jusqu'à 30 s par envoi.
 // Higgsfield refuse une séquence de moins de 4 s (« Your video is too short »,
 // constaté le 2026-09-19) : les séquences gardent une marge au-dessus.
 export const GENJUTSU_MIN_SECONDS = 4.5;
 export const GENJUTSU_BLOCK_SECONDS = 6;
-// Un plan un peu plus long reste entier : deux moitiés de 3 s se raccordent
-// moins bien, et chacune se paie à la seconde entamée.
-export const GENJUTSU_BLOCK_WHOLE_SECONDS = 8;
+export const GENJUTSU_BLOCK_WHOLE_SECONDS = 15;
+export const GENJUTSU_LONG_SHOT_PART_SECONDS = 12;
 export const GENJUTSU_BLOCK_MAX_SECONDS = 30;
 
 // Images (30 par seconde) envoyées à Genjutsu pour une séquence. Higgsfield
@@ -96,10 +120,14 @@ export function isAspectRatio(value: unknown): value is AspectRatio {
 export type GenerationStatus = "pending" | "processing" | "completed" | "failed";
 
 // Prix d'un plan (kling) ou d'une séquence (genjutsu) refait seul (voir redoSwapShot).
-export function swapShotCredits(seconds: number, engine: SwapEngine = DEFAULT_SWAP_ENGINE) {
+export function swapShotCredits(
+  seconds: number,
+  engine: SwapEngine = DEFAULT_SWAP_ENGINE,
+  hd = false,
+) {
   const billed =
     engine === "genjutsu" ? genjutsuBilledSeconds([seconds]) : klingBilledSeconds([seconds]);
-  return Math.max(1, Math.ceil(billed * SWAP_ENGINES[engine].creditsPerSecond));
+  return Math.max(1, Math.ceil(billed * swapRate(engine, hd)));
 }
 
 // Prix d'un remplacement. Aligné avec public.start_swap_generation.
@@ -112,12 +140,14 @@ export function swapCredits(
   billedSeconds?: number,
   // Une fiche par personnage.
   characters = 1,
+  // Genjutsu en 1080p.
+  hd = false,
 ) {
   const seconds =
     billedSeconds !== undefined
       ? Math.max(billedSeconds, Math.ceil(durationSeconds))
       : Math.ceil(durationSeconds);
-  return Math.ceil(seconds * SWAP_ENGINES[engine].creditsPerSecond) + SWAP_SHEET_CREDITS * characters;
+  return Math.ceil(seconds * swapRate(engine, hd)) + SWAP_SHEET_CREDITS * characters;
 }
 
 // Secondes de remplacement qu'un nombre de crédits permet, fiche comprise.

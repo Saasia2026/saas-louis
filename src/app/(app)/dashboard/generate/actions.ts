@@ -44,6 +44,11 @@ export type GenerationView = {
   stage: "image" | "assembling";
   // Moteur du remplacement : genjutsu rend le passage d'un bloc, sans étapes.
   engine: SwapEngine;
+  // Genjutsu en 1080p (prix d'une séquence refaite).
+  hd: boolean;
+  // Séquences livrées avec leurs images d'origine, faute de rendu : la vidéo
+  // est incomplète, et le studio le dit clairement.
+  unreplaced: number;
   // Plans du passage (un seul avec genjutsu) : images clés prêtes, puis plans
   // rendus et contrôlés.
   shotsTotal: number;
@@ -97,6 +102,8 @@ export async function getGeneration(generationId: string): Promise<Result<Genera
     status: generation.status as GenerationStatus,
     stage: generation.stage === "assembling" ? "assembling" : "image",
     engine: genjutsu ? "genjutsu" : "kling",
+    hd: Boolean(metadata.hd),
+    unreplaced: parts.filter((p) => p.original).length,
     shotsTotal: parts.length,
     framesDone: parts.filter((p) => p.keyframeUrl).length,
     shotsDone: parts.filter((p) => p.stage === "done").length,

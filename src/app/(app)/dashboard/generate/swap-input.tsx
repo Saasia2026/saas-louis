@@ -18,8 +18,9 @@ import { createClient } from "@/lib/supabase/client";
 // long que la durée du moteur (`maxSeconds`), découpé par le serveur.
 export type SwapFile = { path: string; previewUrl: string; seconds?: number; start?: number };
 
-// Un personnage et qui il remplace dans le clip (facultatif s'il est seul).
-export type SwapCharacter = { image: SwapFile | null; target: string };
+// Un personnage, ses autres photos (Qualité max : visage, profil…) et qui il
+// remplace dans le clip (facultatif s'il est seul).
+export type SwapCharacter = { image: SwapFile | null; extras: SwapFile[]; target: string };
 
 // Début du passage gardé, ramené dans le clip : la durée gardée change avec
 // le moteur, le début choisi reste tel quel dans l'état.
@@ -39,6 +40,7 @@ export function SwapInput({
   characters,
   onCharacters,
   maxCharacters,
+  maxPhotos,
   maxSeconds,
   compact,
 }: {
@@ -49,14 +51,17 @@ export function SwapInput({
   characters: SwapCharacter[];
   onCharacters: Dispatch<SetStateAction<SwapCharacter[]>>;
   maxCharacters: number;
+  // Photos par personnage, la principale comprise (1 : pas d'autres photos).
+  maxPhotos: number;
   // Durée gardée au plus, selon le moteur choisi.
   maxSeconds: number;
   compact: boolean;
 }) {
   const [supabase] = useState(createClient);
   const { t } = useI18n();
-  // Case en cours d'envoi : le clip, ou le numéro du personnage.
-  const [uploading, setUploading] = useState<"video" | number | null>(null);
+  // Case en cours d'envoi : le clip, le numéro du personnage, ou « extra-N »
+  // pour une autre photo du personnage N.
+  const [uploading, setUploading] = useState<string | number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const several = characters.length > 1;
 
@@ -64,22 +69,24 @@ export function SwapInput({
     onCharacters((list) => list.map((c, i) => (i === index ? { ...c, ...change } : c)));
 
   function removeCharacter(index: number) {
-    const image = characters[index]?.image;
-    if (image) URL.revokeObjectURL(image.previewUrl);
+    const character = characters[index];
+    for (const f of [character?.image, ...(character?.extras ?? [])]) {
+      if (f) URL.revokeObjectURL(f.previewUrl);
+    }
     onCharacters((list) => list.filter((_, i) => i !== index));
   }
 
-  async function pick(slot: "video" | number, file: File | undefined) {
-    if (!file) return;
-    const kind = slot === "video" ? "video" : "image";
+  // Dépose un fichier dans swap-inputs ; null si refusé ou raté (erreur affichée).
+  async function upload(slot: string | number, kind: "video" | "image", file: File | undefined) {
+    if (!file) return null;
     setError(null);
     const types = kind === "video" ? SWAP_VIDEO_TYPES : SWAP_IMAGE_TYPES;
-    if (!types.includes(file.type)) return setError(t.generateErrors.swapFormat);
-    if (file.size > SWAP_MAX_BYTES) return setError(t.generateErrors.swapTooBig);
+    if (!types.includes(file.type)) return (setError(t.generateErrors.swapFormat), null);
+    if (file.size > SWAP_MAX_BYTES) return (setError(t.generateErrors.swapTooBig), null);
 
     setUploading(slot);
     const previewUrl = URL.createObjectURL(file);
-    const [seconds, upload] = await Promise.all([
+    const [seconds, stored] = await Promise.all([
       kind === "video" ? readDuration(previewUrl) : undefined,
       (async () => {
         const path = `${userId}/${crypto.randomUUID()}.${file.name.split(".").pop() ?? "bin"}`;
@@ -90,11 +97,32 @@ export function SwapInput({
       })(),
     ]);
     setUploading(null);
-    if (!upload) {
+    if (!stored) {
       URL.revokeObjectURL(previewUrl);
-      return setError(t.generateErrors.swapUpload);
+      setError(t.generateErrors.swapUpload);
+      return null;
     }
-    const next = { path: upload, previewUrl, seconds, start: 0 };
+    return { path: stored, previewUrl, seconds, start: 0 } satisfies SwapFile;
+  }
+
+  async function pickExtra(index: number, file: File | undefined) {
+    const next = await upload(`extra-${index}`, "image", file);
+    if (!next) return;
+    onCharacters((list) =>
+      list.map((c, i) => (i === index ? { ...c, extras: [...c.extras, next].slice(0, maxPhotos - 1) } : c)),
+    );
+  }
+
+  function removeExtra(index: number, file: SwapFile) {
+    URL.revokeObjectURL(file.previewUrl);
+    onCharacters((list) =>
+      list.map((c, i) => (i === index ? { ...c, extras: c.extras.filter((f) => f !== file) } : c)),
+    );
+  }
+
+  async function pick(slot: "video" | number, file: File | undefined) {
+    const next = await upload(slot, slot === "video" ? "video" : "image", file);
+    if (!next) return;
     if (slot === "video") {
       if (video) URL.revokeObjectURL(video.previewUrl);
       onVideo(next);
@@ -195,13 +223,69 @@ export function SwapInput({
       {characters.length < maxCharacters && characters[0]?.image && (
         <button
           type="button"
-          onClick={() => onCharacters((list) => [...list, { image: null, target: "" }])}
+          onClick={() => onCharacters((list) => [...list, { image: null, extras: [], target: "" }])}
           className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-dashed border-line-strong px-3 py-1.5 text-sm text-muted transition-colors hover:border-accent/60 hover:text-text"
         >
           <Plus className="size-4" />
           {t.studio.addCharacter}
         </button>
       )}
+      {maxPhotos > 1 &&
+        characters.map((c, i) =>
+          c.image ? (
+            <div key={`photos-${i}`} className="mt-3">
+              <p className="text-xs text-faint">
+                {several
+                  ? fmt(t.studio.morePhotos, { n: i + 1, max: maxPhotos })
+                  : fmt(t.studio.morePhotosSingle, { max: maxPhotos })}
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {c.extras.map((f) => (
+                  <span
+                    key={f.path}
+                    className="relative size-12 overflow-hidden rounded-lg border border-line bg-black"
+                  >
+                    {/* Aperçu local (blob:) : pas d'optimisation Next. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={f.previewUrl} alt="" className="size-full object-cover" />
+                    <button
+                      type="button"
+                      aria-label={t.studio.removePhoto}
+                      title={t.studio.removePhoto}
+                      onClick={() => removeExtra(i, f)}
+                      className="absolute top-0.5 right-0.5 flex size-5 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </span>
+                ))}
+                {1 + c.extras.length < maxPhotos && (
+                  <label
+                    title={t.studio.addPhoto}
+                    className="relative flex size-12 cursor-pointer items-center justify-center rounded-lg border border-dashed border-line-strong text-muted transition-colors hover:border-accent/60 hover:text-text"
+                  >
+                    <input
+                      type="file"
+                      accept={SWAP_IMAGE_TYPES.join(",")}
+                      className="sr-only"
+                      aria-label={t.studio.addPhoto}
+                      disabled={uploading !== null}
+                      onChange={(e) => {
+                        pickExtra(i, e.target.files?.[0]);
+                        e.target.value = "";
+                      }}
+                    />
+                    {uploading === `extra-${i}` ? (
+                      <span className="size-4 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
+                    ) : (
+                      <Plus className="size-4" />
+                    )}
+                  </label>
+                )}
+              </div>
+            </div>
+          ) : null,
+        )}
       {several ? (
         <div className="mt-3 space-y-2">
           {characters.map((c, i) => (
