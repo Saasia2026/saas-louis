@@ -18,7 +18,7 @@ export const SWAP_INPUTS_BUCKET = "swap-inputs";
 //   chaque plan (~0,15 $) et les plans refaits après contrôle : 2,5 crédits
 //   la seconde, 15 s au plus.
 // La fiche personnage (deux images Nano Banana Pro, ~0,30 $) : 3 crédits.
-export const SWAP_ENGINES = {facefusion: { creditsPerSecond: 0.5, maxSeconds: 120 },
+export const SWAP_ENGINES = {
   genjutsu: { creditsPerSecond: 7, maxSeconds: 90 },
   kling: { creditsPerSecond: 2.5, maxSeconds: 15 },
 } as const;
@@ -147,8 +147,7 @@ export function swapCredits(
     billedSeconds !== undefined
       ? Math.max(billedSeconds, Math.ceil(durationSeconds))
       : Math.ceil(durationSeconds);
-  const sheet = engine === "facefusion" ? 0 : SWAP_SHEET_CREDITS * characters;
-  return Math.ceil(seconds * swapRate(engine, hd)) + sheet;
+  return Math.ceil(seconds * swapRate(engine, hd)) + SWAP_SHEET_CREDITS * characters;
 }
 
 // Secondes de remplacement qu'un nombre de crédits permet, fiche comprise.

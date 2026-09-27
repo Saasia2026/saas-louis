@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import ffmpegPath from "ffmpeg-static";
-import { createFaceFusionSwap, getFaceFusionPrediction } from "@/lib/facefusion";
 import { createFalSwap, createFalSwapKeyframe, getFalPrediction } from "@/lib/fal";
 import {
   FORMATS,
@@ -86,7 +85,7 @@ function genjutsuFormatFilter(hd?: boolean) {
   const side = hd ? 1080 : 720;
   return `scale='if(lt(iw,ih),trunc(min(iw,${side})/2)*2,-2)':'if(lt(iw,ih),-2,trunc(min(ih,${side})/2)*2)',setsar=1,fps=30,format=yuv420p`;
 }
-const OUTPUT_FPS: Record<SwapEngine, number> = { kling: 30, genjutsu: 24, facefusion: 30 };
+const OUTPUT_FPS: Record<SwapEngine, number> = { kling: 30, genjutsu: 24 };
 
 // Tentatives par plan (image clé comme vidéo) : un nouvel essai en cas
 // d'échec ou de contrôle refusé.
@@ -679,14 +678,7 @@ async function advanceParts(
   };
 
   for (const [i, part] of parts.entries()) {
-    let stage = part.stage ?? "keyframe";
-
-    // FaceFusion : pas d'image clé ni de contrôle, le serveur local traite
-    // la vidéo entière.
-    if (metadata.engine === "facefusion") {
-      if (stage === "keyframe") { part.stage = "video"; stage = "video"; }
-      if (stage === "check") { part.stage = "done"; stage = "done"; }
-    }
+    const stage = part.stage ?? "keyframe";
 
     if (stage === "keyframe") {
       // Les images clés suivantes attendent celle du premier plan.
@@ -822,15 +814,6 @@ async function advanceParts(
           await persist();
           continue;
         }
-        if (metadata.engine === "facefusion") {
-          part.predictionId = await createFaceFusionSwap({
-            videoUrl: part.videoUrl!,
-            faceUrl: sheet.frontUrl,
-            webhookUrl,
-          });
-          part.attempts = (part.attempts ?? 0) + 1;
-          continue;
-        }
         part.predictionId = await createFalSwap({
           videoUrl: part.videoUrl!,
           frontUrl: sheet.frontUrl,
@@ -847,9 +830,7 @@ async function advanceParts(
       try {
         prediction = part.predictionId.startsWith("hf:")
           ? await getHiggsfieldPrediction(part.predictionId)
-          : part.predictionId.startsWith("ff:")
-            ? await getFaceFusionPrediction(part.predictionId)
-            : await getFalPrediction(part.predictionId);
+          : await getFalPrediction(part.predictionId);
         part.statusErrors = 0;
       } catch (e) {
         console.error("swap: suivi", errorMessage(e));
