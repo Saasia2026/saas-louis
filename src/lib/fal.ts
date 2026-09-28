@@ -68,7 +68,23 @@ export async function createFalCharacterSheet(imageUrl: string) {
   });
   return { frontUrl, sideUrl: side.images[0]?.url };
 }
-
+// Planche multi-vues : fiche de casting IA (8 angles) à partir d'une photo.
+export async function createFalCharacterPlanche(imageUrl: string) {
+  const fal = createFal();
+  const { data } = await fal.subscribe(FAL_IMAGE_ENDPOINT, {
+    input: {
+      prompt:
+        "Professional character reference sheet. " +
+        "Top row: four head-and-shoulders portraits of this exact person — front facing camera, three-quarter left, left profile, smiling with teeth. " +
+        "Bottom row: four full-body shots of the same person in the same outfit — front facing camera, three-quarter left, left profile, rear view looking away. " +
+        "Every panel shows the identical person with the same face, hairstyle, hair colour, skin tone, body shape and clothing. " +
+        "Clean plain white background in every panel, soft even studio lighting, thin light-grey lines separating the eight panels, no text, no labels, no captions, no names.",
+      image_urls: [imageUrl],
+      aspect_ratio: "16:9",
+    },
+  });
+  return data.images[0]?.url ?? null;
+}
 // Formats d'image acceptés par Nano Banana Pro.
 const KEYFRAME_RATIOS = ["21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"] as const;
 

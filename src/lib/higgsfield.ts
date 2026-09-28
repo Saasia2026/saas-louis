@@ -64,36 +64,45 @@ export function describeTarget(target?: string) {
   return text ? `the person described as "${text}"` : "the main person";
 }
 
-// Consigne Genjutsu. Plusieurs personnages : les images de référence sont
-// envoyées à la suite, personnage par personnage ; la consigne dit lesquelles
-// montrent qui, et qui chacun remplace.
+// Consigne Genjutsu, en blocs titrés : la vidéo source commande tout le jeu,
+// les références commandent l'identité ; chaque personne remplacée est liée à
+// son personnage pour tout le clip ; la scène reste intacte ; la planche de
+// référence (fond, cases, légendes) ne doit jamais entrer dans l'image.
+// Plusieurs personnages : les images de référence sont envoyées à la suite,
+// personnage par personnage ; la consigne dit lesquelles montrent qui.
 function genjutsuPrompt(characters: { imageUrls: string[]; target?: string }[]) {
-  // Les références sont les photos du créateur : leur fond et leurs objets
-  // ne doivent pas entrer dans la scène.
-  const rest =
-    "Take only the character from the reference images: ignore their background, objects and framing. Keep every other person, the place, the objects, the camera framing and its moves, the cuts and the lighting exactly unchanged. Add nothing to the scene.";
-  if (characters.length <= 1) {
-    return (
-      `Replace ${describeTarget(characters[0]?.target)} with the character shown in the reference images (every reference image shows the same character): same head, face, fur or skin and body. ` +
-      "It reproduces exactly the movements, gestures, head turns, facial expressions and mouth movements of the replaced person, with the same timing, posture, contact and weight, in every shot. " +
-      rest
-    );
-  }
+  const several = characters.length > 1;
   let next = 1;
-  const lines = characters.map((c, i) => {
+  const blocks = characters.map((c, i) => {
     const first = next;
     next += c.imageUrls.length;
-    const images =
-      c.imageUrls.length > 1 ? `reference images ${first} to ${next - 1}` : `reference image ${first}`;
-    return `Character ${i + 1}, shown in ${images}, replaces ${describeTarget(c.target)}.`;
+    const images = several
+      ? c.imageUrls.length > 1
+        ? `reference images ${first} to ${next - 1}`
+        : `reference image ${first}`
+      : "the reference images";
+    const title = several ? `CHARACTER ${i + 1}` : "CHARACTER";
+    return (
+      `${title} — Replace ${describeTarget(c.target)} with the character shown in ${images}. ` +
+      `Match that character's face, age, skin or fur, hairstyle and hair colour, body proportions, clothing and accessories exactly as shown in ${images}. ` +
+      "Preserve this original person's exact actions, rhythm, posture, head movements, hand gestures, gaze, facial expressions and lip-sync throughout the entire video; do not add a smile or extra mouth movement."
+    );
   });
-  return (
-    `Replace ${characters.length} different people in this video, each with their own character. ` +
-    lines.join(" ") +
-    " Each character keeps its own head, face, fur or skin and body exactly as in its reference images, never mixed with another character. " +
-    "Each one reproduces exactly the movements, gestures, head turns, facial expressions and mouth movements of the person it replaces, with the same timing, posture, contact and weight, in every shot. " +
-    rest
-  );
+  return [
+    several
+      ? `STRICT CHARACTER AND WARDROBE REPLACEMENT — ${characters.length} REFERENCES. Edit the uploaded source video: ${characters.length} different people are each replaced by their own character. Each group of reference images shows multiple views of ONE character, not multiple characters.`
+      : "STRICT CHARACTER AND WARDROBE REPLACEMENT. Edit the uploaded source video: one person is replaced by the character shown in the reference images. The reference images show multiple views of ONE character, not multiple characters.",
+    "SOURCE PRIORITY — The source video controls all movement, performance, lip-sync, facial expressions, gaze, gestures, interactions, body positions, camera movement, framing, editing and timing. The reference images control only the replacement character's identity: face, hairstyle, skin or fur, body proportions, clothing and accessories.",
+    ...blocks,
+    several
+      ? "PERMANENT IDENTITY ASSIGNMENT — Bind each replacement to its original person for the full clip, even when they turn, move, overlap or appear in different framing. Never swap identities, blend faces, exchange outfits or transfer one person's gestures to another. Maintain each identity through profile views, back views, motion blur and temporary occlusion."
+      : "PERMANENT IDENTITY ASSIGNMENT — Bind the replacement to that original person for the full clip, even when they turn, move, overlap with others or appear in different framing. Never blend faces or transfer gestures to another person. Maintain the identity through profile views, back views, motion blur and temporary occlusion.",
+    "EXACT SOURCE PERFORMANCE — Reproduce the existing performance moment by moment. Keep every gesture, pause, mouth movement, head turn, body sway and interaction at its original time and speed. Preserve every camera movement and every cut exactly where they occur. Keep the original duration, aspect ratio and playback speed. Do not introduce new choreography, poses, reactions, camera angles, cuts, slow motion or additional people.",
+    "ENVIRONMENT AND INTEGRATION — Keep the original background, set, objects, every other person, lighting, shadows, perspective and composition from the source video. Adapt the replacement character and clothing to the original scene's lighting and movement, with natural fabric motion, accurate contact shadows and consistent positioning. Do not copy the reference images' backgrounds, panel layouts, borders, labels, captions or static poses into the output.",
+    several
+      ? "FINAL RESULT — The same source video and the same performances, with only the replaced people's identities, hairstyles, clothing and accessories changed according to their assigned reference images."
+      : "FINAL RESULT — The same source video and the same performance, with only this person's identity, hairstyle, clothing and accessories replaced according to the reference images.",
+  ].join("\n\n");
 }
 
 // Un passage de 4 à 30 s, coupes comprises. Les images sont les photos du

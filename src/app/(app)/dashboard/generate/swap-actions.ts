@@ -3,7 +3,7 @@
 import { after } from "next/server";
 import { fmt } from "@/i18n/config";
 import { getDictionary } from "@/i18n/server";
-import { createFalCharacterSheet, falEnabled, uploadToFal } from "@/lib/fal";
+import { createFalCharacterPlanche, createFalCharacterSheet, falEnabled, uploadToFal } from "@/lib/fal";
 import {
   DEFAULT_SWAP_ENGINE,
   SWAP_ENGINES,
@@ -333,12 +333,22 @@ export async function startSwap(input: {
       // Magic Hour lit la photo telle quelle (voir magicHourInputs).
       magichour
         ? [{ sheet: { frontUrl: imageUrls[0]! }, urls: undefined as string[] | undefined }]
-        : genjutsu
+                 : genjutsu
           ? Promise.all(
-              photoUrls.map(async (urls) => ({
-                sheet: { frontUrl: urls[0] },
-                urls: await uploadPhotos(urls),
-              })),
+              photoUrls.map(async (urls) => {
+                const planche = falEnabled()
+                  ? await createFalCharacterPlanche(urls[0]).catch((e) => {
+                      if (isOutOfCredit(e)) throw e;
+                      console.error("createFalCharacterPlanche", errorMessage(e));
+                      return null;
+                    })
+                  : null;
+                const toUpload = planche ? [planche, ...urls] : urls;
+                return {
+                  sheet: { frontUrl: planche ?? urls[0] },
+                  urls: await uploadPhotos(toUpload),
+                };
+              }),
             )
           : Promise.all(imageUrls.map((url) => prepareCharacter(url!))),
     ]);
