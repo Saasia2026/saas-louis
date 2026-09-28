@@ -198,6 +198,9 @@ export const en: Dictionary = {
     facePassHint:
       "Magic Hour then puts the photo's face on each rendered part · +{rate} credit/s",
     partNoFace: "face not applied, pass refunded",
+    faceImage: "Exact face",
+    faceImageHint:
+      "Photo of the face to apply, front-facing and sharp. The character photo then only sets the body and outfit.",
     targetsMissing: "Say who each character replaces",
     uploading: "Uploading…",
     change: "Change",

@@ -81,8 +81,10 @@ export function Studio({
   const [chosenEngine, setEngine] = useState<SwapEngine>(engines[0] ?? "kling");
   // Qualité max en 1080p.
   const [hdChosen, setHd] = useState(false);
-  // Option « + visage exact » (passe Magic Hour, voir startSwap).
+  // Option « + visage exact » (passe Magic Hour, voir startSwap) et la photo
+  // du visage, à part de celle du personnage (sinon celle-ci sert).
   const [faceChosen, setFace] = useState(false);
+  const [facePhoto, setFacePhoto] = useState<SwapFile | null>(null);
   // Plusieurs personnages : seul Genjutsu sait les placer.
   const several = characters.length > 1;
   const maxCharacters = engines.includes("genjutsu") ? SWAP_MAX_CHARACTERS : 1;
@@ -191,6 +193,7 @@ export function Studio({
       engine,
       hd,
       face,
+      faceImagePath: face ? facePhoto?.path : undefined,
     });
     router.refresh();
     if (res.error !== undefined) {
@@ -260,6 +263,9 @@ export function Studio({
         maxPhotos={maxPhotos}
         maxSeconds={maxSeconds}
         compact={started}
+        facePhoto={facePhoto}
+        onFacePhoto={setFacePhoto}
+        showFacePhoto={face}
       />
 
       <div className="flex flex-wrap items-center gap-2 px-3 pb-3">

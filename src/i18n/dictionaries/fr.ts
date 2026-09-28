@@ -200,6 +200,9 @@ export const fr = {
     facePassHint:
       "Magic Hour pose ensuite le visage de la photo sur chaque morceau rendu · +{rate} crédit/s",
     partNoFace: "visage non posé, prix de la passe rendu",
+    faceImage: "Visage exact",
+    faceImageHint:
+      "Photo du visage à poser, de face et nette. La photo du personnage ne sert alors qu'au corps et à la tenue.",
     targetsMissing: "Dis qui chaque personnage remplace",
     uploading: "Envoi…",
     change: "Changer",

@@ -198,6 +198,9 @@ export const es: Dictionary = {
     facePassHint:
       "Magic Hour aplica después el rostro de la foto en cada fragmento renderizado · +{rate} crédito/s",
     partNoFace: "rostro no aplicado, pase reembolsado",
+    faceImage: "Rostro exacto",
+    faceImageHint:
+      "Foto del rostro a aplicar, de frente y nítida. La foto del personaje solo define entonces el cuerpo y la ropa.",
     targetsMissing: "Indica a quién reemplaza cada personaje",
     uploading: "Subiendo…",
     change: "Cambiar",

@@ -194,8 +194,10 @@ export type SwapMetadata = {
   engine?: SwapEngine;
   // Genjutsu en 1080p.
   hd?: boolean;
-  // Option « + visage exact » : passe Magic Hour sur chaque morceau rendu.
+  // Option « + visage exact » : passe Magic Hour sur chaque morceau rendu,
+  // avec la photo du visage si elle est donnée, sinon celle du personnage.
   face?: boolean;
+  face_image_path?: string;
   // Genjutsu : les références sont les photos déposées par le créateur, pas
   // une fiche redessinée (depuis le 2026-09-26).
   photos?: boolean;
@@ -1172,13 +1174,14 @@ async function facePassInputs(
   index: number,
   generationId: string,
 ) {
-  if (!part.clipPath || !metadata.character_image_path) {
-    throw Object.assign(new Error("morceau ou photo du personnage introuvable"), { status: 400 });
+  const facePath = metadata.face_image_path ?? metadata.character_image_path;
+  if (!part.clipPath || !facePath) {
+    throw Object.assign(new Error("morceau ou photo du visage introuvable"), { status: 400 });
   }
   const admin = createAdminClient();
   const [clip, photo] = await Promise.all([
     admin.storage.from(GENERATIONS_BUCKET).createSignedUrl(part.clipPath, 60 * 60),
-    admin.storage.from(SWAP_INPUTS_BUCKET).createSignedUrl(metadata.character_image_path, 60 * 60),
+    admin.storage.from(SWAP_INPUTS_BUCKET).createSignedUrl(facePath, 60 * 60),
   ]);
   const videoUrl = clip.data?.signedUrl;
   const faceUrl = photo.data?.signedUrl;

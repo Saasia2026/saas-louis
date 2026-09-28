@@ -1,6 +1,6 @@
 "use client";
 
-import { Film, Plus, UserRound, X } from "lucide-react";
+import { Film, Plus, ScanFace, UserRound, X } from "lucide-react";
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
@@ -43,10 +43,18 @@ export function SwapInput({
   maxPhotos,
   maxSeconds,
   compact,
+  facePhoto = null,
+  onFacePhoto,
+  showFacePhoto = false,
 }: {
   userId: string;
   video: SwapFile | null;
   onVideo: (file: SwapFile | null) => void;
+  // Option « + visage exact » : photo du visage posé par Magic Hour, à part
+  // de celle du personnage (qui seule passe par le moteur vidéo).
+  facePhoto?: SwapFile | null;
+  onFacePhoto?: (file: SwapFile | null) => void;
+  showFacePhoto?: boolean;
   // Au moins un personnage ; plusieurs si le moteur Qualité max est là.
   characters: SwapCharacter[];
   onCharacters: Dispatch<SetStateAction<SwapCharacter[]>>;
@@ -120,12 +128,15 @@ export function SwapInput({
     );
   }
 
-  async function pick(slot: "video" | number, file: File | undefined) {
+  async function pick(slot: "video" | "face" | number, file: File | undefined) {
     const next = await upload(slot, slot === "video" ? "video" : "image", file);
     if (!next) return;
     if (slot === "video") {
       if (video) URL.revokeObjectURL(video.previewUrl);
       onVideo(next);
+    } else if (slot === "face") {
+      if (facePhoto) URL.revokeObjectURL(facePhoto.previewUrl);
+      onFacePhoto?.(next);
     } else {
       const current = characters[slot]?.image;
       if (current) URL.revokeObjectURL(current.previewUrl);
@@ -133,10 +144,10 @@ export function SwapInput({
     }
   }
 
-  const tile = (slot: "video" | number) => {
+  const tile = (slot: "video" | "face" | number) => {
     const kind = slot === "video" ? "video" : "image";
-    const file = slot === "video" ? video : characters[slot]?.image;
-    const Icon = kind === "video" ? Film : UserRound;
+    const file = slot === "video" ? video : slot === "face" ? facePhoto : characters[slot]?.image;
+    const Icon = kind === "video" ? Film : slot === "face" ? ScanFace : UserRound;
     return (
       <label
         key={slot}
@@ -171,13 +182,15 @@ export function SwapInput({
           <>
             <Icon className="size-5 text-muted" />
             <span className="text-sm font-medium">
-              {kind === "video" ? t.studio.video : t.studio.image}
+              {kind === "video" ? t.studio.video : slot === "face" ? t.studio.faceImage : t.studio.image}
             </span>
-            {!compact && !(several && kind === "image") && (
+            {!compact && !(several && typeof slot === "number") && (
               <span className="px-3 text-xs text-faint">
                 {kind === "video"
                   ? fmt(t.studio.videoHint, { max: maxSeconds })
-                  : t.studio.imageHint}
+                  : slot === "face"
+                    ? t.studio.faceImageHint
+                    : t.studio.imageHint}
               </span>
             )}
           </>
@@ -219,6 +232,7 @@ export function SwapInput({
       <div className="grid grid-cols-2 gap-3">
         {tile("video")}
         {characters.map((_, i) => tile(i))}
+        {showFacePhoto && tile("face")}
       </div>
       {characters.length < maxCharacters && characters[0]?.image && (
         <button

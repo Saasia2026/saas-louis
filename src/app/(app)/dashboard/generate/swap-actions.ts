@@ -117,6 +117,9 @@ export async function startSwap(input: {
   // Option « + visage exact » : Magic Hour pose le visage de la photo sur
   // chaque morceau rendu (Genjutsu ou Kling, un seul personnage).
   face?: boolean;
+  // Photo du visage posé, à part de celle du personnage : seule celle-ci
+  // passe par le moteur vidéo et son filtre. Absente : la photo du personnage.
+  faceImagePath?: string;
   // Début du passage gardé, en secondes, pour un clip trop long.
   start?: number;
   // Durée du passage voulue, en secondes (au plus celle du moteur).
@@ -152,9 +155,11 @@ export async function startSwap(input: {
     target: typeof c?.target === "string" ? c.target.trim().slice(0, 200) : "",
   }));
   if (!characters.length || characters.length > SWAP_MAX_CHARACTERS) return { error: errors.swapFiles };
+  const faceImagePath = face && typeof input.faceImagePath === "string" ? input.faceImagePath : undefined;
   if (
     !own(input.videoPath) ||
-    !characters.every((c) => own(c.imagePath) && c.extraPaths.every(own))
+    !characters.every((c) => own(c.imagePath) && c.extraPaths.every(own)) ||
+    (faceImagePath !== undefined && !own(faceImagePath))
   ) {
     return { error: errors.swapFiles };
   }
@@ -169,11 +174,18 @@ export async function startSwap(input: {
   const admin = createAdminClient();
   // Le clip, puis chaque personnage : sa photo principale et ses autres photos.
   const photoPaths = characters.map((c) => [c.imagePath as string, ...c.extraPaths]);
+  const extraPaths = faceImagePath ? [faceImagePath] : [];
   const { data: signed } = await admin.storage
     .from(SWAP_INPUTS_BUCKET)
-    .createSignedUrls([input.videoPath, ...photoPaths.flat()], INPUT_URL_TTL_SECONDS);
-  const [sourceUrl, ...flatUrls] = (signed ?? []).map((s) => s.signedUrl);
-  if (!sourceUrl || flatUrls.length !== photoPaths.flat().length || flatUrls.some((u) => !u)) {
+    .createSignedUrls([input.videoPath, ...photoPaths.flat(), ...extraPaths], INPUT_URL_TTL_SECONDS);
+  const [sourceUrl, ...rest] = (signed ?? []).map((s) => s.signedUrl);
+  const flatUrls = rest.slice(0, photoPaths.flat().length);
+  const faceUrl = faceImagePath ? rest[photoPaths.flat().length] : undefined;
+  if (
+    !sourceUrl ||
+    rest.length !== photoPaths.flat().length + extraPaths.length ||
+    rest.some((u) => !u)
+  ) {
     return { error: errors.swapFiles };
   }
   let next = 0;
@@ -218,7 +230,9 @@ export async function startSwap(input: {
       return null;
     }),
     sampleFrames(sourceUrl, start, clipSeconds, PRECHECK_FRAMES)
-      .then((frames) => precheckSwapInputs({ frames, photoUrls: imageUrls }))
+      .then((frames) =>
+        precheckSwapInputs({ frames, photoUrls: [...imageUrls, ...(faceUrl ? [faceUrl] : [])] }),
+      )
       .catch((e) => {
         console.error("startSwap: contrôle", errorMessage(e));
         return null;
@@ -237,6 +251,7 @@ export async function startSwap(input: {
     engine,
     ...(hd && { hd: true }),
     ...(face && { face: true }),
+    ...(faceImagePath && { face_image_path: faceImagePath }),
     ...(genjutsu && { photos: true }),
     aspect_ratio: probe.aspectRatio,
     source_video_path: input.videoPath,
