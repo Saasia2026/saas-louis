@@ -15,6 +15,7 @@
 import { createFalClient } from "@fal-ai/client";
 import ffmpegPath from "ffmpeg-static";
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -47,6 +48,12 @@ const [reference, name] = positional;
 if (!sheetOnly && (!reference || !name || !/^[a-z0-9-]+$/.test(name))) {
   console.error(
     "usage : node scripts/vessel.mjs <reference.mp4> <nom en minuscules-tirets> [--start s] [--seconds n] [--target \"…\"] [--hd] [--out dossier]",
+  );
+  process.exit(1);
+}
+if (!sheetOnly && !existsSync(reference)) {
+  console.error(
+    `clip introuvable : ${reference}\nDonne le chemin complet de ton fichier vidéo (glisse le fichier dans le terminal pour l'obtenir).`,
   );
   process.exit(1);
 }
