@@ -17,24 +17,22 @@ export type SwapPreset = {
   people: { target: string; label: Record<Locale, string> }[];
 };
 
-// En développement seulement : un plan d'essai sur la copie d'un clip de
-// test, pour voir la rangée sans vrais plans.
-const TEST_PRESET: SwapPreset = {
-  id: "test-a",
-  path: "presets/test-a.mp4",
-  seconds: 12,
-  aspectRatio: "9:16",
-  title: { fr: "Plan d'essai", en: "Test shot", es: "Plano de prueba" },
-  people: [
-    {
-      target: "the main person",
-      label: { fr: "la personne principale", en: "the main person", es: "la persona principal" },
-    },
-  ],
+// Les plans sont rendus par scripts/vessel.mjs : la personne filmée y est
+// déjà remplacée par un mannequin neutre en gris, d'où la cible commune.
+const GREY_FIGURE = {
+  target: "the person in the plain grey t-shirt and grey trousers",
+  label: { fr: "la personne en gris", en: "the person in grey", es: "la persona de gris" },
 };
 
 export const SWAP_PRESETS: SwapPreset[] = [
-  ...(process.env.NODE_ENV === "development" ? [TEST_PRESET] : []),
+  {
+    id: "podcast-1",
+    path: "presets/podcast-1.mp4",
+    seconds: 12,
+    aspectRatio: "9:16",
+    title: { fr: "Au micro", en: "At the mic", es: "Al micrófono" },
+    people: [GREY_FIGURE],
+  },
 ];
 
 export function presetById(id: unknown) {
