@@ -15,6 +15,7 @@ import {
   GENJUTSU_LONG_SHOT_PART_SECONDS,
   GENJUTSU_MIN_SECONDS,
   KLING_MIN_PART_SECONDS,
+  facePassCredits,
   genjutsuFrames,
   swapShotCredits,
   SWAP_INPUTS_BUCKET,
@@ -22,6 +23,7 @@ import {
   type SwapEngine,
 } from "@/lib/generation";
 import { createGenjutsuSwap, getHiggsfieldPrediction } from "@/lib/higgsfield";
+import { createMagicHourSwap, getMagicHourPrediction } from "@/lib/magichour";
 import {
   CONTENT_REFUSED_ERROR,
   GENJUTSU_UNAVAILABLE_ERROR,
@@ -59,6 +61,13 @@ import { swapWebhookUrl } from "@/lib/swap-webhook";
 // trop cher pour être refait d'office : le contrôle le signale, et le
 // créateur peut refaire la séquence seule.
 //
+// Moteur magichour (Magic Hour, voir createMagicHourSwap) : seul le visage
+// change. Le passage entier part en une seule requête, découpé par Magic Hour
+// lui-même sur l'URL signée du clip, sans image clé ni contrôle (le contrôle
+// jugerait le personnage non remplacé : corps et vêtements restent ceux du
+// clip). Un rendu raté se retente une fois ; le suivi passe par la relance
+// serveur, Magic Hour n'ayant pas de webhook par requête.
+//
 // Le remplacement avance sans page ouverte : les fournisseurs appellent
 // /api/swap/webhook à la fin de chaque rendu, et /api/swap/tick relance les
 // remplacements en cours toutes les 30 s (pg_cron). Le suivi du studio fait
@@ -85,7 +94,8 @@ function genjutsuFormatFilter(hd?: boolean) {
   const side = hd ? 1080 : 720;
   return `scale='if(lt(iw,ih),trunc(min(iw,${side})/2)*2,-2)':'if(lt(iw,ih),-2,trunc(min(ih,${side})/2)*2)',setsar=1,fps=30,format=yuv420p`;
 }
-const OUTPUT_FPS: Record<SwapEngine, number> = { kling: 30, genjutsu: 24 };
+// Magic Hour rend à la cadence du clip : le montage ramène tout à 30 images/s.
+const OUTPUT_FPS: Record<SwapEngine, number> = { kling: 30, genjutsu: 24, magichour: 30 };
 
 // Tentatives par plan (image clé comme vidéo) : un nouvel essai en cas
 // d'échec ou de contrôle refusé.
@@ -114,9 +124,10 @@ const ASSEMBLE_STALE_MS = 6 * 60_000;
 // Marge sous la limite de taille d'un fichier dans Supabase Storage (50 Mo).
 const MAX_VIDEO_MB = 40;
 const GENJUTSU_WAIT_MAX_MS = 10 * 60_000;
-// Une séquence Genjutsu se rend en quelques minutes, file d'attente en plus.
-// Au-delà de ce délai, le remplacement est abandonné et remboursé.
-const GENJUTSU_DEADLINE_MS = 60 * 60_000;
+// Une séquence Genjutsu ou un passage Magic Hour se rend en quelques minutes,
+// file d'attente en plus. Au-delà de ce délai, le remplacement est abandonné
+// et remboursé.
+const RENDER_DEADLINE_MS = 60 * 60_000;
 // Séquences Genjutsu rendues en même temps pour une vidéo (Higgsfield en
 // accepte 20 par clé, tous utilisateurs confondus). Les envois d'un passage
 // d'advanceSwap s'arrêtent au bout d'une minute : chacun peut en prendre une,
@@ -134,7 +145,8 @@ export type SwapPart = {
   firstFrameUrl?: string;
   width?: number;
   height?: number;
-  stage?: "keyframe" | "video" | "check" | "done";
+  // face : option « + visage exact », passe Magic Hour sur le morceau rendu.
+  stage?: "keyframe" | "video" | "face" | "check" | "done";
   keyframeRequest?: string;
   keyframeUrl?: string;
   keyframeAttempts?: number;
@@ -163,6 +175,18 @@ export type SwapPart = {
   // Dernier plan refait qui a raté : raison (message enregistré, voir
   // predictions.ts), montrée au créateur jusqu'au plan refait suivant.
   redoFailed?: string;
+  // Passe visage (voir advanceParts) : sa requête Magic Hour, ses essais.
+  // skipped : passe abandonnée, morceau livré tel quel et prix de la passe
+  // rendu (refunded, une seule fois).
+  face?: {
+    predictionId?: string;
+    attempts?: number;
+    posting?: boolean;
+    statusErrors?: number;
+    done?: boolean;
+    skipped?: boolean;
+    refunded?: boolean;
+  };
 };
 
 export type SwapMetadata = {
@@ -170,6 +194,8 @@ export type SwapMetadata = {
   engine?: SwapEngine;
   // Genjutsu en 1080p.
   hd?: boolean;
+  // Option « + visage exact » : passe Magic Hour sur chaque morceau rendu.
+  face?: boolean;
   // Genjutsu : les références sont les photos déposées par le créateur, pas
   // une fiche redessinée (depuis le 2026-09-26).
   photos?: boolean;
@@ -242,6 +268,8 @@ export async function splitIntoParts(
   seconds: number,
   engine: SwapEngine = "kling",
 ) {
+  // Magic Hour suit les coupes tout seul et prend le passage entier.
+  if (engine === "magichour") return [{ start: 0, seconds }] satisfies SwapPart[];
   const { stderr } = await execFileAsync(
     ffmpegPath!,
     [
@@ -571,15 +599,16 @@ export async function advanceSwap(generationId: string) {
     return false;
   };
 
-  // Échéance Genjutsu : elle ne vise que les séquences encore en attente de
-  // rendu (voir advanceParts). Un rendu fini reste récupéré par qui revient tard.
-  const expired =
-    metadata.engine === "genjutsu" &&
-    Date.now() - Date.parse(metadata.started_at ?? generation.created_at) > GENJUTSU_DEADLINE_MS;
+  // Échéance Genjutsu et Magic Hour : elle ne vise que les séquences encore en
+  // attente de rendu (voir advanceParts). Un rendu fini reste récupéré par qui
+  // revient tard.
+  const late =
+    Date.now() - Date.parse(metadata.started_at ?? generation.created_at) > RENDER_DEADLINE_MS;
+  const expired = (metadata.engine === "genjutsu" || metadata.engine === "magichour") && late;
 
   let outcome: "continue" | "failed" | "assemble" = "continue";
   try {
-    outcome = await advanceParts(generation, metadata, persist, expired);
+    outcome = await advanceParts(generation, metadata, persist, expired, late);
   } catch (e) {
     console.error("advanceSwap", errorMessage(e));
     // Compte fal bloqué à l'envoi d'une image clé ou d'un plan : sans cela,
@@ -622,11 +651,14 @@ async function advanceParts(
   persist: () => Promise<boolean>,
   // Échéance Genjutsu dépassée : les séquences encore en attente sont abandonnées.
   expired: boolean,
+  // Même échéance, tous moteurs : les passes visage en attente sont abandonnées.
+  late: boolean,
 ): Promise<"continue" | "failed" | "assemble"> {
   const parts = metadata.swap_parts!;
   const sheet = metadata.sheet!;
   const target = metadata.target;
   const genjutsu = metadata.engine === "genjutsu";
+  const magichour = metadata.engine === "magichour";
   const webhookUrl = swapWebhookUrl(generation.id);
   const calledAt = Date.now();
   // Séquences Genjutsu en cours de rendu.
@@ -636,6 +668,26 @@ async function advanceParts(
   const starved: SwapPart[] = [];
   // Rendus finis, copiés dans le stockage tous en même temps.
   const copies: Promise<void>[] = [];
+
+  // Passe visage abandonnée (échec, solde Magic Hour, échéance) : le morceau
+  // est livré tel quel, signalé, et le prix de la passe rendu, une seule fois.
+  // Vrai si l'avancement n'a pas pu être enregistré.
+  const skipFace = async (part: SwapPart) => {
+    const face = (part.face ??= {});
+    face.predictionId = undefined;
+    face.posting = false;
+    face.skipped = true;
+    part.stage = "check";
+    if (face.refunded) return false;
+    face.refunded = true;
+    // Enregistré avant de rendre son prix : jamais deux fois.
+    if (!(await persist())) return true;
+    await createAdminClient().rpc("refund_swap_redo", {
+      p_generation_id: generation.id,
+      p_credits: facePassCredits(part.seconds),
+    });
+    return false;
+  };
 
   // Abandon d'un plan.
   // - Refait à la demande : l'ancien reprend sa place, la vidéo reste entière.
@@ -670,7 +722,7 @@ async function advanceParts(
       if (!(await persist())) return "continue" as const;
       await createAdminClient().rpc("refund_swap_redo", {
         p_generation_id: generation.id,
-        p_credits: swapShotCredits(part.seconds, "genjutsu", metadata.hd),
+        p_credits: swapShotCredits(part.seconds, "genjutsu", metadata.hd, Boolean(metadata.face)),
       });
       return null;
     }
@@ -814,6 +866,45 @@ async function advanceParts(
           await persist();
           continue;
         }
+        if (magichour) {
+          // Envoi précédent au résultat inconnu (fonction coupée en plein
+          // envoi), échéance dépassée ou essais épuisés : on n'envoie plus.
+          if (part.posting || expired || (part.attempts ?? 0) >= MAX_ATTEMPTS) {
+            const out = await giveUp(part, i);
+            if (out) return out;
+            continue;
+          }
+          // L'essai est enregistré avant l'envoi, comme pour Genjutsu.
+          part.attempts = (part.attempts ?? 0) + 1;
+          part.posting = true;
+          if (!(await persist())) {
+            part.attempts -= 1;
+            part.posting = false;
+            return "continue";
+          }
+          try {
+            part.predictionId = await createMagicHourSwap(
+              await magicHourInputs(metadata, part, generation.id),
+            );
+          } catch (e) {
+            console.error("createMagicHourSwap", errorMessage(e));
+            part.lastError = errorMessage(e).slice(0, 200);
+            const status = (e as { status?: unknown } | null)?.status;
+            const rejected = typeof status === "number" && status >= 400 && status < 500;
+            // Refus net : rien n'a été créé ni facturé, on peut réessayer.
+            if (rejected) part.posting = false;
+            if (isOutOfCredit(e) || !rejected || part.attempts >= MAX_ATTEMPTS) {
+              const out = await giveUp(part, i, isOutOfCredit(e) ? OUT_OF_CREDIT_ERROR : undefined);
+              if (out) return out;
+            }
+            continue;
+          }
+          part.posting = false;
+          // Enregistré tout de suite : une requête perdue serait relancée,
+          // donc payée deux fois.
+          await persist();
+          continue;
+        }
         part.predictionId = await createFalSwap({
           videoUrl: part.videoUrl!,
           frontUrl: sheet.frontUrl,
@@ -830,7 +921,9 @@ async function advanceParts(
       try {
         prediction = part.predictionId.startsWith("hf:")
           ? await getHiggsfieldPrediction(part.predictionId)
-          : await getFalPrediction(part.predictionId);
+          : part.predictionId.startsWith("mh:")
+            ? await getMagicHourPrediction(part.predictionId)
+            : await getFalPrediction(part.predictionId);
         part.statusErrors = 0;
       } catch (e) {
         console.error("swap: suivi", errorMessage(e));
@@ -885,11 +978,88 @@ async function advanceParts(
         copyOutputToStorage(url, `${generation.user_id}/${generation.id}/${name}`).then(
           (clipPath) => {
             part.clipPath = clipPath;
-            part.stage = "check";
+            part.face = undefined;
+            // Magic Hour : pas de contrôle (voir l'en-tête). Option visage :
+            // la passe Magic Hour d'abord.
+            part.stage = magichour ? "done" : metadata.face ? "face" : "check";
           },
           // Copie ratée : le plan reste à l'étape vidéo, le suivi suivant la
           // retente sans rien renvoyer au fournisseur.
           (e) => console.error("swap: copie", errorMessage(e)),
+        ),
+      );
+    }
+
+    // Passe visage : Magic Hour pose le visage de la photo sur le morceau
+    // rendu, puis le morceau part au contrôle. Même prudence à l'envoi que
+    // pour Genjutsu ; si la passe rate, le morceau est livré sans elle.
+    if (part.stage === "face") {
+      const face = (part.face ??= {});
+      if (!face.predictionId) {
+        if (face.posting || late || (face.attempts ?? 0) >= MAX_ATTEMPTS) {
+          if (await skipFace(part)) return "continue";
+          continue;
+        }
+        face.attempts = (face.attempts ?? 0) + 1;
+        face.posting = true;
+        if (!(await persist())) {
+          face.attempts -= 1;
+          face.posting = false;
+          return "continue";
+        }
+        try {
+          face.predictionId = await createMagicHourSwap(
+            await facePassInputs(metadata, part, i, generation.id),
+          );
+        } catch (e) {
+          console.error("swap: passe visage", errorMessage(e));
+          part.lastError = errorMessage(e).slice(0, 200);
+          const status = (e as { status?: unknown } | null)?.status;
+          const rejected = typeof status === "number" && status >= 400 && status < 500;
+          if (rejected) face.posting = false;
+          if (isOutOfCredit(e) || !rejected || face.attempts >= MAX_ATTEMPTS) {
+            if (await skipFace(part)) return "continue";
+          }
+          continue;
+        }
+        face.posting = false;
+        await persist();
+        continue;
+      }
+      let prediction: PredictionState;
+      try {
+        prediction = await getMagicHourPrediction(face.predictionId);
+        face.statusErrors = 0;
+      } catch (e) {
+        console.error("swap: suivi visage", errorMessage(e));
+        face.statusErrors = (face.statusErrors ?? 0) + 1;
+        if (face.statusErrors < MAX_STATUS_ERRORS && !late) continue;
+        if (await skipFace(part)) return "continue";
+        continue;
+      }
+      if (!isTerminal(prediction.status)) {
+        if (!late) continue;
+        if (await skipFace(part)) return "continue";
+        continue;
+      }
+      const url = outputUrlOf(prediction);
+      if (prediction.status !== "succeeded" || !url) {
+        part.lastError = prediction.error;
+        face.predictionId = undefined;
+        if (prediction.outOfCredit || (face.attempts ?? 1) >= MAX_ATTEMPTS) {
+          if (await skipFace(part)) return "continue";
+        }
+        continue;
+      }
+      const name = `part-${String(i).padStart(2, "0")}-${part.attempts ?? 1}-face${part.redo ? `-${Date.now()}` : ""}`;
+      copies.push(
+        copyOutputToStorage(url, `${generation.user_id}/${generation.id}/${name}`).then(
+          (clipPath) => {
+            part.clipPath = clipPath;
+            face.done = true;
+            part.stage = "check";
+          },
+          (e) => console.error("swap: copie visage", errorMessage(e)),
         ),
       );
     }
@@ -952,6 +1122,7 @@ async function advanceParts(
         if (!ok && !genjutsu && (part.attempts ?? 1) < MAX_ATTEMPTS) {
           part.check = result?.reason;
           part.predictionId = undefined;
+          part.face = undefined;
           part.stage = "video";
           return;
         }
@@ -965,6 +1136,63 @@ async function advanceParts(
   // Aucune séquence rendue : rien à livrer, tout est rendu.
   if (genjutsu && parts.every((p) => p.original)) return "failed";
   return "assemble";
+}
+
+// Magic Hour lit le clip et la photo du personnage sur des URLs signées
+// refaites à l'envoi (celles du lancement expirent) et découpe le passage
+// lui-même, à partir de son début dans le clip.
+async function magicHourInputs(metadata: SwapMetadata, part: SwapPart, generationId: string) {
+  const paths = [metadata.source_video_path, metadata.character_image_path];
+  if (!paths.every((p): p is string => Boolean(p))) {
+    throw Object.assign(new Error("clip ou photo du personnage introuvable"), { status: 400 });
+  }
+  const { data } = await createAdminClient()
+    .storage.from(SWAP_INPUTS_BUCKET)
+    .createSignedUrls(paths, 60 * 60);
+  const [videoUrl, faceUrl] = (data ?? []).map((d) => d.signedUrl);
+  if (!videoUrl || !faceUrl) {
+    throw Object.assign(new Error("URL signée indisponible"), { status: 400 });
+  }
+  const startSeconds = (metadata.source_start ?? 0) + part.start;
+  return {
+    videoUrl,
+    faceUrl,
+    startSeconds,
+    endSeconds: startSeconds + part.seconds,
+    name: `twinpost ${generationId}`,
+  };
+}
+
+// Passe visage : Magic Hour lit le morceau rendu (URL signée du stockage) et
+// la photo du personnage, et traite le morceau entier. Sa durée est relue par
+// ffmpeg : un plan court est prolongé, une séquence Genjutsu compte ses images.
+async function facePassInputs(
+  metadata: SwapMetadata,
+  part: SwapPart,
+  index: number,
+  generationId: string,
+) {
+  if (!part.clipPath || !metadata.character_image_path) {
+    throw Object.assign(new Error("morceau ou photo du personnage introuvable"), { status: 400 });
+  }
+  const admin = createAdminClient();
+  const [clip, photo] = await Promise.all([
+    admin.storage.from(GENERATIONS_BUCKET).createSignedUrl(part.clipPath, 60 * 60),
+    admin.storage.from(SWAP_INPUTS_BUCKET).createSignedUrl(metadata.character_image_path, 60 * 60),
+  ]);
+  const videoUrl = clip.data?.signedUrl;
+  const faceUrl = photo.data?.signedUrl;
+  if (!videoUrl || !faceUrl) {
+    throw Object.assign(new Error("URL signée indisponible"), { status: 400 });
+  }
+  const probe = await probeVideo(videoUrl).catch(() => null);
+  return {
+    videoUrl,
+    faceUrl,
+    startSeconds: 0,
+    endSeconds: Math.max(0.1, probe?.seconds ?? part.seconds),
+    name: `twinpost ${generationId} visage ${index}`,
+  };
 }
 
 // Plan refait qui a raté : l'ancien plan reprend sa place, avec son état, et
@@ -1045,7 +1273,11 @@ export async function cancelSwap(generationId: string, userId: string) {
   const engine = metadata.engine ?? "kling";
   const kept = parts
     .filter((p) => p.stage === "done" && !p.original)
-    .reduce((sum, p) => sum + swapShotCredits(p.seconds, engine, metadata.hd), 0);
+    .reduce(
+      (sum, p) =>
+        sum + swapShotCredits(p.seconds, engine, metadata.hd, Boolean(metadata.face && p.face?.done)),
+      0,
+    );
   if (!kept) {
     await removeParts(generation);
     await admin.rpc("fail_generation", { p_generation_id: generation.id });
@@ -1132,9 +1364,13 @@ async function assembleSwap(generation: { id: string; user_id: string }, metadat
         .eq("status", "processing");
       return;
     }
-    // Genjutsu, une seule séquence : le rendu, déjà payé, est livré tel quel
-    // plutôt que perdu.
-    if (metadata.engine === "genjutsu" && parts.length === 1 && parts[0].clipPath) {
+    // Genjutsu ou Magic Hour, une seule séquence : le rendu, déjà payé, est
+    // livré tel quel plutôt que perdu.
+    if (
+      (metadata.engine === "genjutsu" || metadata.engine === "magichour") &&
+      parts.length === 1 &&
+      parts[0].clipPath
+    ) {
       await admin
         .from("generations")
         .update({ status: "completed", storage_path: parts[0].clipPath })

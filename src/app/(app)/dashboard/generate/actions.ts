@@ -46,6 +46,8 @@ export type GenerationView = {
   engine: SwapEngine;
   // Genjutsu en 1080p (prix d'une séquence refaite).
   hd: boolean;
+  // Option « + visage exact » (prix d'un plan refait).
+  face: boolean;
   // Séquences livrées avec leurs images d'origine, faute de rendu : la vidéo
   // est incomplète, et le studio le dit clairement.
   unreplaced: number;
@@ -101,8 +103,9 @@ export async function getGeneration(generationId: string): Promise<Result<Genera
   const view: GenerationView = {
     status: generation.status as GenerationStatus,
     stage: generation.stage === "assembling" ? "assembling" : "image",
-    engine: genjutsu ? "genjutsu" : "kling",
+    engine: metadata.engine ?? "kling",
     hd: Boolean(metadata.hd),
+    face: Boolean(metadata.face),
     unreplaced: parts.filter((p) => p.original).length,
     shotsTotal: parts.length,
     framesDone: parts.filter((p) => p.keyframeUrl).length,
@@ -110,8 +113,8 @@ export async function getGeneration(generationId: string): Promise<Result<Genera
     parts: parts.map((p) => ({
       start: p.start,
       seconds: p.seconds,
-      flagged: Boolean(p.check),
-      reason: partReason(p.check, t),
+      flagged: Boolean(p.check || p.face?.skipped),
+      reason: partReason(p.check, t) ?? (p.face?.skipped ? t.studio.partNoFace : undefined),
     })),
     error: translateStoredError(generation.error, t),
     tryBudget: generation.error === GENJUTSU_UNAVAILABLE_ERROR,

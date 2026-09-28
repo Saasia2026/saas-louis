@@ -16,11 +16,15 @@ export const SWAP_INPUTS_BUCKET = "swap-inputs";
 //   sans nouvel essai automatique : 7 crédits la seconde, 90 s au plus ;
 // - kling (Kling O3 Pro Edit) : 0,168 $ la seconde, plus l'image clé de
 //   chaque plan (~0,15 $) et les plans refaits après contrôle : 2,5 crédits
-//   la seconde, 15 s au plus.
+//   la seconde, 15 s au plus ;
+// - magichour (Magic Hour Face Swap Video) : seul le visage change, le reste
+//   du clip est gardé. ~0,03 $ la seconde (1 crédit Magic Hour par image) :
+//   1 crédit la seconde, 90 s au plus, sans fiche personnage.
 // La fiche personnage (deux images Nano Banana Pro, ~0,30 $) : 3 crédits.
 export const SWAP_ENGINES = {
   genjutsu: { creditsPerSecond: 7, maxSeconds: 90 },
   kling: { creditsPerSecond: 2.5, maxSeconds: 15 },
+  magichour: { creditsPerSecond: 1, maxSeconds: 90 },
 } as const;
 
 export type SwapEngine = keyof typeof SWAP_ENGINES;
@@ -31,6 +35,17 @@ export function isSwapEngine(value: unknown): value is SwapEngine {
 }
 
 export const SWAP_SHEET_CREDITS = 3;
+// Fiche personnage d'un remplacement : Magic Hour lit la photo telle quelle.
+export function swapSheetCredits(engine: SwapEngine, characters = 1) {
+  return engine === "magichour" ? 0 : SWAP_SHEET_CREDITS * characters;
+}
+// Option « + visage exact » (Genjutsu ou Kling, un seul personnage) : Magic
+// Hour pose ensuite le visage de la photo sur chaque morceau rendu, au tarif
+// du moteur magichour. Aligné avec public.start_swap_generation.
+export const FACE_PASS_CREDITS_PER_SECOND = SWAP_ENGINES.magichour.creditsPerSecond;
+export function facePassCredits(seconds: number) {
+  return Math.max(1, Math.ceil(seconds * FACE_PASS_CREDITS_PER_SECOND));
+}
 // Genjutsu en 1080p : 1,632 $ la seconde chez Higgsfield (vérifié le
 // 2026-09-26), soit 17 crédits la seconde pour rester sous 0,10 $ par crédit.
 export const GENJUTSU_HD_CREDITS_PER_SECOND = 17;
@@ -124,10 +139,17 @@ export function swapShotCredits(
   seconds: number,
   engine: SwapEngine = DEFAULT_SWAP_ENGINE,
   hd = false,
+  // Option « + visage exact ».
+  face = false,
 ) {
   const billed =
-    engine === "genjutsu" ? genjutsuBilledSeconds([seconds]) : klingBilledSeconds([seconds]);
-  return Math.max(1, Math.ceil(billed * swapRate(engine, hd)));
+    engine === "genjutsu"
+      ? genjutsuBilledSeconds([seconds])
+      : engine === "magichour"
+        ? Math.ceil(seconds)
+        : klingBilledSeconds([seconds]);
+  const pass = face ? facePassCredits(billed) : 0;
+  return Math.max(1, Math.ceil(billed * swapRate(engine, hd))) + pass;
 }
 
 // Prix d'un remplacement. Aligné avec public.start_swap_generation.
@@ -142,18 +164,24 @@ export function swapCredits(
   characters = 1,
   // Genjutsu en 1080p.
   hd = false,
+  // Option « + visage exact ».
+  face = false,
 ) {
   const seconds =
     billedSeconds !== undefined
       ? Math.max(billedSeconds, Math.ceil(durationSeconds))
       : Math.ceil(durationSeconds);
-  return Math.ceil(seconds * swapRate(engine, hd)) + SWAP_SHEET_CREDITS * characters;
+  return (
+    Math.ceil(seconds * swapRate(engine, hd)) +
+    swapSheetCredits(engine, characters) +
+    (face ? facePassCredits(seconds) : 0)
+  );
 }
 
 // Secondes de remplacement qu'un nombre de crédits permet, fiche comprise.
 export function swapSecondsFor(credits: number, engine: SwapEngine) {
   return Math.max(
     0,
-    Math.floor((credits - SWAP_SHEET_CREDITS) / SWAP_ENGINES[engine].creditsPerSecond),
+    Math.floor((credits - swapSheetCredits(engine)) / SWAP_ENGINES[engine].creditsPerSecond),
   );
 }

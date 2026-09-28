@@ -194,6 +194,10 @@ export const es: Dictionary = {
     removeCharacter: "Quitar este personaje",
     characterTarget: "¿A quién reemplaza el personaje {n}? ej.: el hombre de camiseta roja",
     severalHint: "Varios personajes: solo Calidad máx. · +{sheet} créditos por personaje",
+    facePass: "+ rostro exacto",
+    facePassHint:
+      "Magic Hour aplica después el rostro de la foto en cada fragmento renderizado · +{rate} crédito/s",
+    partNoFace: "rostro no aplicado, pase reembolsado",
     targetsMissing: "Indica a quién reemplaza cada personaje",
     uploading: "Subiendo…",
     change: "Cambiar",
@@ -312,6 +316,10 @@ export const es: Dictionary = {
     genjutsuHd: {
       label: "Calidad máx. 1080p",
       hint: "Genjutsu en Full HD · {rate} créditos/s · hasta {max} s",
+    },
+    magichour: {
+      label: "Solo el rostro",
+      hint: "Magic Hour · {rate} crédito/s · hasta {max} s, solo cambia el rostro; gestos, decorado y sonido se conservan",
     },
   },
 

@@ -20,6 +20,7 @@ import {
   type SwapEngine,
 } from "@/lib/generation";
 import { higgsfieldEnabled, uploadToHiggsfield } from "@/lib/higgsfield";
+import { magichourEnabled } from "@/lib/magichour";
 import {
   errorMessage,
   isContentRefused,
@@ -113,6 +114,9 @@ export async function startSwap(input: {
   engine?: SwapEngine;
   // Genjutsu en 1080p.
   hd?: boolean;
+  // Option « + visage exact » : Magic Hour pose le visage de la photo sur
+  // chaque morceau rendu (Genjutsu ou Kling, un seul personnage).
+  face?: boolean;
   // Début du passage gardé, en secondes, pour un clip trop long.
   start?: number;
   // Durée du passage voulue, en secondes (au plus celle du moteur).
@@ -128,8 +132,12 @@ export async function startSwap(input: {
   const engine = isSwapEngine(input.engine) ? input.engine : DEFAULT_SWAP_ENGINE;
   if (engine === "genjutsu" && !higgsfieldEnabled()) return { error: errors.startFailed };
   if (engine === "kling" && !falEnabled()) return { error: errors.startFailed };
+  if (engine === "magichour" && !magichourEnabled()) return { error: errors.startFailed };
   const genjutsu = engine === "genjutsu";
+  const magichour = engine === "magichour";
   const hd = genjutsu && input.hd === true;
+  const face = input.face === true && !magichour;
+  if (face && !magichourEnabled()) return { error: errors.startFailed };
 
   // Chemins sous le dossier de l'utilisateur uniquement.
   const own = (p: unknown) =>
@@ -155,6 +163,8 @@ export async function startSwap(input: {
   // qui chacun remplace.
   if (several && !genjutsu) return { error: errors.startFailed };
   if (several && characters.some((c) => !c.target)) return { error: errors.swapTargets };
+  // La passe visage pose un seul visage sur tous les visages du clip.
+  if (several && face) return { error: errors.startFailed };
 
   const admin = createAdminClient();
   // Le clip, puis chaque personnage : sa photo principale et ses autres photos.
@@ -226,6 +236,7 @@ export async function startSwap(input: {
   const metadata = {
     engine,
     ...(hd && { hd: true }),
+    ...(face && { face: true }),
     ...(genjutsu && { photos: true }),
     aspect_ratio: probe.aspectRatio,
     source_video_path: input.videoPath,
@@ -235,9 +246,9 @@ export async function startSwap(input: {
     ...(target && { target }),
   };
   // Secondes réellement facturées par le moteur, une fois le clip découpé.
-  const billedSeconds = (genjutsu ? genjutsuBilledSeconds : klingBilledSeconds)(
-    shots.map((s) => s.seconds),
-  );
+  const billedSeconds = magichour
+    ? Math.ceil(clipSeconds)
+    : (genjutsu ? genjutsuBilledSeconds : klingBilledSeconds)(shots.map((s) => s.seconds));
   const debit = () =>
     admin.rpc("start_swap_generation", {
       p_user_id: userId,
@@ -250,6 +261,9 @@ export async function startSwap(input: {
       // Une fiche par personnage.
       p_characters: characters.length,
       p_hd: hd,
+      // Absent sans l'option : la fonction reste appelable tant que la
+      // migration swap_face_pass n'est pas passée.
+      ...(face && { p_face: true }),
     });
   let { data: generationId, error: rpcError } = await debit();
   // Solde trop bas et recharge automatique activée : la carte est débitée,
@@ -258,7 +272,7 @@ export async function startSwap(input: {
     rpcError?.message.includes("insufficient_credits") &&
     (await autoRecharge(
       userId,
-      swapCredits(durationSeconds, engine, billedSeconds, characters.length, hd),
+      swapCredits(durationSeconds, engine, billedSeconds, characters.length, hd, face),
     ))
   ) {
     ({ data: generationId, error: rpcError } = await debit());
@@ -277,8 +291,11 @@ export async function startSwap(input: {
     const [parts, prepared] = await Promise.all([
       // Kling : chaque plan avec sa première image (pour l'image clé), déposés
       // chez fal (Kling ne lit pas les URLs signées de Supabase). Genjutsu :
-      // chaque séquence, déposée chez Higgsfield.
+      // chaque séquence, déposée chez Higgsfield. Magic Hour : rien à
+      // préparer, il lit le clip sur une URL signée refaite à l'envoi et le
+      // découpe lui-même (voir magicHourInputs).
       mapInBatches(shots, PREPARE_BATCH, async (shot): Promise<SwapPart> => {
+        if (magichour) return { ...shot, stage: "video" };
         if (genjutsu) {
           const clip = await preparePart(sourceUrl, start + shot.start, shot.seconds, "genjutsu", hd);
           return { ...shot, videoUrl: await uploadToHiggsfield(clip, "video/mp4"), stage: "video" };
@@ -298,14 +315,17 @@ export async function startSwap(input: {
           stage: "keyframe",
         };
       }),
-      genjutsu
-        ? Promise.all(
-            photoUrls.map(async (urls) => ({
-              sheet: { frontUrl: urls[0] },
-              urls: await uploadPhotos(urls),
-            })),
-          )
-        : Promise.all(imageUrls.map((url) => prepareCharacter(url!))),
+      // Magic Hour lit la photo telle quelle (voir magicHourInputs).
+      magichour
+        ? [{ sheet: { frontUrl: imageUrls[0]! }, urls: undefined as string[] | undefined }]
+        : genjutsu
+          ? Promise.all(
+              photoUrls.map(async (urls) => ({
+                sheet: { frontUrl: urls[0] },
+                urls: await uploadPhotos(urls),
+              })),
+            )
+          : Promise.all(imageUrls.map((url) => prepareCharacter(url!))),
     ]);
     // Gardé sur « pending » : une génération déjà remboursée (préparation
     // trop longue, voir GeneratePage) n'est pas relancée.
@@ -387,7 +407,12 @@ export async function redoSwapShot(input: {
   }
   const genjutsu = metadata.engine === "genjutsu";
 
-  const credits = swapShotCredits(part.seconds, genjutsu ? "genjutsu" : "kling", metadata.hd);
+  const credits = swapShotCredits(
+    part.seconds,
+    genjutsu ? "genjutsu" : "kling",
+    metadata.hd,
+    Boolean(metadata.face),
+  );
   const debit = () =>
     admin.rpc("start_swap_redo", {
       p_user_id: userId,

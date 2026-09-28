@@ -196,6 +196,10 @@ export const fr = {
     removeCharacter: "Retirer ce personnage",
     characterTarget: "Qui le personnage {n} remplace ? ex. : l'homme en t-shirt rouge",
     severalHint: "Plusieurs personnages : Qualité max uniquement · +{sheet} crédits par personnage",
+    facePass: "+ visage exact",
+    facePassHint:
+      "Magic Hour pose ensuite le visage de la photo sur chaque morceau rendu · +{rate} crédit/s",
+    partNoFace: "visage non posé, prix de la passe rendu",
     targetsMissing: "Dis qui chaque personnage remplace",
     uploading: "Envoi…",
     change: "Changer",
@@ -314,6 +318,10 @@ export const fr = {
     genjutsuHd: {
       label: "Qualité max 1080p",
       hint: "Genjutsu en Full HD · {rate} crédits/s · jusqu'à {max} s",
+    },
+    magichour: {
+      label: "Visage seul",
+      hint: "Magic Hour · {rate} crédit/s · jusqu'à {max} s, seul le visage change, gestes, décor et son gardés",
     },
   },
 

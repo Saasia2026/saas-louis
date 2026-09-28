@@ -81,11 +81,16 @@ export function Studio({
   const [chosenEngine, setEngine] = useState<SwapEngine>(engines[0] ?? "kling");
   // Qualité max en 1080p.
   const [hdChosen, setHd] = useState(false);
+  // Option « + visage exact » (passe Magic Hour, voir startSwap).
+  const [faceChosen, setFace] = useState(false);
   // Plusieurs personnages : seul Genjutsu sait les placer.
   const several = characters.length > 1;
   const maxCharacters = engines.includes("genjutsu") ? SWAP_MAX_CHARACTERS : 1;
   const engine: SwapEngine = several ? "genjutsu" : chosenEngine;
   const hd = engine === "genjutsu" && hdChosen;
+  // La passe visage pose un seul visage, sur un corps rendu par un autre moteur.
+  const facePass = engines.includes("magichour") && engine !== "magichour" && !several;
+  const face = facePass && faceChosen;
   // Photos par personnage : Genjutsu en lit plusieurs, Kling une seule.
   const maxPhotos = engine === "genjutsu" ? photosPerCharacter(characters.length) : 1;
   const imagesReady = characters.every((c) => c.image);
@@ -116,10 +121,12 @@ export function Studio({
   const seconds = durationKnown
     ? Math.max(1, Math.round(clipSeconds))
     : maxSeconds;
-  const cost = swapCredits(seconds, engine, undefined, characters.length, hd);
+  const cost = swapCredits(seconds, engine, undefined, characters.length, hd, face);
   // Durée illisible dans le navigateur : le serveur mesure le clip et refuse
   // lui-même faute de crédits ; on ne bloque ici que sous le prix le plus bas.
-  const gate = durationKnown ? cost : swapCredits(1, engine, undefined, characters.length, hd);
+  const gate = durationKnown
+    ? cost
+    : swapCredits(1, engine, undefined, characters.length, hd, face);
   const canSend = !busy && Boolean(video) && imagesReady && targetsReady && (credits >= gate || autoRecharge);
 
   useEffect(() => {
@@ -183,6 +190,7 @@ export function Studio({
       seconds: maxSeconds,
       engine,
       hd,
+      face,
     });
     router.refresh();
     if (res.error !== undefined) {
@@ -296,6 +304,17 @@ export function Studio({
               setEngine(v === "genjutsu_hd" ? "genjutsu" : (v as SwapEngine));
             }}
           />
+        )}
+        {facePass && (
+          <button
+            type="button"
+            onClick={() => setFace((v) => !v)}
+            title={fmt(t.studio.facePassHint, { rate: swapRate("magichour").toLocaleString(locale) })}
+            className={`chip ${face ? "border-accent text-accent" : ""}`}
+          >
+            {face && <Check className="size-3.5" />}
+            {t.studio.facePass}
+          </button>
         )}
         {video && lengths.length > 0 && (
           <Menu
@@ -535,7 +554,12 @@ function Result({
           <div className="flex flex-wrap gap-1.5">
             {phase.view.parts.map((part, i) => {
               const sequence = phase.view.engine === "genjutsu";
-              const cost = swapShotCredits(part.seconds, phase.view.engine, phase.view.hd);
+              const cost = swapShotCredits(
+                part.seconds,
+                phase.view.engine,
+                phase.view.hd,
+                phase.view.face,
+              );
               return (
                 <button
                   key={i}
