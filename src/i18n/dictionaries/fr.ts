@@ -234,6 +234,10 @@ export const fr = {
     lateHint: "Plus long que prévu · le rendu continue même page fermée, la vidéo arrivera dans Mes vidéos",
     morePhotos: "Autres photos du personnage {n} : visage, profil, dos (jusqu'à {max} en tout)",
     morePhotosSingle: "Autres photos : visage, profil, dos (jusqu'à {max} en tout, plus de ressemblance)",
+    presets: "Ou pars d'un plan prêt : le clip est fourni et testé, il ne manque que le personnage",
+    presetPerson: "1 personne",
+    presetPeople: "{n} personnes",
+    presetTarget: "Remplace : {who}",
     addPhoto: "Ajouter une photo",
     removePhoto: "Retirer cette photo",
     incomplete:

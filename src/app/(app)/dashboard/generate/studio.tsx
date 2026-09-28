@@ -17,6 +17,7 @@ import {
   type AspectRatio,
   type SwapEngine,
 } from "@/lib/generation";
+import type { SwapPreset } from "@/lib/presets";
 import { getGeneration, type GenerationView } from "./actions";
 import { cancelSwap, redoSwapShot, startSwap } from "./swap-actions";
 import { SwapInput, clampedStart, type SwapCharacter, type SwapFile } from "./swap-input";
@@ -41,6 +42,9 @@ function pollTimeoutMs(job: Job) {
 
 export type Job = { aspectRatio: AspectRatio; durationSeconds: number };
 
+// Plan prêt avec l'URL signée de son clip, pour l'aperçu (voir GeneratePage).
+export type StudioPreset = SwapPreset & { previewUrl: string };
+
 type Phase =
   | { kind: "idle" }
   | { kind: "generating"; job: Job; id: string; view?: GenerationView }
@@ -58,6 +62,7 @@ export function Studio({
   credits,
   autoRecharge = false,
   engines,
+  presets = [],
   resume,
 }: {
   userId: string;
@@ -67,6 +72,8 @@ export function Studio({
   autoRecharge?: boolean;
   // Moteurs disponibles, le meilleur en premier.
   engines: SwapEngine[];
+  // Plans prêts (voir presets.ts), dont le clip est déjà signé.
+  presets?: StudioPreset[];
   // Remplacement encore en cours, repris à l'ouverture de la page.
   resume?: Active;
 }) {
@@ -85,9 +92,13 @@ export function Studio({
   // du visage, à part de celle du personnage (sinon celle-ci sert).
   const [faceChosen, setFace] = useState(false);
   const [facePhoto, setFacePhoto] = useState<SwapFile | null>(null);
+  // Plan prêt choisi : son clip tient lieu de vidéo, ses personnes fixent
+  // qui chaque personnage remplace.
+  const [preset, setPreset] = useState<StudioPreset | null>(null);
   // Plusieurs personnages : seul Genjutsu sait les placer.
   const several = characters.length > 1;
   const maxCharacters = engines.includes("genjutsu") ? SWAP_MAX_CHARACTERS : 1;
+  const availablePresets = presets.filter((p) => p.people.length <= maxCharacters);
   const engine: SwapEngine = several ? "genjutsu" : chosenEngine;
   const hd = engine === "genjutsu" && hdChosen;
   // La passe visage pose un seul visage, sur un corps rendu par un autre moteur.
@@ -178,11 +189,30 @@ export function Studio({
     };
   }, [active, resume, router, t, engines, several]);
 
+  function choosePreset(p: StudioPreset) {
+    setPreset(p);
+    setVideo({ path: p.path, previewUrl: p.previewUrl, seconds: p.seconds, start: 0 });
+    setLength(null);
+    // Les photos déjà déposées restent, case par case.
+    setCharacters((list) =>
+      p.people.map((person, i) => ({
+        image: list[i]?.image ?? null,
+        extras: list[i]?.extras ?? [],
+        target: person.target,
+      })),
+    );
+  }
+
   async function launch() {
     if (!canSend || !video) return;
-    setPhase({ kind: "generating", job: { aspectRatio: "9:16", durationSeconds: seconds }, id: "" });
+    setPhase({
+      kind: "generating",
+      job: { aspectRatio: preset?.aspectRatio ?? "9:16", durationSeconds: seconds },
+      id: "",
+    });
     const res = await startSwap({
       videoPath: video.path,
+      presetId: preset?.id,
       characters: characters.map((c) => ({
         imagePath: c.image!.path,
         extraPaths: c.extras.slice(0, maxPhotos - 1).map((f) => f.path),
@@ -254,19 +284,64 @@ export function Studio({
         video={video}
         onVideo={(file) => {
           setVideo(file);
-          // Autre clip : la durée choisie pour le précédent ne vaut plus.
-          if (file?.path !== video?.path) setLength(null);
+          // Autre clip : la durée choisie pour le précédent ne vaut plus, et
+          // un plan prêt laisse la place au clip déposé, avec ses cibles.
+          if (file?.path !== video?.path) {
+            setLength(null);
+            if (preset) {
+              setPreset(null);
+              setCharacters((list) => list.map((c) => ({ ...c, target: "" })));
+            }
+          }
         }}
         characters={characters}
         onCharacters={setCharacters}
-        maxCharacters={maxCharacters}
+        maxCharacters={preset ? preset.people.length : maxCharacters}
         maxPhotos={maxPhotos}
-        maxSeconds={maxSeconds}
+        presetPeople={preset?.people.map((p) => p.label[locale])}
+        maxSeconds={preset ? preset.seconds : maxSeconds}
         compact={started}
         facePhoto={facePhoto}
         onFacePhoto={setFacePhoto}
         showFacePhoto={face}
       />
+
+      {availablePresets.length > 0 && (
+        <div className="px-4 pb-2">
+          <p className="text-xs text-faint">{t.studio.presets}</p>
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {availablePresets.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => choosePreset(p)}
+                aria-pressed={preset?.id === p.id}
+                className={`relative shrink-0 overflow-hidden rounded-xl border bg-black text-left transition-colors ${
+                  preset?.id === p.id ? "border-accent" : "border-line hover:border-line-strong"
+                } ${started ? "h-16 w-28" : "h-24 w-40"}`}
+              >
+                <video
+                  src={p.previewUrl}
+                  muted
+                  autoPlay
+                  loop
+                  playsInline
+                  className="size-full object-cover"
+                />
+                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2 pt-5 pb-1.5 text-[11px] leading-tight text-white">
+                  <span className="block truncate font-medium">{p.title[locale]}</span>
+                  <span className="block text-white/70">
+                    {fmt(plural(p.people.length, t.studio.presetPerson, t.studio.presetPeople), {
+                      n: p.people.length,
+                    })}{" "}
+                    · {p.seconds} s
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2 px-3 pb-3">
         {several && (

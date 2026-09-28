@@ -21,6 +21,7 @@ import {
 } from "@/lib/generation";
 import { higgsfieldEnabled, uploadToHiggsfield } from "@/lib/higgsfield";
 import { magichourEnabled } from "@/lib/magichour";
+import { presetById } from "@/lib/presets";
 import {
   errorMessage,
   isContentRefused,
@@ -112,6 +113,9 @@ export async function startSwap(input: {
   // il remplace (facultatif s'il est seul). Plus d'un : genjutsu seulement.
   characters: { imagePath: string; extraPaths?: string[]; target?: string }[];
   engine?: SwapEngine;
+  // Plan prêt (voir presets.ts) : son clip tient lieu de videoPath, et qui
+  // chaque personnage remplace vient de lui.
+  presetId?: string;
   // Genjutsu en 1080p.
   hd?: boolean;
   // Option « + visage exact » : Magic Hour pose le visage de la photo sur
@@ -145,19 +149,28 @@ export async function startSwap(input: {
   // Chemins sous le dossier de l'utilisateur uniquement.
   const own = (p: unknown) =>
     typeof p === "string" && p.startsWith(`${userId}/`) && !p.includes("..");
+  const preset = input.presetId !== undefined ? presetById(input.presetId) : undefined;
+  if (input.presetId !== undefined && !preset) return { error: errors.swapFiles };
+  const videoPath = preset ? preset.path : input.videoPath;
   const list = Array.isArray(input.characters) ? input.characters : [];
   // Photos par personnage : 8 au plus en tout chez Higgsfield ; Kling n'en
   // lit qu'une.
   const perCharacter = genjutsu ? photosPerCharacter(list.length) : 1;
-  const characters = list.map((c) => ({
+  const characters = list.map((c, i) => ({
     imagePath: c?.imagePath,
     extraPaths: (Array.isArray(c?.extraPaths) ? c.extraPaths : []).slice(0, perCharacter - 1),
-    target: typeof c?.target === "string" ? c.target.trim().slice(0, 200) : "",
+    // Plan prêt : qui remplacer est fixé par le plan, personne par personne.
+    target: preset
+      ? (preset.people[i]?.target ?? "")
+      : typeof c?.target === "string"
+        ? c.target.trim().slice(0, 200)
+        : "",
   }));
   if (!characters.length || characters.length > SWAP_MAX_CHARACTERS) return { error: errors.swapFiles };
+  if (preset && characters.length > preset.people.length) return { error: errors.swapFiles };
   const faceImagePath = face && typeof input.faceImagePath === "string" ? input.faceImagePath : undefined;
   if (
-    !own(input.videoPath) ||
+    (!preset && !own(input.videoPath)) ||
     !characters.every((c) => own(c.imagePath) && c.extraPaths.every(own)) ||
     (faceImagePath !== undefined && !own(faceImagePath))
   ) {
@@ -177,7 +190,7 @@ export async function startSwap(input: {
   const extraPaths = faceImagePath ? [faceImagePath] : [];
   const { data: signed } = await admin.storage
     .from(SWAP_INPUTS_BUCKET)
-    .createSignedUrls([input.videoPath, ...photoPaths.flat(), ...extraPaths], INPUT_URL_TTL_SECONDS);
+    .createSignedUrls([videoPath, ...photoPaths.flat(), ...extraPaths], INPUT_URL_TTL_SECONDS);
   const [sourceUrl, ...rest] = (signed ?? []).map((s) => s.signedUrl);
   const flatUrls = rest.slice(0, photoPaths.flat().length);
   const faceUrl = faceImagePath ? rest[photoPaths.flat().length] : undefined;
@@ -207,6 +220,8 @@ export async function startSwap(input: {
   const clipSeconds = Math.min(
     probe.seconds - start,
     SWAP_ENGINES[engine].maxSeconds,
+    // Plan prêt : sa durée annoncée, donc son prix.
+    preset?.seconds ?? Infinity,
     typeof input.seconds === "number" && Number.isFinite(input.seconds)
       ? Math.max(SWAP_PART_MIN_SECONDS, input.seconds)
       : Infinity,
@@ -254,7 +269,8 @@ export async function startSwap(input: {
     ...(faceImagePath && { face_image_path: faceImagePath }),
     ...(genjutsu && { photos: true }),
     aspect_ratio: probe.aspectRatio,
-    source_video_path: input.videoPath,
+    source_video_path: videoPath,
+    ...(preset && { preset: preset.id }),
     source_start: start,
     character_image_path: characters[0].imagePath,
     started_at: new Date().toISOString(),

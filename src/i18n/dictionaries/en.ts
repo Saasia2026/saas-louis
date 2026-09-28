@@ -232,6 +232,10 @@ export const en: Dictionary = {
     lateHint: "Taking longer than expected · the render keeps going even if you close the page, the video will arrive in My videos",
     morePhotos: "More photos of character {n}: face, profile, back (up to {max} in total)",
     morePhotosSingle: "More photos: face, profile, back (up to {max} in total, better likeness)",
+    presets: "Or start from a ready-made shot: the clip is provided and tested, just add the character",
+    presetPerson: "1 person",
+    presetPeople: "{n} people",
+    presetTarget: "Replaces: {who}",
     addPhoto: "Add a photo",
     removePhoto: "Remove this photo",
     incomplete:

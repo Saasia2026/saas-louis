@@ -46,6 +46,7 @@ export function SwapInput({
   facePhoto = null,
   onFacePhoto,
   showFacePhoto = false,
+  presetPeople,
 }: {
   userId: string;
   video: SwapFile | null;
@@ -55,6 +56,9 @@ export function SwapInput({
   facePhoto?: SwapFile | null;
   onFacePhoto?: (file: SwapFile | null) => void;
   showFacePhoto?: boolean;
+  // Plan prêt : qui chaque personnage remplace, déjà fixé (un libellé par
+  // personnage, dans la langue du site) ; les personnages ne se retirent pas.
+  presetPeople?: string[];
   // Au moins un personnage ; plusieurs si le moteur Qualité max est là.
   characters: SwapCharacter[];
   onCharacters: Dispatch<SetStateAction<SwapCharacter[]>>;
@@ -200,19 +204,21 @@ export function SwapInput({
             <span className="absolute top-2 left-2 flex size-6 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white tabular-nums">
               {slot + 1}
             </span>
-            <button
-              type="button"
-              aria-label={t.studio.removeCharacter}
-              title={t.studio.removeCharacter}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                removeCharacter(slot);
-              }}
-              className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black"
-            >
-              <X className="size-4" />
-            </button>
+            {!presetPeople && (
+              <button
+                type="button"
+                aria-label={t.studio.removeCharacter}
+                title={t.studio.removeCharacter}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  removeCharacter(slot);
+                }}
+                className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black"
+              >
+                <X className="size-4" />
+              </button>
+            )}
           </>
         )}
         {uploading === slot && (
@@ -300,7 +306,20 @@ export function SwapInput({
             </div>
           ) : null,
         )}
-      {several ? (
+      {presetPeople ? (
+        <ul className="mt-3 space-y-1 text-sm text-muted">
+          {presetPeople.map((label, i) => (
+            <li key={i} className="flex items-center gap-2">
+              {several && (
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white tabular-nums">
+                  {i + 1}
+                </span>
+              )}
+              {several ? label : fmt(t.studio.presetTarget, { who: label })}
+            </li>
+          ))}
+        </ul>
+      ) : several ? (
         <div className="mt-3 space-y-2">
           {characters.map((c, i) => (
             <label key={i} className="flex items-center gap-2">

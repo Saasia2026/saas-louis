@@ -232,6 +232,10 @@ export const es: Dictionary = {
     lateHint: "Está tardando más de lo previsto · el render sigue aunque cierres la página, el vídeo llegará a Mis vídeos",
     morePhotos: "Más fotos del personaje {n}: cara, perfil, espalda (hasta {max} en total)",
     morePhotosSingle: "Más fotos: cara, perfil, espalda (hasta {max} en total, más parecido)",
+    presets: "O parte de un plano listo: el clip ya está probado, solo falta el personaje",
+    presetPerson: "1 persona",
+    presetPeople: "{n} personas",
+    presetTarget: "Reemplaza a: {who}",
     addPhoto: "Añadir una foto",
     removePhoto: "Quitar esta foto",
     incomplete:

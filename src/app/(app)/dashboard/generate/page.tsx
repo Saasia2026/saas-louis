@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { isAspectRatio } from "@/lib/generation";
+import { SWAP_INPUTS_BUCKET, isAspectRatio } from "@/lib/generation";
 import { higgsfieldEnabled } from "@/lib/higgsfield";
 import { magichourEnabled } from "@/lib/magichour";
+import { SWAP_PRESETS } from "@/lib/presets";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { Studio, type Job } from "./studio";
@@ -71,8 +72,24 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
         }
       : undefined;
 
+  // Plans prêts dont le clip est bien déposé, avec une URL signée pour
+  // l'aperçu ; un plan sans fichier n'est pas proposé.
+  const { data: signedPresets } = SWAP_PRESETS.length
+    ? await admin.storage
+        .from(SWAP_INPUTS_BUCKET)
+        .createSignedUrls(
+          SWAP_PRESETS.map((p) => p.path),
+          60 * 60,
+        )
+    : { data: null };
+  const presets = SWAP_PRESETS.flatMap((p, i) => {
+    const signed = signedPresets?.[i];
+    return signed && !signed.error && signed.signedUrl ? [{ ...p, previewUrl: signed.signedUrl }] : [];
+  });
+
   return (
     <Studio
+      presets={presets}
       userId={auth.claims.sub}
       resume={resume}
       credits={profile?.credits_remaining ?? 0}
