@@ -4,6 +4,7 @@ import Lenis from "lenis";
 import { motion, useMotionValue, useScroll, useSpring, useTransform } from "motion/react";
 import { useEffect, useRef } from "react";
 import { usePauseWhenHidden } from "@/app/pause-hidden";
+import { useSyncedPair } from "@/app/synced-pair";
 
 // Animations du landing seulement : le défilement à inertie (Lenis), la
 // bande avant/après pilotée par le scroll et le bouton magnétique. Le
@@ -60,16 +61,8 @@ export function ScrollWipe({
   // L'étiquette visible suit le rideau.
   const beforeOpacity = useTransform(progress, [0, 0.75, 0.95], [1, 1, 0]);
   const afterOpacity = useTransform(progress, [0, 0.2, 1], [0, 1, 1]);
-
-  useEffect(() => {
-    const a = beforeRef.current;
-    const b = afterRef.current;
-    if (!a || !b) return;
-    const timer = setInterval(() => {
-      if (Math.abs(a.currentTime - b.currentTime) > 0.15) b.currentTime = a.currentTime;
-    }, 500);
-    return () => clearInterval(timer);
-  }, []);
+  // Boucle commune et rattrapage en douceur.
+  useSyncedPair(beforeRef, afterRef);
 
   return (
     <div
@@ -82,7 +75,6 @@ export function ScrollWipe({
         poster={posterBefore}
         autoPlay
         muted
-        loop
         playsInline
         preload="metadata"
         aria-hidden
@@ -94,7 +86,6 @@ export function ScrollWipe({
         poster={posterAfter}
         autoPlay
         muted
-        loop
         playsInline
         preload="metadata"
         aria-hidden

@@ -1,8 +1,9 @@
 "use client";
 
 import { ChevronsLeftRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { usePauseWhenHidden } from "@/app/pause-hidden";
+import { useSyncedPair } from "@/app/synced-pair";
 
 // Slider avant/après : deux vidéos du même clip lues en même temps, un
 // rideau qu'on fait glisser pour comparer (le composant signature des sites
@@ -40,19 +41,9 @@ export function CompareSlider({
   const afterRef = useRef<HTMLVideoElement>(null);
   // Hors écran, toutes les vidéos du bloc se coupent.
   usePauseWhenHidden(outer);
-
-  // Les deux vidéos dérivent l'une de l'autre au fil des boucles : la
-  // seconde est recalée sur la première dès que l'écart se voit.
-  useEffect(() => {
-    const a = beforeRef.current;
-    const b = afterRef.current;
-    if (!a || !b) return;
-    const sync = () => {
-      if (Math.abs(a.currentTime - b.currentTime) > 0.15) b.currentTime = a.currentTime;
-    };
-    const timer = setInterval(sync, 500);
-    return () => clearInterval(timer);
-  }, []);
+  // Boucle commune et rattrapage en douceur (les fichiers doivent avoir le
+  // même nombre d'images).
+  useSyncedPair(beforeRef, afterRef);
 
   function moveTo(clientX: number) {
     const rect = frame.current?.getBoundingClientRect();
@@ -97,7 +88,6 @@ export function CompareSlider({
         poster={posterBefore}
         autoPlay
         muted
-        loop
         playsInline
         preload="metadata"
         aria-hidden
@@ -109,7 +99,6 @@ export function CompareSlider({
         poster={posterAfter}
         autoPlay
         muted
-        loop
         playsInline
         preload="metadata"
         aria-hidden
