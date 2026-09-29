@@ -326,6 +326,8 @@ export function Studio({
       {availablePresets.length > 0 && (
         <div className="px-4 pb-2">
           <p className="text-xs text-faint">{t.studio.presets}</p>
+          {/* Cartes verticales (les plans sont en 9:16) : la vidéo zoome
+              doucement au survol, bordure d'accent une fois choisie. */}
           <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
             {availablePresets.map((p) => (
               <button
@@ -333,9 +335,11 @@ export function Studio({
                 type="button"
                 onClick={() => choosePreset(p)}
                 aria-pressed={preset?.id === p.id}
-                className={`relative shrink-0 overflow-hidden rounded-xl border bg-black text-left transition-colors ${
-                  preset?.id === p.id ? "border-accent" : "border-line hover:border-line-strong"
-                } ${started ? "h-16 w-28" : "h-24 w-40"}`}
+                className={`group relative aspect-[9/16] shrink-0 overflow-hidden rounded-xl border bg-black text-left transition-[border-color,box-shadow] duration-200 ${
+                  preset?.id === p.id
+                    ? "border-accent shadow-[0_0_0_1px_var(--accent)]"
+                    : "border-line hover:border-line-strong"
+                } ${started ? "h-24" : "h-44"}`}
               >
                 <video
                   src={p.previewUrl}
@@ -343,9 +347,9 @@ export function Studio({
                   autoPlay
                   loop
                   playsInline
-                  className="size-full object-cover"
+                  className="size-full scale-[1.01] object-cover transition-transform duration-500 [transition-timing-function:var(--ease-out)] group-hover:scale-[1.07]"
                 />
-                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2 pt-5 pb-1.5 text-[11px] leading-tight text-white">
+                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-2.5 pt-8 pb-2 text-[11px] leading-tight text-white">
                   <span className="block truncate font-medium">{p.title[locale]}</span>
                   <span className="block text-white/70">
                     {fmt(plural(p.people.length, t.studio.presetPerson, t.studio.presetPeople), {
@@ -460,8 +464,8 @@ export function Studio({
     <div className="relative isolate -mt-10 flex min-h-[calc(100dvh-8.5rem)] flex-col">
       {!started ? (
         <div className="flex flex-1 flex-col items-center justify-center py-12">
-          <h1 className="flex animate-fade-up flex-col items-center gap-3 text-center text-[1.75rem] leading-tight font-semibold tracking-tight sm:flex-row sm:text-5xl">
-            <LogoMark className="size-10 shrink-0 sm:size-14" />
+          <h1 className="flex animate-fade-up flex-col items-center gap-4 text-center font-wide text-[1.6rem] leading-[1.05] uppercase sm:flex-row sm:text-4xl">
+            <LogoMark className="size-10 shrink-0 sm:size-12" />
             <span className="text-gradient">{t.studio.title}</span>
           </h1>
           <p className="mt-3 max-w-xl animate-fade-up px-1 text-center text-sm leading-relaxed text-muted [animation-delay:80ms] sm:mt-4 sm:text-[0.9375rem]">
