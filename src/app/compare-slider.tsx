@@ -1,0 +1,124 @@
+"use client";
+
+import { ChevronsLeftRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+// Slider avant/après : deux vidéos du même clip lues en même temps, un
+// rideau qu'on fait glisser pour comparer (le composant signature des sites
+// de référence, codé maison). La vidéo « après » est rognée par clip-path ;
+// les deux restent synchronisées sur la durée de la boucle.
+export function CompareSlider({
+  before,
+  after,
+  posterBefore,
+  posterAfter,
+  labelBefore,
+  labelAfter,
+  aspectRatio = "9:16",
+  className = "",
+}: {
+  before: string;
+  after: string;
+  posterBefore?: string;
+  posterAfter?: string;
+  labelBefore: string;
+  labelAfter: string;
+  aspectRatio?: string;
+  className?: string;
+}) {
+  // Position du rideau, en % depuis la gauche.
+  const [position, setPosition] = useState(50);
+  const [dragging, setDragging] = useState(false);
+  const frame = useRef<HTMLDivElement>(null);
+  const beforeRef = useRef<HTMLVideoElement>(null);
+  const afterRef = useRef<HTMLVideoElement>(null);
+
+  // Les deux vidéos dérivent l'une de l'autre au fil des boucles : la
+  // seconde est recalée sur la première dès que l'écart se voit.
+  useEffect(() => {
+    const a = beforeRef.current;
+    const b = afterRef.current;
+    if (!a || !b) return;
+    const sync = () => {
+      if (Math.abs(a.currentTime - b.currentTime) > 0.15) b.currentTime = a.currentTime;
+    };
+    const timer = setInterval(sync, 500);
+    return () => clearInterval(timer);
+  }, []);
+
+  function moveTo(clientX: number) {
+    const rect = frame.current?.getBoundingClientRect();
+    if (!rect) return;
+    setPosition(Math.min(96, Math.max(4, ((clientX - rect.left) / rect.width) * 100)));
+  }
+
+  return (
+    <div
+      ref={frame}
+      role="slider"
+      aria-label={`${labelBefore} / ${labelAfter}`}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(position)}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowLeft") setPosition((p) => Math.max(4, p - 4));
+        if (e.key === "ArrowRight") setPosition((p) => Math.min(96, p + 4));
+      }}
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setDragging(true);
+        moveTo(e.clientX);
+      }}
+      onPointerMove={(e) => dragging && moveTo(e.clientX)}
+      onPointerUp={() => setDragging(false)}
+      onPointerCancel={() => setDragging(false)}
+      className={`relative isolate w-full cursor-ew-resize touch-none overflow-hidden rounded-2xl border border-line bg-black select-none ${className}`}
+      style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
+    >
+      <video
+        ref={beforeRef}
+        src={before}
+        poster={posterBefore}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        aria-hidden
+        className="absolute inset-0 size-full object-cover"
+      />
+      <video
+        ref={afterRef}
+        src={after}
+        poster={posterAfter}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        aria-hidden
+        className="absolute inset-0 size-full object-cover"
+        style={{ clipPath: `inset(0 0 0 ${position}%)` }}
+      />
+
+      {/* Rideau : un trait net, une poignée sobre. */}
+      <div
+        aria-hidden
+        className="absolute inset-y-0 z-10 w-px bg-white/80"
+        style={{ left: `${position}%` }}
+      >
+        <span className="absolute top-1/2 left-1/2 flex size-9 -translate-1/2 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white backdrop-blur-sm">
+          <ChevronsLeftRight className="size-4" />
+        </span>
+      </div>
+
+      <span className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
+        {labelBefore}
+      </span>
+      <span className="pointer-events-none absolute right-3 bottom-3 z-10 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
+        {labelAfter}
+      </span>
+    </div>
+  );
+}

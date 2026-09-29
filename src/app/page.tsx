@@ -3,20 +3,19 @@ import {
   AudioLines,
   Check,
   Clapperboard,
-  Film,
   Infinity as InfinityIcon,
   Scissors,
   ShieldCheck,
-  Sparkles,
   UserRound,
   WandSparkles,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { LanguageSwitcher } from "@/app/language-switcher";
+import { CompareSlider } from "@/app/compare-slider";
 import { ExampleVideo } from "@/app/example-video";
+import { Magnetic, ScrollWipe, SmoothScroll } from "@/app/landing-motion";
 import { Logo } from "@/app/logo";
-import { LogoMark } from "@/app/logo-mark";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
@@ -48,6 +47,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-1 flex-col overflow-x-clip">
+      <SmoothScroll />
       <header className="glass sticky top-0 z-30 border-b border-line">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
           <Logo className="min-w-0 shrink" />
@@ -74,10 +74,9 @@ export default async function Home() {
       <main className="flex-1">
         {/* Accroche */}
         <section className="relative isolate">
-          <div className="mx-auto max-w-6xl px-4 pt-12 pb-10 text-center sm:px-6 sm:pt-28">
-            <LogoMark className="mx-auto mb-6 size-16 sm:mb-8 sm:size-20" />
+          <div className="mx-auto max-w-6xl px-4 pt-16 pb-10 text-center sm:px-6 sm:pt-32">
             <p className="eyebrow animate-fade-up">{L.eyebrow}</p>
-            <h1 className="mx-auto mt-7 max-w-5xl animate-fade-up font-wide text-[2rem] leading-[1.05] uppercase [animation-delay:80ms] min-[420px]:text-[2.6rem] sm:text-7xl">
+            <h1 className="mx-auto mt-8 max-w-6xl animate-fade-up font-wide text-[2.1rem] leading-[1.02] uppercase [animation-delay:80ms] min-[420px]:text-[2.7rem] sm:text-7xl lg:text-8xl">
               <span className="text-gradient">{L.titleTop}</span>
               <br />
               <span className="text-shine">
@@ -106,89 +105,31 @@ export default async function Home() {
             </p>
           </div>
 
-          {/* Maquette du studio */}
-          <div className="mx-auto max-w-5xl animate-fade-up px-4 pb-20 [animation-delay:380ms] sm:px-6">
-            <div className="panel glow overflow-hidden">
-              <div className="flex items-center gap-2 border-b border-line bg-surface-2 px-4 py-2.5">
-                <span className="text-xs text-faint">{L.mockWindow}</span>
-                <span className="ml-auto text-xs text-muted">{L.mockRendering}</span>
-              </div>
-
-              <div className="grid text-left md:grid-cols-[1.25fr_1fr]">
-                <div className="min-w-0 border-b border-line p-5 md:border-r md:border-b-0">
-                  <div className="grid grid-cols-2 gap-3">
-                    {(
-                      [
-                        { icon: Film, title: L.mockClip, meta: L.mockClipMeta },
-                        { icon: UserRound, title: L.mockCharacter, meta: L.mockCharacterMeta },
-                      ] as const
-                    ).map(({ icon: Icon, title, meta }) => (
-                      <div
-                        key={title}
-                        className="flex h-24 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-line-strong bg-surface-2/60 text-center"
-                      >
-                        <Icon className="size-5 text-accent-light" />
-                        <span className="text-sm font-medium">{title}</span>
-                        <span className="text-xs text-faint">{meta}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-3 rounded-xl border border-line bg-surface-2 p-4">
-                    <p className="text-[0.9375rem] leading-relaxed">
-                      {L.mockTarget}
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-1.5">
-                      <span className="chip" aria-pressed="true">
-                        <Sparkles />
-                        {L.mockEngine}
-                      </span>
-                      <span className="tag">{L.mockBadge}</span>
-                    </div>
-                  </div>
-
-                  <p className="mt-5 mb-3 text-xs font-medium text-muted">{L.mockPipeline}</p>
-                  <ol className="flex flex-col gap-2">
-                    {L.mockSteps.map((step, i) => (
-                      <li key={step} className="rounded-lg border border-line bg-surface-2/60 px-3 py-2.5">
-                        <div className="flex min-w-0 items-center gap-3 text-sm">
-                          <span className="w-5 shrink-0 text-xs font-medium text-accent-light tabular-nums">
-                            {i + 1}
-                          </span>
-                          <span className="truncate text-muted">{step}</span>
-                        </div>
-                        <span className="mt-2 block h-0.5 overflow-hidden rounded-full bg-surface-3">
-                          <span
-                            className="block h-full animate-grow rounded-full bg-accent"
-                            style={{ animationDelay: `${i * 0.45}s` }}
-                          />
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-
-                {/* Un vrai rendu du site plutôt qu'un aperçu dessiné. */}
-                <div className="flex min-w-0 items-center justify-center overflow-hidden bg-surface-2 p-4 sm:p-6">
-                  <div className="relative isolate w-full">
-                  <video src="/examples/ours.mp4" autoPlay muted loop playsInline preload="metadata" aria-hidden className="ambient" />
-                  <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-line bg-black">
-                    <video
-                      src="/examples/ours.mp4"
-                      poster="/examples/ours.jpg"
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      preload="metadata"
-                      aria-hidden
-                      className="size-full object-cover"
-                    />
-                    <span className="absolute bottom-2 left-2 tag bg-black/70 text-white">{L.mockBadge}</span>
-                  </div>
-                  </div>
-                </div>
-              </div>
+          {/* Démo : le rideau avant/après sur un vrai plan fourni, en vidéo. */}
+          <div className="mx-auto max-w-6xl animate-fade-up px-4 pb-24 [animation-delay:380ms] sm:px-6">
+            <div className="relative isolate mx-auto w-full max-w-[21rem] sm:max-w-[23rem]">
+              <video
+                src="/examples/micro-apres.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                aria-hidden
+                className="ambient"
+              />
+              <CompareSlider
+                before="/examples/micro-avant.mp4"
+                after="/examples/micro-apres.mp4"
+                posterBefore="/examples/micro-avant.jpg"
+                posterAfter="/examples/micro-apres.jpg"
+                labelBefore={L.compareBefore}
+                labelAfter={L.compareAfter}
+              />
             </div>
+            <p className="mx-auto mt-5 max-w-sm text-center text-xs leading-relaxed text-faint">
+              {L.compareHint}
+            </p>
           </div>
         </section>
 
@@ -207,9 +148,11 @@ export default async function Home() {
           <h2 className="reveal text-gradient mt-5 max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
             {L.examplesTitle}
           </h2>
-          <ul className="mt-12 grid gap-4 md:grid-cols-2">
+          {/* Galerie sans cadre : la vidéo est la carte, la légende reste en
+              retrait — présentation d'études de cas, pas de vitrine SaaS. */}
+          <ul className="mt-12 grid gap-x-6 gap-y-12 md:grid-cols-2">
             {L.exampleList.map(({ title, text }, i) => (
-              <li key={title} className="panel lift reveal p-3 sm:p-4">
+              <li key={title} className="reveal">
                 <ExampleVideo
                   src={`/examples/${EXAMPLES[i]}.mp4`}
                   poster={`/examples/${EXAMPLES[i]}.jpg`}
@@ -217,8 +160,8 @@ export default async function Home() {
                   soundOn={L.soundOn}
                   soundOff={L.soundOff}
                 />
-                <h3 className="mt-4 px-1 text-lg font-semibold">{title}</h3>
-                <p className="mt-1 px-1 pb-1 text-sm leading-relaxed text-muted">{text}</p>
+                <h3 className="mt-5 text-lg font-semibold tracking-tight">{title}</h3>
+                <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted">{text}</p>
               </li>
             ))}
           </ul>
@@ -236,9 +179,9 @@ export default async function Home() {
               return (
                 <li
                   key={title}
-                  className={`panel spotlight lift reveal group p-6 ${wide ? "md:col-span-2" : ""}`}
+                  className={`panel spotlight lift reveal group p-6 sm:p-8 ${wide ? "md:col-span-2" : ""}`}
                 >
-                  <span className="flex size-10 items-center justify-center rounded-lg border border-accent/50 bg-accent-soft text-accent-light">
+                  <span className="flex size-10 items-center justify-center rounded-lg border border-line bg-surface-2 text-text">
                     <Icon className="size-5" />
                   </span>
                   <h3 className="mt-5 text-lg font-semibold">{title}</h3>
@@ -246,8 +189,8 @@ export default async function Home() {
                 </li>
               );
             })}
-            <li className="panel spotlight lift group flex flex-col justify-between p-6">
-              <span className="flex size-10 items-center justify-center rounded-lg border border-accent/50 bg-accent-soft text-accent-light">
+            <li className="panel spotlight lift group flex flex-col justify-between p-6 sm:p-8">
+              <span className="flex size-10 items-center justify-center rounded-lg border border-line bg-surface-2 text-text">
                 <InfinityIcon className="size-5" />
               </span>
               <div>
@@ -265,9 +208,9 @@ export default async function Home() {
             {L.steps.map((step, i) => (
               <li
                 key={step.title}
-                className="group grid gap-2 py-8 transition-colors hover:bg-surface/70 sm:grid-cols-[7rem_1fr_1.4fr] sm:gap-8 sm:px-4"
+                className="group reveal grid gap-2 py-8 transition-colors hover:bg-surface/70 sm:grid-cols-[7rem_1fr_1.4fr] sm:gap-8 sm:px-4"
               >
-                <span className="font-wide text-3xl text-line-strong transition-all duration-300 group-hover:text-accent group-hover:[text-shadow:0_0_24px_var(--accent)]">
+                <span className="font-wide text-3xl text-line-strong transition-colors duration-300 group-hover:text-accent-light">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <h3 className="font-wide text-xl uppercase">{step.title}</h3>
@@ -277,8 +220,33 @@ export default async function Home() {
           </ol>
         </section>
 
+        {/* Bande cinéma : le remplacement se rejoue tout seul au rythme du
+            défilement — l'argument du produit, sans un mot. */}
+        <section className="relative isolate border-y border-line px-4 py-16 sm:py-24">
+          <div className="relative mx-auto max-w-6xl">
+            <video
+              src="/examples/micro-apres.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-hidden
+              className="ambient"
+            />
+            <ScrollWipe
+              before="/examples/micro-avant.mp4"
+              after="/examples/micro-apres.mp4"
+              posterBefore="/examples/micro-avant.jpg"
+              posterAfter="/examples/micro-apres.jpg"
+              labelBefore={L.compareBefore}
+              labelAfter={L.compareAfter}
+            />
+          </div>
+        </section>
+
         {/* Tarifs */}
-        <section id="tarifs" className="mx-auto max-w-6xl scroll-mt-20 px-4 pb-16 sm:px-6 sm:pb-24">
+        <section id="tarifs" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
           <p className="eyebrow">{L.pricing}</p>
           <h2 className="reveal text-gradient mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
             {L.pricingTitle}
@@ -324,17 +292,22 @@ export default async function Home() {
           </ul>
         </section>
 
-        {/* Appel final */}
-        <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-24">
-          <div className="panel glow reveal px-5 py-12 text-center sm:px-6 sm:py-16">
-            <h2 className="mx-auto max-w-3xl font-wide text-3xl uppercase sm:text-5xl">
-              <span className="text-gradient">{L.finalTitleTop}</span>{" "}
+        {/* Appel final : une déclaration pleine page, pas une carte. Pas de
+            reveal : en bout de page, la timeline de défilement peut ne jamais
+            se dérouler assez et laisser la section invisible. */}
+        <section className="border-t border-line px-4 py-20 sm:px-6 sm:py-32">
+          <div className="mx-auto max-w-6xl text-center">
+            <h2 className="mx-auto font-wide text-[1.9rem] leading-[1.05] uppercase sm:text-6xl lg:text-7xl">
+              <span className="text-gradient">{L.finalTitleTop}</span>
+              <br className="hidden sm:block" />{" "}
               <span className="text-shine">{L.finalTitleBottom}</span>
             </h2>
-            <Link href={start} className="btn btn-primary mt-8 px-6 py-3 text-[0.9375rem]">
-              {loggedIn ? L.openStudio : L.startFree}
-              <ArrowRight />
-            </Link>
+            <Magnetic>
+              <Link href={start} className="btn btn-primary mt-10 px-8 py-3.5 text-base">
+                {loggedIn ? L.openStudio : L.startFree}
+                <ArrowRight />
+              </Link>
+            </Magnetic>
           </div>
         </section>
       </main>

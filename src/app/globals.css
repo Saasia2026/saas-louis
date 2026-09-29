@@ -1,45 +1,46 @@
 @import "tailwindcss";
 
-/* Thème TwinPost : outil de production vidéo. Contraste élevé, surfaces
-   vitrées, accent bleu électrique avec une pointe de cyan pour les dégradés.
-   Sombre par défaut ; clair avec data-theme="light" sur <html> (choix de
-   l'utilisateur, voir theme-toggle.tsx) ou, sans choix, si l'appareil est en
-   mode clair. */
+/* Thème TwinPost : studio de cinéma. Noir neutre, surfaces à peine plus
+   claires, un seul accent indigo tenu en laisse, ombres profondes sans lueur
+   colorée — le premium vient de la typo, de l'espace et du contraste, jamais
+   des néons. Sombre par défaut ; clair avec data-theme="light" sur <html>
+   (choix de l'utilisateur, voir theme-toggle.tsx) ou, sans choix, si
+   l'appareil est en mode clair. */
 :root {
-  --bg: #080b18;
-  --surface: #0e1224;
-  --surface-2: #13182e;
-  --surface-3: #1a2140;
-  --surface-hover: #232b50;
-  --line: rgb(170 185 255 / 0.12);
-  --line-strong: rgb(170 185 255 / 0.24);
-  --text: #f5f7ff;
-  --text-muted: #a6aecb;
-  --text-faint: #6a7394;
-  /* Néon : lueurs des éléments clés (nulles en thème clair). */
-  --neon: 0 0 0 1px rgb(91 124 255 / 0.9), 0 0 18px -2px rgb(91 124 255 / 0.75),
-    0 0 42px -8px rgb(139 61 255 / 0.55);
-  --neon-soft: 0 0 0 1px rgb(91 124 255 / 0.55), 0 0 26px -8px rgb(91 124 255 / 0.6);
-  --neon-text: 0 0 10px rgb(91 124 255 / 0.65), 0 0 28px rgb(139 61 255 / 0.45);
-  --ambient-opacity: 0.55;
-  --accent: #5b7cff;
-  --accent-light: #a8b6ff;
-  --accent-2: #22d3ee;
-  --accent-soft: rgb(91 124 255 / 0.15);
-  --success: #34d399;
-  --warning: #fbbf24;
-  --danger: #ff5d6c;
+  --bg: #09090b;
+  --surface: #101013;
+  --surface-2: #16161a;
+  --surface-3: #1d1d23;
+  --surface-hover: #26262e;
+  --line: rgb(255 255 255 / 0.08);
+  --line-strong: rgb(255 255 255 / 0.16);
+  --text: #f7f7f8;
+  --text-muted: #a3a3ad;
+  --text-faint: #64646e;
+  /* Anciennes lueurs néon : devenues des ombres d'élévation neutres, les
+     noms restent pour ne pas toucher aux composants. */
+  --neon: 0 0 0 1px rgb(255 255 255 / 0.16), 0 24px 56px -16px rgb(0 0 0 / 0.85);
+  --neon-soft: 0 0 0 1px rgb(255 255 255 / 0.09), 0 14px 36px -14px rgb(0 0 0 / 0.65);
+  --neon-text: none;
+  --ambient-opacity: 0.45;
+  --accent: #5e6cf2;
+  --accent-light: #9aa4ff;
+  --accent-2: #7d88ff;
+  --accent-soft: rgb(94 108 242 / 0.16);
+  --success: #3fcf8e;
+  --warning: #f5b74e;
+  --danger: #f4586a;
   /* Bouton principal (blanc sur fond sombre, noir sur fond clair). */
-  --on-primary: #000000;
+  --on-primary: #0a0a0a;
   --primary-hover: #ffffff;
-  --primary-glow: rgb(255 255 255 / 0.4);
-  --glass-bg: rgb(8 11 24 / 0.7);
-  --composer-bg: rgb(14 18 36 / 0.85);
-  --menu-bg: rgb(19 24 46 / 0.97);
-  --dot: rgb(255 255 255 / 0.1);
-  --highlight: rgb(255 255 255 / 0.04);
+  --primary-glow: rgb(255 255 255 / 0.25);
+  --glass-bg: rgb(9 9 11 / 0.72);
+  --composer-bg: rgb(16 16 20 / 0.85);
+  --menu-bg: rgb(22 22 27 / 0.97);
+  --dot: rgb(255 255 255 / 0.07);
+  --highlight: rgb(255 255 255 / 0.05);
   --gradient-from: #ffffff;
-  --gradient-to: #a1a1aa;
+  --gradient-to: #9c9ca6;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   color-scheme: dark;
 }
@@ -55,10 +56,10 @@
   --text: #0a0a0f;
   --text-muted: #52525b;
   --text-faint: #8b8b94;
-  --accent: #4f6bff;
-  --accent-light: #3a52e0;
-  --accent-2: #0891b2;
-  --accent-soft: rgb(79 107 255 / 0.14);
+  --accent: #4f5ce0;
+  --accent-light: #3a47c8;
+  --accent-2: #6a76e8;
+  --accent-soft: rgb(79 92 224 / 0.14);
   --success: #059669;
   --warning: #d97706;
   --danger: #e11d48;
@@ -72,8 +73,8 @@
   --highlight: rgb(255 255 255 / 0.9);
   --gradient-from: #0a0a0f;
   --gradient-to: #52525b;
-  --neon: 0 0 0 1px var(--accent), 0 6px 20px -8px rgb(79 107 255 / 0.55);
-  --neon-soft: 0 0 0 1px rgb(79 107 255 / 0.5);
+  --neon: 0 0 0 1px rgb(10 10 20 / 0.16), 0 18px 44px -18px rgb(10 10 20 / 0.3);
+  --neon-soft: 0 0 0 1px rgb(10 10 20 / 0.1), 0 10px 28px -14px rgb(10 10 20 / 0.18);
   --neon-text: none;
   --ambient-opacity: 0.35;
   color-scheme: light;
@@ -91,10 +92,10 @@
     --text: #0a0a0f;
     --text-muted: #52525b;
     --text-faint: #8b8b94;
-    --accent: #4f6bff;
-    --accent-light: #3a52e0;
-    --accent-2: #0891b2;
-    --accent-soft: rgb(79 107 255 / 0.14);
+    --accent: #4f5ce0;
+    --accent-light: #3a47c8;
+    --accent-2: #6a76e8;
+    --accent-soft: rgb(79 92 224 / 0.14);
     --success: #059669;
     --warning: #d97706;
     --danger: #e11d48;
@@ -108,8 +109,8 @@
     --highlight: rgb(255 255 255 / 0.9);
     --gradient-from: #0a0a0f;
     --gradient-to: #52525b;
-    --neon: 0 0 0 1px var(--accent), 0 6px 20px -8px rgb(79 107 255 / 0.55);
-    --neon-soft: 0 0 0 1px rgb(79 107 255 / 0.5);
+    --neon: 0 0 0 1px rgb(10 10 20 / 0.16), 0 18px 44px -18px rgb(10 10 20 / 0.3);
+    --neon-soft: 0 0 0 1px rgb(10 10 20 / 0.1), 0 10px 28px -14px rgb(10 10 20 / 0.18);
     --neon-text: none;
     --ambient-opacity: 0.35;
     color-scheme: light;
@@ -240,7 +241,7 @@ body {
 }
 
 ::selection {
-  background: rgb(91 124 255 / 0.4);
+  background: rgb(94 108 242 / 0.35);
 }
 
 /* Barres de défilement discrètes, comme dans un logiciel. */
@@ -276,14 +277,14 @@ body {
   color: var(--text-muted);
 }
 
-/* Intitulé de section : petites capitales à l'accent, sans pastille. */
+/* Intitulé de section : petites capitales discrètes, sans pastille. */
 @utility eyebrow {
   display: block;
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--accent-light);
+  color: var(--text-faint);
 }
 
 /* Ancien quadrillage de fond : retiré. */
@@ -310,14 +311,16 @@ body {
   backdrop-filter: blur(16px) saturate(140%);
 }
 
-/* Carte survolée : ses bords s'allument. */
+/* Carte survolée : elle se soulève à peine, ses bords se précisent. */
 @utility lift {
   transition:
     border-color 250ms,
-    box-shadow 250ms;
+    box-shadow 250ms,
+    translate 250ms var(--ease-out);
   &:hover {
-    border-color: rgb(91 124 255 / 0.6);
+    border-color: var(--line-strong);
     box-shadow: var(--neon-soft);
+    translate: 0 -2px;
   }
 }
 
@@ -517,7 +520,7 @@ body {
   &[aria-pressed="true"] {
     color: var(--text);
     border-color: var(--accent);
-    background: rgb(91 124 255 / 0.14);
+    background: var(--accent-soft);
   }
 }
 
@@ -597,14 +600,10 @@ body {
   animation-duration: 180ms;
 }
 
-/* Emblème TwinPost (logo-mark.tsx). */
+/* Emblème TwinPost (logo-mark.tsx) : mat, sans lueur — il entre une fois
+   puis se tient tranquille. */
 .logo-mark {
   overflow: visible;
-  filter: drop-shadow(0 0 3px rgb(120 150 255 / 0.8)) drop-shadow(0 0 10px rgb(139 61 255 / 0.45));
-}
-
-.logo-animated {
-  animation: logo-glow 4.5s ease-in-out infinite;
 }
 
 .logo-mark .logo-bar,
@@ -639,12 +638,6 @@ body {
 
 .group:hover .logo-mark .logo-tip {
   translate: 0 3px;
-}
-
-@keyframes logo-glow {
-  50% {
-    filter: drop-shadow(0 0 5px rgb(142 240 255 / 0.85)) drop-shadow(0 0 18px rgb(139 61 255 / 0.65));
-  }
 }
 
 @keyframes logo-bar-in {
