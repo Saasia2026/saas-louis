@@ -2,6 +2,7 @@
 
 import { ChevronsLeftRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { usePauseWhenHidden } from "@/app/pause-hidden";
 
 // Slider avant/après : deux vidéos du même clip lues en même temps, un
 // rideau qu'on fait glisser pour comparer (le composant signature des sites
@@ -15,6 +16,7 @@ export function CompareSlider({
   labelBefore,
   labelAfter,
   aspectRatio = "9:16",
+  ambient = false,
   className = "",
 }: {
   before: string;
@@ -24,14 +26,20 @@ export function CompareSlider({
   labelBefore: string;
   labelAfter: string;
   aspectRatio?: string;
+  // Copie floue de la vidéo « après » derrière le cadre, comme le mode
+  // ambiant de YouTube.
+  ambient?: boolean;
   className?: string;
 }) {
   // Position du rideau, en % depuis la gauche.
   const [position, setPosition] = useState(50);
   const [dragging, setDragging] = useState(false);
+  const outer = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const beforeRef = useRef<HTMLVideoElement>(null);
   const afterRef = useRef<HTMLVideoElement>(null);
+  // Hors écran, toutes les vidéos du bloc se coupent.
+  usePauseWhenHidden(outer);
 
   // Les deux vidéos dérivent l'une de l'autre au fil des boucles : la
   // seconde est recalée sur la première dès que l'écart se voit.
@@ -53,6 +61,19 @@ export function CompareSlider({
   }
 
   return (
+    <div ref={outer} className={`relative isolate ${className}`}>
+      {ambient && (
+        <video
+          src={after}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden
+          className="ambient"
+        />
+      )}
     <div
       ref={frame}
       role="slider"
@@ -73,7 +94,7 @@ export function CompareSlider({
       onPointerMove={(e) => dragging && moveTo(e.clientX)}
       onPointerUp={() => setDragging(false)}
       onPointerCancel={() => setDragging(false)}
-      className={`relative isolate w-full cursor-ew-resize touch-none overflow-hidden rounded-2xl border border-line bg-black select-none ${className}`}
+      className="relative isolate w-full cursor-ew-resize touch-none overflow-hidden rounded-2xl border border-line bg-black select-none"
       style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
     >
       <video
@@ -119,6 +140,7 @@ export function CompareSlider({
       <span className="pointer-events-none absolute right-3 bottom-3 z-10 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
         {labelAfter}
       </span>
+    </div>
     </div>
   );
 }

@@ -20,11 +20,11 @@ function makePositions(count: number) {
   return positions;
 }
 
-function Field() {
+function Field({ dustCount, sparkCount }: { dustCount: number; sparkCount: number }) {
   const group = useRef<Group>(null);
   const pointer = useRef({ x: 0, y: 0 });
-  const dust = useMemo(() => makePositions(2000), []);
-  const sparks = useMemo(() => makePositions(180), []);
+  const dust = useMemo(() => makePositions(dustCount), [dustCount]);
+  const sparks = useMemo(() => makePositions(sparkCount), [sparkCount]);
 
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
@@ -80,10 +80,16 @@ function Field() {
   );
 }
 
-export default function ParticleFieldCanvas() {
+export default function ParticleFieldCanvas({
+  dustCount = 1100,
+  sparkCount = 120,
+}: {
+  dustCount?: number;
+  sparkCount?: number;
+}) {
   return (
-    <Canvas dpr={[1, 1.5]} camera={{ position: [0, 0, 8], fov: 60 }} gl={{ antialias: false, alpha: true }}>
-      <Field />
+    <Canvas dpr={1} camera={{ position: [0, 0, 8], fov: 60 }} gl={{ antialias: false, alpha: true }}>
+      <Field dustCount={dustCount} sparkCount={sparkCount} />
     </Canvas>
   );
 }

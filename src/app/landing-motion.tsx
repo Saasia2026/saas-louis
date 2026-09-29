@@ -3,6 +3,7 @@
 import Lenis from "lenis";
 import { motion, useMotionValue, useScroll, useSpring, useTransform } from "motion/react";
 import { useEffect, useRef } from "react";
+import { usePauseWhenHidden } from "@/app/pause-hidden";
 
 // Animations du landing seulement : le défilement à inertie (Lenis), la
 // bande avant/après pilotée par le scroll et le bouton magnétique. Le
@@ -44,6 +45,8 @@ export function ScrollWipe({
   const frame = useRef<HTMLDivElement>(null);
   const beforeRef = useRef<HTMLVideoElement>(null);
   const afterRef = useRef<HTMLVideoElement>(null);
+  // Hors écran, les deux vidéos se coupent.
+  usePauseWhenHidden(frame);
   const { scrollYProgress } = useScroll({
     target: frame,
     offset: ["start 90%", "end 45%"],

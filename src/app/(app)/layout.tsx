@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { signOut } from "@/app/login/actions";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { Logo } from "@/app/logo";
+import { ParticleField } from "@/app/particle-field";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
@@ -38,6 +39,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex flex-1 overflow-x-clip">
+      {/* Même fond vivant que le landing, en plus discret : l'outil reste
+          concentré, le site reste un seul monde. */}
+      <ParticleField dustCount={650} sparkCount={60} />
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-surface/80 px-3 py-4 md:flex">
         <div className="px-2">
           <Logo href="/dashboard" />

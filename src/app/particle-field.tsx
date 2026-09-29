@@ -9,7 +9,13 @@ const ParticleFieldCanvas = dynamic(() => import("./particle-field-canvas"), { s
 // Fond de page du landing : le champ de particules fixe derrière tout le
 // contenu. Desktop à pointeur seulement, rien si l'utilisateur préfère les
 // animations réduites — le fond noir nu reste la base.
-export function ParticleField() {
+export function ParticleField({
+  dustCount,
+  sparkCount,
+}: {
+  dustCount?: number;
+  sparkCount?: number;
+}) {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
@@ -34,7 +40,7 @@ export function ParticleField() {
   if (!enabled) return null;
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
-      <ParticleFieldCanvas />
+      <ParticleFieldCanvas dustCount={dustCount} sparkCount={sparkCount} />
     </div>
   );
 }

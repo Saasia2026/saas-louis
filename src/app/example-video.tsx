@@ -2,6 +2,7 @@
 
 import { Volume2, VolumeX } from "lucide-react";
 import { useRef, useState } from "react";
+import { usePauseWhenHidden } from "@/app/pause-hidden";
 
 // Exemple de la page d'accueil : en boucle et muet (seule façon de le lancer
 // tout seul sur téléphone), le son s'active d'une touche.
@@ -19,10 +20,13 @@ export function ExampleVideo({
   soundOff: string;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const container = useRef<HTMLDivElement>(null);
   const [muted, setMuted] = useState(true);
+  // Hors écran, la vidéo et sa copie d'ambiance se coupent.
+  usePauseWhenHidden(container);
 
   return (
-    <div className="relative isolate">
+    <div ref={container} className="relative isolate">
       <video src={src} autoPlay muted loop playsInline preload="metadata" aria-hidden className="ambient" />
       <div className="relative aspect-video overflow-hidden rounded-xl border border-line bg-black">
       <video

@@ -109,26 +109,16 @@ export default async function Home() {
 
           {/* Démo : le rideau avant/après sur un vrai plan fourni, en vidéo. */}
           <div className="mx-auto max-w-6xl animate-fade-up px-4 pb-24 [animation-delay:380ms] sm:px-6">
-            <div className="relative isolate mx-auto w-full max-w-[21rem] sm:max-w-[23rem]">
-              <video
-                src="/examples/micro-apres.mp4"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
-                aria-hidden
-                className="ambient"
-              />
-              <CompareSlider
-                before="/examples/micro-avant.mp4"
-                after="/examples/micro-apres.mp4"
-                posterBefore="/examples/micro-avant.jpg"
-                posterAfter="/examples/micro-apres.jpg"
-                labelBefore={L.compareBefore}
-                labelAfter={L.compareAfter}
-              />
-            </div>
+            <CompareSlider
+              before="/examples/micro-avant.mp4"
+              after="/examples/micro-apres.mp4"
+              posterBefore="/examples/micro-avant.jpg"
+              posterAfter="/examples/micro-apres.jpg"
+              labelBefore={L.compareBefore}
+              labelAfter={L.compareAfter}
+              ambient
+              className="mx-auto w-full max-w-[21rem] sm:max-w-[23rem]"
+            />
             <p className="mx-auto mt-5 max-w-sm text-center text-xs leading-relaxed text-faint">
               {L.compareHint}
             </p>
@@ -226,16 +216,6 @@ export default async function Home() {
             défilement — l'argument du produit, sans un mot. */}
         <section className="relative isolate border-y border-line px-4 py-16 sm:py-24">
           <div className="relative mx-auto max-w-6xl">
-            <video
-              src="/examples/micro-apres.mp4"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              aria-hidden
-              className="ambient"
-            />
             <ScrollWipe
               before="/examples/micro-avant.mp4"
               after="/examples/micro-apres.mp4"
