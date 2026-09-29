@@ -292,6 +292,47 @@ body {
   display: none;
 }
 
+/* Fond de particules du site (voir particle-field.tsx) : la tuile SVG se
+   répète et dérive très lentement par transformation compositée — aucun
+   travail sur le fil principal, aucun repaint. La zone dépasse l'écran d'une
+   tuile : la boucle revient exactement d'une tuile, sans couture. */
+.particle-field {
+  position: fixed;
+  top: -1200px;
+  left: -1200px;
+  right: 0;
+  bottom: 0;
+  z-index: -10;
+  pointer-events: none;
+  background-image: url("/particles.svg");
+  background-size: 1200px 1200px;
+  background-repeat: repeat;
+  animation: particle-drift 240s linear infinite;
+  will-change: transform;
+}
+
+@keyframes particle-drift {
+  to {
+    transform: translate3d(1200px, 1200px, 0);
+  }
+}
+
+/* En thème clair, la poussière claire ne se voit pas : on l'éteint. */
+:root[data-theme="light"] .particle-field {
+  display: none;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .particle-field {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .particle-field {
+    animation: none;
+  }
+}
+
 /* Trame de points, pour les zones d'aperçu. */
 @utility dot-bg {
   background-image: radial-gradient(var(--dot) 1px, transparent 1px);
