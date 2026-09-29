@@ -3,6 +3,8 @@ import { getDictionary } from "@/i18n/server";
 
 // Vignette affichée quand le site est partagé (réseaux sociaux, messageries)
 // et reprise par Google. Dessinée à la volée, dans la langue du visiteur.
+// Même doctrine que le site : noir cinéma, une idée forte, de l'espace,
+// l'accent indigo sur la seconde ligne seulement.
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "TwinPost";
@@ -18,22 +20,48 @@ export default async function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          padding: "90px",
-          background: "linear-gradient(135deg, #05070f 0%, #101a45 55%, #1b1247 100%)",
-          color: "white",
+          padding: "96px",
+          background: "#09090b",
+          color: "#f7f7f8",
           fontFamily: "sans-serif",
         }}
       >
-        <div style={{ fontSize: 30, letterSpacing: 6, color: "#8fa4ff", textTransform: "uppercase" }}>
+        <div
+          style={{
+            fontSize: 26,
+            letterSpacing: 8,
+            color: "#64646e",
+            textTransform: "uppercase",
+            fontWeight: 600,
+          }}
+        >
           TwinPost
         </div>
-        <div style={{ fontSize: 86, fontWeight: 700, lineHeight: 1.05, marginTop: 28 }}>
+        <div
+          style={{
+            fontSize: 96,
+            fontWeight: 800,
+            lineHeight: 1.02,
+            marginTop: 36,
+            letterSpacing: -2,
+            textTransform: "uppercase",
+          }}
+        >
           {t.landing.titleTop}
         </div>
-        <div style={{ fontSize: 86, fontWeight: 700, lineHeight: 1.05, color: "#5b7cff" }}>
+        <div
+          style={{
+            fontSize: 96,
+            fontWeight: 800,
+            lineHeight: 1.02,
+            color: "#9aa4ff",
+            letterSpacing: -2,
+            textTransform: "uppercase",
+          }}
+        >
           {t.landing.titleBottom}
         </div>
-        <div style={{ fontSize: 30, color: "#b9c2de", marginTop: 34, maxWidth: 940 }}>
+        <div style={{ fontSize: 28, color: "#a3a3ad", marginTop: 40, maxWidth: 900, lineHeight: 1.4 }}>
           {t.landing.subtitle}
         </div>
       </div>
