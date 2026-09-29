@@ -14,8 +14,8 @@ import Link from "next/link";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { CompareSlider } from "@/app/compare-slider";
 import { ExampleVideo } from "@/app/example-video";
-import { FinalScene } from "@/app/final-scene";
 import { Magnetic, ScrollWipe, SmoothScroll } from "@/app/landing-motion";
+import { ParticleField } from "@/app/particle-field";
 import { Logo } from "@/app/logo";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
@@ -49,6 +49,7 @@ export default async function Home() {
   return (
     <div className="flex flex-1 flex-col overflow-x-clip">
       <SmoothScroll />
+      <ParticleField />
       <header className="glass sticky top-0 z-30 border-b border-line">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
           <Logo className="min-w-0 shrink" />
@@ -297,7 +298,6 @@ export default async function Home() {
             reveal : en bout de page, la timeline de défilement peut ne jamais
             se dérouler assez et laisser la section invisible. */}
         <section className="relative isolate overflow-hidden border-t border-line px-4 py-20 sm:px-6 sm:py-40">
-          <FinalScene />
           <div className="mx-auto max-w-6xl text-center">
             <h2 className="mx-auto font-wide text-[1.9rem] leading-[1.05] uppercase sm:text-6xl lg:text-7xl">
               <span className="text-gradient">{L.finalTitleTop}</span>
