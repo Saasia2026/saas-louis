@@ -210,7 +210,7 @@ export const es: Dictionary = {
       "Sube una foto del lugar: la escena se reconstruye en ese decorado. Sin foto, se conserva el decorado del clip.",
     instructions: "Instrucción a la IA",
     instructionsPlaceholder:
-      "Opcional: pide un cambio extra — «convierte la silla en un coche deportivo»…",
+      "«Convierte la silla en un coche deportivo»…",
     targetsMissing: "Indica a quién reemplaza cada personaje",
     uploading: "Subiendo…",
     change: "Cambiar",
@@ -242,7 +242,7 @@ export const es: Dictionary = {
     lateHint: "Está tardando más de lo previsto · el render sigue aunque cierres la página, el vídeo llegará a Mis vídeos",
     morePhotos: "Más fotos del personaje {n}: cara, perfil, espalda (hasta {max} en total)",
     morePhotosSingle: "Más fotos: cara, perfil, espalda (hasta {max} en total, más parecido)",
-    presets: "O parte de un plano listo: el clip ya está probado, solo falta el personaje",
+    presets: "Planos listos",
     presetPerson: "1 persona",
     presetPeople: "{n} personas",
     presetTarget: "Reemplaza a: {who}",

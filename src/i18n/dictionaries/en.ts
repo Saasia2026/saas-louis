@@ -210,7 +210,7 @@ export const en: Dictionary = {
       "Drop a photo of a place: the scene is rebuilt in that setting. Without a photo, the clip's own setting is kept.",
     instructions: "AI instruction",
     instructionsPlaceholder:
-      "Optional: ask for an extra change — “turn the chair into a sports car”…",
+      "“Turn the chair into a sports car”…",
     targetsMissing: "Say who each character replaces",
     uploading: "Uploading…",
     change: "Change",
@@ -242,7 +242,7 @@ export const en: Dictionary = {
     lateHint: "Taking longer than expected · the render keeps going even if you close the page, the video will arrive in My videos",
     morePhotos: "More photos of character {n}: face, profile, back (up to {max} in total)",
     morePhotosSingle: "More photos: face, profile, back (up to {max} in total, better likeness)",
-    presets: "Or start from a ready-made shot: the clip is provided and tested, just add the character",
+    presets: "Ready-made shots",
     presetPerson: "1 person",
     presetPeople: "{n} people",
     presetTarget: "Replaces: {who}",

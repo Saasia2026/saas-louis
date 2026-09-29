@@ -212,7 +212,7 @@ export const fr = {
       "Dépose une photo du lieu : la scène est reconstruite dans ce décor. Sans photo, le décor du clip est gardé.",
     instructions: "Consigne à l'IA",
     instructionsPlaceholder:
-      "Facultatif : demande un changement en plus — « transforme la chaise en voiture de sport »…",
+      "« Transforme la chaise en voiture de sport »…",
     targetsMissing: "Dis qui chaque personnage remplace",
     uploading: "Envoi…",
     change: "Changer",
@@ -244,7 +244,7 @@ export const fr = {
     lateHint: "Plus long que prévu · le rendu continue même page fermée, la vidéo arrivera dans Mes vidéos",
     morePhotos: "Autres photos du personnage {n} : visage, profil, dos (jusqu'à {max} en tout)",
     morePhotosSingle: "Autres photos : visage, profil, dos (jusqu'à {max} en tout, plus de ressemblance)",
-    presets: "Ou pars d'un plan prêt : le clip est fourni et testé, il ne manque que le personnage",
+    presets: "Plans prêts",
     presetPerson: "1 personne",
     presetPeople: "{n} personnes",
     presetTarget: "Remplace : {who}",

@@ -172,9 +172,17 @@ export function SwapInput({
     const kind = slot === "video" ? "video" : "image";
     const file = slot === "video" ? video : slot === "face" ? facePhoto : characters[slot]?.image;
     const Icon = kind === "video" ? Film : slot === "face" ? ScanFace : UserRound;
+    // Le détail (formats, cadrage…) vit en infobulle : la tuile reste un mot.
+    const hint =
+      kind === "video"
+        ? fmt(t.studio.videoHint, { max: maxSeconds })
+        : slot === "face"
+          ? t.studio.faceImageHint
+          : t.studio.imageHint;
     return (
       <label
         key={slot}
+        title={hint}
         className={`group relative flex cursor-pointer flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl border border-dashed text-center transition-colors ${
           file ? "border-line bg-black" : "border-line-strong bg-surface-2/60 hover:border-accent/60"
         } ${compact ? "h-24" : "h-36"}`}
@@ -208,15 +216,6 @@ export function SwapInput({
             <span className="text-sm font-medium">
               {kind === "video" ? t.studio.video : slot === "face" ? t.studio.faceImage : t.studio.image}
             </span>
-            {!compact && !(several && typeof slot === "number") && (
-              <span className="px-3 text-xs text-faint">
-                {kind === "video"
-                  ? fmt(t.studio.videoHint, { max: maxSeconds })
-                  : slot === "face"
-                    ? t.studio.faceImageHint
-                    : t.studio.imageHint}
-              </span>
-            )}
           </>
         )}
         {several && typeof slot === "number" && (
@@ -373,7 +372,7 @@ export function SwapInput({
           <p className="text-xs text-faint">{t.studio.decorTitle}</p>
           <div className="mt-1.5 flex items-center gap-3">
             <label
-              title={t.studio.decorImage}
+              title={t.studio.decorHint}
               className={`group relative flex h-20 w-32 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed transition-colors ${
                 decorPhoto
                   ? "border-line bg-black"
@@ -404,7 +403,7 @@ export function SwapInput({
                 </span>
               )}
             </label>
-            {decorPhoto ? (
+            {decorPhoto && (
               <button
                 type="button"
                 aria-label={t.studio.removePhoto}
@@ -417,8 +416,6 @@ export function SwapInput({
               >
                 <X className="size-4" />
               </button>
-            ) : (
-              <p className="text-xs text-faint">{t.studio.decorHint}</p>
             )}
           </div>
         </div>
@@ -443,11 +440,7 @@ export function SwapInput({
           onChange={(start) => onVideo({ ...video, start })}
         />
       )}
-      {error ? (
-        <p className="mt-2 text-xs text-danger">{error}</p>
-      ) : (
-        !compact && <p className="mt-2 text-xs text-faint">{t.studio.explain}</p>
-      )}
+      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
     </div>
   );
 }

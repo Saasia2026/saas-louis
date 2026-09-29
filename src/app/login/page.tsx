@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { LogoMark } from "@/app/logo-mark";
@@ -16,11 +17,12 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const t = await getDictionary();
 
   return (
-    <main className="relative isolate flex flex-1 flex-col items-center justify-center px-4 py-16">
-      <div className="absolute top-4 right-4 flex items-center gap-1">
+    <main className="relative isolate flex flex-1 items-stretch">
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-1">
         <ThemeToggle />
         <LanguageSwitcher />
       </div>
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
       <div className="w-full max-w-sm">
         <div className="flex justify-center">
           <LogoMark className="size-16" />
@@ -48,6 +50,22 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           .
         </p>
       </div>
+      </div>
+
+      {/* Œuvre générée (voir public/login-art.webp) : le côté galerie de la
+          page, masqué sur petit écran. */}
+      <aside aria-hidden className="relative hidden w-[42%] p-4 lg:block">
+        <div className="relative size-full overflow-hidden rounded-2xl border border-line bg-black">
+          <Image
+            src="/login-art.webp"
+            alt=""
+            fill
+            sizes="42vw"
+            priority
+            className="object-cover"
+          />
+        </div>
+      </aside>
     </main>
   );
 }
