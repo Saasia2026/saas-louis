@@ -63,8 +63,6 @@ export type GenerationView = {
   downloadUrl?: string;
   // Raison de l'échec, quand elle est connue.
   error?: string;
-  // Échec du moteur Qualité max seul : le studio propose l'Économique.
-  tryBudget?: boolean;
   // Plan refait qui a raté : la vidéo n'a pas changé, et pourquoi.
   notice?: string;
 };
@@ -117,7 +115,6 @@ export async function getGeneration(generationId: string): Promise<Result<Genera
       reason: partReason(p.check, t) ?? (p.face?.skipped ? t.studio.partNoFace : undefined),
     })),
     error: translateStoredError(generation.error, t),
-    tryBudget: generation.error === GENJUTSU_UNAVAILABLE_ERROR,
     notice:
       failedRedo < 0
         ? undefined

@@ -70,33 +70,63 @@ export function describeTarget(target?: string) {
   return text ? `the person described as "${text}"` : "the main person";
 }
 
-// Méthode du mannequin (option « base neutre ») : une première passe remplace
-// la personne du clip par un mannequin neutre en gris, puis la passe du
-// personnage remplace ce mannequin. Rien de la personne d'origine (traits,
-// tenue) ne bave dans le rendu final. Planches du mannequin dans swap-inputs
-// (voir scripts/vessel.mjs).
+// Méthode du mannequin, la seule du site : une première passe remplace
+// chaque personne visée par un mannequin neutre, puis la passe des
+// personnages remplace ces mannequins. Rien des personnes d'origine (traits,
+// tenue) ne bave dans le rendu final. Chaque personne reçoit un mannequin
+// d'une couleur à elle, pour que la seconde passe sache lequel devient quel
+// personnage ; sa silhouette (homme, femme) suit celle du personnage.
+// Planches dans swap-inputs, générées par scripts/vessel.mjs --sheet-only.
 export type MannequinFigure = "homme" | "femme";
-export const MANNEQUIN_SHEETS: Record<MannequinFigure, string> = {
-  homme: "presets/_mannequin-sheet-m.png",
-  femme: "presets/_mannequin-sheet-f.png",
-};
-// Qui la passe du personnage remplace, une fois le mannequin posé.
-export const MANNEQUIN_TARGET = "the person in the plain grey t-shirt and grey trousers";
-const MANNEQUIN_DESCRIPTIONS: Record<MannequinFigure, string> = {
-  homme:
-    "a plain adult man in a matte mid-grey fitted t-shirt, grey trousers and grey sneakers, very short hair, no accessories",
-  femme:
-    "a plain adult woman in a matte mid-grey fitted t-shirt, grey trousers and grey sneakers, dark hair tied back in a low bun, no accessories",
+export type MannequinColor = "grey" | "navy" | "sand";
+// Couleur du mannequin de chaque personnage, dans l'ordre.
+export const MANNEQUIN_COLORS: MannequinColor[] = ["grey", "navy", "sand"];
+const MANNEQUIN_CLOTH: Record<MannequinColor, { cloth: string; word: string; suffix: string }> = {
+  grey: { cloth: "matte mid-grey", word: "grey", suffix: "" },
+  navy: { cloth: "matte deep navy-blue", word: "navy-blue", suffix: "-navy" },
+  sand: { cloth: "matte light sand-beige", word: "sand-beige", suffix: "-sand" },
 };
 
-function mannequinPrompt(figure: MannequinFigure, target?: string) {
+export function mannequinSheetPath(figure: MannequinFigure, color: MannequinColor) {
+  return `presets/_mannequin-sheet-${figure === "femme" ? "f" : "m"}${MANNEQUIN_CLOTH[color].suffix}.png`;
+}
+
+// Qui la passe des personnages remplace, une fois le mannequin posé.
+export function mannequinTarget(color: MannequinColor) {
+  const { word } = MANNEQUIN_CLOTH[color];
+  return `the person in the plain ${word} t-shirt and ${word} trousers`;
+}
+
+function mannequinDescription(figure: MannequinFigure, color: MannequinColor) {
+  const { cloth, word } = MANNEQUIN_CLOTH[color];
+  return figure === "femme"
+    ? `a plain adult woman in a ${cloth} fitted t-shirt, ${word} trousers and ${word} sneakers, dark hair tied back in a low bun, no accessories`
+    : `a plain adult man in a ${cloth} fitted t-shirt, ${word} trousers and ${word} sneakers, very short hair, no accessories`;
+}
+
+// Consigne de la passe mannequin : une personne ou plusieurs, chacune avec
+// son mannequin (image de référence n, dans l'ordre).
+function mannequinPrompt(people: { figure: MannequinFigure; color: MannequinColor; target?: string }[]) {
+  const several = people.length > 1;
+  const blocks = people.map((p, i) => {
+    const image = several ? `reference image ${i + 1}` : "the reference image";
+    return (
+      `${several ? `FIGURE ${i + 1}` : "CHARACTER"} — Replace ${describeTarget(p.target)} with the neutral stand-in figure shown in ${image} (${mannequinDescription(p.figure, p.color)}). ` +
+      "Match its plain clothing, hairstyle, neutral face and skin exactly as shown. " +
+      "Preserve this original person's exact actions, rhythm, posture, head movements, hand gestures, gaze, facial expressions and lip-sync throughout the entire video; do not add a smile or extra mouth movement."
+    );
+  });
   return [
-    `STRICT CHARACTER AND WARDROBE REPLACEMENT. Edit the uploaded source video: one person is replaced by the neutral stand-in figure shown in the reference image (${MANNEQUIN_DESCRIPTIONS[figure]}). The reference image shows multiple views of ONE figure, not multiple figures.`,
-    "SOURCE PRIORITY — The source video controls all movement, performance, lip-sync, facial expressions, gaze, gestures, interactions, body positions, camera movement, framing, editing and timing. The reference image controls only the figure's identity: face, hair, skin, body proportions and clothing.",
-    `CHARACTER — Replace ${describeTarget(target)} with this neutral figure. Match its plain grey clothing, hairstyle, neutral face and skin exactly as shown. Preserve this original person's exact actions, rhythm, posture, head movements, hand gestures, gaze, facial expressions and lip-sync throughout the entire video; do not add a smile or extra mouth movement.`,
-    "PERMANENT IDENTITY ASSIGNMENT — Bind the figure to that original person for the full clip, through turns, profile views, back views, motion blur and temporary occlusion. Never blend faces or transfer gestures to another person.",
-    "ENVIRONMENT AND INTEGRATION — Keep the original background, set, objects, every other person, lighting, shadows, perspective and composition exactly unchanged. Keep the original duration, aspect ratio, cuts and playback speed. Do not copy the reference image's background, panel layout, borders, labels or static poses into the output.",
-    "FINAL RESULT — The same source video and the same performance, with only this person's identity, hair and clothing replaced by the neutral grey figure.",
+    several
+      ? `STRICT CHARACTER AND WARDROBE REPLACEMENT — ${people.length} REFERENCES. Edit the uploaded source video: ${people.length} different people are each replaced by their own neutral stand-in figure, each in a different plain colour. Each reference image shows multiple views of ONE figure, not multiple figures.`
+      : "STRICT CHARACTER AND WARDROBE REPLACEMENT. Edit the uploaded source video: one person is replaced by the neutral stand-in figure shown in the reference image. The reference image shows multiple views of ONE figure, not multiple figures.",
+    "SOURCE PRIORITY — The source video controls all movement, performance, lip-sync, facial expressions, gaze, gestures, interactions, body positions, camera movement, framing, editing and timing. The reference images control only the figures' identity: face, hair, skin, body proportions and clothing.",
+    ...blocks,
+    several
+      ? "PERMANENT IDENTITY ASSIGNMENT — Bind each figure to its original person for the full clip, through turns, profile views, back views, motion blur, overlap and temporary occlusion. Never swap figures between people, never blend faces and never transfer gestures to another person."
+      : "PERMANENT IDENTITY ASSIGNMENT — Bind the figure to that original person for the full clip, through turns, profile views, back views, motion blur and temporary occlusion. Never blend faces or transfer gestures to another person.",
+    "ENVIRONMENT AND INTEGRATION — Keep the original background, set, objects, every other person, lighting, shadows, perspective and composition exactly unchanged. Keep the original duration, aspect ratio, cuts and playback speed. Do not copy the reference images' backgrounds, panel layouts, borders, labels or static poses into the output.",
+    `FINAL RESULT — The same source video and the same performance${several ? "s" : ""}, with only ${several ? "these people's" : "this person's"} identity, hair and clothing replaced by ${several ? "their" : "the"} neutral stand-in figure${several ? "s" : ""}.`,
   ].join("\n\n");
 }
 
@@ -174,23 +204,26 @@ export async function createGenjutsuSwap(input: {
   decorUrl?: string;
   // Consignes libres du créateur, en anglais (voir polishSwapInstructions).
   instructions?: string;
-  // Passe mannequin (méthode du mannequin) : la personne visée devient le
-  // mannequin neutre dont la planche est dans `characters` ; décor et
-  // consignes attendent la passe du personnage.
-  mannequin?: MannequinFigure;
+  // Passe mannequin : chaque personne visée devient le mannequin dont la
+  // planche est dans `characters` (même ordre) ; décor et consignes
+  // attendent la passe des personnages.
+  mannequins?: { figure: MannequinFigure; color: MannequinColor }[];
   hd?: boolean;
   webhookUrl?: string;
 }) {
   const hook = input.webhookUrl ? `?hf_webhook=${encodeURIComponent(input.webhookUrl)}` : "";
-  if (input.mannequin) {
+  if (input.mannequins) {
     const response = await fetch(`${BASE_URL}/${GENJUTSU_SWAP_ENDPOINT}${hook}`, {
       method: "POST",
       headers: headers(),
       signal: AbortSignal.timeout(60_000),
       body: JSON.stringify({
-        prompt: mannequinPrompt(input.mannequin, input.characters[0]?.target),
+        prompt: mannequinPrompt(
+          input.mannequins.map((m, i) => ({ ...m, target: input.characters[i]?.target })),
+        ),
+        // Une planche par mannequin, dans l'ordre des personnes.
+        image_urls: input.characters.map((c) => c.imageUrls[0]).filter(Boolean),
         video_url: input.videoUrl,
-        image_urls: input.characters.flatMap((c) => c.imageUrls).slice(0, 1),
         resolution: input.hd ? "1080p" : "720p",
       }),
     });

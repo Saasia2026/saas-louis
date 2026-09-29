@@ -12,7 +12,7 @@ import {
   SWAP_SHEET_CREDITS,
   photosPerCharacter,
   swapCredits,
-  swapRate,
+  swapMethodRate,
   swapShotCredits,
   type AspectRatio,
   type SwapEngine,
@@ -50,8 +50,7 @@ type Phase =
   | { kind: "idle" }
   | { kind: "generating"; job: Job; id: string; view?: GenerationView }
   | { kind: "done"; job: Job; id: string; view: GenerationView }
-  // tryBudget : seul le moteur Qualité max a échoué, l'Économique peut prendre le relais.
-  | { kind: "error"; message: string; tryBudget?: boolean };
+  | { kind: "error"; message: string };
 
 type Active = { id: string; job: Job };
 
@@ -86,40 +85,26 @@ export function Studio({
   const [characters, setCharacters] = useState<SwapCharacter[]>([
     { image: null, extras: [], target: "" },
   ]);
-  const [chosenEngine, setEngine] = useState<SwapEngine>(engines[0] ?? "kling");
-  // Qualité max en 1080p.
-  const [hdChosen, setHd] = useState(false);
-  // Option « + visage exact » (passe Magic Hour, voir startSwap) et la photo
-  // du visage, à part de celle du personnage (sinon celle-ci sert).
-  const [faceChosen, setFace] = useState(false);
-  const [facePhoto, setFacePhoto] = useState<SwapFile | null>(null);
-  // Changement de décor (Qualité max) : photo du lieu, facultative. Sans
-  // photo, seuls les personnages et les cases remplies comptent, le décor du
-  // clip est gardé.
+  // Rendu en 1080p.
+  const [hd, setHd] = useState(false);
+  // Changement de décor : photo du lieu, facultative. Sans photo, seuls les
+  // personnages et les cases remplies comptent, le décor du clip est gardé.
   const [decorPhoto, setDecorPhoto] = useState<SwapFile | null>(null);
-  // Consignes libres à l'IA (Qualité max), facultatives : demandes en plus du
+  // Consignes libres à l'IA, facultatives : demandes en plus du
   // remplacement, reformulées côté serveur (voir polishSwapInstructions).
   const [instructions, setInstructions] = useState("");
   // Plan prêt choisi : son clip tient lieu de vidéo, ses personnes fixent
   // qui chaque personnage remplace.
   const [preset, setPreset] = useState<StudioPreset | null>(null);
-  // Plusieurs personnages : seul Genjutsu sait les placer.
+  // Un seul moteur, une seule méthode : Genjutsu et ses mannequins neutres
+  // (voir startSwap), d'un à trois personnages.
+  const engine: SwapEngine = "genjutsu";
+  const available = engines.includes(engine);
   const several = characters.length > 1;
-  const maxCharacters = engines.includes("genjutsu") ? SWAP_MAX_CHARACTERS : 1;
+  const maxCharacters = SWAP_MAX_CHARACTERS;
   const availablePresets = presets.filter((p) => p.people.length <= maxCharacters);
-  const engine: SwapEngine = several ? "genjutsu" : chosenEngine;
-  const hd = engine === "genjutsu" && hdChosen;
-  // La passe visage pose un seul visage, sur un corps rendu par un autre moteur.
-  const facePass = engines.includes("magichour") && engine !== "magichour" && !several;
-  const face = facePass && faceChosen;
-  // Le décor ne se change qu'avec Genjutsu (Motion Transfer).
-  const decorAllowed = engine === "genjutsu";
-  // Base neutre (méthode du mannequin) : Genjutsu, un seul personnage.
-  const [vesselChosen, setVessel] = useState(false);
-  const vesselAllowed = engine === "genjutsu" && !several;
-  const vessel = vesselAllowed && vesselChosen;
-  // Photos par personnage : Genjutsu en lit plusieurs, Kling une seule.
-  const maxPhotos = engine === "genjutsu" ? photosPerCharacter(characters.length) : 1;
+  // Photos par personnage : 8 au plus en tout chez Higgsfield.
+  const maxPhotos = photosPerCharacter(characters.length);
   const imagesReady = characters.every((c) => c.image);
   // Seul, le personnage remplace la personne principale ; à plusieurs, il
   // faut dire qui chacun remplace.
@@ -148,13 +133,13 @@ export function Studio({
   const seconds = durationKnown
     ? Math.max(1, Math.round(clipSeconds))
     : maxSeconds;
-  const cost = swapCredits(seconds, engine, undefined, characters.length, hd, face, vessel);
+  const cost = swapCredits(seconds, engine, undefined, characters.length, hd, false, true);
   // Durée illisible dans le navigateur : le serveur mesure le clip et refuse
   // lui-même faute de crédits ; on ne bloque ici que sous le prix le plus bas.
   const gate = durationKnown
     ? cost
-    : swapCredits(1, engine, undefined, characters.length, hd, face, vessel);
-  const canSend = !busy && Boolean(video) && imagesReady && targetsReady && (credits >= gate || autoRecharge);
+    : swapCredits(1, engine, undefined, characters.length, hd, false, true);
+  const canSend = available && !busy && Boolean(video) && imagesReady && targetsReady && (credits >= gate || autoRecharge);
 
   useEffect(() => {
     resultEnd.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -185,11 +170,7 @@ export function Studio({
         return finish({ kind: "done", job, id, view });
       }
       if (view.status === "failed") {
-        return finish({
-          kind: "error",
-          message: view.error ?? t.studio.failed,
-          tryBudget: view.tryBudget && engines.includes("kling") && !several,
-        });
+        return finish({ kind: "error", message: view.error ?? t.studio.failed });
       }
       setPhase({ kind: "generating", job, id, view });
       if (Date.now() > deadline) return finish({ kind: "error", message: t.studio.tooLong });
@@ -201,7 +182,7 @@ export function Studio({
       stopped = true;
       clearTimeout(timer);
     };
-  }, [active, resume, router, t, engines, several]);
+  }, [active, resume, router, t]);
 
   function choosePreset(p: StudioPreset) {
     setPreset(p);
@@ -221,7 +202,7 @@ export function Studio({
     if (!canSend || !video) return;
     setPhase({
       kind: "generating",
-      job: { aspectRatio: preset?.aspectRatio ?? "9:16", durationSeconds: seconds, vessel },
+      job: { aspectRatio: preset?.aspectRatio ?? "9:16", durationSeconds: seconds, vessel: true },
       id: "",
     });
     const res = await startSwap({
@@ -234,13 +215,9 @@ export function Studio({
       })),
       start: clampedStart(video, maxSeconds),
       seconds: maxSeconds,
-      engine,
       hd,
-      face,
-      faceImagePath: face ? facePhoto?.path : undefined,
-      decorImagePath: decorAllowed ? decorPhoto?.path : undefined,
-      instructions: decorAllowed ? instructions.trim() || undefined : undefined,
-      vessel,
+      decorImagePath: decorPhoto?.path,
+      instructions: instructions.trim() || undefined,
     });
     router.refresh();
     if (res.error !== undefined) {
@@ -250,7 +227,7 @@ export function Studio({
     const job: Job = {
       aspectRatio: res.data.aspectRatio,
       durationSeconds: res.data.durationSeconds,
-      vessel,
+      vessel: true,
     };
     setPhase({ kind: "generating", job, id: res.data.generationId });
     setActive({ id: res.data.generationId, job });
@@ -319,15 +296,12 @@ export function Studio({
         presetPeople={preset?.people.map((p) => p.label[locale])}
         maxSeconds={preset ? preset.seconds : maxSeconds}
         compact={started}
-        facePhoto={facePhoto}
-        onFacePhoto={setFacePhoto}
-        showFacePhoto={face}
         decorPhoto={decorPhoto}
         onDecorPhoto={setDecorPhoto}
-        showDecor={decorAllowed}
+        showDecor
         instructions={instructions}
         onInstructions={setInstructions}
-        showInstructions={decorAllowed}
+        showInstructions
       />
 
       {availablePresets.length > 0 && (
@@ -377,66 +351,32 @@ export function Studio({
             {fmt(t.studio.severalHint, { sheet: SWAP_SHEET_CREDITS })}
           </span>
         )}
-        {(engines.length > 1 || engines.includes("genjutsu")) && (
-          <Menu
-            label={hd ? t.swapEngines.genjutsuHd.label : t.swapEngines[engine].label}
-            openUp={started}
-            options={[
-              // Qualité max en 1080p, puis les moteurs ; plusieurs
-              // personnages : Qualité max seulement.
-              ...(engines.includes("genjutsu")
-                ? [
-                    {
-                      value: "genjutsu_hd",
-                      label: t.swapEngines.genjutsuHd.label,
-                      hint: fmt(t.swapEngines.genjutsuHd.hint, {
-                        max: SWAP_ENGINES.genjutsu.maxSeconds,
-                        rate: swapRate("genjutsu", true).toLocaleString(locale),
-                      }),
-                    },
-                  ]
-                : []),
-              ...engines
-                .filter((e) => !several || e === "genjutsu")
-                .map((e) => ({
-                  value: e,
-                  label: t.swapEngines[e].label,
-                  hint: fmt(t.swapEngines[e].hint, {
-                    max: SWAP_ENGINES[e].maxSeconds,
-                    rate: swapRate(e).toLocaleString(locale),
-                  }),
-                })),
-            ]}
-            value={hd ? "genjutsu_hd" : engine}
-            onChange={(v) => {
-              setHd(v === "genjutsu_hd");
-              setEngine(v === "genjutsu_hd" ? "genjutsu" : (v as SwapEngine));
-            }}
-          />
-        )}
-        {vesselAllowed && (
-          <button
-            type="button"
-            onClick={() => setVessel((v) => !v)}
-            aria-pressed={vessel}
-            title={t.studio.vesselHint}
-            className={`chip ${vessel ? "border-accent text-accent" : ""}`}
-          >
-            {vessel && <Check className="size-3.5" />}
-            {t.studio.vessel}
-          </button>
-        )}
-        {facePass && (
-          <button
-            type="button"
-            onClick={() => setFace((v) => !v)}
-            title={fmt(t.studio.facePassHint, { rate: swapRate("magichour").toLocaleString(locale) })}
-            className={`chip ${face ? "border-accent text-accent" : ""}`}
-          >
-            {face && <Check className="size-3.5" />}
-            {t.studio.facePass}
-          </button>
-        )}
+        {/* Une seule méthode : seul le rendu (720p ou 1080p) se choisit.
+            Tarifs affichés passes mannequin comprises. */}
+        <Menu
+          label={hd ? t.swapEngines.genjutsuHd.label : t.swapEngines.genjutsu.label}
+          openUp={started}
+          options={[
+            {
+              value: "sd",
+              label: t.swapEngines.genjutsu.label,
+              hint: fmt(t.swapEngines.genjutsu.hint, {
+                max: SWAP_ENGINES.genjutsu.maxSeconds,
+                rate: swapMethodRate(false).toLocaleString(locale),
+              }),
+            },
+            {
+              value: "hd",
+              label: t.swapEngines.genjutsuHd.label,
+              hint: fmt(t.swapEngines.genjutsuHd.hint, {
+                max: SWAP_ENGINES.genjutsu.maxSeconds,
+                rate: swapMethodRate(true).toLocaleString(locale),
+              }),
+            },
+          ]}
+          value={hd ? "hd" : "sd"}
+          onChange={(v) => setHd(v === "hd")}
+        />
         {video && lengths.length > 0 && (
           <Menu
             label={
@@ -515,12 +455,6 @@ export function Studio({
               onReset={() => setPhase({ kind: "idle" })}
               onRedo={redo}
               onCancel={cancel}
-              onTryBudget={() => {
-                // Même clip, même personnage : il ne reste qu'à relancer.
-                setEngine("kling");
-                setHd(false);
-                setPhase({ kind: "idle" });
-              }}
             />
             <div ref={resultEnd} />
           </div>
@@ -605,7 +539,6 @@ function Result({
   onReset,
   onRedo,
   onCancel,
-  onTryBudget,
 }: {
   phase: Exclude<Phase, { kind: "idle" }>;
   credits: number;
@@ -616,11 +549,9 @@ function Result({
   sourcePreview?: string;
   characterPreview?: string;
   onReset: () => void;
-  // Refait un plan d'un remplacement terminé (moteur kling).
+  // Refait une séquence d'un remplacement terminé.
   onRedo: (index: number) => void;
   onCancel: () => Promise<void>;
-  // Repasse en Économique après un échec du moteur Qualité max.
-  onTryBudget: () => void;
 }) {
   const { t } = useI18n();
   const aspectRatio = phase.kind === "error" ? "9:16" : phase.job.aspectRatio;
@@ -742,12 +673,6 @@ function Result({
             <Download />
             {t.studio.download}
           </a>
-        )}
-        {phase.kind === "error" && phase.tryBudget && (
-          <button type="button" onClick={onTryBudget} className="btn btn-accent">
-            <WandSparkles />
-            {t.studio.tryBudget}
-          </button>
         )}
         {cancellable && (
           <button

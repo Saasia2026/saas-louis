@@ -21,7 +21,7 @@ import { ThemeToggle } from "@/app/theme-toggle";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { CREDIT_PACKS, formatPrice } from "@/lib/credit-packs";
-import { SWAP_ENGINES, SWAP_SHEET_CREDITS } from "@/lib/generation";
+import { SWAP_SHEET_CREDITS, swapMethodRate } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
 
 // Vidéos d'exemple (public/examples), dans l'ordre des textes de
@@ -235,8 +235,8 @@ export default async function Home() {
           </h2>
           <p className="mt-4 max-w-xl text-[0.9375rem] leading-relaxed text-muted">
             {fmt(L.pricingText, {
-              max: SWAP_ENGINES.genjutsu.creditsPerSecond.toLocaleString(INTL_LOCALES[locale]),
-              budget: SWAP_ENGINES.kling.creditsPerSecond.toLocaleString(INTL_LOCALES[locale]),
+              max: swapMethodRate().toLocaleString(INTL_LOCALES[locale]),
+              hd: swapMethodRate(true).toLocaleString(INTL_LOCALES[locale]),
               sheet: SWAP_SHEET_CREDITS,
             })}
           </p>

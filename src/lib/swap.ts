@@ -23,9 +23,10 @@ import {
   type SwapEngine,
 } from "@/lib/generation";
 import {
-  MANNEQUIN_TARGET,
   createGenjutsuSwap,
   getHiggsfieldPrediction,
+  mannequinTarget,
+  type MannequinColor,
   type MannequinFigure,
 } from "@/lib/higgsfield";
 import { createMagicHourSwap, getMagicHourPrediction } from "@/lib/magichour";
@@ -216,12 +217,11 @@ export type SwapMetadata = {
   // lancement (voir polishSwapInstructions) : changements en plus du
   // remplacement (« turn the chair into a sports car »).
   instructions?: string;
-  // Base neutre (méthode du mannequin, genjutsu, un personnage) : chaque
-  // séquence passe d'abord par un mannequin neutre (planche déjà chez
-  // Higgsfield, de la silhouette du personnage), puis par le personnage.
+  // Méthode du mannequin (genjutsu) : chaque séquence passe d'abord par des
+  // mannequins neutres, un par personnage (silhouette du personnage, couleur
+  // propre, planche déjà chez Higgsfield), puis par les personnages.
   vessel?: boolean;
-  vessel_figure?: MannequinFigure;
-  vessel_sheet_url?: string;
+  vessel_mannequins?: { figure: MannequinFigure; color: MannequinColor; sheet_url: string }[];
   // Genjutsu : les références sont les photos déposées par le créateur, pas
   // une fiche redessinée (depuis le 2026-09-26).
   photos?: boolean;
@@ -835,25 +835,28 @@ async function advanceParts(
             return "continue";
           }
           try {
-            // Base neutre : d'abord la personne du clip devient le mannequin,
-            // puis le mannequin (et non plus la personne) devient le personnage.
-            const mannequinPass = Boolean(metadata.vessel && metadata.vessel_sheet_url && !part.vesselUrl);
+            // Méthode du mannequin : d'abord chaque personne du clip devient
+            // son mannequin, puis chaque mannequin (repéré par sa couleur, et
+            // non plus la personne) devient son personnage.
+            const mannequins = metadata.vessel_mannequins;
+            const people = metadata.characters?.map((c) => ({ urls: c.urls, target: c.target })) ?? [
+              { urls: metadata.character_urls ?? [sheet.frontUrl], target },
+            ];
+            const mannequinPass = Boolean(metadata.vessel && mannequins?.length && !part.vesselUrl);
             part.predictionId = mannequinPass
               ? await createGenjutsuSwap({
                   videoUrl: part.videoUrl!,
-                  characters: [{ imageUrls: [metadata.vessel_sheet_url!], target }],
-                  mannequin: metadata.vessel_figure ?? "homme",
+                  characters: mannequins!.map((m, k) => ({ imageUrls: [m.sheet_url], target: people[k]?.target })),
+                  mannequins: mannequins!.map(({ figure, color }) => ({ figure, color })),
                   hd: metadata.hd,
                   webhookUrl,
                 })
               : await createGenjutsuSwap({
                   videoUrl: part.vesselUrl ?? part.videoUrl!,
-                  characters: metadata.characters?.map((c) => ({ imageUrls: c.urls, target: c.target })) ?? [
-                    {
-                      imageUrls: metadata.character_urls ?? [sheet.frontUrl],
-                      target: part.vesselUrl ? MANNEQUIN_TARGET : target,
-                    },
-                  ],
+                  characters: people.map((c, k) => ({
+                    imageUrls: c.urls,
+                    target: part.vesselUrl && mannequins?.[k] ? mannequinTarget(mannequins[k].color) : c.target,
+                  })),
                   decorUrl: metadata.decor_url,
                   instructions: metadata.instructions,
                   hd: metadata.hd,
@@ -1025,7 +1028,7 @@ async function advanceParts(
       // Base neutre : la passe mannequin vient de finir. Son rendu devient la
       // source de la passe du personnage, envoyée au suivi suivant avec des
       // essais neufs (la passe mannequin réussie ne compte plus).
-      if (genjutsu && metadata.vessel && metadata.vessel_sheet_url && !part.vesselUrl) {
+      if (genjutsu && metadata.vessel && metadata.vessel_mannequins?.length && !part.vesselUrl) {
         part.vesselUrl = url;
         part.predictionId = undefined;
         part.attempts = 0;

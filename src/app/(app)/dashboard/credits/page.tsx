@@ -10,7 +10,7 @@ import {
   planCredits,
   type BillingInterval,
 } from "@/lib/credit-packs";
-import { SWAP_ENGINES, SWAP_SHEET_CREDITS, swapSecondsFor } from "@/lib/generation";
+import { SWAP_SHEET_CREDITS, swapMethodRate, swapMethodSecondsFor } from "@/lib/generation";
 import {
   activeSubscription,
   createStripe,
@@ -139,8 +139,8 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
     <div>
       <PageHeader eyebrow={P.eyebrow} title={P.title}>
         {fmt(P.intro, {
-          max: SWAP_ENGINES.genjutsu.creditsPerSecond.toLocaleString(intl),
-          budget: SWAP_ENGINES.kling.creditsPerSecond.toLocaleString(intl),
+          max: swapMethodRate().toLocaleString(intl),
+          hd: swapMethodRate(true).toLocaleString(intl),
           sheet: SWAP_SHEET_CREDITS,
         })}
       </PageHeader>
@@ -261,7 +261,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                     </div>
                     <div className="flex justify-between py-2.5">
                       <dt className="text-muted">{P.secondsMaxRow}</dt>
-                      <dd className="font-medium tabular-nums">{swapSecondsFor(credits, "genjutsu")}</dd>
+                      <dd className="font-medium tabular-nums">{swapMethodSecondsFor(credits)}</dd>
                     </div>
                   </dl>
                   <form action={subscribe} className="mt-6">
@@ -312,11 +312,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                 </div>
                 <div className="flex justify-between py-2.5">
                   <dt className="text-muted">{P.secondsMaxRow}</dt>
-                  <dd className="font-medium tabular-nums">{swapSecondsFor(pack.credits, "genjutsu")}</dd>
-                </div>
-                <div className="flex justify-between py-2.5">
-                  <dt className="text-muted">{P.secondsBudgetRow}</dt>
-                  <dd className="font-medium tabular-nums">{swapSecondsFor(pack.credits, "kling")}</dd>
+                  <dd className="font-medium tabular-nums">{swapMethodSecondsFor(pack.credits)}</dd>
                 </div>
               </dl>
               {card ? (

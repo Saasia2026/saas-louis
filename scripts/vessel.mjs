@@ -7,7 +7,7 @@
 //
 //   node scripts/vessel.mjs <reference.mp4> <nom> [--figure homme|femme] [--start 0]
 //        [--seconds 12] [--target "the man at the microphone"] [--hd] [--out <dossier>]
-//   node scripts/vessel.mjs --sheet-only [--figure homme|femme] [--out <dossier>]
+//   node scripts/vessel.mjs --sheet-only [--figure homme|femme] [--color grey|navy|sand] [--out <dossier>]
 //
 // --figure : mannequin homme (défaut) ou femme. Un personnage féminin posé sur
 // un mannequin masculin garde des épaules et des proportions d'homme ; chaque
@@ -32,11 +32,14 @@ const execFileAsync = promisify(execFile);
 const log = (message) => console.error(`[vessel] ${message}`);
 
 const BUCKET = "swap-inputs";
-// Une planche par genre de mannequin. L'ancienne clé sans suffixe
-// (presets/_mannequin-sheet.png) est celle du mannequin homme d'origine.
-const SHEET_KEYS = {
-  homme: "presets/_mannequin-sheet-m.png",
-  femme: "presets/_mannequin-sheet-f.png",
+// Une planche par genre et par couleur de mannequin : le site pose un
+// mannequin de couleur différente sur chaque personne remplacée (voir
+// MANNEQUINS dans src/lib/higgsfield.ts). L'ancienne clé sans suffixe
+// (presets/_mannequin-sheet.png) est celle du mannequin homme gris d'origine.
+const COLORS = {
+  grey: { cloth: "matte mid-grey", word: "grey", suffix: "" },
+  navy: { cloth: "matte deep navy-blue", word: "navy-blue", suffix: "-navy" },
+  sand: { cloth: "matte light sand-beige", word: "sand-beige", suffix: "-sand" },
 };
 const HF_BASE = "https://api.higgsfield.ai";
 const HF_SWAP_ENDPOINT = "higgsfiled/genjutsu/object-swap/v1.0";
@@ -46,7 +49,7 @@ const FPS = 30;
 const ASPECT_RATIOS = ["9:16", "16:9", "1:1"];
 
 // --- Arguments ---------------------------------------------------------------
-const VALUE_FLAGS = new Set(["start", "seconds", "target", "out", "figure"]);
+const VALUE_FLAGS = new Set(["start", "seconds", "target", "out", "figure", "color"]);
 const opts = {};
 const positional = [];
 for (let i = 0; i < process.argv.slice(2).length; i++) {
@@ -77,7 +80,9 @@ if (!sheetOnly && (!(seconds >= GENJUTSU_MIN_SECONDS) || seconds > GENJUTSU_MAX_
 }
 const hd = opts.hd === true;
 const figure = String(opts.figure ?? "homme").toLowerCase().startsWith("f") ? "femme" : "homme";
-const SHEET_KEY = SHEET_KEYS[figure];
+const color = COLORS[opts.color] ? opts.color : "grey";
+const { cloth, word } = COLORS[color];
+const SHEET_KEY = `presets/_mannequin-sheet-${figure === "femme" ? "f" : "m"}${COLORS[color].suffix}.png`;
 const outDir = opts.out ?? path.join(tmpdir(), "twinpost-vessel", name ?? "sheet");
 
 // --- Environnement (.env.local) ----------------------------------------------
@@ -124,23 +129,22 @@ const SHEET_LAYOUT =
   "Bottom row: four full-body shots in the same outfit — front facing camera, three-quarter left, left profile, rear view. " +
   "Every panel shows the identical figure. Plain white background in every panel, soft even studio lighting, " +
   "thin light-grey lines separating the eight panels, no text, no labels, no captions.";
+const OUTFIT = `plain ${cloth} fitted crew-neck t-shirt, plain ${cloth} straight trousers, plain ${word} sneakers, `;
 const SHEET_PROMPTS = {
   homme:
     "Professional character reference sheet of one neutral stand-in figure: an adult man of average build, " +
-    "plain matte mid-grey fitted crew-neck t-shirt, plain mid-grey straight trousers, plain grey sneakers, " +
+    OUTFIT +
     "very short dark buzz-cut hair, clean-shaven, neutral medium skin tone, calm neutral expression, " +
     "no accessories, no logo, no jewellery, no glasses, no tattoos. " + SHEET_LAYOUT,
   femme:
     "Professional character reference sheet of one neutral stand-in figure: an adult woman of average build, " +
-    "plain matte mid-grey fitted crew-neck t-shirt, plain mid-grey straight trousers, plain grey sneakers, " +
+    OUTFIT +
     "dark hair tied back in a simple low bun, no makeup, neutral medium skin tone, calm neutral expression, " +
     "no accessories, no logo, no jewellery, no glasses, no tattoos. " + SHEET_LAYOUT,
 };
 const FIGURE_DESCRIPTIONS = {
-  homme:
-    "a plain adult man in a matte mid-grey fitted t-shirt, grey trousers and grey sneakers, very short hair, no accessories",
-  femme:
-    "a plain adult woman in a matte mid-grey fitted t-shirt, grey trousers and grey sneakers, dark hair tied back in a low bun, no accessories",
+  homme: `a plain adult man in a ${cloth} fitted t-shirt, ${word} trousers and ${word} sneakers, very short hair, no accessories`,
+  femme: `a plain adult woman in a ${cloth} fitted t-shirt, ${word} trousers and ${word} sneakers, dark hair tied back in a low bun, no accessories`,
 };
 
 async function mannequinSheet() {
@@ -224,10 +228,10 @@ function swapPrompt(target) {
   return [
     `STRICT CHARACTER AND WARDROBE REPLACEMENT. Edit the uploaded source video: one person is replaced by the neutral stand-in figure shown in the reference image (${FIGURE_DESCRIPTIONS[figure]}). The reference image shows multiple views of ONE figure, not multiple figures.`,
     "SOURCE PRIORITY — The source video controls all movement, performance, lip-sync, facial expressions, gaze, gestures, interactions, body positions, camera movement, framing, editing and timing. The reference image controls only the figure's identity: face, hair, skin, body proportions and clothing.",
-    `CHARACTER — Replace ${describeTarget(target)} with this neutral figure. Match its plain grey clothing, hairstyle, neutral face and skin exactly as shown. Preserve this original person's exact actions, rhythm, posture, head movements, hand gestures, gaze, facial expressions and lip-sync throughout the entire video; do not add a smile or extra mouth movement.`,
+    `CHARACTER — Replace ${describeTarget(target)} with this neutral figure. Match its plain ${word} clothing, hairstyle, neutral face and skin exactly as shown. Preserve this original person's exact actions, rhythm, posture, head movements, hand gestures, gaze, facial expressions and lip-sync throughout the entire video; do not add a smile or extra mouth movement.`,
     "PERMANENT IDENTITY ASSIGNMENT — Bind the figure to that original person for the full clip, through turns, profile views, back views, motion blur and temporary occlusion. Never blend faces or transfer gestures to another person.",
     "ENVIRONMENT AND INTEGRATION — Keep the original background, set, objects, every other person, lighting, shadows, perspective and composition exactly unchanged. Keep the original duration, aspect ratio, cuts and playback speed. Do not copy the reference image's background, panel layout, borders, labels or static poses into the output.",
-    "FINAL RESULT — The same source video and the same performance, with only this person's identity, hair and clothing replaced by the neutral grey figure.",
+    `FINAL RESULT — The same source video and the same performance, with only this person's identity, hair and clothing replaced by the neutral ${word} figure.`,
   ].join("\n\n");
 }
 

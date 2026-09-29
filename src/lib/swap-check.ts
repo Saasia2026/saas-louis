@@ -90,21 +90,24 @@ export async function polishSwapInstructions(text: string): Promise<string | nul
 const PrecheckSchema = z.object({
   minor: z.boolean(),
   nudity: z.boolean(),
-  feminine: z.boolean(),
+  feminine: z.array(z.boolean()),
   reason: z.string(),
 });
 
-// feminine : silhouette du premier personnage, pour choisir le mannequin de
-// la méthode « base neutre » (voir MANNEQUIN_SHEETS).
+// feminine : silhouette de chaque personnage, dans l'ordre, pour choisir son
+// mannequin (voir mannequinSheetPath).
 export type SwapPrecheck =
-  | { blocked: false; feminine?: boolean }
+  | { blocked: false; feminine?: boolean[] }
   | { blocked: true; cause: "minor" | "nudity"; reason: string };
 
 export async function precheckSwapInputs(input: {
   // Images JPEG (base64) réparties sur le passage choisi.
   frames: string[];
-  // Photos des personnages (URLs lisibles de l'extérieur).
+  // Photos des personnages (URLs lisibles de l'extérieur) : d'abord la photo
+  // principale de chaque personnage, puis les autres (visage, lieu…).
   photoUrls: string[];
+  // Nombre de personnages, donc de photos principales en tête de liste.
+  characterCount: number;
 }): Promise<SwapPrecheck> {
   const response = await new Anthropic().beta.messages.parse({
     model: "claude-sonnet-5",
@@ -116,7 +119,7 @@ export async function precheckSwapInputs(input: {
 
 - "minor": true only if a person who clearly looks like a child or a young teenager (roughly under 16) is visible in the clip frames or in a character photo. Adults, young-looking adults and cartoon or animal characters are not minors. When unsure, false.
 - "nudity": true only if there is visible nudity or sexual content (exposed genitals, buttocks or female breasts, sexual acts). Swimwear, sportswear, a shirtless man, dancing or a fight are not nudity. When unsure, false.
-- "feminine": true if the FIRST character photo shows a woman or a clearly feminine humanoid character (body shape, silhouette); false for men, animals, creatures, objects, or when unsure. Used only to pick a neutral stand-in body of matching build.
+- "feminine": one boolean per character, in order (the first photos are the characters' main photos, one each; their count is given below). True if that character shows a woman or a clearly feminine humanoid character (body shape, silhouette); false for men, animals, creatures, objects, or when unsure. Used only to pick a neutral stand-in body of matching build.
 - "reason": one short sentence in French saying what you saw, for the creator (for example "Un enfant est visible au premier plan de la troisième image."), or "ok".
 
 Do not identify anyone.`,
@@ -124,7 +127,10 @@ Do not identify anyone.`,
       {
         role: "user",
         content: [
-          { type: "text", text: "Character photos:" },
+          {
+            type: "text",
+            text: `Character photos (the first ${input.characterCount} are the main photo of each character, in order):`,
+          },
           ...input.photoUrls.map((url) => ({
             type: "image" as const,
             source: { type: "url" as const, url },

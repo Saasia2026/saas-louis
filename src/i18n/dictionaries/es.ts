@@ -78,7 +78,6 @@ export const es: Dictionary = {
     mockBadge: "720p · 17 s",
     models: [
       "Genjutsu",
-      "Kling O3",
       "Nano Banana Pro",
       "Sonido original conservado",
       "Cortes respetados",
@@ -118,8 +117,7 @@ export const es: Dictionary = {
       },
     ],
     pricingTitle: "Créditos, sin suscripción",
-    pricingText:
-      "Calidad máx.: {max} créditos por segundo. Económico: {budget} créditos por segundo. Más {sheet} créditos por vídeo para la ficha del personaje.",
+    pricingText: "{max} créditos por segundo en 720p, {hd} en 1080p. Más {sheet} créditos por personaje para su ficha.",
     popular: "Popular",
     perCredit: "el crédito",
     finalTitleTop: "Tu próximo vídeo",
@@ -196,22 +194,13 @@ export const es: Dictionary = {
     addCharacter: "Añadir un personaje",
     removeCharacter: "Quitar este personaje",
     characterTarget: "¿A quién reemplaza el personaje {n}? ej.: el hombre de camiseta roja",
-    severalHint: "Varios personajes: solo Calidad máx. · +{sheet} créditos por personaje",
-    facePass: "+ rostro exacto",
-    facePassHint:
-      "Magic Hour aplica después el rostro de la foto en cada fragmento renderizado · +{rate} crédito/s",
+    severalHint: "Varios personajes · +{sheet} créditos por personaje",
     partNoFace: "rostro no aplicado, pase reembolsado",
-    faceImage: "Rostro exacto",
-    faceImageHint:
-      "Foto del rostro a aplicar, de frente y nítida. La foto del personaje solo define entonces el cuerpo y la ropa.",
     decorTitle: "Cambio de decorado (opcional)",
     decorImage: "Foto del lugar",
     decorHint:
       "Sube una foto del lugar: la escena se reconstruye en ese decorado. Sin foto, se conserva el decorado del clip.",
     instructions: "Instrucción a la IA",
-    vessel: "Base neutra",
-    vesselHint:
-      "Método del maniquí: la persona del clip se convierte primero en un maniquí neutro y luego en tu personaje — nada del original se transparenta. Dos pasadas Calidad máx.: precio del motor ×2.",
     instructionsPlaceholder:
       "«Convierte la silla en un coche deportivo»…",
     targetsMissing: "Indica a quién reemplaza cada personaje",
@@ -253,7 +242,6 @@ export const es: Dictionary = {
     removePhoto: "Quitar esta foto",
     incomplete:
       "Vídeo incompleto: {done} de {total} secuencias reemplazadas. Las demás conservan las imágenes originales y te hemos devuelto su precio. Rehazlas abajo o elige otro fragmento.",
-    tryBudget: "Relanzar en Económico",
     length: "Duración",
     lengthAll: "Todo el clip ({seconds} s)",
     download: "Descargar",
@@ -326,20 +314,12 @@ export const es: Dictionary = {
 
   swapEngines: {
     genjutsu: {
-      label: "Calidad máx.",
-      hint: "Genjutsu · {rate} créditos/s · hasta {max} s, cortes incluidos, secuencias repetibles",
-    },
-    kling: {
-      label: "Económico",
-      hint: "Kling · {rate} créditos/s · hasta {max} s, planos repetibles uno a uno",
+      label: "720p",
+      hint: "{rate} créditos/s · hasta {max} s, cortes incluidos, secuencias rehacibles",
     },
     genjutsuHd: {
-      label: "Calidad máx. 1080p",
-      hint: "Genjutsu en Full HD · {rate} créditos/s · hasta {max} s",
-    },
-    magichour: {
-      label: "Solo el rostro",
-      hint: "Magic Hour · {rate} crédito/s · hasta {max} s, solo cambia el rostro; gestos, decorado y sonido se conservan",
+      label: "1080p",
+      hint: "Full HD · {rate} créditos/s · hasta {max} s",
     },
   },
 
@@ -364,8 +344,7 @@ export const es: Dictionary = {
     insufficientCredits: "No tienes créditos suficientes. Recárgalos desde la página Créditos.",
     outOfCredit:
       "La cuenta del servicio de generación se ha quedado sin crédito. Te hemos devuelto los créditos.",
-    genjutsuUnavailable:
-      "El motor Calidad máx. no está disponible por el momento. Te hemos devuelto los créditos: vuelve a lanzarlo en Económico o inténtalo más tarde.",
+    genjutsuUnavailable: "El motor no está disponible por el momento. Te hemos devuelto los créditos: inténtalo de nuevo en unos minutos.",
     swapTooShort: "El fragmento debe durar al menos {min} s.",
     swapRedoUnavailable: "Este plano no se puede rehacer.",
     cancelUnavailable: "Demasiado tarde para cancelar: el vídeo ya se está montando.",
@@ -386,15 +365,13 @@ export const es: Dictionary = {
   creditsPage: {
     eyebrow: "Facturación",
     title: "Créditos",
-    intro:
-      "Calidad máx.: {max} créditos por segundo. Económico: {budget} créditos por segundo. Más {sheet} créditos por personaje. En packs, o cada mes con una suscripción.",
+    intro: "{max} créditos por segundo en 720p, {hd} en 1080p. Más {sheet} créditos por personaje. En packs, o cada mes con una suscripción.",
     balance: "Saldo actual",
     secure: "Pago seguro con Stripe",
     popular: "Popular",
     creditsRow: "Créditos",
     perCreditRow: "Precio por crédito",
-    secondsMaxRow: "Segundos en Calidad máx.",
-    secondsBudgetRow: "Segundos en Económico",
+    secondsMaxRow: "Segundos de vídeo (720p)",
     buy: "Comprar",
     footer: "Los créditos no caducan. Un reemplazo que falla te devuelve sus créditos.",
     packs: { starter: "Descubrimiento", creator: "Creador", studio: "Studio" },

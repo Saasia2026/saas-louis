@@ -49,8 +49,8 @@ export type PredictionState = {
 // Messages enregistrés en base (traduits à l'affichage, voir generate/actions.ts).
 export const OUT_OF_CREDIT_ERROR =
   "Le compte du service de génération n'a plus de crédit. Tes crédits ont été rendus.";
-// Moteur Qualité max (Higgsfield) à court de crédit chez le fournisseur : le
-// studio propose de relancer en Économique.
+// Higgsfield à court de crédit chez le fournisseur. Le texte sert aussi de
+// clé de traduction pour les erreurs déjà enregistrées : ne pas le changer.
 export const GENJUTSU_UNAVAILABLE_ERROR =
   "Le moteur Qualité max est momentanément indisponible. Tes crédits ont été rendus.";
 export const CONTENT_REFUSED_ERROR =

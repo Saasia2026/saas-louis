@@ -57,6 +57,12 @@ export function swapRate(engine: SwapEngine, hd = false) {
     : SWAP_ENGINES[engine].creditsPerSecond;
 }
 
+// Crédits par seconde de la méthode du site (le mannequin) : deux passes
+// Genjutsu, celle des mannequins puis celle des personnages.
+export function swapMethodRate(hd = false) {
+  return swapRate("genjutsu", hd) * 2;
+}
+
 // Photos d'un personnage envoyées à Genjutsu (en pied, visage, profil…) :
 // Higgsfield accepte 8 images de référence par envoi, tous personnages confondus.
 export const GENJUTSU_MAX_IMAGES = 8;
@@ -186,10 +192,8 @@ export function swapCredits(
   );
 }
 
-// Secondes de remplacement qu'un nombre de crédits permet, fiche comprise.
-export function swapSecondsFor(credits: number, engine: SwapEngine) {
-  return Math.max(
-    0,
-    Math.floor((credits - swapSheetCredits(engine)) / SWAP_ENGINES[engine].creditsPerSecond),
-  );
+// Secondes de remplacement (720p, un personnage) qu'un nombre de crédits
+// permet avec la méthode du site, fiche comprise.
+export function swapMethodSecondsFor(credits: number) {
+  return Math.max(0, Math.floor((credits - SWAP_SHEET_CREDITS) / swapMethodRate()));
 }

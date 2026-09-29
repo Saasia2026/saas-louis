@@ -3,29 +3,26 @@
 import { after } from "next/server";
 import { fmt } from "@/i18n/config";
 import { getDictionary } from "@/i18n/server";
-import { createFalCharacterPlanche, createFalCharacterSheet, falEnabled, uploadToFal } from "@/lib/fal";
+import { createFalCharacterPlanche, falEnabled } from "@/lib/fal";
 import {
-  DEFAULT_SWAP_ENGINE,
   SWAP_ENGINES,
   SWAP_INPUTS_BUCKET,
   SWAP_MAX_CHARACTERS,
   GENJUTSU_MIN_SECONDS,
   genjutsuBilledSeconds,
-  isSwapEngine,
   photosPerCharacter,
-  klingBilledSeconds,
   swapCredits,
   swapShotCredits,
   type AspectRatio,
   type SwapEngine,
 } from "@/lib/generation";
 import {
-  MANNEQUIN_SHEETS,
+  MANNEQUIN_COLORS,
+  mannequinSheetPath,
   higgsfieldEnabled,
   uploadToHiggsfield,
   type MannequinFigure,
 } from "@/lib/higgsfield";
-import { magichourEnabled } from "@/lib/magichour";
 import { presetById } from "@/lib/presets";
 import {
   errorMessage,
@@ -38,10 +35,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { polishSwapInstructions, precheckSwapInputs } from "@/lib/swap-check";
 import {
-  SWAP_PART_MIN_SECONDS,
   advanceSwap,
   cancelSwap as cancelSwapGeneration,
-  firstFrame,
   preparePart,
   probeVideo,
   sampleFrames,
@@ -68,10 +63,8 @@ const INPUT_URL_TTL_SECONDS = 60 * 60;
 // Images du passage montrées au contrôle d'avant paiement.
 const PRECHECK_FRAMES = 6;
 
-// Genjutsu : les photos du personnage déposées par le créateur, telles
-// quelles, envoyées chez Higgsfield. Une fiche redessinée par un autre modèle
-// ressemble moins au personnage, et la faire passait 30 à 60 s avant le
-// premier rendu.
+// Photos déposées par le créateur (URL signées), envoyées chez Higgsfield
+// telles quelles.
 async function uploadPhotos(urls: string[]) {
   return Promise.all(
     urls.map(async (url) => {
@@ -85,62 +78,40 @@ async function uploadPhotos(urls: string[]) {
   );
 }
 
-// Kling : fiche d'un personnage à partir de son image déposée (URL signée).
-async function prepareCharacter(imageUrl: string) {
-  const image = await fetch(imageUrl);
-  if (!image.ok) throw new Error(`Image du personnage : ${image.status}`);
-  const characterUrl = await uploadToFal(
-    await image.arrayBuffer(),
-    image.headers.get("content-type") ?? "image/png",
-  );
-  // Fiche personnage, commune à tous les plans. Sans elle, l'image déposée
-  // sert de face.
-  const sheet = await createFalCharacterSheet(characterUrl).catch((e) => {
-    if (isOutOfCredit(e)) throw e;
-    console.error("createFalCharacterSheet", errorMessage(e));
-    return null;
-  });
-  return {
-    sheet: { frontUrl: sheet?.frontUrl ?? characterUrl, sideUrl: sheet?.sideUrl },
-    urls: undefined as string[] | undefined,
-  };
+// Planche d'un mannequin (voir mannequinSheetPath), envoyée chez Higgsfield.
+// Introuvable : le remplacement échoue et tout est rendu, plutôt que de
+// facturer une passe qui n'aurait pas lieu.
+async function uploadMannequinSheet(admin: ReturnType<typeof createAdminClient>, path: string) {
+  const { data, error } = await admin.storage.from(SWAP_INPUTS_BUCKET).download(path);
+  if (!data) throw new Error(`Planche du mannequin ${path} : ${error?.message ?? "introuvable"}`);
+  return uploadToHiggsfield(await data.arrayBuffer(), "image/png");
 }
 
-// Remplacement de personnage : le clip et les photos sont déjà déposés dans
-// swap-inputs par le navigateur. On mesure le clip, on le contrôle et on le
-// découpe (rien n'est débité si le contrôle le refuse), on débite, puis chaque plan avance en trois étapes (image clé,
-// vidéo, contrôle) à chaque suivi de getGeneration (voir advanceSwap). Avec
-// le moteur genjutsu, le passage est rendu en séquences (voir swap.ts),
-// avec un ou plusieurs personnages.
+// Remplacement de personnage, par la méthode du mannequin — la seule du
+// site. Le clip et les photos sont déjà déposés dans swap-inputs par le
+// navigateur. On mesure le clip, on le contrôle et on le découpe en
+// séquences (rien n'est débité si le contrôle le refuse), on débite, puis
+// chaque séquence passe deux fois par Genjutsu : les personnes deviennent des
+// mannequins neutres, puis les mannequins deviennent les personnages (voir
+// advanceParts dans swap.ts). Un à trois personnages.
 export async function startSwap(input: {
   videoPath: string;
-  // Chaque personnage, ses autres photos (genjutsu : visage, profil…) et qui
-  // il remplace (facultatif s'il est seul). Plus d'un : genjutsu seulement.
+  // Chaque personnage, ses autres photos (visage, profil…) et qui il
+  // remplace (facultatif s'il est seul).
   characters: { imagePath: string; extraPaths?: string[]; target?: string }[];
-  engine?: SwapEngine;
   // Plan prêt (voir presets.ts) : son clip tient lieu de videoPath, et qui
   // chaque personnage remplace vient de lui.
   presetId?: string;
-  // Genjutsu en 1080p.
+  // Rendu en 1080p.
   hd?: boolean;
-  // Option « + visage exact » : Magic Hour pose le visage de la photo sur
-  // chaque morceau rendu (Genjutsu ou Kling, un seul personnage).
-  face?: boolean;
-  // Photo du visage posé, à part de celle du personnage : seule celle-ci
-  // passe par le moteur vidéo et son filtre. Absente : la photo du personnage.
-  faceImagePath?: string;
-  // Changement de décor (genjutsu) : photo du lieu déposée par le créateur.
-  // La scène est reconstruite dans ce décor (Motion Transfer). Absente : le
-  // décor du clip est gardé, seuls les personnages changent.
+  // Changement de décor : photo du lieu déposée par le créateur. La scène est
+  // reconstruite dans ce décor (Motion Transfer). Absente : le décor du clip
+  // est gardé, seuls les personnages changent.
   decorImagePath?: string;
-  // Consignes libres (genjutsu), facultatives : demandes en plus du
-  // remplacement (« transforme la chaise en voiture de sport »), dans la
-  // langue du créateur. Vides : seuls les références et les champs remplis
-  // comptent.
+  // Consignes libres, facultatives : demandes en plus du remplacement
+  // (« transforme la chaise en voiture de sport »), dans la langue du
+  // créateur. Vides : seuls les références et les champs remplis comptent.
   instructions?: string;
-  // Base neutre (méthode du mannequin, genjutsu, un seul personnage) : la
-  // personne du clip devient d'abord un mannequin neutre, puis le personnage.
-  vessel?: boolean;
   // Début du passage gardé, en secondes, pour un clip trop long.
   start?: number;
   // Durée du passage voulue, en secondes (au plus celle du moteur).
@@ -153,15 +124,9 @@ export async function startSwap(input: {
   const { data: auth } = await supabase.auth.getClaims();
   const userId = auth?.claims?.sub;
   if (!userId) return { error: t.common.sessionExpired };
-  const engine = isSwapEngine(input.engine) ? input.engine : DEFAULT_SWAP_ENGINE;
-  if (engine === "genjutsu" && !higgsfieldEnabled()) return { error: errors.startFailed };
-  if (engine === "kling" && !falEnabled()) return { error: errors.startFailed };
-  if (engine === "magichour" && !magichourEnabled()) return { error: errors.startFailed };
-  const genjutsu = engine === "genjutsu";
-  const magichour = engine === "magichour";
-  const hd = genjutsu && input.hd === true;
-  const face = input.face === true && !magichour;
-  if (face && !magichourEnabled()) return { error: errors.startFailed };
+  if (!higgsfieldEnabled()) return { error: errors.startFailed };
+  const engine: SwapEngine = "genjutsu";
+  const hd = input.hd === true;
 
   // Chemins sous le dossier de l'utilisateur uniquement.
   const own = (p: unknown) =>
@@ -170,9 +135,8 @@ export async function startSwap(input: {
   if (input.presetId !== undefined && !preset) return { error: errors.swapFiles };
   const videoPath = preset ? preset.path : input.videoPath;
   const list = Array.isArray(input.characters) ? input.characters : [];
-  // Photos par personnage : 8 au plus en tout chez Higgsfield ; Kling n'en
-  // lit qu'une.
-  const perCharacter = genjutsu ? photosPerCharacter(list.length) : 1;
+  // Photos par personnage : 8 au plus en tout chez Higgsfield.
+  const perCharacter = photosPerCharacter(list.length);
   const characters = list.map((c, i) => ({
     imagePath: c?.imagePath,
     extraPaths: (Array.isArray(c?.extraPaths) ? c.extraPaths : []).slice(0, perCharacter - 1),
@@ -185,42 +149,31 @@ export async function startSwap(input: {
   }));
   if (!characters.length || characters.length > SWAP_MAX_CHARACTERS) return { error: errors.swapFiles };
   if (preset && characters.length > preset.people.length) return { error: errors.swapFiles };
-  const faceImagePath = face && typeof input.faceImagePath === "string" ? input.faceImagePath : undefined;
-  const decorImagePath =
-    genjutsu && typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
+  const decorImagePath = typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
   const rawInstructions =
-    genjutsu && typeof input.instructions === "string" ? input.instructions.trim().slice(0, 500) : "";
+    typeof input.instructions === "string" ? input.instructions.trim().slice(0, 500) : "";
   if (
     (!preset && !own(input.videoPath)) ||
     !characters.every((c) => own(c.imagePath) && c.extraPaths.every(own)) ||
-    (faceImagePath !== undefined && !own(faceImagePath)) ||
     (decorImagePath !== undefined && !own(decorImagePath))
   ) {
     return { error: errors.swapFiles };
   }
   const several = characters.length > 1;
-  // Le mannequin remplace une seule personne.
-  const vessel = genjutsu && input.vessel === true && !several;
-  // Plusieurs personnages : Genjutsu seul sait les placer, et il faut savoir
-  // qui chacun remplace.
-  if (several && !genjutsu) return { error: errors.startFailed };
+  // Plusieurs personnages : il faut savoir qui chacun remplace.
   if (several && characters.some((c) => !c.target)) return { error: errors.swapTargets };
-  // La passe visage pose un seul visage sur tous les visages du clip.
-  if (several && face) return { error: errors.startFailed };
 
   const admin = createAdminClient();
-  // Le clip, puis chaque personnage : sa photo principale et ses autres photos.
+  // Le clip, puis chaque personnage (sa photo principale et ses autres
+  // photos), puis le lieu.
   const photoPaths = characters.map((c) => [c.imagePath as string, ...c.extraPaths]);
-  const extraPaths = [...(faceImagePath ? [faceImagePath] : []), ...(decorImagePath ? [decorImagePath] : [])];
+  const extraPaths = decorImagePath ? [decorImagePath] : [];
   const { data: signed } = await admin.storage
     .from(SWAP_INPUTS_BUCKET)
     .createSignedUrls([videoPath, ...photoPaths.flat(), ...extraPaths], INPUT_URL_TTL_SECONDS);
   const [sourceUrl, ...rest] = (signed ?? []).map((s) => s.signedUrl);
   const flatUrls = rest.slice(0, photoPaths.flat().length);
-  const faceUrl = faceImagePath ? rest[photoPaths.flat().length] : undefined;
-  const decorSignedUrl = decorImagePath
-    ? rest[photoPaths.flat().length + (faceImagePath ? 1 : 0)]
-    : undefined;
+  const decorSignedUrl = decorImagePath ? rest[photoPaths.flat().length] : undefined;
   if (
     !sourceUrl ||
     rest.length !== photoPaths.flat().length + extraPaths.length ||
@@ -250,22 +203,20 @@ export async function startSwap(input: {
     // Plan prêt : sa durée annoncée, donc son prix.
     preset?.seconds ?? Infinity,
     typeof input.seconds === "number" && Number.isFinite(input.seconds)
-      ? Math.max(SWAP_PART_MIN_SECONDS, input.seconds)
+      ? Math.max(GENJUTSU_MIN_SECONDS, input.seconds)
       : Infinity,
   );
   // Genjutsu refuse une vidéo de moins de 4 s.
-  const minSeconds = genjutsu ? GENJUTSU_MIN_SECONDS : SWAP_PART_MIN_SECONDS;
-  if (clipSeconds < minSeconds) {
-    return { error: fmt(errors.swapTooShort, { min: Math.ceil(minSeconds) }) };
+  if (clipSeconds < GENJUTSU_MIN_SECONDS) {
+    return { error: fmt(errors.swapTooShort, { min: Math.ceil(GENJUTSU_MIN_SECONDS) }) };
   }
   const durationSeconds = Math.max(1, Math.round(clipSeconds));
   const target = characters[0].target || undefined;
 
-  // Avant de faire payer, en même temps : le découpage, qui fixe le prix
-  // (Kling : un morceau par plan ; Genjutsu : des séquences), et le contrôle
-  // du clip et des photos. Le filtre des moteurs refuse les enfants et la
-  // nudité : le créateur le sait tout de suite, sans rien débiter. Contrôle
-  // indisponible : le clip passe.
+  // Avant de faire payer, en même temps : le découpage en séquences, qui
+  // fixe le prix, et le contrôle du clip et des photos. Le filtre du moteur
+  // refuse les enfants et la nudité : le créateur le sait tout de suite, sans
+  // rien débiter. Contrôle indisponible : le clip passe.
   const [shots, precheck, instructions] = await Promise.all([
     splitIntoParts(sourceUrl, start, clipSeconds, engine).catch((e) => {
       console.error("startSwap: découpage", errorMessage(e));
@@ -275,11 +226,8 @@ export async function startSwap(input: {
       .then((frames) =>
         precheckSwapInputs({
           frames,
-          photoUrls: [
-            ...imageUrls,
-            ...(faceUrl ? [faceUrl] : []),
-            ...(decorSignedUrl ? [decorSignedUrl] : []),
-          ],
+          photoUrls: [...imageUrls, ...(decorSignedUrl ? [decorSignedUrl] : [])],
+          characterCount: characters.length,
         }),
       )
       .catch((e) => {
@@ -304,19 +252,21 @@ export async function startSwap(input: {
     };
   }
   if (!shots?.length) return { error: errors.swapUnreadable };
-  // Silhouette du mannequin : celle du personnage (contrôle indisponible :
-  // homme par défaut).
-  const figure: MannequinFigure = precheck && !precheck.blocked && precheck.feminine ? "femme" : "homme";
+  // Mannequin de chaque personnage : sa silhouette (contrôle indisponible :
+  // homme) et une couleur à lui, qui le distingue à la seconde passe.
+  const feminine = precheck && !precheck.blocked ? precheck.feminine : undefined;
+  const mannequins = characters.map((_, i) => ({
+    figure: (feminine?.[i] ? "femme" : "homme") as MannequinFigure,
+    color: MANNEQUIN_COLORS[i],
+  }));
 
   const metadata = {
     engine,
     ...(hd && { hd: true }),
-    ...(face && { face: true }),
-    ...(faceImagePath && { face_image_path: faceImagePath }),
     ...(decorImagePath && { decor_image_path: decorImagePath }),
     ...(instructions && { instructions }),
-    ...(vessel && { vessel: true, vessel_figure: figure }),
-    ...(genjutsu && { photos: true }),
+    vessel: true,
+    photos: true,
     aspect_ratio: probe.aspectRatio,
     source_video_path: videoPath,
     ...(preset && { preset: preset.id }),
@@ -325,15 +275,13 @@ export async function startSwap(input: {
     started_at: new Date().toISOString(),
     ...(target && { target }),
   };
-  // Secondes réellement facturées par le moteur, une fois le clip découpé.
-  const billedSeconds = magichour
-    ? Math.ceil(clipSeconds)
-    : (genjutsu ? genjutsuBilledSeconds : klingBilledSeconds)(shots.map((s) => s.seconds));
+  // Secondes réellement facturées par passe, une fois le clip découpé.
+  const billedSeconds = genjutsuBilledSeconds(shots.map((s) => s.seconds));
   const debit = () =>
     admin.rpc("start_swap_generation", {
       p_user_id: userId,
       p_duration_seconds: durationSeconds,
-      // Les morceaux sont réencodés à 30 images/s.
+      // Les séquences sont réencodées à 30 images/s.
       p_frames_per_second: 30,
       p_metadata: metadata,
       p_engine: engine,
@@ -341,11 +289,8 @@ export async function startSwap(input: {
       // Une fiche par personnage.
       p_characters: characters.length,
       p_hd: hd,
-      // Absent sans l'option : la fonction reste appelable tant que la
-      // migration swap_face_pass n'est pas passée.
-      ...(face && { p_face: true }),
-      // Base neutre : la passe mannequin, au tarif de la passe du personnage.
-      ...(vessel && { p_vessel: true }),
+      // La passe mannequin, au tarif de la passe des personnages.
+      p_vessel: true,
     });
   let { data: generationId, error: rpcError } = await debit();
   // Solde trop bas et recharge automatique activée : la carte est débitée,
@@ -354,7 +299,7 @@ export async function startSwap(input: {
     rpcError?.message.includes("insufficient_credits") &&
     (await autoRecharge(
       userId,
-      swapCredits(durationSeconds, engine, billedSeconds, characters.length, hd, face, vessel),
+      swapCredits(durationSeconds, engine, billedSeconds, characters.length, hd, false, true),
     ))
   ) {
     ({ data: generationId, error: rpcError } = await debit());
@@ -368,70 +313,32 @@ export async function startSwap(input: {
   }
 
   try {
-    // En même temps, pour ne pas faire attendre : les morceaux du clip, les
-    // références de chaque personnage (Genjutsu : ses photos ; Kling : sa
-    // fiche), la photo du lieu s'il y en a une et la planche du mannequin.
-    const [parts, prepared, decorUrl, vesselSheetUrl] = await Promise.all([
-      // Kling : chaque plan avec sa première image (pour l'image clé), déposés
-      // chez fal (Kling ne lit pas les URLs signées de Supabase). Genjutsu :
-      // chaque séquence, déposée chez Higgsfield. Magic Hour : rien à
-      // préparer, il lit le clip sur une URL signée refaite à l'envoi et le
-      // découpe lui-même (voir magicHourInputs).
+    // En même temps, pour ne pas faire attendre : les séquences du clip, les
+    // références de chaque personnage (planche IA et photos), la photo du
+    // lieu s'il y en a une et la planche de chaque mannequin.
+    const [parts, prepared, decorUrl, sheetUrls] = await Promise.all([
       mapInBatches(shots, PREPARE_BATCH, async (shot): Promise<SwapPart> => {
-        if (magichour) return { ...shot, stage: "video" };
-        if (genjutsu) {
-          const clip = await preparePart(sourceUrl, start + shot.start, shot.seconds, "genjutsu", hd);
-          return { ...shot, videoUrl: await uploadToHiggsfield(clip, "video/mp4"), stage: "video" };
-        }
-        const clip = await preparePart(sourceUrl, start + shot.start, shot.seconds);
-        const frame = await firstFrame(clip);
-        const [videoUrl, firstFrameUrl] = await Promise.all([
-          uploadToFal(clip, "video/mp4"),
-          uploadToFal(frame.png, "image/png"),
-        ]);
-        return {
-          ...shot,
-          videoUrl,
-          firstFrameUrl,
-          width: frame.width,
-          height: frame.height,
-          stage: "keyframe",
-        };
+        const clip = await preparePart(sourceUrl, start + shot.start, shot.seconds, "genjutsu", hd);
+        return { ...shot, videoUrl: await uploadToHiggsfield(clip, "video/mp4"), stage: "video" };
       }),
-      // Magic Hour lit la photo telle quelle (voir magicHourInputs).
-      magichour
-        ? [{ sheet: { frontUrl: imageUrls[0]! }, urls: undefined as string[] | undefined }]
-                 : genjutsu
-          ? Promise.all(
-              photoUrls.map(async (urls) => {
-                const planche = falEnabled()
-                  ? await createFalCharacterPlanche(urls[0]).catch((e) => {
-                      if (isOutOfCredit(e)) throw e;
-                      console.error("createFalCharacterPlanche", errorMessage(e));
-                      return null;
-                    })
-                  : null;
-                const toUpload = planche ? [planche, ...urls] : urls;
-                return {
-                  sheet: { frontUrl: planche ?? urls[0] },
-                  urls: await uploadPhotos(toUpload),
-                };
-              }),
-            )
-          : Promise.all(imageUrls.map((url) => prepareCharacter(url!))),
+      Promise.all(
+        photoUrls.map(async (urls) => {
+          const planche = falEnabled()
+            ? await createFalCharacterPlanche(urls[0]).catch((e) => {
+                if (isOutOfCredit(e)) throw e;
+                console.error("createFalCharacterPlanche", errorMessage(e));
+                return null;
+              })
+            : null;
+          const toUpload = planche ? [planche, ...urls] : urls;
+          return {
+            sheet: { frontUrl: planche ?? urls[0] },
+            urls: await uploadPhotos(toUpload),
+          };
+        }),
+      ),
       decorSignedUrl ? uploadPhotos([decorSignedUrl]).then((urls) => urls[0]) : undefined,
-      // Planche du mannequin (voir MANNEQUIN_SHEETS) : introuvable, le
-      // remplacement échoue et tout est rendu, plutôt que de facturer une
-      // passe qui n'aurait pas lieu.
-      vessel
-        ? admin.storage
-            .from(SWAP_INPUTS_BUCKET)
-            .download(MANNEQUIN_SHEETS[figure])
-            .then(async ({ data, error }) => {
-              if (!data) throw new Error(`Planche du mannequin : ${error?.message ?? "introuvable"}`);
-              return uploadToHiggsfield(await data.arrayBuffer(), "image/png");
-            })
-        : undefined,
+      Promise.all(mannequins.map((m) => uploadMannequinSheet(admin, mannequinSheetPath(m.figure, m.color)))),
     ]);
     // Gardé sur « pending » : une génération déjà remboursée (préparation
     // trop longue, voir GeneratePage) n'est pas relancée.
@@ -442,15 +349,15 @@ export async function startSwap(input: {
         metadata: {
           ...metadata,
           sheet: prepared[0].sheet,
+          character_urls: prepared[0].urls,
           ...(decorUrl && { decor_url: decorUrl }),
-          ...(vesselSheetUrl && { vessel_sheet_url: vesselSheetUrl }),
-          ...(prepared[0].urls && { character_urls: prepared[0].urls }),
+          vessel_mannequins: mannequins.map((m, i) => ({ ...m, sheet_url: sheetUrls[i] })),
           ...(several && {
             characters: characters.map((c, i) => ({
               target: c.target,
               image_path: c.imagePath,
               front_url: prepared[i].sheet.frontUrl,
-              urls: prepared[i].urls ?? [prepared[i].sheet.frontUrl],
+              urls: prepared[i].urls,
             })),
           }),
           swap_parts: parts,

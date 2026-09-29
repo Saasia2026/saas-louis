@@ -78,7 +78,6 @@ export const en: Dictionary = {
     mockBadge: "720p · 17 s",
     models: [
       "Genjutsu",
-      "Kling O3",
       "Nano Banana Pro",
       "Original sound kept",
       "Cuts preserved",
@@ -118,8 +117,7 @@ export const en: Dictionary = {
       },
     ],
     pricingTitle: "Credits, no subscription",
-    pricingText:
-      "Max quality: {max} credits per second. Budget: {budget} credits per second. Plus {sheet} credits per video for the character sheet.",
+    pricingText: "{max} credits per second in 720p, {hd} in 1080p. Plus {sheet} credits per character for their sheet.",
     popular: "Popular",
     perCredit: "per credit",
     finalTitleTop: "Your next video",
@@ -196,22 +194,13 @@ export const en: Dictionary = {
     addCharacter: "Add a character",
     removeCharacter: "Remove this character",
     characterTarget: "Who does character {n} replace? e.g. the man in the red t-shirt",
-    severalHint: "Several characters: Max quality only · +{sheet} credits per character",
-    facePass: "+ exact face",
-    facePassHint:
-      "Magic Hour then puts the photo's face on each rendered part · +{rate} credit/s",
+    severalHint: "Several characters · +{sheet} credits per character",
     partNoFace: "face not applied, pass refunded",
-    faceImage: "Exact face",
-    faceImageHint:
-      "Photo of the face to apply, front-facing and sharp. The character photo then only sets the body and outfit.",
     decorTitle: "Background change (optional)",
     decorImage: "Photo of the place",
     decorHint:
       "Drop a photo of a place: the scene is rebuilt in that setting. Without a photo, the clip's own setting is kept.",
     instructions: "AI instruction",
-    vessel: "Neutral base",
-    vesselHint:
-      "Mannequin method: the person in your clip first becomes a neutral stand-in, then your character — nothing of the original shows through. Two Max quality passes: engine price ×2.",
     instructionsPlaceholder:
       "“Turn the chair into a sports car”…",
     targetsMissing: "Say who each character replaces",
@@ -253,7 +242,6 @@ export const en: Dictionary = {
     removePhoto: "Remove this photo",
     incomplete:
       "Incomplete video: {done} of {total} sequences replaced. The others keep the original footage and their price was refunded. Redo them below, or pick another part of the clip.",
-    tryBudget: "Run again in Budget",
     length: "Length",
     lengthAll: "Whole clip ({seconds} s)",
     download: "Download",
@@ -326,20 +314,12 @@ export const en: Dictionary = {
 
   swapEngines: {
     genjutsu: {
-      label: "Max quality",
-      hint: "Genjutsu · {rate} credits/s · up to {max} s, cuts included, sequences can be redone",
-    },
-    kling: {
-      label: "Budget",
-      hint: "Kling · {rate} credits/s · up to {max} s, shots can be redone one by one",
+      label: "720p",
+      hint: "{rate} credits/s · up to {max} s, cuts included, sequences can be redone",
     },
     genjutsuHd: {
-      label: "Max quality 1080p",
-      hint: "Genjutsu in Full HD · {rate} credits/s · up to {max} s",
-    },
-    magichour: {
-      label: "Face only",
-      hint: "Magic Hour · {rate} credit/s · up to {max} s, only the face changes; gestures, set and sound are kept",
+      label: "1080p",
+      hint: "Full HD · {rate} credits/s · up to {max} s",
     },
   },
 
@@ -363,8 +343,7 @@ export const en: Dictionary = {
       "The video model refuses nudity. {reason} Pick another part of the clip or another photo. No credits were charged.",
     insufficientCredits: "Not enough credits. Top up from the Credits page.",
     outOfCredit: "The generation service account is out of credit. Your credits have been refunded.",
-    genjutsuUnavailable:
-      "The Max quality engine is temporarily unavailable. Your credits were refunded: run it again in Budget or try later.",
+    genjutsuUnavailable: "The engine is temporarily unavailable. Your credits were refunded: try again in a few minutes.",
     swapTooShort: "The clip must be at least {min} s long.",
     swapRedoUnavailable: "This shot can't be redone.",
     cancelUnavailable: "Too late to cancel: the video is already being assembled.",
@@ -385,15 +364,13 @@ export const en: Dictionary = {
   creditsPage: {
     eyebrow: "Billing",
     title: "Credits",
-    intro:
-      "Max quality: {max} credits per second. Budget: {budget} credits per second. Plus {sheet} credits per character. In packs, or every month with a subscription.",
+    intro: "{max} credits per second in 720p, {hd} in 1080p. Plus {sheet} credits per character. In packs, or every month with a subscription.",
     balance: "Current balance",
     secure: "Secure payment by Stripe",
     popular: "Popular",
     creditsRow: "Credits",
     perCreditRow: "Price per credit",
-    secondsMaxRow: "Seconds in Max quality",
-    secondsBudgetRow: "Seconds in Budget",
+    secondsMaxRow: "Seconds of video (720p)",
     buy: "Buy",
     footer: "Credits never expire. A replacement that fails refunds its credits.",
     packs: { starter: "Starter", creator: "Creator", studio: "Studio" },

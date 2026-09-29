@@ -80,7 +80,6 @@ export const fr = {
     mockBadge: "720p · 17 s",
     models: [
       "Genjutsu",
-      "Kling O3",
       "Nano Banana Pro",
       "Son d'origine gardé",
       "Coupes respectées",
@@ -120,8 +119,7 @@ export const fr = {
       },
     ],
     pricingTitle: "Des crédits, sans abonnement",
-    pricingText:
-      "Qualité max : {max} crédits la seconde. Économique : {budget} crédits la seconde. Plus {sheet} crédits par vidéo pour la fiche du personnage.",
+    pricingText: "{max} crédits la seconde en 720p, {hd} en 1080p. Plus {sheet} crédits par personnage pour sa fiche.",
     popular: "Populaire",
     perCredit: "le crédit",
     finalTitleTop: "Ta prochaine vidéo",
@@ -198,22 +196,13 @@ export const fr = {
     addCharacter: "Ajouter un personnage",
     removeCharacter: "Retirer ce personnage",
     characterTarget: "Qui le personnage {n} remplace ? ex. : l'homme en t-shirt rouge",
-    severalHint: "Plusieurs personnages : Qualité max uniquement · +{sheet} crédits par personnage",
-    facePass: "+ visage exact",
-    facePassHint:
-      "Magic Hour pose ensuite le visage de la photo sur chaque morceau rendu · +{rate} crédit/s",
+    severalHint: "Plusieurs personnages · +{sheet} crédits par personnage",
     partNoFace: "visage non posé, prix de la passe rendu",
-    faceImage: "Visage exact",
-    faceImageHint:
-      "Photo du visage à poser, de face et nette. La photo du personnage ne sert alors qu'au corps et à la tenue.",
     decorTitle: "Changement de décor (facultatif)",
     decorImage: "Photo du lieu",
     decorHint:
       "Dépose une photo du lieu : la scène est reconstruite dans ce décor. Sans photo, le décor du clip est gardé.",
     instructions: "Consigne à l'IA",
-    vessel: "Base neutre",
-    vesselHint:
-      "Méthode du mannequin : la personne du clip devient d'abord un mannequin neutre, puis ton personnage — rien de l'original ne transparaît. Deux passes Qualité max : prix du moteur ×2.",
     instructionsPlaceholder:
       "« Transforme la chaise en voiture de sport »…",
     targetsMissing: "Dis qui chaque personnage remplace",
@@ -255,7 +244,6 @@ export const fr = {
     removePhoto: "Retirer cette photo",
     incomplete:
       "Vidéo incomplète : {done} séquences remplacées sur {total}. Les autres gardent les images d'origine et leur prix t'a été rendu. Refais-les ci-dessous, ou choisis un autre passage.",
-    tryBudget: "Relancer en Économique",
     length: "Durée",
     lengthAll: "Tout le clip ({seconds} s)",
     download: "Télécharger",
@@ -328,20 +316,12 @@ export const fr = {
 
   swapEngines: {
     genjutsu: {
-      label: "Qualité max",
-      hint: "Genjutsu · {rate} crédits/s · jusqu'à {max} s, coupes comprises, séquences refaisables",
-    },
-    kling: {
-      label: "Économique",
-      hint: "Kling · {rate} crédits/s · jusqu'à {max} s, plans refaisables un par un",
+      label: "720p",
+      hint: "{rate} crédits/s · jusqu'à {max} s, coupes comprises, séquences refaisables",
     },
     genjutsuHd: {
-      label: "Qualité max 1080p",
-      hint: "Genjutsu en Full HD · {rate} crédits/s · jusqu'à {max} s",
-    },
-    magichour: {
-      label: "Visage seul",
-      hint: "Magic Hour · {rate} crédit/s · jusqu'à {max} s, seul le visage change, gestes, décor et son gardés",
+      label: "1080p",
+      hint: "Full HD · {rate} crédits/s · jusqu'à {max} s",
     },
   },
 
@@ -361,8 +341,7 @@ export const fr = {
   generateErrors: {
     insufficientCredits: "Pas assez de crédits. Recharge-les depuis la page Crédits.",
     outOfCredit: "Le compte du service de génération n'a plus de crédit. Tes crédits ont été rendus.",
-    genjutsuUnavailable:
-      "Le moteur Qualité max est momentanément indisponible. Tes crédits ont été rendus : relance en Économique ou réessaie plus tard.",
+    genjutsuUnavailable: "Le moteur est momentanément indisponible. Tes crédits ont été rendus : réessaie dans quelques minutes.",
     swapTooShort: "Le passage doit durer au moins {min} s.",
     precheckMinor:
       "Le modèle vidéo refuse les scènes avec des enfants. {reason} Choisis un clip ou une photo avec uniquement des adultes. Aucun crédit n'a été débité.",
@@ -387,15 +366,13 @@ export const fr = {
   creditsPage: {
     eyebrow: "Facturation",
     title: "Crédits",
-    intro:
-      "Qualité max : {max} crédits la seconde. Économique : {budget} crédits la seconde. Plus {sheet} crédits par personnage. En packs, ou chaque mois avec un abonnement.",
+    intro: "{max} crédits la seconde en 720p, {hd} en 1080p. Plus {sheet} crédits par personnage. En packs, ou chaque mois avec un abonnement.",
     balance: "Solde actuel",
     secure: "Paiement sécurisé par Stripe",
     popular: "Populaire",
     creditsRow: "Crédits",
     perCreditRow: "Prix du crédit",
-    secondsMaxRow: "Secondes en Qualité max",
-    secondsBudgetRow: "Secondes en Économique",
+    secondsMaxRow: "Secondes de vidéo (720p)",
     buy: "Acheter",
     footer: "Les crédits n'expirent pas. Un remplacement qui échoue te rend ses crédits.",
     packs: { starter: "Découverte", creator: "Créateur", studio: "Studio" },
