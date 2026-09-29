@@ -213,14 +213,16 @@ export default async function Home() {
         </section>
 
         {/* Bande cinéma : le remplacement se rejoue tout seul au rythme du
-            défilement — l'argument du produit, sans un mot. */}
+            défilement — l'argument du produit, sans un mot. Un second
+            exemple, différent du hero : un combat, rendu par le site avec la
+            méthode du mannequin. */}
         <section className="relative isolate border-y border-line px-4 py-16 sm:py-24">
           <div className="relative mx-auto max-w-6xl">
             <ScrollWipe
-              before="/examples/micro-avant.mp4"
-              after="/examples/micro-apres.mp4"
-              posterBefore="/examples/micro-avant.jpg"
-              posterAfter="/examples/micro-apres.jpg"
+              before="/examples/mma-avant.mp4"
+              after="/examples/mma-apres.mp4"
+              posterBefore="/examples/mma-avant.jpg"
+              posterAfter="/examples/mma-apres.jpg"
               labelBefore={L.compareBefore}
               labelAfter={L.compareAfter}
             />
