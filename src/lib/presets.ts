@@ -17,23 +17,13 @@ export type SwapPreset = {
   people: { target: string; label: Record<Locale, string> }[];
 };
 
-// Les plans sont rendus par scripts/vessel.mjs : la personne filmée y est
-// déjà remplacée par un mannequin neutre en gris, d'où la cible commune.
-const GREY_FIGURE = {
-  target: "the person in the plain grey t-shirt and grey trousers",
-  label: { fr: "la personne en gris", en: "the person in grey", es: "la persona de gris" },
-};
-
-export const SWAP_PRESETS: SwapPreset[] = [
-  {
-    id: "podcast-1",
-    path: "presets/podcast-1.mp4",
-    seconds: 12,
-    aspectRatio: "9:16",
-    title: { fr: "Au micro", en: "At the mic", es: "Al micrófono" },
-    people: [GREY_FIGURE],
-  },
-];
+// Liste vide : le créateur apporte son propre clip. Le plan « Au micro »
+// (presets/podcast-1.mp4, 12 s, 9:16) reste dans le bucket, prêt à être
+// réinscrit ici quand l'offre de plans se garnira — les plans rendus par
+// scripts/vessel.mjs portent tous la même cible, le mannequin gris :
+// { target: "the person in the plain grey t-shirt and grey trousers",
+//   label: { fr: "la personne en gris", en: "the person in grey", es: "la persona de gris" } }
+export const SWAP_PRESETS: SwapPreset[] = [];
 
 export function presetById(id: unknown) {
   return typeof id === "string" ? SWAP_PRESETS.find((p) => p.id === id) : undefined;
