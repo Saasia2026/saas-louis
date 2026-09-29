@@ -428,6 +428,8 @@ export const es: Dictionary = {
       cardValue: "{brand} •••• {last4} · caduca {month}/{year}",
       noCard: "Ninguna tarjeta guardada. Se guardará en tu próxima compra, para pagar luego con un clic.",
       remove: "Eliminar la tarjeta",
+      needCard: "La recarga automática se activa en cuanto tu tarjeta queda guardada, con tu primera compra.",
+      seePacks: "Ver los packs",
       enable: "Recargar automáticamente",
       packLabel: "Pack",
       thresholdLabel: "Cuando me queden menos de",

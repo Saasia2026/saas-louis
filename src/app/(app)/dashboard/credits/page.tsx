@@ -283,7 +283,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
       </section>
 
       {/* Packs */}
-      <ul className="mt-12 grid gap-4 md:grid-cols-3">
+      <ul id="packs" className="mt-12 grid scroll-mt-24 gap-4 md:grid-cols-3">
         {CREDIT_PACKS.map((pack, i) => {
           const featured = "highlight" in pack && pack.highlight;
           return (
@@ -385,6 +385,16 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
             )}
           </div>
 
+          {/* Sans carte, la recharge ne peut pas s'activer : pas de réglages
+              morts qui ne répondent pas au clic, juste le chemin à suivre. */}
+          {!card ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 p-5">
+              <p className="text-sm text-muted">{A.needCard}</p>
+              <a href="#packs" className="btn btn-secondary">
+                {A.seePacks}
+              </a>
+            </div>
+          ) : (
           <form action={saveAutoRecharge} className="space-y-4 p-5">
             {profile?.auto_recharge_failed ? (
               <p className="text-sm text-danger">{A.failed}</p>
@@ -402,7 +412,6 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                 type="checkbox"
                 name="enabled"
                 defaultChecked={Boolean(autoPack) && !profile?.auto_recharge_failed}
-                disabled={!card}
                 className="size-4 accent-[var(--accent)]"
               />
               {A.enable}
@@ -413,7 +422,6 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                 <select
                   name="pack"
                   defaultValue={autoPack?.id ?? "creator"}
-                  disabled={!card}
                   className="field mt-1"
                 >
                   {CREDIT_PACKS.map((pack) => (
@@ -428,7 +436,6 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                 <select
                   name="threshold"
                   defaultValue={String(profile?.auto_recharge_threshold ?? 20)}
-                  disabled={!card}
                   className="field mt-1"
                 >
                   {AUTO_RECHARGE_THRESHOLDS.map((n) => (
@@ -440,10 +447,11 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
               </label>
             </div>
             <p className="text-xs leading-relaxed text-muted">{A.consent}</p>
-            <button type="submit" disabled={!card} className="btn btn-secondary">
+            <button type="submit" className="btn btn-secondary">
               {A.save}
             </button>
           </form>
+          )}
         </div>
       </section>
 

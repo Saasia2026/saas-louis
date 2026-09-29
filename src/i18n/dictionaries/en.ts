@@ -427,6 +427,8 @@ export const en: Dictionary = {
       cardValue: "{brand} •••• {last4} · expires {month}/{year}",
       noCard: "No saved card yet. It will be saved on your next purchase, so you can then pay in one click.",
       remove: "Remove card",
+      needCard: "Automatic top-up becomes available once your card is saved, on your first purchase.",
+      seePacks: "See packs",
       enable: "Top up automatically",
       packLabel: "Pack",
       thresholdLabel: "When I have fewer than",

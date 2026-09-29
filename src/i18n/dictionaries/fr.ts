@@ -429,6 +429,8 @@ export const fr = {
       cardValue: "{brand} •••• {last4} · expire {month}/{year}",
       noCard: "Aucune carte enregistrée. Elle le sera à ton prochain achat, pour payer ensuite en un clic.",
       remove: "Retirer la carte",
+      needCard: "La recharge automatique s'active dès que ta carte est enregistrée, à ton premier achat.",
+      seePacks: "Voir les packs",
       enable: "Recharger automatiquement",
       packLabel: "Pack",
       thresholdLabel: "Quand il me reste moins de",

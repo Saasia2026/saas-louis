@@ -505,6 +505,12 @@ body {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-soft);
   }
+  /* Un champ inactif doit le montrer : sinon le clic semble ignoré. */
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+    border-color: var(--line);
+  }
 }
 
 /* Carte de choix (type, format, qualité…) : bordure d'accent une fois choisie. */
