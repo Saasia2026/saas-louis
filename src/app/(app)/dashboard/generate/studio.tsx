@@ -92,6 +92,13 @@ export function Studio({
   // du visage, à part de celle du personnage (sinon celle-ci sert).
   const [faceChosen, setFace] = useState(false);
   const [facePhoto, setFacePhoto] = useState<SwapFile | null>(null);
+  // Changement de décor (Qualité max) : photo du lieu, facultative. Sans
+  // photo, seuls les personnages et les cases remplies comptent, le décor du
+  // clip est gardé.
+  const [decorPhoto, setDecorPhoto] = useState<SwapFile | null>(null);
+  // Consignes libres à l'IA (Qualité max), facultatives : demandes en plus du
+  // remplacement, reformulées côté serveur (voir polishSwapInstructions).
+  const [instructions, setInstructions] = useState("");
   // Plan prêt choisi : son clip tient lieu de vidéo, ses personnes fixent
   // qui chaque personnage remplace.
   const [preset, setPreset] = useState<StudioPreset | null>(null);
@@ -104,6 +111,8 @@ export function Studio({
   // La passe visage pose un seul visage, sur un corps rendu par un autre moteur.
   const facePass = engines.includes("magichour") && engine !== "magichour" && !several;
   const face = facePass && faceChosen;
+  // Le décor ne se change qu'avec Genjutsu (Motion Transfer).
+  const decorAllowed = engine === "genjutsu";
   // Photos par personnage : Genjutsu en lit plusieurs, Kling une seule.
   const maxPhotos = engine === "genjutsu" ? photosPerCharacter(characters.length) : 1;
   const imagesReady = characters.every((c) => c.image);
@@ -224,6 +233,8 @@ export function Studio({
       hd,
       face,
       faceImagePath: face ? facePhoto?.path : undefined,
+      decorImagePath: decorAllowed ? decorPhoto?.path : undefined,
+      instructions: decorAllowed ? instructions.trim() || undefined : undefined,
     });
     router.refresh();
     if (res.error !== undefined) {
@@ -304,6 +315,12 @@ export function Studio({
         facePhoto={facePhoto}
         onFacePhoto={setFacePhoto}
         showFacePhoto={face}
+        decorPhoto={decorPhoto}
+        onDecorPhoto={setDecorPhoto}
+        showDecor={decorAllowed}
+        instructions={instructions}
+        onInstructions={setInstructions}
+        showInstructions={decorAllowed}
       />
 
       {availablePresets.length > 0 && (

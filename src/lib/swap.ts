@@ -198,6 +198,16 @@ export type SwapMetadata = {
   // avec la photo du visage si elle est donnée, sinon celle du personnage.
   face?: boolean;
   face_image_path?: string;
+  // Changement de décor (moteur genjutsu) : photo du lieu déposée par le
+  // créateur, et son URL chez Higgsfield. La scène est reconstruite dans ce
+  // décor via Motion Transfer (voir createGenjutsuSwap) ; absent, le décor
+  // du clip est gardé.
+  decor_image_path?: string;
+  decor_url?: string;
+  // Consignes libres du créateur (genjutsu), reformulées en anglais au
+  // lancement (voir polishSwapInstructions) : changements en plus du
+  // remplacement (« turn the chair into a sports car »).
+  instructions?: string;
   // Genjutsu : les références sont les photos déposées par le créateur, pas
   // une fiche redessinée (depuis le 2026-09-26).
   photos?: boolean;
@@ -808,6 +818,8 @@ async function advanceParts(
               characters: metadata.characters?.map((c) => ({ imageUrls: c.urls, target: c.target })) ?? [
                 { imageUrls: metadata.character_urls ?? [sheet.frontUrl], target },
               ],
+              decorUrl: metadata.decor_url,
+              instructions: metadata.instructions,
               hd: metadata.hd,
               webhookUrl,
             });

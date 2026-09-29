@@ -1,6 +1,6 @@
 "use client";
 
-import { Film, Plus, ScanFace, UserRound, X } from "lucide-react";
+import { Film, Mountain, Plus, ScanFace, Sparkles, UserRound, X } from "lucide-react";
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
@@ -46,6 +46,12 @@ export function SwapInput({
   facePhoto = null,
   onFacePhoto,
   showFacePhoto = false,
+  decorPhoto = null,
+  onDecorPhoto,
+  showDecor = false,
+  instructions = "",
+  onInstructions,
+  showInstructions = false,
   presetPeople,
 }: {
   userId: string;
@@ -56,6 +62,17 @@ export function SwapInput({
   facePhoto?: SwapFile | null;
   onFacePhoto?: (file: SwapFile | null) => void;
   showFacePhoto?: boolean;
+  // Changement de décor (moteur Qualité max) : photo du lieu, facultative.
+  // Sans photo, le décor du clip est gardé.
+  decorPhoto?: SwapFile | null;
+  onDecorPhoto?: (file: SwapFile | null) => void;
+  showDecor?: boolean;
+  // Consignes libres à l'IA (moteur Qualité max), facultatives : demandes en
+  // plus du remplacement (« transforme la chaise en voiture de sport »).
+  // Vides : seuls les références et les champs remplis comptent.
+  instructions?: string;
+  onInstructions?: (text: string) => void;
+  showInstructions?: boolean;
   // Plan prêt : qui chaque personnage remplace, déjà fixé (un libellé par
   // personnage, dans la langue du site) ; les personnages ne se retirent pas.
   presetPeople?: string[];
@@ -132,7 +149,7 @@ export function SwapInput({
     );
   }
 
-  async function pick(slot: "video" | "face" | number, file: File | undefined) {
+  async function pick(slot: "video" | "face" | "decor" | number, file: File | undefined) {
     const next = await upload(slot, slot === "video" ? "video" : "image", file);
     if (!next) return;
     if (slot === "video") {
@@ -141,6 +158,9 @@ export function SwapInput({
     } else if (slot === "face") {
       if (facePhoto) URL.revokeObjectURL(facePhoto.previewUrl);
       onFacePhoto?.(next);
+    } else if (slot === "decor") {
+      if (decorPhoto) URL.revokeObjectURL(decorPhoto.previewUrl);
+      onDecorPhoto?.(next);
     } else {
       const current = characters[slot]?.image;
       if (current) URL.revokeObjectURL(current.previewUrl);
@@ -347,6 +367,74 @@ export function SwapInput({
             className={`mt-3 ${targetField}`}
           />
         )
+      )}
+      {showDecor && (
+        <div className="mt-3">
+          <p className="text-xs text-faint">{t.studio.decorTitle}</p>
+          <div className="mt-1.5 flex items-center gap-3">
+            <label
+              title={t.studio.decorImage}
+              className={`group relative flex h-20 w-32 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed transition-colors ${
+                decorPhoto
+                  ? "border-line bg-black"
+                  : "border-line-strong bg-surface-2/60 hover:border-accent/60"
+              }`}
+            >
+              <input
+                type="file"
+                accept={SWAP_IMAGE_TYPES.join(",")}
+                className="sr-only"
+                aria-label={t.studio.decorImage}
+                disabled={uploading !== null}
+                onChange={(e) => {
+                  pick("decor", e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
+              {decorPhoto ? (
+                // Aperçu local (blob:) : pas d'optimisation Next.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={decorPhoto.previewUrl} alt="" className="size-full object-cover" />
+              ) : (
+                <Mountain className="size-5 text-muted" />
+              )}
+              {uploading === "decor" && (
+                <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs text-white">
+                  {t.studio.uploading}
+                </span>
+              )}
+            </label>
+            {decorPhoto ? (
+              <button
+                type="button"
+                aria-label={t.studio.removePhoto}
+                title={t.studio.removePhoto}
+                onClick={() => {
+                  URL.revokeObjectURL(decorPhoto.previewUrl);
+                  onDecorPhoto?.(null);
+                }}
+                className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-3 text-muted hover:text-text"
+              >
+                <X className="size-4" />
+              </button>
+            ) : (
+              <p className="text-xs text-faint">{t.studio.decorHint}</p>
+            )}
+          </div>
+        </div>
+      )}
+      {showInstructions && (
+        <label className="mt-3 flex items-center gap-2 rounded-full border border-line bg-surface-2/60 px-3 focus-within:border-accent/60">
+          <Sparkles className="size-4 shrink-0 text-muted" />
+          <input
+            value={instructions}
+            onChange={(e) => onInstructions?.(e.target.value)}
+            maxLength={500}
+            placeholder={t.studio.instructionsPlaceholder}
+            aria-label={t.studio.instructions}
+            className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-faint"
+          />
+        </label>
       )}
       {video && (video.seconds ?? 0) > maxSeconds + 0.5 && (
         <SegmentPicker

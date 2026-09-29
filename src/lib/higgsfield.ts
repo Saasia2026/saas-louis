@@ -12,6 +12,12 @@ const BASE_URL = "https://api.higgsfield.ai";
 // arrondie à la seconde supérieure. L'identifiant officiel s'écrit bien
 // « higgsfiled ».
 const GENJUTSU_SWAP_ENDPOINT = "higgsfiled/genjutsu/object-swap/v1.0";
+// Motion Transfer : même schéma, même prix, mais la scène entière est
+// refabriquée à partir des références — c'est ce qui permet de poser le clip
+// dans un autre décor (photo du lieu en dernière référence). Utilisé
+// seulement quand un décor est demandé : sans décor, Object Swap préserve
+// mieux le clip d'origine. Testé le 2026-09-28.
+const GENJUTSU_TRANSFER_ENDPOINT = "higgsfiled/genjutsu/motion-transfer/v1.0";
 
 // HF_CREDENTIALS : "identifiant:secret" de la clé (console.higgsfield.ai).
 export function higgsfieldEnabled() {
@@ -70,7 +76,13 @@ export function describeTarget(target?: string) {
 // référence (fond, cases, légendes) ne doit jamais entrer dans l'image.
 // Plusieurs personnages : les images de référence sont envoyées à la suite,
 // personnage par personnage ; la consigne dit lesquelles montrent qui.
-function genjutsuPrompt(characters: { imageUrls: string[]; target?: string }[]) {
+function genjutsuPrompt(
+  characters: { imageUrls: string[]; target?: string }[],
+  decor = false,
+  // Consignes libres du créateur, déjà en anglais impératif (voir
+  // polishSwapInstructions) : changements en plus du remplacement.
+  instructions?: string,
+) {
   const several = characters.length > 1;
   let next = 1;
   const blocks = characters.map((c, i) => {
@@ -88,20 +100,30 @@ function genjutsuPrompt(characters: { imageUrls: string[]; target?: string }[]) 
       "Preserve this original person's exact actions, rhythm, posture, head movements, hand gestures, gaze, facial expressions and lip-sync throughout the entire video; do not add a smile or extra mouth movement."
     );
   });
+  // Décor : la dernière image de référence est une photo du lieu, la scène
+  // est reconstruite dedans (endpoint Motion Transfer) au lieu d'être gardée.
+  const setting = decor ? " The setting is also replaced by the location shown in the FINAL reference image." : "";
   return [
     several
-      ? `STRICT CHARACTER AND WARDROBE REPLACEMENT — ${characters.length} REFERENCES. Edit the uploaded source video: ${characters.length} different people are each replaced by their own character. Each group of reference images shows multiple views of ONE character, not multiple characters.`
-      : "STRICT CHARACTER AND WARDROBE REPLACEMENT. Edit the uploaded source video: one person is replaced by the character shown in the reference images. The reference images show multiple views of ONE character, not multiple characters.",
-    "SOURCE PRIORITY — The source video controls all movement, performance, lip-sync, facial expressions, gaze, gestures, interactions, body positions, camera movement, framing, editing and timing. The reference images control only the replacement character's identity: face, hairstyle, skin or fur, body proportions, clothing and accessories.",
+      ? `STRICT CHARACTER AND WARDROBE REPLACEMENT — ${characters.length} REFERENCES. Edit the uploaded source video: ${characters.length} different people are each replaced by their own character.${setting} Each group of reference images shows multiple views of ONE character, not multiple characters.`
+      : `STRICT CHARACTER AND WARDROBE REPLACEMENT. Edit the uploaded source video: one person is replaced by the character shown in the reference images.${setting} The reference images show multiple views of ONE character, not multiple characters.`,
+    `SOURCE PRIORITY — The source video controls all movement, performance, lip-sync, facial expressions, gaze, gestures, interactions, body positions, camera movement, framing, editing and timing. The reference images control only the replacement character's identity: face, hairstyle, skin or fur, body proportions, clothing and accessories.${decor ? " The final reference image controls only the environment." : ""}`,
     ...blocks,
+    ...(instructions
+      ? [
+          `REQUESTED CHANGES — Also apply these changes asked by the creator: ${instructions} Apply them faithfully; everything they do not cover follows the other rules.`,
+        ]
+      : []),
     several
       ? "PERMANENT IDENTITY ASSIGNMENT — Bind each replacement to its original person for the full clip, even when they turn, move, overlap or appear in different framing. Never swap identities, blend faces, exchange outfits or transfer one person's gestures to another. Maintain each identity through profile views, back views, motion blur and temporary occlusion."
       : "PERMANENT IDENTITY ASSIGNMENT — Bind the replacement to that original person for the full clip, even when they turn, move, overlap with others or appear in different framing. Never blend faces or transfer gestures to another person. Maintain the identity through profile views, back views, motion blur and temporary occlusion.",
     "EXACT SOURCE PERFORMANCE — Reproduce the existing performance moment by moment. Keep every gesture, pause, mouth movement, head turn, body sway and interaction at its original time and speed. Preserve every camera movement and every cut exactly where they occur. Keep the original duration, aspect ratio and playback speed. Do not introduce new choreography, poses, reactions, camera angles, cuts, slow motion or additional people.",
-    "ENVIRONMENT AND INTEGRATION — Keep the original background, set, objects, every other person, lighting, shadows, perspective and composition from the source video. Adapt the replacement character and clothing to the original scene's lighting and movement, with natural fabric motion, accurate contact shadows and consistent positioning. Do not copy the reference images' backgrounds, panel layouts, borders, labels, captions or static poses into the output.",
+    decor
+      ? "ENVIRONMENT AND INTEGRATION — Rebuild the whole scene inside the location shown in the FINAL reference image. Keep the original framing, camera distance, camera movement and cuts, but the walls, ground, furniture, objects and depth of the shot now belong to that location; do not keep any element of the original set. Light the characters consistently with that location's lighting, with natural fabric motion, accurate contact shadows and consistent positioning. Do not copy the reference images' panel layouts, borders, labels, captions or static poses into the output."
+      : `ENVIRONMENT AND INTEGRATION — ${instructions ? "Apart from the REQUESTED CHANGES, keep" : "Keep"} the original background, set, objects, every other person, lighting, shadows, perspective and composition from the source video. Adapt the replacement character and clothing to the original scene's lighting and movement, with natural fabric motion, accurate contact shadows and consistent positioning. Do not copy the reference images' backgrounds, panel layouts, borders, labels, captions or static poses into the output.`,
     several
-      ? "FINAL RESULT — The same source video and the same performances, with only the replaced people's identities, hairstyles, clothing and accessories changed according to their assigned reference images."
-      : "FINAL RESULT — The same source video and the same performance, with only this person's identity, hairstyle, clothing and accessories replaced according to the reference images.",
+      ? `FINAL RESULT — The same ${decor ? "performances and camera work as the source video, played inside the location from the final reference image" : "source video and the same performances"}, with only the replaced people's identities, hairstyles, clothing and accessories changed according to their assigned reference images.`
+      : `FINAL RESULT — The same ${decor ? "performance and camera work as the source video, played inside the location from the final reference image" : "source video and the same performance"}, with only this person's identity, hairstyle, clothing and accessories replaced according to the reference images.`,
   ].join("\n\n");
 }
 
@@ -117,18 +139,29 @@ export async function createGenjutsuSwap(input: {
   videoUrl: string;
   // Un personnage, ou plusieurs (chacun avec qui il remplace).
   characters: { imageUrls: string[]; target?: string }[];
+  // Photo du lieu (déjà chez Higgsfield) : la scène est reconstruite dans ce
+  // décor, via Motion Transfer. Absente : Object Swap, décor du clip gardé.
+  decorUrl?: string;
+  // Consignes libres du créateur, en anglais (voir polishSwapInstructions).
+  instructions?: string;
   hd?: boolean;
   webhookUrl?: string;
 }) {
   const hook = input.webhookUrl ? `?hf_webhook=${encodeURIComponent(input.webhookUrl)}` : "";
-  const response = await fetch(`${BASE_URL}/${GENJUTSU_SWAP_ENDPOINT}${hook}`, {
+  const endpoint = input.decorUrl ? GENJUTSU_TRANSFER_ENDPOINT : GENJUTSU_SWAP_ENDPOINT;
+  // 8 images au plus ; le décor prend la dernière place (le prompt le désigne
+  // comme la dernière image).
+  const characterUrls = input.characters
+    .flatMap((c) => c.imageUrls)
+    .slice(0, input.decorUrl ? 7 : 8);
+  const response = await fetch(`${BASE_URL}/${endpoint}${hook}`, {
     method: "POST",
     headers: headers(),
     signal: AbortSignal.timeout(60_000),
     body: JSON.stringify({
-      prompt: genjutsuPrompt(input.characters),
+      prompt: genjutsuPrompt(input.characters, Boolean(input.decorUrl), input.instructions),
       video_url: input.videoUrl,
-      image_urls: input.characters.flatMap((c) => c.imageUrls).slice(0, 8),
+      image_urls: input.decorUrl ? [...characterUrls, input.decorUrl] : characterUrls,
       resolution: input.hd ? "1080p" : "720p",
     }),
   });

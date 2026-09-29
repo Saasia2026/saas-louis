@@ -201,6 +201,13 @@ export const en: Dictionary = {
     faceImage: "Exact face",
     faceImageHint:
       "Photo of the face to apply, front-facing and sharp. The character photo then only sets the body and outfit.",
+    decorTitle: "Background change (optional)",
+    decorImage: "Photo of the place",
+    decorHint:
+      "Drop a photo of a place: the scene is rebuilt in that setting. Without a photo, the clip's own setting is kept.",
+    instructions: "AI instruction",
+    instructionsPlaceholder:
+      "Optional: ask for an extra change — “turn the chair into a sports car”…",
     targetsMissing: "Say who each character replaces",
     uploading: "Uploading…",
     change: "Change",

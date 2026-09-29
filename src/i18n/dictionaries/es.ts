@@ -201,6 +201,13 @@ export const es: Dictionary = {
     faceImage: "Rostro exacto",
     faceImageHint:
       "Foto del rostro a aplicar, de frente y nítida. La foto del personaje solo define entonces el cuerpo y la ropa.",
+    decorTitle: "Cambio de decorado (opcional)",
+    decorImage: "Foto del lugar",
+    decorHint:
+      "Sube una foto del lugar: la escena se reconstruye en ese decorado. Sin foto, se conserva el decorado del clip.",
+    instructions: "Instrucción a la IA",
+    instructionsPlaceholder:
+      "Opcional: pide un cambio extra — «convierte la silla en un coche deportivo»…",
     targetsMissing: "Indica a quién reemplaza cada personaje",
     uploading: "Subiendo…",
     change: "Cambiar",

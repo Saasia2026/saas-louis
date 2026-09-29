@@ -62,6 +62,25 @@ Ignore image quality, the background, other people and small glitches.`,
   return response.parsed_output ?? { replaced: true, sameCharacter: true, reason: "no check" };
 }
 
+const InstructionsSchema = z.object({ instructions: z.string() });
+
+// Instruction libre du créateur (« transforme la chaise en voiture de
+// sport »), écrite dans sa langue : reformulée en consignes anglaises
+// impératives et précises pour le modèle vidéo. En panne, le texte brut part
+// tel quel dans le prompt (Genjutsu lit la plupart des langues).
+export async function polishSwapInstructions(text: string): Promise<string | null> {
+  const response = await new Anthropic().beta.messages.parse({
+    model: "claude-sonnet-5",
+    max_tokens: 500,
+    output_config: { effort: "low", format: betaZodOutputFormat(InstructionsSchema) },
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    system: `A creator asks an AI video editing model for extra changes to a filmed clip, in their own words and language. Rewrite the request as short, precise English imperative instructions for the video model (for example: "Turn the wooden chair into a black sports car. Keep the green box he holds identical."). Keep every requested change, add nothing, no preamble. Drop anything that is not a video edit (questions, greetings).`,
+    messages: [{ role: "user", content: text }],
+  });
+  return response.parsed_output?.instructions.trim() || null;
+}
+
 // Contrôle du clip et des photos AVANT de faire payer (voir startSwap). Le
 // filtre de contenu des moteurs refuse les scènes avec des enfants et la
 // nudité, et il juge le clip lui-même : une séquence refusée l'est de nouveau

@@ -203,6 +203,13 @@ export const fr = {
     faceImage: "Visage exact",
     faceImageHint:
       "Photo du visage à poser, de face et nette. La photo du personnage ne sert alors qu'au corps et à la tenue.",
+    decorTitle: "Changement de décor (facultatif)",
+    decorImage: "Photo du lieu",
+    decorHint:
+      "Dépose une photo du lieu : la scène est reconstruite dans ce décor. Sans photo, le décor du clip est gardé.",
+    instructions: "Consigne à l'IA",
+    instructionsPlaceholder:
+      "Facultatif : demande un changement en plus — « transforme la chaise en voiture de sport »…",
     targetsMissing: "Dis qui chaque personnage remplace",
     uploading: "Envoi…",
     change: "Changer",

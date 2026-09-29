@@ -31,7 +31,7 @@ import {
 import { autoRecharge } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { precheckSwapInputs } from "@/lib/swap-check";
+import { polishSwapInstructions, precheckSwapInputs } from "@/lib/swap-check";
 import {
   SWAP_PART_MIN_SECONDS,
   advanceSwap,
@@ -124,6 +124,15 @@ export async function startSwap(input: {
   // Photo du visage posé, à part de celle du personnage : seule celle-ci
   // passe par le moteur vidéo et son filtre. Absente : la photo du personnage.
   faceImagePath?: string;
+  // Changement de décor (genjutsu) : photo du lieu déposée par le créateur.
+  // La scène est reconstruite dans ce décor (Motion Transfer). Absente : le
+  // décor du clip est gardé, seuls les personnages changent.
+  decorImagePath?: string;
+  // Consignes libres (genjutsu), facultatives : demandes en plus du
+  // remplacement (« transforme la chaise en voiture de sport »), dans la
+  // langue du créateur. Vides : seuls les références et les champs remplis
+  // comptent.
+  instructions?: string;
   // Début du passage gardé, en secondes, pour un clip trop long.
   start?: number;
   // Durée du passage voulue, en secondes (au plus celle du moteur).
@@ -169,10 +178,15 @@ export async function startSwap(input: {
   if (!characters.length || characters.length > SWAP_MAX_CHARACTERS) return { error: errors.swapFiles };
   if (preset && characters.length > preset.people.length) return { error: errors.swapFiles };
   const faceImagePath = face && typeof input.faceImagePath === "string" ? input.faceImagePath : undefined;
+  const decorImagePath =
+    genjutsu && typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
+  const rawInstructions =
+    genjutsu && typeof input.instructions === "string" ? input.instructions.trim().slice(0, 500) : "";
   if (
     (!preset && !own(input.videoPath)) ||
     !characters.every((c) => own(c.imagePath) && c.extraPaths.every(own)) ||
-    (faceImagePath !== undefined && !own(faceImagePath))
+    (faceImagePath !== undefined && !own(faceImagePath)) ||
+    (decorImagePath !== undefined && !own(decorImagePath))
   ) {
     return { error: errors.swapFiles };
   }
@@ -187,13 +201,16 @@ export async function startSwap(input: {
   const admin = createAdminClient();
   // Le clip, puis chaque personnage : sa photo principale et ses autres photos.
   const photoPaths = characters.map((c) => [c.imagePath as string, ...c.extraPaths]);
-  const extraPaths = faceImagePath ? [faceImagePath] : [];
+  const extraPaths = [...(faceImagePath ? [faceImagePath] : []), ...(decorImagePath ? [decorImagePath] : [])];
   const { data: signed } = await admin.storage
     .from(SWAP_INPUTS_BUCKET)
     .createSignedUrls([videoPath, ...photoPaths.flat(), ...extraPaths], INPUT_URL_TTL_SECONDS);
   const [sourceUrl, ...rest] = (signed ?? []).map((s) => s.signedUrl);
   const flatUrls = rest.slice(0, photoPaths.flat().length);
   const faceUrl = faceImagePath ? rest[photoPaths.flat().length] : undefined;
+  const decorSignedUrl = decorImagePath
+    ? rest[photoPaths.flat().length + (faceImagePath ? 1 : 0)]
+    : undefined;
   if (
     !sourceUrl ||
     rest.length !== photoPaths.flat().length + extraPaths.length ||
@@ -239,19 +256,35 @@ export async function startSwap(input: {
   // du clip et des photos. Le filtre des moteurs refuse les enfants et la
   // nudité : le créateur le sait tout de suite, sans rien débiter. Contrôle
   // indisponible : le clip passe.
-  const [shots, precheck] = await Promise.all([
+  const [shots, precheck, instructions] = await Promise.all([
     splitIntoParts(sourceUrl, start, clipSeconds, engine).catch((e) => {
       console.error("startSwap: découpage", errorMessage(e));
       return null;
     }),
     sampleFrames(sourceUrl, start, clipSeconds, PRECHECK_FRAMES)
       .then((frames) =>
-        precheckSwapInputs({ frames, photoUrls: [...imageUrls, ...(faceUrl ? [faceUrl] : [])] }),
+        precheckSwapInputs({
+          frames,
+          photoUrls: [
+            ...imageUrls,
+            ...(faceUrl ? [faceUrl] : []),
+            ...(decorSignedUrl ? [decorSignedUrl] : []),
+          ],
+        }),
       )
       .catch((e) => {
         console.error("startSwap: contrôle", errorMessage(e));
         return null;
       }),
+    // Consignes libres reformulées en anglais ; en panne, le texte brut sert.
+    rawInstructions
+      ? polishSwapInstructions(rawInstructions)
+          .catch((e) => {
+            console.error("polishSwapInstructions", errorMessage(e));
+            return null;
+          })
+          .then((polished) => polished ?? rawInstructions)
+      : undefined,
   ]);
   if (precheck?.blocked) {
     return {
@@ -267,6 +300,8 @@ export async function startSwap(input: {
     ...(hd && { hd: true }),
     ...(face && { face: true }),
     ...(faceImagePath && { face_image_path: faceImagePath }),
+    ...(decorImagePath && { decor_image_path: decorImagePath }),
+    ...(instructions && { instructions }),
     ...(genjutsu && { photos: true }),
     aspect_ratio: probe.aspectRatio,
     source_video_path: videoPath,
@@ -317,9 +352,10 @@ export async function startSwap(input: {
   }
 
   try {
-    // En même temps, pour ne pas faire attendre : les morceaux du clip et les
-    // références de chaque personnage (Genjutsu : ses photos ; Kling : sa fiche).
-    const [parts, prepared] = await Promise.all([
+    // En même temps, pour ne pas faire attendre : les morceaux du clip, les
+    // références de chaque personnage (Genjutsu : ses photos ; Kling : sa
+    // fiche) et la photo du lieu s'il y en a une.
+    const [parts, prepared, decorUrl] = await Promise.all([
       // Kling : chaque plan avec sa première image (pour l'image clé), déposés
       // chez fal (Kling ne lit pas les URLs signées de Supabase). Genjutsu :
       // chaque séquence, déposée chez Higgsfield. Magic Hour : rien à
@@ -367,6 +403,7 @@ export async function startSwap(input: {
               }),
             )
           : Promise.all(imageUrls.map((url) => prepareCharacter(url!))),
+      decorSignedUrl ? uploadPhotos([decorSignedUrl]).then((urls) => urls[0]) : undefined,
     ]);
     // Gardé sur « pending » : une génération déjà remboursée (préparation
     // trop longue, voir GeneratePage) n'est pas relancée.
@@ -377,6 +414,7 @@ export async function startSwap(input: {
         metadata: {
           ...metadata,
           sheet: prepared[0].sheet,
+          ...(decorUrl && { decor_url: decorUrl }),
           ...(prepared[0].urls && { character_urls: prepared[0].urls }),
           ...(several && {
             characters: characters.map((c, i) => ({
