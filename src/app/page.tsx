@@ -14,6 +14,7 @@ import Link from "next/link";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { CompareSlider } from "@/app/compare-slider";
 import { ExampleVideo } from "@/app/example-video";
+import { FinalScene } from "@/app/final-scene";
 import { Magnetic, ScrollWipe, SmoothScroll } from "@/app/landing-motion";
 import { Logo } from "@/app/logo";
 import { ThemeToggle } from "@/app/theme-toggle";
@@ -295,7 +296,8 @@ export default async function Home() {
         {/* Appel final : une déclaration pleine page, pas une carte. Pas de
             reveal : en bout de page, la timeline de défilement peut ne jamais
             se dérouler assez et laisser la section invisible. */}
-        <section className="border-t border-line px-4 py-20 sm:px-6 sm:py-32">
+        <section className="relative isolate overflow-hidden border-t border-line px-4 py-20 sm:px-6 sm:py-40">
+          <FinalScene />
           <div className="mx-auto max-w-6xl text-center">
             <h2 className="mx-auto font-wide text-[1.9rem] leading-[1.05] uppercase sm:text-6xl lg:text-7xl">
               <span className="text-gradient">{L.finalTitleTop}</span>
