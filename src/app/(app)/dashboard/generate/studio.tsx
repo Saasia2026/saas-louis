@@ -491,6 +491,8 @@ export function Studio({
             <Result
               phase={phase}
               credits={credits}
+              sourcePreview={video?.previewUrl}
+              characterPreview={characters[0]?.image?.previewUrl}
               onReset={() => setPhase({ kind: "idle" })}
               onRedo={redo}
               onCancel={cancel}
@@ -579,6 +581,8 @@ function Menu({
 function Result({
   phase,
   credits,
+  sourcePreview,
+  characterPreview,
   onReset,
   onRedo,
   onCancel,
@@ -586,6 +590,12 @@ function Result({
 }: {
   phase: Exclude<Phase, { kind: "idle" }>;
   credits: number;
+  // Aperçus locaux (blob:) du clip et du personnage en cours : pendant le
+  // rendu, le clip joue tamisé sous la ligne de scan et la photo du
+  // personnage annonce ce qui est en train de naître. Absents à la reprise
+  // d'un rendu après rechargement de la page.
+  sourcePreview?: string;
+  characterPreview?: string;
   onReset: () => void;
   // Refait un plan d'un remplacement terminé (moteur kling).
   onRedo: (index: number) => void;
@@ -624,9 +634,30 @@ function Result({
               />
             ) : (
               <>
+                {sourcePreview && (
+                  <video
+                    src={sourcePreview}
+                    muted
+                    loop
+                    autoPlay
+                    playsInline
+                    aria-hidden
+                    className="absolute inset-0 size-full object-cover opacity-30"
+                  />
+                )}
                 <span className="pointer-events-none absolute inset-x-0 h-16 animate-scan bg-gradient-to-b from-transparent via-accent/25 to-transparent" />
                 <div className="relative flex w-full flex-col items-center gap-3 px-5 text-center text-sm">
-                  <span className="size-9 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
+                  {characterPreview ? (
+                    // Aperçu local (blob:) : pas d'optimisation Next.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={characterPreview}
+                      alt=""
+                      className="size-14 rounded-xl border border-white/25 object-cover shadow-[0_12px_32px_-8px_rgb(0_0_0/0.8)]"
+                    />
+                  ) : (
+                    <span className="size-9 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
+                  )}
                   <ProgressLabel phase={phase} />
                 </div>
               </>
