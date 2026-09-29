@@ -91,35 +91,35 @@ export default async function VideosPage() {
           </Link>
         </div>
       ) : (
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        // Galerie sans cadre, comme les exemples du landing : la vidéo est la
+        // carte, la légende reste en retrait.
+        <ul className="mt-8 grid gap-x-4 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((video, i) => (
             <li
               key={video.id}
-              className="panel flex animate-fade-up flex-col overflow-hidden"
+              className="animate-fade-up"
               style={{ animationDelay: `${Math.min(i, 8) * 60}ms` }}
             >
-              <div className="dot-bg flex flex-1 items-center justify-center p-4">
-                <div
-                  className="flex max-h-80 w-full items-center justify-center overflow-hidden rounded-lg border border-line bg-black"
-                  style={{ aspectRatio: video.aspectRatio.replace(":", " / ") }}
-                >
-                  {video.mediaUrl ? (
-                    <video
-                      src={video.mediaUrl}
-                      controls
-                      preload="metadata"
-                      playsInline
-                      className="size-full object-contain"
-                    />
-                  ) : (
-                    <span className="flex flex-col items-center gap-3 text-sm text-muted">
-                      <span className="size-7 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
-                      {V.running}
-                    </span>
-                  )}
-                </div>
+              <div
+                className="flex w-full items-center justify-center overflow-hidden rounded-xl border border-line bg-black"
+                style={{ aspectRatio: video.aspectRatio.replace(":", " / ") }}
+              >
+                {video.mediaUrl ? (
+                  <video
+                    src={video.mediaUrl}
+                    controls
+                    preload="metadata"
+                    playsInline
+                    className="size-full object-contain"
+                  />
+                ) : (
+                  <span className="flex flex-col items-center gap-3 text-sm text-muted">
+                    <span className="size-7 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
+                    {V.running}
+                  </span>
+                )}
               </div>
-              <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-3">
+              <div className="mt-3 flex items-center justify-between gap-3 px-0.5">
                 <p className="text-xs text-muted tabular-nums">
                   {video.date}
                   {video.seconds ? ` · ${fmt(V.seconds, { seconds: video.seconds })}` : ""}
@@ -132,7 +132,7 @@ export default async function VideosPage() {
                     {V.resume}
                   </Link>
                 ) : (
-                  <a href={video.downloadUrl ?? video.mediaUrl} className="btn btn-secondary">
+                  <a href={video.downloadUrl ?? video.mediaUrl} className="btn btn-ghost">
                     <Download />
                     {V.download}
                   </a>

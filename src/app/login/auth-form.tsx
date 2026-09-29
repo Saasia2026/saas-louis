@@ -24,7 +24,7 @@ export function AuthForm({
   const { t } = useI18n();
 
   return (
-    <div className="panel glass animate-fade-up p-6 shadow-[0_30px_80px_-30px_rgb(91_124_255/0.45)] [animation-delay:150ms]">
+    <div className="panel glass animate-fade-up p-6 shadow-[0_30px_80px_-30px_rgb(0_0_0/0.8)] [animation-delay:150ms]">
       {forgot ? (
         <ForgotForm onBack={() => setForgot(false)} />
       ) : (
