@@ -27,7 +27,10 @@ export function ExampleVideo({
 
   return (
     <div ref={container} className="relative isolate">
-      <video src={src} autoPlay muted loop playsInline preload="metadata" aria-hidden className="ambient" />
+      {/* Lumière d'ambiance : l'affiche floutée, statique — flouter une
+          vidéo en lecture repeint chaque image et met les GPU à genoux. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={poster} alt="" aria-hidden className="ambient" />
       <div className="relative aspect-video overflow-hidden rounded-xl border border-line bg-black">
       <video
         ref={ref}

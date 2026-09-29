@@ -62,17 +62,11 @@ export function CompareSlider({
 
   return (
     <div ref={outer} className={`relative isolate ${className}`}>
-      {ambient && (
-        <video
-          src={after}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          aria-hidden
-          className="ambient"
-        />
+      {/* Lumière d'ambiance : l'affiche floutée, statique — flouter une
+          vidéo en lecture repeint chaque image et met les GPU à genoux. */}
+      {ambient && posterAfter && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={posterAfter} alt="" aria-hidden className="ambient" />
       )}
     <div
       ref={frame}

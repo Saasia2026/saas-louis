@@ -34,7 +34,7 @@
   --on-primary: #0a0a0a;
   --primary-hover: #ffffff;
   --primary-glow: rgb(255 255 255 / 0.25);
-  --glass-bg: rgb(9 9 11 / 0.72);
+  --glass-bg: rgb(9 9 11 / 0.9);
   --composer-bg: rgb(16 16 20 / 0.85);
   --menu-bg: rgb(22 22 27 / 0.97);
   --dot: rgb(255 255 255 / 0.07);
@@ -66,7 +66,7 @@
   --on-primary: #ffffff;
   --primary-hover: #26262e;
   --primary-glow: rgb(10 10 20 / 0.25);
-  --glass-bg: rgb(255 255 255 / 0.72);
+  --glass-bg: rgb(255 255 255 / 0.92);
   --composer-bg: rgb(255 255 255 / 0.86);
   --menu-bg: rgb(255 255 255 / 0.97);
   --dot: rgb(10 10 20 / 0.12);
@@ -102,7 +102,7 @@
     --on-primary: #ffffff;
     --primary-hover: #26262e;
     --primary-glow: rgb(10 10 20 / 0.25);
-    --glass-bg: rgb(255 255 255 / 0.72);
+    --glass-bg: rgb(255 255 255 / 0.92);
     --composer-bg: rgb(255 255 255 / 0.86);
     --menu-bg: rgb(255 255 255 / 0.97);
     --dot: rgb(10 10 20 / 0.12);
@@ -346,10 +346,11 @@ body {
   box-shadow: inset 0 1px 0 var(--highlight);
 }
 
-/* Surface vitrée : laisse deviner le fond. */
+/* Surface vitrée : laisse deviner le fond. Sans backdrop-filter — le flou
+   d'arrière-plan se recalcule à chaque défilement et coûte très cher sur
+   les GPU modestes ; une translucidité plus opaque suffit. */
 @utility glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(16px) saturate(140%);
 }
 
 /* Carte survolée : elle se soulève à peine, ses bords se précisent. */
