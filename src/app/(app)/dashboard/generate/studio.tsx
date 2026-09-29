@@ -37,10 +37,11 @@ const LENGTHS = [5, 10, 15, 30, 60];
 // d'attente du fournisseur. Compter large : au-delà, la vidéo se retrouve
 // dans Mes vidéos.
 function pollTimeoutMs(job: Job) {
-  return 30 * 60_000 + job.durationSeconds * 20_000;
+  return (30 * 60_000 + job.durationSeconds * 20_000) * (job.vessel ? 2 : 1);
 }
 
-export type Job = { aspectRatio: AspectRatio; durationSeconds: number };
+// vessel : base neutre, deux rendus Genjutsu à la suite (délais doublés).
+export type Job = { aspectRatio: AspectRatio; durationSeconds: number; vessel?: boolean };
 
 // Plan prêt avec l'URL signée de son clip, pour l'aperçu (voir GeneratePage).
 export type StudioPreset = SwapPreset & { previewUrl: string };
@@ -113,6 +114,10 @@ export function Studio({
   const face = facePass && faceChosen;
   // Le décor ne se change qu'avec Genjutsu (Motion Transfer).
   const decorAllowed = engine === "genjutsu";
+  // Base neutre (méthode du mannequin) : Genjutsu, un seul personnage.
+  const [vesselChosen, setVessel] = useState(false);
+  const vesselAllowed = engine === "genjutsu" && !several;
+  const vessel = vesselAllowed && vesselChosen;
   // Photos par personnage : Genjutsu en lit plusieurs, Kling une seule.
   const maxPhotos = engine === "genjutsu" ? photosPerCharacter(characters.length) : 1;
   const imagesReady = characters.every((c) => c.image);
@@ -143,12 +148,12 @@ export function Studio({
   const seconds = durationKnown
     ? Math.max(1, Math.round(clipSeconds))
     : maxSeconds;
-  const cost = swapCredits(seconds, engine, undefined, characters.length, hd, face);
+  const cost = swapCredits(seconds, engine, undefined, characters.length, hd, face, vessel);
   // Durée illisible dans le navigateur : le serveur mesure le clip et refuse
   // lui-même faute de crédits ; on ne bloque ici que sous le prix le plus bas.
   const gate = durationKnown
     ? cost
-    : swapCredits(1, engine, undefined, characters.length, hd, face);
+    : swapCredits(1, engine, undefined, characters.length, hd, face, vessel);
   const canSend = !busy && Boolean(video) && imagesReady && targetsReady && (credits >= gate || autoRecharge);
 
   useEffect(() => {
@@ -216,7 +221,7 @@ export function Studio({
     if (!canSend || !video) return;
     setPhase({
       kind: "generating",
-      job: { aspectRatio: preset?.aspectRatio ?? "9:16", durationSeconds: seconds },
+      job: { aspectRatio: preset?.aspectRatio ?? "9:16", durationSeconds: seconds, vessel },
       id: "",
     });
     const res = await startSwap({
@@ -235,6 +240,7 @@ export function Studio({
       faceImagePath: face ? facePhoto?.path : undefined,
       decorImagePath: decorAllowed ? decorPhoto?.path : undefined,
       instructions: decorAllowed ? instructions.trim() || undefined : undefined,
+      vessel,
     });
     router.refresh();
     if (res.error !== undefined) {
@@ -244,6 +250,7 @@ export function Studio({
     const job: Job = {
       aspectRatio: res.data.aspectRatio,
       durationSeconds: res.data.durationSeconds,
+      vessel,
     };
     setPhase({ kind: "generating", job, id: res.data.generationId });
     setActive({ id: res.data.generationId, job });
@@ -406,6 +413,18 @@ export function Studio({
               setEngine(v === "genjutsu_hd" ? "genjutsu" : (v as SwapEngine));
             }}
           />
+        )}
+        {vesselAllowed && (
+          <button
+            type="button"
+            onClick={() => setVessel((v) => !v)}
+            aria-pressed={vessel}
+            title={t.studio.vesselHint}
+            className={`chip ${vessel ? "border-accent text-accent" : ""}`}
+          >
+            {vessel && <Check className="size-3.5" />}
+            {t.studio.vessel}
+          </button>
         )}
         {facePass && (
           <button
@@ -760,7 +779,7 @@ function ProgressLabel({ phase }: { phase: Extract<Phase, { kind: "generating" }
   const view = phase.view;
   // Passé le délai annoncé depuis que le créateur regarde ce rendu, on le dit
   // plutôt que de répéter la même estimation.
-  const minutes = genjutsuMinutes(phase.job.durationSeconds);
+  const minutes = genjutsuMinutes(phase.job.durationSeconds) * (phase.job.vessel ? 2 : 1);
   const [late, setLate] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setLate(true), minutes * 60_000);

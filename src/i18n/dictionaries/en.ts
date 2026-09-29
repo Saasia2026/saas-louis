@@ -209,6 +209,9 @@ export const en: Dictionary = {
     decorHint:
       "Drop a photo of a place: the scene is rebuilt in that setting. Without a photo, the clip's own setting is kept.",
     instructions: "AI instruction",
+    vessel: "Neutral base",
+    vesselHint:
+      "Mannequin method: the person in your clip first becomes a neutral stand-in, then your character — nothing of the original shows through. Two Max quality passes: engine price ×2.",
     instructionsPlaceholder:
       "“Turn the chair into a sports car”…",
     targetsMissing: "Say who each character replaces",

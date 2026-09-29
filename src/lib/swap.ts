@@ -22,7 +22,12 @@ import {
   type AspectRatio,
   type SwapEngine,
 } from "@/lib/generation";
-import { createGenjutsuSwap, getHiggsfieldPrediction } from "@/lib/higgsfield";
+import {
+  MANNEQUIN_TARGET,
+  createGenjutsuSwap,
+  getHiggsfieldPrediction,
+  type MannequinFigure,
+} from "@/lib/higgsfield";
 import { createMagicHourSwap, getMagicHourPrediction } from "@/lib/magichour";
 import {
   CONTENT_REFUSED_ERROR,
@@ -142,6 +147,9 @@ export type SwapPart = {
   start: number;
   seconds: number;
   videoUrl?: string;
+  // Base neutre : la séquence rendue avec le mannequin (URL Higgsfield),
+  // point de départ de la passe du personnage. Absente : passe mannequin à faire.
+  vesselUrl?: string;
   firstFrameUrl?: string;
   width?: number;
   height?: number;
@@ -208,6 +216,12 @@ export type SwapMetadata = {
   // lancement (voir polishSwapInstructions) : changements en plus du
   // remplacement (« turn the chair into a sports car »).
   instructions?: string;
+  // Base neutre (méthode du mannequin, genjutsu, un personnage) : chaque
+  // séquence passe d'abord par un mannequin neutre (planche déjà chez
+  // Higgsfield, de la silhouette du personnage), puis par le personnage.
+  vessel?: boolean;
+  vessel_figure?: MannequinFigure;
+  vessel_sheet_url?: string;
   // Genjutsu : les références sont les photos déposées par le créateur, pas
   // une fiche redessinée (depuis le 2026-09-26).
   photos?: boolean;
@@ -614,8 +628,10 @@ export async function advanceSwap(generationId: string) {
   // Échéance Genjutsu et Magic Hour : elle ne vise que les séquences encore en
   // attente de rendu (voir advanceParts). Un rendu fini reste récupéré par qui
   // revient tard.
+  // Base neutre : deux rendus Genjutsu à la suite, deux fois plus de temps.
   const late =
-    Date.now() - Date.parse(metadata.started_at ?? generation.created_at) > RENDER_DEADLINE_MS;
+    Date.now() - Date.parse(metadata.started_at ?? generation.created_at) >
+    RENDER_DEADLINE_MS * (metadata.vessel ? 2 : 1);
   const expired = (metadata.engine === "genjutsu" || metadata.engine === "magichour") && late;
 
   let outcome: "continue" | "failed" | "assemble" = "continue";
@@ -734,7 +750,13 @@ async function advanceParts(
       if (!(await persist())) return "continue" as const;
       await createAdminClient().rpc("refund_swap_redo", {
         p_generation_id: generation.id,
-        p_credits: swapShotCredits(part.seconds, "genjutsu", metadata.hd, Boolean(metadata.face)),
+        p_credits: swapShotCredits(
+          part.seconds,
+          "genjutsu",
+          metadata.hd,
+          Boolean(metadata.face),
+          Boolean(metadata.vessel),
+        ),
       });
       return null;
     }
@@ -813,16 +835,30 @@ async function advanceParts(
             return "continue";
           }
           try {
-            part.predictionId = await createGenjutsuSwap({
-              videoUrl: part.videoUrl!,
-              characters: metadata.characters?.map((c) => ({ imageUrls: c.urls, target: c.target })) ?? [
-                { imageUrls: metadata.character_urls ?? [sheet.frontUrl], target },
-              ],
-              decorUrl: metadata.decor_url,
-              instructions: metadata.instructions,
-              hd: metadata.hd,
-              webhookUrl,
-            });
+            // Base neutre : d'abord la personne du clip devient le mannequin,
+            // puis le mannequin (et non plus la personne) devient le personnage.
+            const mannequinPass = Boolean(metadata.vessel && metadata.vessel_sheet_url && !part.vesselUrl);
+            part.predictionId = mannequinPass
+              ? await createGenjutsuSwap({
+                  videoUrl: part.videoUrl!,
+                  characters: [{ imageUrls: [metadata.vessel_sheet_url!], target }],
+                  mannequin: metadata.vessel_figure ?? "homme",
+                  hd: metadata.hd,
+                  webhookUrl,
+                })
+              : await createGenjutsuSwap({
+                  videoUrl: part.vesselUrl ?? part.videoUrl!,
+                  characters: metadata.characters?.map((c) => ({ imageUrls: c.urls, target: c.target })) ?? [
+                    {
+                      imageUrls: metadata.character_urls ?? [sheet.frontUrl],
+                      target: part.vesselUrl ? MANNEQUIN_TARGET : target,
+                    },
+                  ],
+                  decorUrl: metadata.decor_url,
+                  instructions: metadata.instructions,
+                  hd: metadata.hd,
+                  webhookUrl,
+                });
           } catch (e) {
             console.error("createGenjutsuSwap", errorMessage(e));
             const status = (e as { status?: unknown } | null)?.status;
@@ -984,6 +1020,19 @@ async function advanceParts(
           continue;
         }
         part.predictionId = undefined;
+        continue;
+      }
+      // Base neutre : la passe mannequin vient de finir. Son rendu devient la
+      // source de la passe du personnage, envoyée au suivi suivant avec des
+      // essais neufs (la passe mannequin réussie ne compte plus).
+      if (genjutsu && metadata.vessel && metadata.vessel_sheet_url && !part.vesselUrl) {
+        part.vesselUrl = url;
+        part.predictionId = undefined;
+        part.attempts = 0;
+        part.creditRetried = undefined;
+        part.retryAt = undefined;
+        part.lastError = undefined;
+        await persist();
         continue;
       }
       // Un plan refait ne prend pas le fichier de l'ancien, gardé en secours.

@@ -517,6 +517,7 @@ export type Database = {
           p_hd?: boolean
           p_metadata?: Json
           p_user_id: string
+          p_vessel?: boolean
         }
         Returns: string
       }

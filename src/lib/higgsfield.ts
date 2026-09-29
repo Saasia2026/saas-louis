@@ -70,6 +70,36 @@ export function describeTarget(target?: string) {
   return text ? `the person described as "${text}"` : "the main person";
 }
 
+// Méthode du mannequin (option « base neutre ») : une première passe remplace
+// la personne du clip par un mannequin neutre en gris, puis la passe du
+// personnage remplace ce mannequin. Rien de la personne d'origine (traits,
+// tenue) ne bave dans le rendu final. Planches du mannequin dans swap-inputs
+// (voir scripts/vessel.mjs).
+export type MannequinFigure = "homme" | "femme";
+export const MANNEQUIN_SHEETS: Record<MannequinFigure, string> = {
+  homme: "presets/_mannequin-sheet-m.png",
+  femme: "presets/_mannequin-sheet-f.png",
+};
+// Qui la passe du personnage remplace, une fois le mannequin posé.
+export const MANNEQUIN_TARGET = "the person in the plain grey t-shirt and grey trousers";
+const MANNEQUIN_DESCRIPTIONS: Record<MannequinFigure, string> = {
+  homme:
+    "a plain adult man in a matte mid-grey fitted t-shirt, grey trousers and grey sneakers, very short hair, no accessories",
+  femme:
+    "a plain adult woman in a matte mid-grey fitted t-shirt, grey trousers and grey sneakers, dark hair tied back in a low bun, no accessories",
+};
+
+function mannequinPrompt(figure: MannequinFigure, target?: string) {
+  return [
+    `STRICT CHARACTER AND WARDROBE REPLACEMENT. Edit the uploaded source video: one person is replaced by the neutral stand-in figure shown in the reference image (${MANNEQUIN_DESCRIPTIONS[figure]}). The reference image shows multiple views of ONE figure, not multiple figures.`,
+    "SOURCE PRIORITY — The source video controls all movement, performance, lip-sync, facial expressions, gaze, gestures, interactions, body positions, camera movement, framing, editing and timing. The reference image controls only the figure's identity: face, hair, skin, body proportions and clothing.",
+    `CHARACTER — Replace ${describeTarget(target)} with this neutral figure. Match its plain grey clothing, hairstyle, neutral face and skin exactly as shown. Preserve this original person's exact actions, rhythm, posture, head movements, hand gestures, gaze, facial expressions and lip-sync throughout the entire video; do not add a smile or extra mouth movement.`,
+    "PERMANENT IDENTITY ASSIGNMENT — Bind the figure to that original person for the full clip, through turns, profile views, back views, motion blur and temporary occlusion. Never blend faces or transfer gestures to another person.",
+    "ENVIRONMENT AND INTEGRATION — Keep the original background, set, objects, every other person, lighting, shadows, perspective and composition exactly unchanged. Keep the original duration, aspect ratio, cuts and playback speed. Do not copy the reference image's background, panel layout, borders, labels or static poses into the output.",
+    "FINAL RESULT — The same source video and the same performance, with only this person's identity, hair and clothing replaced by the neutral grey figure.",
+  ].join("\n\n");
+}
+
 // Consigne Genjutsu, en blocs titrés : la vidéo source commande tout le jeu,
 // les références commandent l'identité ; chaque personne remplacée est liée à
 // son personnage pour tout le clip ; la scène reste intacte ; la planche de
@@ -144,10 +174,31 @@ export async function createGenjutsuSwap(input: {
   decorUrl?: string;
   // Consignes libres du créateur, en anglais (voir polishSwapInstructions).
   instructions?: string;
+  // Passe mannequin (méthode du mannequin) : la personne visée devient le
+  // mannequin neutre dont la planche est dans `characters` ; décor et
+  // consignes attendent la passe du personnage.
+  mannequin?: MannequinFigure;
   hd?: boolean;
   webhookUrl?: string;
 }) {
   const hook = input.webhookUrl ? `?hf_webhook=${encodeURIComponent(input.webhookUrl)}` : "";
+  if (input.mannequin) {
+    const response = await fetch(`${BASE_URL}/${GENJUTSU_SWAP_ENDPOINT}${hook}`, {
+      method: "POST",
+      headers: headers(),
+      signal: AbortSignal.timeout(60_000),
+      body: JSON.stringify({
+        prompt: mannequinPrompt(input.mannequin, input.characters[0]?.target),
+        video_url: input.videoUrl,
+        image_urls: input.characters.flatMap((c) => c.imageUrls).slice(0, 1),
+        resolution: input.hd ? "1080p" : "720p",
+      }),
+    });
+    if (!response.ok) throw await failure("création", response);
+    const { request_id } = (await response.json()) as { request_id?: string };
+    if (!request_id) throw new Error("Higgsfield création : réponse sans identifiant");
+    return `hf:swap:${request_id}`;
+  }
   const endpoint = input.decorUrl ? GENJUTSU_TRANSFER_ENDPOINT : GENJUTSU_SWAP_ENDPOINT;
   // 8 images au plus ; le décor prend la dernière place (le prompt le désigne
   // comme la dernière image).

@@ -19,7 +19,12 @@ import {
   type AspectRatio,
   type SwapEngine,
 } from "@/lib/generation";
-import { higgsfieldEnabled, uploadToHiggsfield } from "@/lib/higgsfield";
+import {
+  MANNEQUIN_SHEETS,
+  higgsfieldEnabled,
+  uploadToHiggsfield,
+  type MannequinFigure,
+} from "@/lib/higgsfield";
 import { magichourEnabled } from "@/lib/magichour";
 import { presetById } from "@/lib/presets";
 import {
@@ -133,6 +138,9 @@ export async function startSwap(input: {
   // langue du créateur. Vides : seuls les références et les champs remplis
   // comptent.
   instructions?: string;
+  // Base neutre (méthode du mannequin, genjutsu, un seul personnage) : la
+  // personne du clip devient d'abord un mannequin neutre, puis le personnage.
+  vessel?: boolean;
   // Début du passage gardé, en secondes, pour un clip trop long.
   start?: number;
   // Durée du passage voulue, en secondes (au plus celle du moteur).
@@ -191,6 +199,8 @@ export async function startSwap(input: {
     return { error: errors.swapFiles };
   }
   const several = characters.length > 1;
+  // Le mannequin remplace une seule personne.
+  const vessel = genjutsu && input.vessel === true && !several;
   // Plusieurs personnages : Genjutsu seul sait les placer, et il faut savoir
   // qui chacun remplace.
   if (several && !genjutsu) return { error: errors.startFailed };
@@ -294,6 +304,9 @@ export async function startSwap(input: {
     };
   }
   if (!shots?.length) return { error: errors.swapUnreadable };
+  // Silhouette du mannequin : celle du personnage (contrôle indisponible :
+  // homme par défaut).
+  const figure: MannequinFigure = precheck && !precheck.blocked && precheck.feminine ? "femme" : "homme";
 
   const metadata = {
     engine,
@@ -302,6 +315,7 @@ export async function startSwap(input: {
     ...(faceImagePath && { face_image_path: faceImagePath }),
     ...(decorImagePath && { decor_image_path: decorImagePath }),
     ...(instructions && { instructions }),
+    ...(vessel && { vessel: true, vessel_figure: figure }),
     ...(genjutsu && { photos: true }),
     aspect_ratio: probe.aspectRatio,
     source_video_path: videoPath,
@@ -330,6 +344,8 @@ export async function startSwap(input: {
       // Absent sans l'option : la fonction reste appelable tant que la
       // migration swap_face_pass n'est pas passée.
       ...(face && { p_face: true }),
+      // Base neutre : la passe mannequin, au tarif de la passe du personnage.
+      ...(vessel && { p_vessel: true }),
     });
   let { data: generationId, error: rpcError } = await debit();
   // Solde trop bas et recharge automatique activée : la carte est débitée,
@@ -338,7 +354,7 @@ export async function startSwap(input: {
     rpcError?.message.includes("insufficient_credits") &&
     (await autoRecharge(
       userId,
-      swapCredits(durationSeconds, engine, billedSeconds, characters.length, hd, face),
+      swapCredits(durationSeconds, engine, billedSeconds, characters.length, hd, face, vessel),
     ))
   ) {
     ({ data: generationId, error: rpcError } = await debit());
@@ -354,8 +370,8 @@ export async function startSwap(input: {
   try {
     // En même temps, pour ne pas faire attendre : les morceaux du clip, les
     // références de chaque personnage (Genjutsu : ses photos ; Kling : sa
-    // fiche) et la photo du lieu s'il y en a une.
-    const [parts, prepared, decorUrl] = await Promise.all([
+    // fiche), la photo du lieu s'il y en a une et la planche du mannequin.
+    const [parts, prepared, decorUrl, vesselSheetUrl] = await Promise.all([
       // Kling : chaque plan avec sa première image (pour l'image clé), déposés
       // chez fal (Kling ne lit pas les URLs signées de Supabase). Genjutsu :
       // chaque séquence, déposée chez Higgsfield. Magic Hour : rien à
@@ -404,6 +420,18 @@ export async function startSwap(input: {
             )
           : Promise.all(imageUrls.map((url) => prepareCharacter(url!))),
       decorSignedUrl ? uploadPhotos([decorSignedUrl]).then((urls) => urls[0]) : undefined,
+      // Planche du mannequin (voir MANNEQUIN_SHEETS) : introuvable, le
+      // remplacement échoue et tout est rendu, plutôt que de facturer une
+      // passe qui n'aurait pas lieu.
+      vessel
+        ? admin.storage
+            .from(SWAP_INPUTS_BUCKET)
+            .download(MANNEQUIN_SHEETS[figure])
+            .then(async ({ data, error }) => {
+              if (!data) throw new Error(`Planche du mannequin : ${error?.message ?? "introuvable"}`);
+              return uploadToHiggsfield(await data.arrayBuffer(), "image/png");
+            })
+        : undefined,
     ]);
     // Gardé sur « pending » : une génération déjà remboursée (préparation
     // trop longue, voir GeneratePage) n'est pas relancée.
@@ -415,6 +443,7 @@ export async function startSwap(input: {
           ...metadata,
           sheet: prepared[0].sheet,
           ...(decorUrl && { decor_url: decorUrl }),
+          ...(vesselSheetUrl && { vessel_sheet_url: vesselSheetUrl }),
           ...(prepared[0].urls && { character_urls: prepared[0].urls }),
           ...(several && {
             characters: characters.map((c, i) => ({
@@ -516,6 +545,9 @@ export async function redoSwapShot(input: {
     start: part.start,
     seconds: part.seconds,
     videoUrl: part.videoUrl,
+    // Base neutre : le mannequin déjà rendu sert de départ, seule la passe
+    // du personnage est refaite (et facturée).
+    vesselUrl: part.vesselUrl,
     firstFrameUrl: part.firstFrameUrl,
     width: part.width,
     height: part.height,

@@ -141,6 +141,8 @@ export function swapShotCredits(
   hd = false,
   // Option « + visage exact ».
   face = false,
+  // Base neutre : la séquence passe deux fois par Genjutsu (voir swapCredits).
+  vessel = false,
 ) {
   const billed =
     engine === "genjutsu"
@@ -149,7 +151,8 @@ export function swapShotCredits(
         ? Math.ceil(seconds)
         : klingBilledSeconds([seconds]);
   const pass = face ? facePassCredits(billed) : 0;
-  return Math.max(1, Math.ceil(billed * swapRate(engine, hd))) + pass;
+  const passes = vessel && engine === "genjutsu" ? 2 : 1;
+  return Math.max(1, Math.ceil(billed * swapRate(engine, hd))) * passes + pass;
 }
 
 // Prix d'un remplacement. Aligné avec public.start_swap_generation.
@@ -166,13 +169,18 @@ export function swapCredits(
   hd = false,
   // Option « + visage exact ».
   face = false,
+  // Base neutre (méthode du mannequin, Genjutsu seulement) : une première
+  // passe remplace la personne du clip par un mannequin neutre, au même
+  // tarif que la passe du personnage.
+  vessel = false,
 ) {
   const seconds =
     billedSeconds !== undefined
       ? Math.max(billedSeconds, Math.ceil(durationSeconds))
       : Math.ceil(durationSeconds);
+  const passes = vessel && engine === "genjutsu" ? 2 : 1;
   return (
-    Math.ceil(seconds * swapRate(engine, hd)) +
+    Math.ceil(seconds * swapRate(engine, hd)) * passes +
     swapSheetCredits(engine, characters) +
     (face ? facePassCredits(seconds) : 0)
   );

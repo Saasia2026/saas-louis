@@ -209,6 +209,9 @@ export const es: Dictionary = {
     decorHint:
       "Sube una foto del lugar: la escena se reconstruye en ese decorado. Sin foto, se conserva el decorado del clip.",
     instructions: "Instrucción a la IA",
+    vessel: "Base neutra",
+    vesselHint:
+      "Método del maniquí: la persona del clip se convierte primero en un maniquí neutro y luego en tu personaje — nada del original se transparenta. Dos pasadas Calidad máx.: precio del motor ×2.",
     instructionsPlaceholder:
       "«Convierte la silla en un coche deportivo»…",
     targetsMissing: "Indica a quién reemplaza cada personaje",

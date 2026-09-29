@@ -90,10 +90,15 @@ export async function polishSwapInstructions(text: string): Promise<string | nul
 const PrecheckSchema = z.object({
   minor: z.boolean(),
   nudity: z.boolean(),
+  feminine: z.boolean(),
   reason: z.string(),
 });
 
-export type SwapPrecheck = { blocked: false } | { blocked: true; cause: "minor" | "nudity"; reason: string };
+// feminine : silhouette du premier personnage, pour choisir le mannequin de
+// la méthode « base neutre » (voir MANNEQUIN_SHEETS).
+export type SwapPrecheck =
+  | { blocked: false; feminine?: boolean }
+  | { blocked: true; cause: "minor" | "nudity"; reason: string };
 
 export async function precheckSwapInputs(input: {
   // Images JPEG (base64) réparties sur le passage choisi.
@@ -111,6 +116,7 @@ export async function precheckSwapInputs(input: {
 
 - "minor": true only if a person who clearly looks like a child or a young teenager (roughly under 16) is visible in the clip frames or in a character photo. Adults, young-looking adults and cartoon or animal characters are not minors. When unsure, false.
 - "nudity": true only if there is visible nudity or sexual content (exposed genitals, buttocks or female breasts, sexual acts). Swimwear, sportswear, a shirtless man, dancing or a fight are not nudity. When unsure, false.
+- "feminine": true if the FIRST character photo shows a woman or a clearly feminine humanoid character (body shape, silhouette); false for men, animals, creatures, objects, or when unsure. Used only to pick a neutral stand-in body of matching build.
 - "reason": one short sentence in French saying what you saw, for the creator (for example "Un enfant est visible au premier plan de la troisième image."), or "ok".
 
 Do not identify anyone.`,
@@ -136,5 +142,5 @@ Do not identify anyone.`,
   if (!out) return { blocked: false };
   if (out.minor) return { blocked: true, cause: "minor", reason: out.reason };
   if (out.nudity) return { blocked: true, cause: "nudity", reason: out.reason };
-  return { blocked: false };
+  return { blocked: false, feminine: out.feminine };
 }

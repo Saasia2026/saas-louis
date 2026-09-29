@@ -211,6 +211,9 @@ export const fr = {
     decorHint:
       "Dépose une photo du lieu : la scène est reconstruite dans ce décor. Sans photo, le décor du clip est gardé.",
     instructions: "Consigne à l'IA",
+    vessel: "Base neutre",
+    vesselHint:
+      "Méthode du mannequin : la personne du clip devient d'abord un mannequin neutre, puis ton personnage — rien de l'original ne transparaît. Deux passes Qualité max : prix du moteur ×2.",
     instructionsPlaceholder:
       "« Transforme la chaise en voiture de sport »…",
     targetsMissing: "Dis qui chaque personnage remplace",
