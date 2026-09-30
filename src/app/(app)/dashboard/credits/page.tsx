@@ -169,6 +169,135 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
         </p>
       )}
 
+      {/* Portefeuille — carte + recharge automatique (en premier, accueillant) */}
+      <section id="auto" className="mt-10 scroll-mt-24">
+        <p className="eyebrow">{A.eyebrow}</p>
+        <h2 className="mt-3 text-2xl font-semibold tracking-tight">{A.title}</h2>
+        <p className="mt-2 max-w-xl text-sm text-muted">{A.subtitle}</p>
+
+        {!card ? (
+          /* Pas de carte : bloc accueillant avec les 3 avantages + CTA */
+          <div className="panel glow mt-6 overflow-hidden">
+            <div className="grid gap-6 p-6 sm:grid-cols-3">
+              {(["oneClick", "autoRecharge", "secure"] as const).map((key) => (
+                <div key={key} className="flex flex-col gap-2">
+                  <span className="inline-flex size-10 items-center justify-center rounded-xl bg-accent/10 text-accent text-lg">
+                    {key === "oneClick" ? "⚡" : key === "autoRecharge" ? "♻️" : "🔒"}
+                  </span>
+                  <p className="text-sm font-semibold">{A.benefits[key]}</p>
+                  <p className="text-xs leading-relaxed text-muted">{A.benefits[`${key}Desc` as const]}</p>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-line bg-surface-2/50 px-6 py-5">
+              <p className="text-sm text-muted">{A.addCardHint}</p>
+              <form action={buyCredits} className="mt-4">
+                <input type="hidden" name="pack" value="starter" />
+                <button type="submit" disabled={!enabled} className="btn btn-accent">
+                  {A.addCardCta}
+                </button>
+              </form>
+            </div>
+          </div>
+        ) : (
+          /* Carte présente : infos carte + formulaire recharge */
+          <div className="panel mt-6 divide-y divide-line">
+            <div className="flex flex-wrap items-center justify-between gap-3 p-5">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex size-10 items-center justify-center rounded-xl bg-success/10 text-success text-lg">
+                  ✓
+                </span>
+                <div>
+                  <p className="text-sm font-semibold">{A.cardSaved}</p>
+                  <p className="mt-0.5 text-sm text-muted">
+                    {fmt(A.cardValue, {
+                      brand: brand(card.brand),
+                      last4: card.last4,
+                      month: String(card.expMonth).padStart(2, "0"),
+                      year: String(card.expYear).slice(-2),
+                    })}
+                  </p>
+                </div>
+              </div>
+              <form action={removeCard}>
+                <button type="submit" className="btn btn-ghost text-sm">
+                  {A.remove}
+                </button>
+              </form>
+            </div>
+
+            <div className="p-5">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex size-10 items-center justify-center rounded-xl bg-accent/10 text-accent text-lg">
+                  ♻️
+                </span>
+                <div>
+                  <p className="text-sm font-semibold">{A.rechargeTitle}</p>
+                  <p className="mt-0.5 text-xs text-muted">{A.rechargeSubtitle}</p>
+                </div>
+              </div>
+
+              <form action={saveAutoRecharge} className="mt-5 space-y-4">
+                {profile?.auto_recharge_failed ? (
+                  <p className="rounded-lg border border-danger/20 bg-danger/5 px-3 py-2 text-sm text-danger">{A.failed}</p>
+                ) : autoPack ? (
+                  <p className="rounded-lg border border-success/20 bg-success/5 px-3 py-2 text-sm text-success">
+                    {fmt(A.on, {
+                      pack: P.packs[autoPack.id],
+                      price: price(autoPack.amount),
+                      threshold: profile?.auto_recharge_threshold ?? 20,
+                    })}
+                  </p>
+                ) : null}
+                <label className="flex items-center gap-3 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    name="enabled"
+                    defaultChecked={Boolean(autoPack) && !profile?.auto_recharge_failed}
+                    className="size-4 accent-[var(--accent)]"
+                  />
+                  {A.enable}
+                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    <span className="label">{A.packLabel}</span>
+                    <select
+                      name="pack"
+                      defaultValue={autoPack?.id ?? "creator"}
+                      className="field mt-1"
+                    >
+                      {CREDIT_PACKS.map((pack) => (
+                        <option key={pack.id} value={pack.id}>
+                          {P.packs[pack.id]} · {pack.credits} {t.common.credits} · {price(pack.amount)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-sm">
+                    <span className="label">{A.thresholdLabel}</span>
+                    <select
+                      name="threshold"
+                      defaultValue={String(profile?.auto_recharge_threshold ?? 20)}
+                      className="field mt-1"
+                    >
+                      {AUTO_RECHARGE_THRESHOLDS.map((n) => (
+                        <option key={n} value={n}>
+                          {fmt(A.thresholdOption, { credits: n })}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <p className="text-xs leading-relaxed text-muted">{A.consent}</p>
+                <button type="submit" className="btn btn-accent">
+                  {A.save}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Abonnements */}
       <section className="mt-12">
         <p className="eyebrow">{S.eyebrow}</p>
@@ -352,104 +481,6 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
           );
         })}
       </ul>
-
-      {/* Paiement automatique */}
-      <section id="auto" className="mt-12 scroll-mt-24">
-        <p className="eyebrow">{A.eyebrow}</p>
-        <h2 className="mt-3 text-2xl font-semibold tracking-tight">{A.title}</h2>
-        <div className="panel mt-6 divide-y divide-line">
-          <div className="flex flex-wrap items-center justify-between gap-3 p-5">
-            <div>
-              <p className="label">{A.card}</p>
-              <p className="mt-1 text-sm">
-                {card
-                  ? fmt(A.cardValue, {
-                      brand: brand(card.brand),
-                      last4: card.last4,
-                      month: String(card.expMonth).padStart(2, "0"),
-                      year: String(card.expYear).slice(-2),
-                    })
-                  : A.noCard}
-              </p>
-            </div>
-            {card && (
-              <form action={removeCard}>
-                <button type="submit" className="btn btn-ghost text-sm">
-                  {A.remove}
-                </button>
-              </form>
-            )}
-          </div>
-
-          {/* Sans carte, la recharge ne peut pas s'activer : pas de réglages
-              morts qui ne répondent pas au clic, juste le chemin à suivre. */}
-          {!card ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 p-5">
-              <p className="text-sm text-muted">{A.needCard}</p>
-              <a href="#packs" className="btn btn-secondary">
-                {A.seePacks}
-              </a>
-            </div>
-          ) : (
-          <form action={saveAutoRecharge} className="space-y-4 p-5">
-            {profile?.auto_recharge_failed ? (
-              <p className="text-sm text-danger">{A.failed}</p>
-            ) : autoPack ? (
-              <p className="text-sm text-success">
-                {fmt(A.on, {
-                  pack: P.packs[autoPack.id],
-                  price: price(autoPack.amount),
-                  threshold: profile?.auto_recharge_threshold ?? 20,
-                })}
-              </p>
-            ) : null}
-            <label className="flex items-center gap-3 text-sm font-medium">
-              <input
-                type="checkbox"
-                name="enabled"
-                defaultChecked={Boolean(autoPack) && !profile?.auto_recharge_failed}
-                className="size-4 accent-[var(--accent)]"
-              />
-              {A.enable}
-            </label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block text-sm">
-                <span className="label">{A.packLabel}</span>
-                <select
-                  name="pack"
-                  defaultValue={autoPack?.id ?? "creator"}
-                  className="field mt-1"
-                >
-                  {CREDIT_PACKS.map((pack) => (
-                    <option key={pack.id} value={pack.id}>
-                      {P.packs[pack.id]} · {pack.credits} {t.common.credits} · {price(pack.amount)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-sm">
-                <span className="label">{A.thresholdLabel}</span>
-                <select
-                  name="threshold"
-                  defaultValue={String(profile?.auto_recharge_threshold ?? 20)}
-                  className="field mt-1"
-                >
-                  {AUTO_RECHARGE_THRESHOLDS.map((n) => (
-                    <option key={n} value={n}>
-                      {fmt(A.thresholdOption, { credits: n })}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <p className="text-xs leading-relaxed text-muted">{A.consent}</p>
-            <button type="submit" className="btn btn-secondary">
-              {A.save}
-            </button>
-          </form>
-          )}
-        </div>
-      </section>
 
       <p className="mt-6 text-xs text-muted">{P.footer}</p>
     </div>
