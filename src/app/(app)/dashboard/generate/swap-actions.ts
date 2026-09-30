@@ -33,7 +33,7 @@ import {
 import { autoRecharge } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { polishSwapInstructions, precheckSwapInputs } from "@/lib/swap-check";
+import { planSwapCast, polishSwapInstructions, precheckSwapInputs, type SwapCast } from "@/lib/swap-check";
 import {
   advanceSwap,
   cancelSwap as cancelSwapGeneration,
@@ -62,6 +62,22 @@ const INPUT_URL_TTL_SECONDS = 60 * 60;
 
 // Images du passage montrées au contrôle d'avant paiement.
 const PRECHECK_FRAMES = 6;
+
+// Distribution rendue par Claude utilisable : 1 à 3 personnages, chacun avec
+// au moins une photo existante, aucune photo prise deux fois, et qui il
+// remplace dès qu'ils sont plusieurs.
+function validCast(cast: SwapCast["cast"], photoCount: number) {
+  if (cast.length < 1 || cast.length > SWAP_MAX_CHARACTERS) return false;
+  const seen = new Set<number>();
+  for (const c of cast) {
+    if (!c.photos.length || (cast.length > 1 && !c.target.trim())) return false;
+    for (const n of c.photos) {
+      if (!Number.isInteger(n) || n < 1 || n > photoCount || seen.has(n)) return false;
+      seen.add(n);
+    }
+  }
+  return true;
+}
 
 // Photos déposées par le créateur (URL signées), envoyées chez Higgsfield
 // telles quelles.
@@ -137,7 +153,7 @@ export async function startSwap(input: {
   const list = Array.isArray(input.characters) ? input.characters : [];
   // Photos par personnage : 8 au plus en tout chez Higgsfield.
   const perCharacter = photosPerCharacter(list.length);
-  const characters = list.map((c, i) => ({
+  let characters = list.map((c, i) => ({
     imagePath: c?.imagePath,
     extraPaths: (Array.isArray(c?.extraPaths) ? c.extraPaths : []).slice(0, perCharacter - 1),
     // Plan prêt : qui remplacer est fixé par le plan, personne par personne.
@@ -159,31 +175,21 @@ export async function startSwap(input: {
   ) {
     return { error: errors.swapFiles };
   }
-  const several = characters.length > 1;
-  // Plusieurs personnages : il faut savoir qui chacun remplace.
-  if (several && characters.some((c) => !c.target)) return { error: errors.swapTargets };
 
   const admin = createAdminClient();
-  // Le clip, puis chaque personnage (sa photo principale et ses autres
-  // photos), puis le lieu.
-  const photoPaths = characters.map((c) => [c.imagePath as string, ...c.extraPaths]);
+  // Le clip, puis toutes les photos (personnage par personnage), puis le lieu.
+  const allPhotoPaths = characters.flatMap((c) => [c.imagePath as string, ...c.extraPaths]);
   const extraPaths = decorImagePath ? [decorImagePath] : [];
   const { data: signed } = await admin.storage
     .from(SWAP_INPUTS_BUCKET)
-    .createSignedUrls([videoPath, ...photoPaths.flat(), ...extraPaths], INPUT_URL_TTL_SECONDS);
+    .createSignedUrls([videoPath, ...allPhotoPaths, ...extraPaths], INPUT_URL_TTL_SECONDS);
   const [sourceUrl, ...rest] = (signed ?? []).map((s) => s.signedUrl);
-  const flatUrls = rest.slice(0, photoPaths.flat().length);
-  const decorSignedUrl = decorImagePath ? rest[photoPaths.flat().length] : undefined;
-  if (
-    !sourceUrl ||
-    rest.length !== photoPaths.flat().length + extraPaths.length ||
-    rest.some((u) => !u)
-  ) {
+  // Toutes non nulles, vérifié juste après.
+  const allPhotoUrls = rest.slice(0, allPhotoPaths.length) as string[];
+  const decorSignedUrl = decorImagePath ? rest[allPhotoPaths.length] : undefined;
+  if (!sourceUrl || rest.length !== allPhotoPaths.length + extraPaths.length || rest.some((u) => !u)) {
     return { error: errors.swapFiles };
   }
-  let next = 0;
-  const photoUrls = photoPaths.map((paths) => paths.map(() => flatUrls[next++]!));
-  const imageUrls = photoUrls.map((urls) => urls[0]);
 
   const probe = await probeVideo(sourceUrl).catch((e) => {
     console.error("probeVideo", errorMessage(e));
@@ -211,39 +217,86 @@ export async function startSwap(input: {
     return { error: fmt(errors.swapTooShort, { min: Math.ceil(GENJUTSU_MIN_SECONDS) }) };
   }
   const durationSeconds = Math.max(1, Math.round(clipSeconds));
-  const target = characters[0].target || undefined;
 
   // Avant de faire payer, en même temps : le découpage en séquences, qui
-  // fixe le prix, et le contrôle du clip et des photos. Le filtre du moteur
-  // refuse les enfants et la nudité : le créateur le sait tout de suite, sans
-  // rien débiter. Contrôle indisponible : le clip passe.
-  const [shots, precheck, instructions] = await Promise.all([
+  // fixe le prix, et quelques images du clip pour les contrôles.
+  const [shots, frames] = await Promise.all([
     splitIntoParts(sourceUrl, start, clipSeconds, engine).catch((e) => {
       console.error("startSwap: découpage", errorMessage(e));
       return null;
     }),
-    sampleFrames(sourceUrl, start, clipSeconds, PRECHECK_FRAMES)
-      .then((frames) =>
-        precheckSwapInputs({
+    sampleFrames(sourceUrl, start, clipSeconds, PRECHECK_FRAMES).catch((e) => {
+      console.error("startSwap: images du clip", errorMessage(e));
+      return null;
+    }),
+  ]);
+  if (!shots?.length) return { error: errors.swapUnreadable };
+
+  // Distribution des rôles (voir planSwapCast) : dès qu'il y a du texte ou
+  // plusieurs photos, Claude relit tout et corrige la répartition — deux
+  // remplacements écrits dans un seul champ deviennent deux personnages, la
+  // photo d'une autre personne rangée parmi celles du premier devient la
+  // sienne. Plan prêt : sa distribution est fixée. Claude indisponible : la
+  // répartition du créateur, consignes reformulées à part.
+  const needsPlan =
+    !preset && (Boolean(rawInstructions) || characters.some((c) => c.target || c.extraPaths.length));
+  let groupStart = 1;
+  const plan =
+    needsPlan && frames
+      ? await planSwapCast({
           frames,
-          photoUrls: [...imageUrls, ...(decorSignedUrl ? [decorSignedUrl] : [])],
-          characterCount: characters.length,
-        }),
-      )
-      .catch((e) => {
+          photoUrls: allPhotoUrls,
+          groups: characters.map((c) => {
+            const count = 1 + c.extraPaths.length;
+            const photos = Array.from({ length: count }, (_, k) => groupStart + k);
+            groupStart += count;
+            return { photos, target: c.target };
+          }),
+          instructions: rawInstructions,
+        }).catch((e) => {
+          console.error("planSwapCast", errorMessage(e));
+          return null;
+        })
+      : null;
+  let instructions: string | undefined;
+  if (plan && validCast(plan.cast, allPhotoPaths.length)) {
+    const perCast = photosPerCharacter(plan.cast.length);
+    characters = plan.cast.map((c) => ({
+      imagePath: allPhotoPaths[c.photos[0] - 1],
+      extraPaths: c.photos.slice(1, perCast).map((n) => allPhotoPaths[n - 1]),
+      target: c.target.trim().slice(0, 200),
+    }));
+    instructions = plan.instructions.trim().slice(0, 1000) || undefined;
+  } else if (rawInstructions) {
+    // Consignes libres reformulées en anglais ; en panne, le texte brut sert.
+    instructions =
+      (await polishSwapInstructions(rawInstructions).catch((e) => {
+        console.error("polishSwapInstructions", errorMessage(e));
+        return null;
+      })) ?? rawInstructions;
+  }
+  const several = characters.length > 1;
+  // Plusieurs personnages : il faut savoir qui chacun remplace.
+  if (several && characters.some((c) => !c.target)) return { error: errors.swapTargets };
+  // Photos de chaque personnage, dans la distribution retenue.
+  const urlOfPath = new Map(allPhotoPaths.map((p, i) => [p, allPhotoUrls[i]!]));
+  const photoUrls = characters.map((c) => [c.imagePath as string, ...c.extraPaths].map((p) => urlOfPath.get(p)!));
+  const imageUrls = photoUrls.map((urls) => urls[0]);
+  const target = characters[0].target || undefined;
+
+  // Contrôle du clip et des photos, sur la distribution retenue. Le filtre du
+  // moteur refuse les enfants et la nudité : le créateur le sait tout de
+  // suite, sans rien débiter. Contrôle indisponible : le clip passe.
+  const precheck = frames
+    ? await precheckSwapInputs({
+        frames,
+        photoUrls: [...imageUrls, ...(decorSignedUrl ? [decorSignedUrl] : [])],
+        characterCount: characters.length,
+      }).catch((e) => {
         console.error("startSwap: contrôle", errorMessage(e));
         return null;
-      }),
-    // Consignes libres reformulées en anglais ; en panne, le texte brut sert.
-    rawInstructions
-      ? polishSwapInstructions(rawInstructions)
-          .catch((e) => {
-            console.error("polishSwapInstructions", errorMessage(e));
-            return null;
-          })
-          .then((polished) => polished ?? rawInstructions)
-      : undefined,
-  ]);
+      })
+    : null;
   if (precheck?.blocked) {
     return {
       error: fmt(precheck.cause === "minor" ? errors.precheckMinor : errors.precheckNudity, {
@@ -251,7 +304,6 @@ export async function startSwap(input: {
       }),
     };
   }
-  if (!shots?.length) return { error: errors.swapUnreadable };
   // Mannequin de chaque personnage : sa silhouette (contrôle indisponible :
   // homme) et une couleur à lui, qui le distingue à la seconde passe.
   const feminine = precheck && !precheck.blocked ? precheck.feminine : undefined;
