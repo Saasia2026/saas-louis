@@ -224,7 +224,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
             </form>
           </div>
         ) : (
-          <ul className="mt-6 grid gap-4 md:grid-cols-2">
+          <ul className="mt-6 grid gap-4 md:grid-cols-3">
             {SUBSCRIPTION_PLANS.map((plan) => {
               const featured = "highlight" in plan && plan.highlight;
               const credits = planCredits(plan, billing);

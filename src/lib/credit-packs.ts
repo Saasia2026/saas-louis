@@ -1,24 +1,24 @@
 // Packs de crédits vendus par Stripe Checkout, partagés client/serveur.
-// Prix en centimes. Un crédit = 1 s de vidéo (Seedance, Wan, Kling 2.5) ou une
-// photo ; Wan 2.7 en 1080p coûte déjà 0,15 $ la seconde chez fal, donc un
-// crédit ne doit jamais se vendre sous ~0,20 € une fois TVA et frais Stripe
-// déduits.
+// Prix en centimes. Coût de production Genjutsu (mannequin, 2 passes) :
+// ~0,097 $/cr en 720p. Marge cible ≈ 20-35 % au prix plein API ; si
+// Higgsfield accorde la remise revendeur, elle monte à 50-60 %.
+// Grille alignée sur Glorify (sept. 2026) : Basic 9 $/150 cr, Pro 25 $/600 cr,
+// Ultimate 44 $/1 200 cr — nos prix en € reflètent la même logique.
 
 export const CREDIT_CURRENCY = "eur";
 
 export const CREDIT_PACKS = [
-  { id: "starter", label: "Découverte", credits: 50, amount: 1499 },
-  { id: "creator", label: "Créateur", credits: 150, amount: 3999, highlight: true },
-  { id: "studio", label: "Studio", credits: 500, amount: 11999 },
+  { id: "starter", label: "Basic", credits: 75, amount: 999 },
+  { id: "creator", label: "Pro", credits: 225, amount: 2999, highlight: true },
+  { id: "studio", label: "Creator", credits: 750, amount: 9999 },
 ] as const;
 
-// Abonnements : des crédits chaque mois, un peu moins chers qu'en packs.
-// L'annuel vaut 10 mois (2 offerts) et livre les 12 mois de crédits d'un
-// coup. Crédit le moins cher : 999,90 € / 6 000 ≈ 0,167 € TTC, soit ~0,15 $
-// hors TVA et frais, pour ~0,097 $ de coût Genjutsu : marge ~35 %.
+// Abonnements : mêmes crédits, un peu moins chers que les packs.
+// L'annuel vaut 10 mois (2 offerts) et livre les 12 mois de crédits d'un coup.
 export const SUBSCRIPTION_PLANS = [
-  { id: "creator", credits: 150, month: 3499, year: 34990 },
-  { id: "studio", credits: 500, month: 9999, year: 99990, highlight: true },
+  { id: "starter", credits: 75, month: 899, year: 8990 },
+  { id: "creator", credits: 225, month: 2499, year: 24990, highlight: true },
+  { id: "studio", credits: 750, month: 7999, year: 79990 },
 ] as const;
 
 export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];
