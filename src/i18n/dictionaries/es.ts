@@ -212,6 +212,7 @@ export const es: Dictionary = {
     launch: "Reemplazar",
     costFrom: "Desde {cost} {credits}",
     notEnoughCredits: "Créditos insuficientes",
+    longClipWarning: "Los videos de más de 15 s se dividen en segmentos — algunos pueden fallar.",
     keyframes: "Colocando al personaje en cada plano",
     shots: "Rodaje y revisión de los planos",
     swapping: "Reemplazando al personaje…",

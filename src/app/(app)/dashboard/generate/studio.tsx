@@ -410,6 +410,11 @@ export function Studio({
                   : `≤ ${cost} ${plural(cost, t.common.credit, t.common.credits)}`
                 : t.studio.notEnoughCredits}
           </span>
+          {durationKnown && seconds > 15 && (
+            <span className="truncate px-1 text-xs text-warning">
+              {t.studio.longClipWarning}
+            </span>
+          )}
           <button type="submit" disabled={!canSend} className="btn btn-accent shrink-0">
             <WandSparkles />
             {t.studio.launch}

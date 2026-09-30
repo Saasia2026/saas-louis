@@ -214,6 +214,7 @@ export const fr = {
     launch: "Remplacer",
     costFrom: "Dès {cost} {credits}",
     notEnoughCredits: "Crédits insuffisants",
+    longClipWarning: "Les vidéos de plus de 15 s sont découpées en plusieurs segments — certains peuvent échouer.",
     keyframes: "Personnage placé sur chaque plan",
     shots: "Tournage et vérification des plans",
     swapping: "Remplacement du personnage…",
