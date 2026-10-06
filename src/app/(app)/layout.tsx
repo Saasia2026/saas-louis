@@ -80,7 +80,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               </Link>
             </div>
 
-            <Link href="/dashboard/generate" className="btn btn-primary hidden lg:inline-flex">
+            <Link href="/dashboard/generate" className="btn btn-hot hidden lg:inline-flex">
               <Plus />
               {t.shell.newVideo}
             </Link>

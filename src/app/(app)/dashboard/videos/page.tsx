@@ -30,7 +30,7 @@ export default async function VideosPage() {
         eyebrow={V.eyebrow}
         title={V.title}
         actions={
-          <Link href="/dashboard/generate" className="btn btn-accent">
+          <Link href="/dashboard/generate" className="btn btn-hot">
             <Plus />
             {t.shell.newVideo}
           </Link>

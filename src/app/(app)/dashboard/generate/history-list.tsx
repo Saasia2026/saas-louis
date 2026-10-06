@@ -20,7 +20,7 @@ import { useI18n } from "@/i18n/provider";
 import type { AspectRatio } from "@/lib/generation";
 import type { SwapHistoryItem } from "../swap-history";
 
-// Exemples rendus avec Genjutsu, montrés tant que l'historique est vide.
+// Exemples montrés tant que l'historique est vide.
 const EXAMPLES = [
   { src: "/examples/genjutsu-diable.mp4", poster: "/examples/genjutsu-diable.jpg", aspectRatio: "9:16" },
   { src: "/examples/genjutsu-lincoln.mp4", poster: "/examples/genjutsu-lincoln.jpg", aspectRatio: "9:16" },
@@ -90,7 +90,7 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
           <div className="flex min-w-0 flex-1 flex-col gap-3 py-1">
             <p className="flex items-center gap-1.5 text-xs font-semibold text-accent-light">
               <Sparkles className="size-3.5" />
-              Higgsfield Genjutsu
+              {t.studio.poweredBy}
             </p>
             {item.thumbs.length > 0 && (
               <div className="flex gap-2">
@@ -138,7 +138,7 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
                   {V.resume}
                 </Link>
               ) : (
-                <a href={item.downloadUrl ?? item.mediaUrl} className="btn btn-secondary">
+                <a href={item.downloadUrl ?? item.mediaUrl} className="btn btn-hot">
                   <Download />
                   {V.download}
                 </a>

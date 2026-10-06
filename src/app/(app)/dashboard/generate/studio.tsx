@@ -39,9 +39,9 @@ import { cancelSwap, redoSwapShot, startSwap } from "./swap-actions";
 import { SwapInput, clampedStart, type SwapCharacter, type SwapFile } from "./swap-input";
 
 const POLL_INTERVAL_MS = 5_000;
-// Durée annoncée d'un rendu Genjutsu. Les séquences se rendent en même temps
-// (quelques minutes, quelle que soit la longueur), mais la préparation, les
-// contrôles et le montage croissent avec le clip.
+// Durée annoncée d'un rendu. Les séquences se rendent en même temps (quelques
+// minutes, quelle que soit la longueur), mais la préparation, les contrôles et
+// le montage croissent avec le clip.
 function genjutsuMinutes(seconds: number) {
   return seconds <= 15 ? 5 : seconds <= 30 ? 6 : seconds <= 60 ? 8 : 10;
 }
@@ -56,7 +56,7 @@ function pollTimeoutMs(job: Job) {
   return (30 * 60_000 + job.durationSeconds * 20_000) * (job.vessel ? 2 : 1);
 }
 
-// vessel : base neutre, deux rendus Genjutsu à la suite (délais doublés).
+// vessel : base neutre, deux rendus à la suite (délais doublés).
 export type Job = { aspectRatio: AspectRatio; durationSeconds: number; vessel?: boolean };
 
 // Plan prêt avec l'URL signée de son clip, pour l'aperçu (voir GeneratePage).
@@ -120,14 +120,14 @@ export function Studio({
   // Plan prêt choisi : son clip tient lieu de vidéo, ses personnes fixent
   // qui chaque personnage remplace.
   const [preset, setPreset] = useState<StudioPreset | null>(null);
-  // Un seul moteur, une seule méthode : Genjutsu et ses mannequins neutres
-  // (voir startSwap), d'un à trois personnages.
+  // Un seul moteur, une seule méthode (voir startSwap), d'un à trois
+  // personnages.
   const engine: SwapEngine = "genjutsu";
   const available = engines.includes(engine);
   const several = characters.length > 1;
   const maxCharacters = SWAP_MAX_CHARACTERS;
   const availablePresets = presets.filter((p) => p.people.length <= maxCharacters);
-  // Photos par personnage : 8 au plus en tout chez Higgsfield.
+  // Photos par personnage : 8 au plus en tout.
   const maxPhotos = photosPerCharacter(characters.length);
   const imagesReady = characters.every((c) => c.image);
   // Seul, le personnage remplace la personne principale ; à plusieurs, il
@@ -526,7 +526,7 @@ export function Studio({
         {durationKnown && seconds > 15 && (
           <p className="px-1 text-xs text-warning">{t.studio.longClipWarning}</p>
         )}
-        <button type="submit" disabled={!canSend} className="btn btn-accent w-full">
+        <button type="submit" disabled={!canSend} className="btn btn-accent w-full py-3.5 text-base">
           <WandSparkles />
           {t.studio.launch}
         </button>
@@ -776,7 +776,7 @@ function Result({
 
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line p-3">
         {phase.kind === "done" && (
-          <a href={phase.view.downloadUrl ?? phase.view.mediaUrl} className="btn btn-primary">
+          <a href={phase.view.downloadUrl ?? phase.view.mediaUrl} className="btn btn-hot py-2.5 text-[0.9375rem]">
             <Download />
             {t.studio.download}
           </a>
@@ -838,7 +838,7 @@ function ProgressLabel({ phase }: { phase: Extract<Phase, { kind: "generating" }
     );
   }
 
-  // Genjutsu : les séquences se rendent toutes en même temps.
+  // Les séquences se rendent toutes en même temps.
   const sequences = view?.engine === "genjutsu" && view.shotsTotal > 1;
   return (
     <span className="w-full">
