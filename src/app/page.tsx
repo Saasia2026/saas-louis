@@ -30,9 +30,9 @@ const EXAMPLES = ["ours", "chien"];
 
 // Rendus Genjutsu muets, dans l'ordre des textes de landing.showcaseList.
 const SHOWCASE = [
-  { file: "genjutsu-plage", aspectRatio: "9:16" },
+  { file: "genjutsu-diable", aspectRatio: "9:16" },
   { file: "genjutsu-lincoln", aspectRatio: "9:16" },
-  { file: "genjutsu-dieux", aspectRatio: "1:1" },
+  { file: "genjutsu-cage", aspectRatio: "9:16" },
 ];
 
 // Icône et largeur de chaque carte de fonctionnalité, dans l'ordre des

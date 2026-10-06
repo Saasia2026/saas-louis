@@ -48,16 +48,16 @@ export const en: Dictionary = {
     showcaseTitle: "Made with Genjutsu",
     showcaseList: [
       {
-        title: "Tuxedo on the beach",
-        text: "Every dance step comes from the original clip, filmed at sunset.",
+        title: "The devil dances",
+        text: "Two characters on a dance filmed on a rooftop: every step follows the original clip.",
       },
       {
         title: "Lincoln vlogs",
         text: "A phone-filmed vlog: the character copies every face and every look at the camera.",
       },
       {
-        title: "Arm-wrestling gods",
-        text: "Two people replaced in the same shot, each by their own character.",
+        title: "Fight of the century",
+        text: "A real MMA fight with both fighters replaced: every strike and dodge comes from the filmed clip.",
       },
     ],
     features: "Features",

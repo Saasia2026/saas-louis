@@ -48,16 +48,16 @@ export const es: Dictionary = {
     showcaseTitle: "Hecho con Genjutsu",
     showcaseList: [
       {
-        title: "De esmoquin en la playa",
-        text: "Cada paso de baile viene del clip original, grabado al atardecer.",
+        title: "El diablo baila",
+        text: "Dos personajes en un baile grabado en una azotea: cada paso sigue el clip original.",
       },
       {
         title: "Lincoln hace vlog",
         text: "Un vlog grabado con el móvil: el personaje copia cada mueca y cada mirada a cámara.",
       },
       {
-        title: "El pulso de los dioses",
-        text: "Dos personas reemplazadas en el mismo plano, cada una por su propio personaje.",
+        title: "El combate del siglo",
+        text: "Un combate real de MMA con ambos luchadores reemplazados: cada golpe y cada esquiva vienen del clip grabado.",
       },
     ],
     features: "Funciones",

@@ -9,9 +9,9 @@ import type { SwapHistoryItem } from "../swap-history";
 
 // Exemples rendus avec Genjutsu, montrés tant que l'historique est vide.
 const EXAMPLES = [
-  { src: "/examples/genjutsu-plage.mp4", poster: "/examples/genjutsu-plage.jpg", aspectRatio: "9:16" },
+  { src: "/examples/genjutsu-diable.mp4", poster: "/examples/genjutsu-diable.jpg", aspectRatio: "9:16" },
   { src: "/examples/genjutsu-lincoln.mp4", poster: "/examples/genjutsu-lincoln.jpg", aspectRatio: "9:16" },
-  { src: "/examples/genjutsu-dieux.mp4", poster: "/examples/genjutsu-dieux.jpg", aspectRatio: "1:1" },
+  { src: "/examples/genjutsu-cage.mp4", poster: "/examples/genjutsu-cage.jpg", aspectRatio: "9:16" },
 ] as const;
 
 // Largeur de la vignette selon le format : même hauteur à peu près pour tous,

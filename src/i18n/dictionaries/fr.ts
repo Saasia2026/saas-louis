@@ -50,16 +50,16 @@ export const fr = {
     showcaseTitle: "Créé avec Genjutsu",
     showcaseList: [
       {
-        title: "En smoking sur la plage",
-        text: "Chaque pas de danse vient du clip d'origine, filmé au coucher du soleil.",
+        title: "Le diable danse",
+        text: "Deux personnages sur une danse filmée sur un toit : chaque pas suit le clip d'origine.",
       },
       {
         title: "Lincoln en vlog",
         text: "Un vlog filmé au téléphone : le personnage reprend chaque grimace et chaque regard caméra.",
       },
       {
-        title: "Le bras de fer des dieux",
-        text: "Deux personnes remplacées dans le même plan, chacune par son propre personnage.",
+        title: "Le combat du siècle",
+        text: "Un vrai combat de MMA, les deux combattants remplacés : chaque coup et chaque esquive viennent du clip filmé.",
       },
     ],
     features: "Fonctionnalités",
