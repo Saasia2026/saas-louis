@@ -150,7 +150,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
           <p className="label">{P.balance}</p>
           <p className="mt-1 font-headline text-5xl">
             {profile?.credits_remaining ?? 0}
-            <span className="ml-2 font-sans text-base font-normal text-muted">{t.common.credits}</span>
+            <span className="ml-2 font-sans text-base font-normal normal-case text-muted">{t.common.credits}</span>
           </p>
         </div>
         <p className="label">{P.secure}</p>
@@ -369,7 +369,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                   </div>
                   <p className="mt-6 font-headline text-4xl">
                     {price(plan[billing])}
-                    <span className="ml-1 font-sans text-base font-normal text-muted">
+                    <span className="ml-1 font-sans text-base font-normal normal-case text-muted">
                       / {billing === "year" ? S.perYear : S.perMonth}
                     </span>
                   </p>

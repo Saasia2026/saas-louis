@@ -28,6 +28,9 @@ export const es: Dictionary = {
     workspace: "Espacio de trabajo",
     recharge: "Recargar",
     nav: { studio: "Studio", videos: "Mis vídeos", credits: "Créditos" },
+    navHint: { studio: "Crear un vídeo", videos: "Tus creaciones", credits: "Saldo y recarga" },
+    creditsSeconds: "≈ {n} s de vídeo en 720p",
+    creditsMinutes: "≈ {n} min de vídeo en 720p",
   },
 
   landing: {

@@ -30,6 +30,9 @@ export const fr = {
     workspace: "Espace de travail",
     recharge: "Recharger",
     nav: { studio: "Studio", videos: "Mes vidéos", credits: "Crédits" },
+    navHint: { studio: "Créer une vidéo", videos: "Tes créations", credits: "Solde et recharge" },
+    creditsSeconds: "≈ {n} s de vidéo en 720p",
+    creditsMinutes: "≈ {n} min de vidéo en 720p",
   },
 
   landing: {
