@@ -212,7 +212,6 @@ export const es: Dictionary = {
     targetsMissing: "Indica a quién reemplaza cada personaje",
     uploading: "Subiendo…",
     change: "Cambiar",
-    pick: "Añade un clip y un personaje",
     explain:
       "Los gestos, el decorado, la cámara y el sonido vienen de tu clip: solo cambia el personaje. Usa un clip que tengas derecho a reutilizar.",
     launch: "Generar",
@@ -228,7 +227,6 @@ export const es: Dictionary = {
     modeReplaceHint: "Cambia a una persona y conserva todo lo demás: decorado, cámara, sonido.",
     modeTransferHint: "Conserva los movimientos y la cámara, y vuelve a rodar la escena en un nuevo lugar.",
     decorRequiredTitle: "Nuevo lugar (foto)",
-    decorMissing: "Añade la foto del nuevo lugar",
     keyframes: "Colocando al personaje en cada plano",
     shots: "Rodaje y revisión de los planos",
     swapping: "Reemplazando al personaje…",

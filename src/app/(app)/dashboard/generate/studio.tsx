@@ -1,6 +1,21 @@
 "use client";
 
-import { Check, ChevronDown, Download, Move, RefreshCw, Replace, WandSparkles, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Circle,
+  Clock,
+  Download,
+  Layers,
+  MonitorPlay,
+  Move,
+  RefreshCw,
+  Replace,
+  Sparkles,
+  WandSparkles,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { fmt, plural } from "@/i18n/config";
@@ -297,7 +312,13 @@ export function Studio({
       className="composer"
     >
       <div className="px-4 pt-4">
-        <div role="tablist" className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface-2/60 p-1">
+        <div role="tablist" className="relative grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface-2/60 p-1">
+          {/* Fond de l'onglet actif : il glisse d'un onglet à l'autre. */}
+          <span
+            aria-hidden
+            className="absolute inset-y-1 left-1 w-[calc(50%-0.375rem)] rounded-lg border border-line-strong bg-surface-3 transition-transform duration-300 [transition-timing-function:var(--ease-out)]"
+            style={{ transform: mode === "transfer" ? "translateX(calc(100% + 0.25rem))" : undefined }}
+          />
           {(["replace", "transfer"] as const).map((m) => {
             const Icon = m === "replace" ? Replace : Move;
             return (
@@ -307,11 +328,11 @@ export function Studio({
                 role="tab"
                 aria-selected={mode === m}
                 onClick={() => setMode(m)}
-                className={`flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium transition-colors ${
-                  mode === m ? "bg-surface-3 text-text" : "text-muted hover:text-text"
+                className={`relative flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${
+                  mode === m ? "text-text" : "text-muted hover:text-text"
                 }`}
               >
-                <Icon className="size-4 shrink-0" />
+                <Icon className={`size-4 shrink-0 transition-colors ${mode === m ? "text-accent-light" : ""}`} />
                 <span className="truncate">{m === "replace" ? t.studio.modeReplace : t.studio.modeTransfer}</span>
               </button>
             );
@@ -404,6 +425,7 @@ export function Studio({
             (720p ou 1080p) ; les tarifs affichés suivent les deux choix. */}
         <Menu
           label={fidelity ? t.studio.methodFidelity : t.studio.methodStandard}
+          icon={fidelity ? Layers : Sparkles}
           openUp
           options={[
             {
@@ -426,6 +448,7 @@ export function Studio({
         />
         <Menu
           label={hd ? t.swapEngines.genjutsuHd.label : t.swapEngines.genjutsu.label}
+          icon={MonitorPlay}
           openUp
           options={[
             {
@@ -455,6 +478,7 @@ export function Studio({
                 ? `${length} s`
                 : fmt(t.studio.lengthAll, { seconds: wholeSeconds })
             }
+            icon={Clock}
             openUp
             options={[
               ...lengths.map((l) => ({ value: String(l), label: `${l} s` })),
@@ -466,14 +490,29 @@ export function Studio({
         )}
 
         </div>
-        <p className="px-1 text-xs text-faint">
-            {!video || !imagesReady
-              ? t.studio.pick
-              : !targetsReady
-                ? t.studio.targetsMissing
-                : !decorReady
-                ? t.studio.decorMissing
-                : credits >= gate || autoRecharge
+        {!video || !imagesReady || !decorReady ? (
+          <div className="flex flex-wrap gap-1.5 px-1">
+            {[
+              { done: Boolean(video), label: t.studio.video },
+              { done: imagesReady, label: t.studio.image },
+              ...(mode === "transfer" ? [{ done: Boolean(decorPhoto), label: t.studio.decorRequiredTitle }] : []),
+            ].map(({ done, label }) => (
+              <span
+                key={label}
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.6875rem] font-medium transition-colors ${
+                  done ? "border-success/30 bg-success/10 text-success" : "border-line text-faint"
+                }`}
+              >
+                {done ? <Check className="size-3" /> : <Circle className="size-3" />}
+                {label}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="px-1 text-xs text-faint">
+            {!targetsReady
+              ? t.studio.targetsMissing
+              : credits >= gate || autoRecharge
                 ? durationKnown
                   ? // Prix final connu une fois le clip découpé (voir swapCredits).
                     fmt(t.studio.costFrom, {
@@ -482,7 +521,8 @@ export function Studio({
                     })
                   : `≤ ${cost} ${plural(cost, t.common.credit, t.common.credits)}`
                 : t.studio.notEnoughCredits}
-        </p>
+          </p>
+        )}
         {durationKnown && seconds > 15 && (
           <p className="px-1 text-xs text-warning">{t.studio.longClipWarning}</p>
         )}
@@ -532,12 +572,14 @@ export function Studio({
 // Petit menu déroulant de la barre d'outils.
 function Menu({
   label,
+  icon: Icon,
   options,
   value,
   onChange,
   openUp,
 }: {
   label: string;
+  icon?: LucideIcon;
   options: { value: string; label: string; hint?: string }[];
   value: string;
   onChange: (value: string) => void;
@@ -561,10 +603,13 @@ function Menu({
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-1 rounded-full px-2.5 py-1.5 text-sm transition-colors ${
-          open ? "bg-surface-3 text-text" : "text-muted hover:bg-surface-3 hover:text-text"
+        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm font-medium transition-colors ${
+          open
+            ? "border-line-strong bg-surface-3 text-text"
+            : "border-line bg-surface-2 text-muted hover:border-line-strong hover:text-text"
         }`}
       >
+        {Icon && <Icon className="size-3.5 text-accent-light" />}
         {label}
         <ChevronDown className={`size-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>

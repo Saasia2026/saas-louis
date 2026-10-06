@@ -214,7 +214,6 @@ export const fr = {
     targetsMissing: "Dis qui chaque personnage remplace",
     uploading: "Envoi…",
     change: "Changer",
-    pick: "Ajoute un clip et un personnage",
     explain:
       "Les gestes, le décor, la caméra et le son viennent de ton clip : seul le personnage change. Utilise un clip que tu as le droit de réutiliser.",
     launch: "Générer",
@@ -230,7 +229,6 @@ export const fr = {
     modeReplaceHint: "Change une personne et garde tout le reste : décor, caméra, son.",
     modeTransferHint: "Garde les mouvements et la caméra, et rejoue la scène dans un nouveau lieu.",
     decorRequiredTitle: "Nouveau lieu (photo)",
-    decorMissing: "Ajoute la photo du nouveau lieu",
     keyframes: "Personnage placé sur chaque plan",
     shots: "Tournage et vérification des plans",
     swapping: "Remplacement du personnage…",

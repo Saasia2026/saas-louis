@@ -170,8 +170,8 @@ export function SwapInput({
       <label
         key={slot}
         title={hint}
-        className={`group relative flex cursor-pointer flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl border border-dashed text-center transition-colors ${
-          file ? "border-line bg-black" : "border-line-strong bg-surface-2/60 hover:border-accent/60"
+        className={`group relative flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed text-center transition-colors ${
+          file ? "border-line bg-black" : "border-line-strong bg-surface-2/60 hover:border-accent/60 hover:bg-surface-2"
         } ${compact ? "h-24" : "h-36"}`}
       >
         <input
@@ -199,9 +199,14 @@ export function SwapInput({
           </>
         ) : (
           <>
-            <Icon className="size-5 text-muted" />
-            <span className="text-sm font-medium">
+            <span className="flex size-10 items-center justify-center rounded-xl border border-line bg-surface-3 text-muted transition-[transform,color,border-color] duration-200 group-hover:-translate-y-0.5 group-hover:border-accent/50 group-hover:text-accent-light">
+              <Icon className="size-5" />
+            </span>
+            <span className="text-sm font-semibold">
               {kind === "video" ? t.studio.video : t.studio.image}
+            </span>
+            <span className="text-[0.6875rem] text-faint">
+              {kind === "video" ? "MP4 · MOV · WebM" : "JPG · PNG · WebP"}
             </span>
           </>
         )}

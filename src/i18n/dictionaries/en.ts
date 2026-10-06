@@ -212,7 +212,6 @@ export const en: Dictionary = {
     targetsMissing: "Say who each character replaces",
     uploading: "Uploading…",
     change: "Change",
-    pick: "Add a clip and a character",
     explain:
       "Moves, set, camera and sound come from your clip: only the character changes. Use a clip you have the right to reuse.",
     launch: "Generate",
@@ -228,7 +227,6 @@ export const en: Dictionary = {
     modeReplaceHint: "Swap a person and keep everything else: set, camera, sound.",
     modeTransferHint: "Keep the moves and the camera, and replay the scene in a new location.",
     decorRequiredTitle: "New location (photo)",
-    decorMissing: "Add a photo of the new location",
     keyframes: "Placing the character in each shot",
     shots: "Filming and checking the shots",
     swapping: "Replacing the character…",

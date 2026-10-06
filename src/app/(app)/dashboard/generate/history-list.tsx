@@ -1,6 +1,19 @@
 "use client";
 
-import { Download } from "lucide-react";
+import {
+  CalendarDays,
+  Clock,
+  Download,
+  Layers,
+  MonitorPlay,
+  Move,
+  RectangleHorizontal,
+  RectangleVertical,
+  Sparkles,
+  Square,
+  TriangleAlert,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
@@ -22,6 +35,26 @@ const THUMB_WIDTH: Record<AspectRatio, string> = {
   "16:9": "sm:w-80",
 };
 
+const FORMAT_ICON: Record<AspectRatio, LucideIcon> = {
+  "9:16": RectangleVertical,
+  "1:1": Square,
+  "16:9": RectangleHorizontal,
+};
+
+// Réglage d'une création, avec son icône ; `accent` pour les options.
+function Chip({ icon: Icon, accent, children }: { icon: LucideIcon; accent?: boolean; children: React.ReactNode }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium ${
+        accent ? "border-accent/30 bg-accent-soft text-accent-light" : "border-line bg-surface-2 text-muted"
+      }`}
+    >
+      <Icon className={`size-3.5 ${accent ? "" : "text-faint"}`} />
+      {children}
+    </span>
+  );
+}
+
 export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
   const { t } = useI18n();
   const V = t.videos;
@@ -29,7 +62,10 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
   return (
     <ul className="space-y-3">
       {items.map((item) => (
-        <li key={item.id} className="panel flex animate-fade-up flex-col gap-4 p-3 sm:flex-row">
+        <li
+          key={item.id}
+          className="panel flex animate-fade-up flex-col gap-4 p-3 transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-line-strong sm:flex-row"
+        >
           <div
             className={`flex w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-black ${THUMB_WIDTH[item.aspectRatio]}`}
             style={{ aspectRatio: item.aspectRatio.replace(":", " / ") }}
@@ -52,7 +88,10 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col gap-3 py-1">
-            <p className="text-xs font-medium text-muted">Higgsfield Genjutsu</p>
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-accent-light">
+              <Sparkles className="size-3.5" />
+              Higgsfield Genjutsu
+            </p>
             {item.thumbs.length > 0 && (
               <div className="flex gap-2">
                 {item.thumbs.map((src) => (
@@ -62,28 +101,44 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
                     key={src}
                     src={src}
                     alt=""
-                    className="size-12 rounded-lg border border-line object-cover"
+                    className="size-14 rounded-xl border border-line object-cover transition-transform duration-200 hover:scale-105"
                   />
                 ))}
               </div>
             )}
             <div className="flex flex-wrap gap-1.5">
-              <span className="tag">{item.hd ? "1080p" : "720p"}</span>
-              {item.seconds ? <span className="tag">{fmt(V.seconds, { seconds: item.seconds })}</span> : null}
-              <span className="tag">{item.aspectRatio}</span>
-              {item.transfer && <span className="tag">{t.studio.modeTransfer}</span>}
-              {item.fidelity && <span className="tag">{t.studio.methodFidelity}</span>}
+              <Chip icon={MonitorPlay}>{item.hd ? "1080p" : "720p"}</Chip>
+              {item.seconds ? <Chip icon={Clock}>{fmt(V.seconds, { seconds: item.seconds })}</Chip> : null}
+              <Chip icon={FORMAT_ICON[item.aspectRatio]}>{item.aspectRatio}</Chip>
+              {item.transfer && (
+                <Chip icon={Move} accent>
+                  {t.studio.modeTransfer}
+                </Chip>
+              )}
+              {item.fidelity && (
+                <Chip icon={Layers} accent>
+                  {t.studio.methodFidelity}
+                </Chip>
+              )}
             </div>
-            {item.incomplete && <p className="text-xs text-amber-300">{item.incomplete}</p>}
+            {item.incomplete && (
+              <p className="inline-flex items-center gap-1.5 self-start rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">
+                <TriangleAlert className="size-3.5" />
+                {item.incomplete}
+              </p>
+            )}
 
-            <div className="mt-auto flex items-center justify-between gap-3">
-              <span className="text-xs text-faint tabular-nums">{item.date}</span>
+            <div className="mt-auto flex items-center justify-between gap-3 pt-1">
+              <span className="flex items-center gap-1.5 text-xs text-faint tabular-nums">
+                <CalendarDays className="size-3.5" />
+                {item.date}
+              </span>
               {item.running ? (
-                <Link href={`/dashboard/generate?v=${item.id}`} className="btn btn-secondary">
+                <Link href={`/dashboard/generate?v=${item.id}`} className="btn btn-accent">
                   {V.resume}
                 </Link>
               ) : (
-                <a href={item.downloadUrl ?? item.mediaUrl} className="btn btn-ghost">
+                <a href={item.downloadUrl ?? item.mediaUrl} className="btn btn-secondary">
                   <Download />
                   {V.download}
                 </a>
@@ -101,7 +156,10 @@ export function HistoryEmpty() {
   return (
     <div className="panel animate-fade-up p-5">
       <p className="text-sm text-muted">{t.studio.historyEmpty}</p>
-      <p className="mt-5 text-xs font-medium text-faint">{t.studio.examplesTitle}</p>
+      <p className="mt-5 flex items-center gap-1.5 text-xs font-semibold text-accent-light">
+        <Sparkles className="size-3.5" />
+        {t.studio.examplesTitle}
+      </p>
       <div className="mt-3 grid grid-cols-3 items-start gap-3">
         {EXAMPLES.map((ex) => (
           <video
