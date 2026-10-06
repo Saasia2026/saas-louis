@@ -153,8 +153,6 @@ export default async function Home() {
                   src={`/examples/${EXAMPLES[i]}.mp4`}
                   poster={`/examples/${EXAMPLES[i]}.jpg`}
                   label={title}
-                  soundOn={L.soundOn}
-                  soundOff={L.soundOff}
                 />
               </li>
             ))}
@@ -169,10 +167,7 @@ export default async function Home() {
                   src={`/examples/${SHOWCASE[i].file}.mp4`}
                   poster={`/examples/${SHOWCASE[i].file}.jpg`}
                   label={title}
-                  soundOn={L.soundOn}
-                  soundOff={L.soundOff}
                   aspectRatio={SHOWCASE[i].aspectRatio}
-                  hasSound={false}
                 />
               </li>
             ))}

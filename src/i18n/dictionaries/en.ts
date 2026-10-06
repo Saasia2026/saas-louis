@@ -37,8 +37,6 @@ export const en: Dictionary = {
       { title: "The bear at the mic" },
       { title: "The dog on stage" },
     ],
-    soundOn: "Turn sound on",
-    soundOff: "Mute",
     showcaseList: [
       { title: "The devil dances" },
       { title: "Lincoln vlogs" },

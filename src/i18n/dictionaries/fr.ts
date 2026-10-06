@@ -39,8 +39,6 @@ export const fr = {
       { title: "L'ours au micro" },
       { title: "Le chien sur scène" },
     ],
-    soundOn: "Activer le son",
-    soundOff: "Couper le son",
     showcaseList: [
       { title: "Le diable danse" },
       { title: "Lincoln en vlog" },
