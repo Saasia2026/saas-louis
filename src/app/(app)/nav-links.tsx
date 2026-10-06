@@ -85,7 +85,7 @@ export function MainNav() {
             >
               <Icon className="size-4" />
             </span>
-            <span className="hidden text-sm font-semibold lg:inline">{t.shell.nav[key]}</span>
+            <span className="hidden text-sm font-semibold whitespace-nowrap lg:inline">{t.shell.nav[key]}</span>
           </Link>
         );
       })}

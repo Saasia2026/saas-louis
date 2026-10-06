@@ -45,6 +45,25 @@
   color-scheme: dark;
 }
 
+/* Une teinte par offre (page Crédits) : Basic, Pro, Creator. */
+:root {
+  --tier-basic: #7dd3fc;
+  --tier-pro: #f0abfc;
+  --tier-creator: #fcd34d;
+}
+:root[data-theme="light"] {
+  --tier-basic: #0284c7;
+  --tier-pro: #a21caf;
+  --tier-creator: #b45309;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --tier-basic: #0284c7;
+    --tier-pro: #a21caf;
+    --tier-creator: #b45309;
+  }
+}
+
 :root[data-theme="light"] {
   --bg: #f6f6f8;
   --surface: #ffffff;

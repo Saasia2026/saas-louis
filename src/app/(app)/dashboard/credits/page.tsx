@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -39,6 +40,55 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const ERRORS = ["unavailable", "checkout", "card", "nocard", "portal", "subscribed"] as const;
+
+// Teinte de chaque offre (variables --tier-*, plus foncées en thème clair) et
+// force du dégradé de sa carte ; Pro est la plus mise en avant.
+const TIERS = {
+  starter: { color: "var(--tier-basic)", strength: 14, badge: null },
+  creator: { color: "var(--tier-pro)", strength: 26, badge: "popular" },
+  studio: { color: "var(--tier-creator)", strength: 18, badge: "best" },
+} as const;
+
+function tierCard(color: string, strength: number): React.CSSProperties {
+  return {
+    background: `linear-gradient(165deg, color-mix(in oklab, ${color} ${strength}%, var(--surface)) 0%, var(--surface) 62%)`,
+    borderColor: `color-mix(in oklab, ${color} 38%, var(--line))`,
+  };
+}
+
+// Badges penchés : réduction en rose, mention d'offre à côté.
+const BADGE = "inline-flex -skew-x-6 items-center rounded-md px-2 py-0.5 text-xs font-extrabold italic";
+const OFF_BADGE = `${BADGE} bg-rose-600 text-white`;
+
+// Les crédits d'une offre et ce qu'ils représentent en vidéo (720p, une
+// passe, fiche d'un personnage comprise ; 15 s ; haute fidélité).
+function CreditsBox({
+  credits,
+  color,
+  title,
+  P,
+}: {
+  credits: number;
+  color: string;
+  title: string;
+  P: Awaited<ReturnType<typeof getDictionary>>["creditsPage"];
+}) {
+  const clips = Math.floor(credits / (15 * swapMethodRate() + SWAP_SHEET_CREDITS));
+  const fidelity = Math.max(0, Math.floor((credits - SWAP_SHEET_CREDITS) / swapMethodRate(false, true)));
+  return (
+    <div className="mt-5 rounded-xl border border-line bg-surface-2/60 p-4">
+      <p className="flex items-center gap-2 font-semibold">
+        <Sparkles className="size-4 shrink-0" style={{ color }} />
+        {title}
+      </p>
+      <ul className="mt-2 space-y-1 pl-6 text-sm text-muted tabular-nums">
+        <li>{fmt(P.eqSeconds, { n: swapMethodSecondsFor(credits) })}</li>
+        {clips > 0 && <li>{fmt(P.eqClips, { n: clips })}</li>}
+        <li>{fmt(P.eqFidelity, { n: fidelity })}</li>
+      </ul>
+    </div>
+  );
+}
 
 export default async function CreditsPage(props: PageProps<"/dashboard/credits">) {
   const params = await props.searchParams;
@@ -298,31 +348,28 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
         )}
       </section>
 
-      {/* Abonnements */}
-      <section className="mt-12">
+      {/* Abonnements : une teinte par offre, la réduction réelle face aux
+          packs (même nombre de crédits), ce que les crédits représentent. */}
+      <section className="mt-14">
         <p className="eyebrow">{S.eyebrow}</p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight">{S.title}</h2>
-            <p className="mt-2 max-w-xl text-sm text-muted">{S.intro}</p>
+            <h2 className="font-headline text-4xl leading-none sm:text-5xl">{S.title}</h2>
+            <p className="mt-3 max-w-xl text-sm text-muted">{S.intro}</p>
           </div>
           {!subscription && (
-            <div className="flex rounded-full border border-line bg-surface-2 p-1 text-sm">
+            <div className="flex rounded-xl border border-line bg-surface-2 p-1 text-sm">
               {(["month", "year"] as const).map((interval) => (
                 <Link
                   key={interval}
                   href={`?billing=${interval}`}
                   scroll={false}
-                  className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 transition-colors ${
+                  className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 font-semibold transition-colors ${
                     billing === interval ? "bg-accent text-white" : "text-muted hover:text-text"
                   }`}
                 >
                   {interval === "year" ? S.yearly : S.monthly}
-                  {interval === "year" && (
-                    <span className={`text-xs ${billing === "year" ? "text-white/80" : "text-accent-light"}`}>
-                      {S.yearlyBadge}
-                    </span>
-                  )}
+                  {interval === "year" && <span className={OFF_BADGE}>{S.yearlyBadge}</span>}
                 </Link>
               ))}
             </div>
@@ -353,57 +400,57 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
             </form>
           </div>
         ) : (
-          <ul className="mt-6 grid gap-4 md:grid-cols-3">
+          <ul className="mt-8 grid gap-5 lg:grid-cols-3">
             {SUBSCRIPTION_PLANS.map((plan) => {
-              const featured = "highlight" in plan && plan.highlight;
+              const tier = TIERS[plan.id];
               const credits = planCredits(plan, billing);
+              // Référence : le pack au même nombre de crédits par mois.
+              const pack = CREDIT_PACKS.find((p) => p.id === plan.id)!;
+              const monthly = billing === "year" ? Math.round(plan.year / 12) : plan.month;
+              const pct = Math.round((1 - monthly / pack.amount) * 100);
+              const saving = pack.amount * 12 - (billing === "year" ? plan.year : plan.month * 12);
               return (
-                <li key={plan.id} className={`panel lift flex flex-col p-6 ${featured ? "glow" : ""}`}>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-semibold">{S.plans[plan.id]}</h3>
-                    {featured && (
-                      <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-white">
-                        {P.popular}
-                      </span>
-                    )}
+                <li
+                  key={plan.id}
+                  className="flex flex-col rounded-2xl border p-6 transition-transform duration-200 hover:-translate-y-1"
+                  style={tierCard(tier.color, tier.strength)}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-headline text-4xl leading-none">{S.plans[plan.id]}</h3>
+                    {pct > 0 && <span className={OFF_BADGE}>{fmt(P.off, { pct })}</span>}
+                    {tier.badge === "popular" && <span className={`${BADGE} bg-accent text-white`}>{P.popular}</span>}
+                    {tier.badge === "best" && <span className={`${BADGE} bg-amber-400 text-black`}>{P.bestValue}</span>}
                   </div>
-                  <p className="mt-6 font-headline text-4xl">
-                    {price(plan[billing])}
-                    <span className="ml-1 font-sans text-base font-normal normal-case text-muted">
-                      / {billing === "year" ? S.perYear : S.perMonth}
+                  <p className="mt-2 text-sm text-muted">{P.taglines[plan.id]}</p>
+
+                  <CreditsBox credits={credits} color={tier.color} title={fmt(billing === "year" ? S.creditsPerYear : S.creditsPerMonth, { credits })} P={P} />
+
+                  <div className="mt-6 flex flex-wrap items-baseline gap-x-2">
+                    <span className="font-headline text-2xl text-faint line-through decoration-rose-500/80 decoration-2">
+                      {price(pack.amount)}
                     </span>
+                    <span className="font-headline text-5xl leading-none">{price(monthly)}</span>
+                    <span className="text-sm text-muted">/ {S.perMonth}</span>
+                  </div>
+                  <p className="mt-1.5 text-xs text-muted">
+                    {fmt(P.vsPacks, { price: price(pack.amount) })}
+                    {billing === "year" && <> · {fmt(P.billedYearly, { price: price(plan.year) })}</>}
                   </p>
-                  <p className="mt-1 text-sm text-muted">
-                    {billing === "year"
-                      ? fmt(S.equivalent, { price: price(Math.round(plan.year / 12)) })
-                      : " "}
-                  </p>
-                  <dl className="mt-6 divide-y divide-line border-y border-line text-sm">
-                    <div className="flex justify-between gap-4 py-2.5">
-                      <dt className="text-muted">
-                        {fmt(billing === "year" ? S.creditsPerYear : S.creditsPerMonth, { credits })}
-                      </dt>
-                    </div>
-                    <div className="flex justify-between py-2.5">
-                      <dt className="text-muted">{P.perCreditRow}</dt>
-                      <dd className="font-medium tabular-nums">{price(Math.round((plan[billing] / credits) * 100) / 100)}</dd>
-                    </div>
-                    <div className="flex justify-between py-2.5">
-                      <dt className="text-muted">{P.secondsMaxRow}</dt>
-                      <dd className="font-medium tabular-nums">{swapMethodSecondsFor(credits)}</dd>
-                    </div>
-                  </dl>
+
                   <form action={subscribe} className="mt-6">
                     <input type="hidden" name="plan" value={plan.id} />
                     <input type="hidden" name="interval" value={billing} />
                     <button
                       type="submit"
                       disabled={!enabled}
-                      className={`btn w-full ${featured ? "btn-accent" : "btn-secondary"}`}
+                      className={`btn w-full py-3 text-[0.9375rem] ${tier.badge === "popular" ? "btn-accent" : "btn-primary"}`}
                     >
                       {S.subscribe}
                     </button>
                   </form>
+                  <p className="mt-3 rounded-lg bg-surface-2/70 py-2 text-center text-sm font-semibold">
+                    {fmt(P.yearlySave, { amount: price(saving) })}
+                  </p>
                 </li>
               );
             })}
@@ -411,76 +458,59 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
         )}
       </section>
 
-      {/* Packs */}
-      <ul id="packs" className="mt-12 grid scroll-mt-24 gap-4 md:grid-cols-3">
-        {CREDIT_PACKS.map((pack, i) => {
-          const featured = "highlight" in pack && pack.highlight;
-          return (
-            <li
-              key={pack.id}
-              className={`panel lift relative flex animate-fade-up flex-col p-6 ${featured ? "glow" : ""}`}
-              style={{ animationDelay: `${100 + i * 90}ms` }}
-            >
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold">{P.packs[pack.id]}</h2>
-                {featured && (
-                  <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-white">
-                    {P.popular}
-                  </span>
+      {/* Packs : le prix de référence, sans engagement. */}
+      <section id="packs" className="mt-14 scroll-mt-24">
+        <p className="eyebrow">{P.packsEyebrow}</p>
+        <h2 className="mt-3 font-headline text-4xl leading-none sm:text-5xl">{P.packsTitle}</h2>
+        <p className="mt-3 max-w-xl text-sm text-muted">{P.packsIntro}</p>
+        <ul className="mt-8 grid gap-5 lg:grid-cols-3">
+          {CREDIT_PACKS.map((pack, i) => {
+            const tier = TIERS[pack.id];
+            return (
+              <li
+                key={pack.id}
+                className="flex animate-fade-up flex-col rounded-2xl border p-6 transition-transform duration-200 hover:-translate-y-1"
+                style={{ ...tierCard(tier.color, Math.round(tier.strength / 2)), animationDelay: `${100 + i * 90}ms` }}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-headline text-4xl leading-none">{P.packs[pack.id]}</h3>
+                  <span className="rounded-md border border-line px-2 py-0.5 text-xs font-medium text-muted">{P.packTag}</span>
+                </div>
+                <p className="mt-2 text-sm text-muted">{P.taglines[pack.id]}</p>
+
+                <CreditsBox credits={pack.credits} color={tier.color} title={`${pack.credits} ${t.common.credits}`} P={P} />
+
+                <p className="mt-6 font-headline text-5xl leading-none">{price(pack.amount)}</p>
+                {card ? (
+                  <div className="mt-6 space-y-2">
+                    {/* Carte enregistrée : un clic, sans ressaisir la carte. */}
+                    <form action={buyWithSavedCard}>
+                      <input type="hidden" name="pack" value={pack.id} />
+                      <input type="hidden" name="nonce" value={`${nonce}-${pack.id}`} />
+                      <button type="submit" disabled={!enabled} className="btn btn-secondary w-full py-3">
+                        {fmt(P.payWith, { brand: brand(card.brand), last4: card.last4 })}
+                      </button>
+                    </form>
+                    <form action={buyCredits}>
+                      <input type="hidden" name="pack" value={pack.id} />
+                      <button type="submit" disabled={!enabled} className="w-full text-center text-xs text-muted hover:text-text">
+                        {P.otherCard}
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <form action={buyCredits} className="mt-6">
+                    <input type="hidden" name="pack" value={pack.id} />
+                    <button type="submit" disabled={!enabled} className="btn btn-secondary w-full py-3">
+                      {P.buy}
+                    </button>
+                  </form>
                 )}
-              </div>
-              <p className="mt-6 font-headline text-4xl">{price(pack.amount)}</p>
-              <dl className="mt-6 divide-y divide-line border-y border-line text-sm">
-                <div className="flex justify-between py-2.5">
-                  <dt className="text-muted">{P.creditsRow}</dt>
-                  <dd className="font-medium tabular-nums">{pack.credits}</dd>
-                </div>
-                <div className="flex justify-between py-2.5">
-                  <dt className="text-muted">{P.perCreditRow}</dt>
-                  <dd className="font-medium tabular-nums">{price(Math.round((pack.amount / pack.credits) * 100) / 100)}</dd>
-                </div>
-                <div className="flex justify-between py-2.5">
-                  <dt className="text-muted">{P.secondsMaxRow}</dt>
-                  <dd className="font-medium tabular-nums">{swapMethodSecondsFor(pack.credits)}</dd>
-                </div>
-              </dl>
-              {card ? (
-                <div className="mt-6 space-y-2">
-                  {/* Carte enregistrée : un clic, sans ressaisir la carte. */}
-                  <form action={buyWithSavedCard}>
-                    <input type="hidden" name="pack" value={pack.id} />
-                    <input type="hidden" name="nonce" value={`${nonce}-${pack.id}`} />
-                    <button
-                      type="submit"
-                      disabled={!enabled}
-                      className={`btn w-full ${featured ? "btn-accent" : "btn-secondary"}`}
-                    >
-                      {fmt(P.payWith, { brand: brand(card.brand), last4: card.last4 })}
-                    </button>
-                  </form>
-                  <form action={buyCredits}>
-                    <input type="hidden" name="pack" value={pack.id} />
-                    <button type="submit" disabled={!enabled} className="w-full text-center text-xs text-muted hover:text-text">
-                      {P.otherCard}
-                    </button>
-                  </form>
-                </div>
-              ) : (
-                <form action={buyCredits} className="mt-6">
-                  <input type="hidden" name="pack" value={pack.id} />
-                  <button
-                    type="submit"
-                    disabled={!enabled}
-                    className={`btn w-full ${featured ? "btn-accent" : "btn-secondary"}`}
-                  >
-                    {P.buy}
-                  </button>
-                </form>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
       <p className="mt-6 text-xs text-muted">{P.footer}</p>
     </div>
