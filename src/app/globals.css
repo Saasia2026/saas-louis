@@ -423,17 +423,18 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.625rem;
+  border-radius: 0.875rem;
   padding: 0.625rem 1rem;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.25rem;
   white-space: nowrap;
   transition:
     background-color 150ms,
     border-color 150ms,
-    box-shadow 200ms,
+    box-shadow 120ms var(--ease-out),
     transform 120ms var(--ease-out),
+    filter 150ms,
     opacity 150ms;
   & svg {
     width: 1rem;
@@ -443,8 +444,9 @@ body {
   &:hover:not(:disabled) svg:last-child:not(:first-child) {
     transform: translateX(2px);
   }
+  /* À l'appui, le bouton descend sur son bord (voir les boutons en relief). */
   &:active:not(:disabled) {
-    transform: scale(0.97);
+    transform: translateY(2px);
   }
   &:disabled {
     cursor: not-allowed;
@@ -452,35 +454,47 @@ body {
   }
 }
 
+/* Boutons en relief : un bord plein, plus sombre que le bouton, dessous ;
+   il s'écrase de moitié à l'appui. */
 @utility btn-primary {
+  --btn-edge: color-mix(in oklab, var(--text) 62%, black);
   background: var(--text);
   color: var(--on-primary);
-  box-shadow: inset 0 -1px 0 rgb(0 0 0 / 0.15);
+  box-shadow: 0 4px 0 var(--btn-edge);
   &:hover:not(:disabled) {
     background: var(--primary-hover);
   }
+  &:active:not(:disabled) {
+    box-shadow: 0 2px 0 var(--btn-edge);
+  }
 }
 
-/* Bouton d'action forte : l'accent, bords néon qui s'intensifient au survol. */
+/* Bouton d'action forte : l'accent, en léger dégradé. */
 @utility btn-accent {
+  --btn-edge: color-mix(in oklab, var(--accent) 62%, black);
   color: #fff;
-  background: var(--accent);
-  box-shadow: var(--neon-soft);
-  transition:
-    box-shadow 250ms,
-    background-color 200ms;
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  box-shadow: 0 4px 0 var(--btn-edge);
   &:hover:not(:disabled) {
-    box-shadow: var(--neon);
+    filter: brightness(1.07);
+  }
+  &:active:not(:disabled) {
+    box-shadow: 0 2px 0 var(--btn-edge);
   }
 }
 
 @utility btn-secondary {
+  --btn-edge: color-mix(in oklab, var(--surface-3) 55%, black);
   background: var(--surface-3);
   border: 1px solid var(--line);
   color: var(--text);
+  box-shadow: 0 4px 0 var(--btn-edge);
   &:hover:not(:disabled) {
     border-color: var(--line-strong);
     background: var(--surface-hover);
+  }
+  &:active:not(:disabled) {
+    box-shadow: 0 2px 0 var(--btn-edge);
   }
 }
 

@@ -97,7 +97,7 @@ export default async function Home() {
                 <WandSparkles />
                 {L.ctaFirst}
               </Link>
-              <a href="#tarifs" className="btn btn-secondary w-full px-5 py-3 text-[0.9375rem] sm:w-auto">
+              <a href="#tarifs" className="btn btn-primary w-full px-5 py-3 text-[0.9375rem] sm:w-auto">
                 {L.ctaPricing}
               </a>
             </div>
