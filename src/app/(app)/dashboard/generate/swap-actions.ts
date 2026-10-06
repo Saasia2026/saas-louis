@@ -103,13 +103,13 @@ async function uploadMannequinSheet(admin: ReturnType<typeof createAdminClient>,
   return uploadToHiggsfield(await data.arrayBuffer(), "image/png");
 }
 
-// Remplacement de personnage, par la méthode du mannequin — la seule du
-// site. Le clip et les photos sont déjà déposés dans swap-inputs par le
-// navigateur. On mesure le clip, on le contrôle et on le découpe en
-// séquences (rien n'est débité si le contrôle le refuse), on débite, puis
-// chaque séquence passe deux fois par Genjutsu : les personnes deviennent des
-// mannequins neutres, puis les mannequins deviennent les personnages (voir
-// advanceParts dans swap.ts). Un à trois personnages.
+// Remplacement de personnage. Le clip et les photos sont déjà déposés dans
+// swap-inputs par le navigateur. On mesure le clip, on le contrôle et on le
+// découpe en séquences (rien n'est débité si le contrôle le refuse), on
+// débite, puis chaque séquence passe par Genjutsu : une fois par défaut, ou
+// deux en haute fidélité, où les personnes deviennent d'abord des mannequins
+// neutres, puis les mannequins les personnages (voir advanceParts dans
+// swap.ts). Un à trois personnages.
 export async function startSwap(input: {
   videoPath: string;
   // Chaque personnage, ses autres photos (visage, profil…) et qui il
@@ -120,6 +120,8 @@ export async function startSwap(input: {
   presetId?: string;
   // Rendu en 1080p.
   hd?: boolean;
+  // Haute fidélité : méthode du mannequin, deux passes, au double du prix.
+  vessel?: boolean;
   // Changement de décor : photo du lieu déposée par le créateur. La scène est
   // reconstruite dans ce décor (Motion Transfer). Absente : le décor du clip
   // est gardé, seuls les personnages changent.
@@ -143,6 +145,7 @@ export async function startSwap(input: {
   if (!higgsfieldEnabled()) return { error: errors.startFailed };
   const engine: SwapEngine = "genjutsu";
   const hd = input.hd === true;
+  const vessel = input.vessel === true;
 
   // Chemins sous le dossier de l'utilisateur uniquement.
   const own = (p: unknown) =>
@@ -304,20 +307,23 @@ export async function startSwap(input: {
       }),
     };
   }
-  // Mannequin de chaque personnage : sa silhouette (contrôle indisponible :
-  // homme) et une couleur à lui, qui le distingue à la seconde passe.
+  // Haute fidélité, mannequin de chaque personnage : sa silhouette (contrôle
+  // indisponible : homme) et une couleur à lui, qui le distingue à la seconde
+  // passe.
   const feminine = precheck && !precheck.blocked ? precheck.feminine : undefined;
-  const mannequins = characters.map((_, i) => ({
-    figure: (feminine?.[i] ? "femme" : "homme") as MannequinFigure,
-    color: MANNEQUIN_COLORS[i],
-  }));
+  const mannequins = vessel
+    ? characters.map((_, i) => ({
+        figure: (feminine?.[i] ? "femme" : "homme") as MannequinFigure,
+        color: MANNEQUIN_COLORS[i],
+      }))
+    : [];
 
   const metadata = {
     engine,
     ...(hd && { hd: true }),
     ...(decorImagePath && { decor_image_path: decorImagePath }),
     ...(instructions && { instructions }),
-    vessel: true,
+    ...(vessel && { vessel: true }),
     photos: true,
     aspect_ratio: probe.aspectRatio,
     source_video_path: videoPath,
@@ -341,8 +347,8 @@ export async function startSwap(input: {
       // Une fiche par personnage.
       p_characters: characters.length,
       p_hd: hd,
-      // La passe mannequin, au tarif de la passe des personnages.
-      p_vessel: true,
+      // Haute fidélité : la passe mannequin, au tarif de celle des personnages.
+      p_vessel: vessel,
     });
   let { data: generationId, error: rpcError } = await debit();
   // Solde trop bas et recharge automatique activée : la carte est débitée,
@@ -351,7 +357,7 @@ export async function startSwap(input: {
     rpcError?.message.includes("insufficient_credits") &&
     (await autoRecharge(
       userId,
-      swapCredits(durationSeconds, engine, billedSeconds, characters.length, hd, false, true),
+      swapCredits(durationSeconds, engine, billedSeconds, characters.length, hd, false, vessel),
     ))
   ) {
     ({ data: generationId, error: rpcError } = await debit());
@@ -403,7 +409,9 @@ export async function startSwap(input: {
           sheet: prepared[0].sheet,
           character_urls: prepared[0].urls,
           ...(decorUrl && { decor_url: decorUrl }),
-          vessel_mannequins: mannequins.map((m, i) => ({ ...m, sheet_url: sheetUrls[i] })),
+          ...(vessel && {
+            vessel_mannequins: mannequins.map((m, i) => ({ ...m, sheet_url: sheetUrls[i] })),
+          }),
           ...(several && {
             characters: characters.map((c, i) => ({
               target: c.target,

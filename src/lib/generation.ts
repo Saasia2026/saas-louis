@@ -57,10 +57,11 @@ export function swapRate(engine: SwapEngine, hd = false) {
     : SWAP_ENGINES[engine].creditsPerSecond;
 }
 
-// Crédits par seconde de la méthode du site (le mannequin) : deux passes
-// Genjutsu, celle des mannequins puis celle des personnages.
-export function swapMethodRate(hd = false) {
-  return swapRate("genjutsu", hd) * 2;
+// Crédits par seconde d'un remplacement : une passe Genjutsu par défaut ; en
+// haute fidélité (méthode du mannequin), deux passes, celle des mannequins
+// puis celle des personnages.
+export function swapMethodRate(hd = false, fidelity = false) {
+  return swapRate("genjutsu", hd) * (fidelity ? 2 : 1);
 }
 
 // Photos d'un personnage envoyées à Genjutsu (en pied, visage, profil…) :
@@ -192,8 +193,8 @@ export function swapCredits(
   );
 }
 
-// Secondes de remplacement (720p, un personnage) qu'un nombre de crédits
-// permet avec la méthode du site, fiche comprise.
+// Secondes de remplacement (720p, un personnage, une passe) qu'un nombre de
+// crédits permet, fiche comprise.
 export function swapMethodSecondsFor(credits: number) {
   return Math.max(0, Math.floor((credits - SWAP_SHEET_CREDITS) / swapMethodRate()));
 }

@@ -87,6 +87,8 @@ export function Studio({
   ]);
   // Rendu en 1080p.
   const [hd, setHd] = useState(false);
+  // Haute fidélité : méthode du mannequin, deux passes, au double du prix.
+  const [fidelity, setFidelity] = useState(false);
   // Changement de décor : photo du lieu, facultative. Sans photo, seuls les
   // personnages et les cases remplies comptent, le décor du clip est gardé.
   const [decorPhoto, setDecorPhoto] = useState<SwapFile | null>(null);
@@ -133,12 +135,12 @@ export function Studio({
   const seconds = durationKnown
     ? Math.max(1, Math.round(clipSeconds))
     : maxSeconds;
-  const cost = swapCredits(seconds, engine, undefined, characters.length, hd, false, true);
+  const cost = swapCredits(seconds, engine, undefined, characters.length, hd, false, fidelity);
   // Durée illisible dans le navigateur : le serveur mesure le clip et refuse
   // lui-même faute de crédits ; on ne bloque ici que sous le prix le plus bas.
   const gate = durationKnown
     ? cost
-    : swapCredits(1, engine, undefined, characters.length, hd, false, true);
+    : swapCredits(1, engine, undefined, characters.length, hd, false, fidelity);
   const canSend = available && !busy && Boolean(video) && imagesReady && targetsReady && (credits >= gate || autoRecharge);
 
   useEffect(() => {
@@ -202,7 +204,7 @@ export function Studio({
     if (!canSend || !video) return;
     setPhase({
       kind: "generating",
-      job: { aspectRatio: preset?.aspectRatio ?? "9:16", durationSeconds: seconds, vessel: true },
+      job: { aspectRatio: preset?.aspectRatio ?? "9:16", durationSeconds: seconds, vessel: fidelity },
       id: "",
     });
     const res = await startSwap({
@@ -216,6 +218,7 @@ export function Studio({
       start: clampedStart(video, maxSeconds),
       seconds: maxSeconds,
       hd,
+      vessel: fidelity,
       decorImagePath: decorPhoto?.path,
       instructions: instructions.trim() || undefined,
     });
@@ -227,7 +230,7 @@ export function Studio({
     const job: Job = {
       aspectRatio: res.data.aspectRatio,
       durationSeconds: res.data.durationSeconds,
-      vessel: true,
+      vessel: fidelity,
     };
     setPhase({ kind: "generating", job, id: res.data.generationId });
     setActive({ id: res.data.generationId, job });
@@ -351,8 +354,30 @@ export function Studio({
             {fmt(t.studio.severalHint, { sheet: SWAP_SHEET_CREDITS })}
           </span>
         )}
-        {/* Une seule méthode : seul le rendu (720p ou 1080p) se choisit.
-            Tarifs affichés passes mannequin comprises. */}
+        {/* Méthode (une passe, ou le mannequin en haute fidélité) et rendu
+            (720p ou 1080p) ; les tarifs affichés suivent les deux choix. */}
+        <Menu
+          label={fidelity ? t.studio.methodFidelity : t.studio.methodStandard}
+          openUp={started}
+          options={[
+            {
+              value: "standard",
+              label: t.studio.methodStandard,
+              hint: fmt(t.studio.methodStandardHint, {
+                rate: swapMethodRate(hd).toLocaleString(locale),
+              }),
+            },
+            {
+              value: "fidelity",
+              label: t.studio.methodFidelity,
+              hint: fmt(t.studio.methodFidelityHint, {
+                rate: swapMethodRate(hd, true).toLocaleString(locale),
+              }),
+            },
+          ]}
+          value={fidelity ? "fidelity" : "standard"}
+          onChange={(v) => setFidelity(v === "fidelity")}
+        />
         <Menu
           label={hd ? t.swapEngines.genjutsuHd.label : t.swapEngines.genjutsu.label}
           openUp={started}
@@ -362,7 +387,7 @@ export function Studio({
               label: t.swapEngines.genjutsu.label,
               hint: fmt(t.swapEngines.genjutsu.hint, {
                 max: SWAP_ENGINES.genjutsu.maxSeconds,
-                rate: swapMethodRate(false).toLocaleString(locale),
+                rate: swapMethodRate(false, fidelity).toLocaleString(locale),
               }),
             },
             {
@@ -370,7 +395,7 @@ export function Studio({
               label: t.swapEngines.genjutsuHd.label,
               hint: fmt(t.swapEngines.genjutsuHd.hint, {
                 max: SWAP_ENGINES.genjutsu.maxSeconds,
-                rate: swapMethodRate(true).toLocaleString(locale),
+                rate: swapMethodRate(true, fidelity).toLocaleString(locale),
               }),
             },
           ]}
