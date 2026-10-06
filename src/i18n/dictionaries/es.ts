@@ -180,10 +180,11 @@ export const es: Dictionary = {
   },
 
   studio: {
-    title: "¿A quién ponemos en el vídeo?",
-    subtitle:
-      "Sube un clip grabado y la imagen de un personaje: ocupa el lugar de la persona, con sus gestos, el decorado, la cámara y el sonido.",
-    steps: ["Un clip grabado", "Una imagen del personaje", "Ocupa su lugar"],
+    createTitle: "Crear un vídeo",
+    poweredBy: "Con la tecnología de Higgsfield Genjutsu · calidad premium",
+    historyTitle: "Mis creaciones",
+    historyEmpty: "Tus creaciones aparecerán aquí. Sube un clip y un personaje para empezar.",
+    examplesTitle: "Ejemplos hechos con Genjutsu",
     video: "Clip de origen",
     videoHint: "MP4, MOV o WebM · se usan {max} s · una persona bien visible",
     segment: "Fragmento usado ({max} s)",

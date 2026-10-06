@@ -2,71 +2,27 @@ import { Download, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { fmt, INTL_LOCALES } from "@/i18n/config";
-import { getDictionary, getLocale } from "@/i18n/server";
-import { GENERATIONS_BUCKET, isAspectRatio } from "@/lib/generation";
+import { fmt } from "@/i18n/config";
+import { getDictionary } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "../../page-header";
+import { listSwapHistory } from "../swap-history";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
   return { title: `${t.meta.videos} — TwinPost` };
 }
 
-const SIGNED_URL_TTL_SECONDS = 60 * 60;
-const MAX_VIDEOS = 24;
-
 // Remplacements terminés ou en cours. Un rendu prend plusieurs minutes : on
 // revient le chercher ici.
 export default async function VideosPage() {
-  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
+  const t = await getDictionary();
   const V = t.videos;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) redirect("/login?next=/dashboard/videos");
 
-  const { data: generations } = await supabase
-    .from("generations")
-    .select("id, status, storage_path, duration_seconds, metadata, created_at")
-    .eq("kind", "swap")
-    .in("status", ["completed", "processing"])
-    .order("created_at", { ascending: false })
-    .limit(MAX_VIDEOS);
-
-  const bucket = supabase.storage.from(GENERATIONS_BUCKET);
-  const videos = await Promise.all(
-    (generations ?? []).map(async (g) => {
-      const path = g.status === "completed" ? g.storage_path : null;
-      const [media, download] = path
-        ? await Promise.all([
-            bucket.createSignedUrl(path, SIGNED_URL_TTL_SECONDS),
-            bucket.createSignedUrl(path, SIGNED_URL_TTL_SECONDS, {
-              download: `twinpost-${g.id.slice(0, 8)}.${path.split(".").pop()}`,
-            }),
-          ])
-        : [null, null];
-      const aspectRatio = (g.metadata as { aspect_ratio?: unknown } | null)?.aspect_ratio;
-      // Séquences livrées avec leurs images d'origine : vidéo incomplète.
-      const parts = (g.metadata as { swap_parts?: { original?: boolean }[] } | null)?.swap_parts ?? [];
-      const unreplaced = parts.filter((p) => p.original).length;
-      return {
-        id: g.id,
-        running: g.status === "processing",
-        mediaUrl: media?.data?.signedUrl,
-        downloadUrl: download?.data?.signedUrl,
-        seconds: g.duration_seconds,
-        incomplete:
-          g.status === "completed" && unreplaced > 0
-            ? fmt(V.incomplete, { done: parts.length - unreplaced, total: parts.length })
-            : undefined,
-        aspectRatio: isAspectRatio(aspectRatio) ? aspectRatio : "9:16",
-        date: new Intl.DateTimeFormat(INTL_LOCALES[locale], { dateStyle: "medium" }).format(
-          new Date(g.created_at),
-        ),
-      };
-    }),
-  );
-  const shown = videos.filter((v) => v.running || v.mediaUrl);
+  const shown = await listSwapHistory();
 
   return (
     <div>

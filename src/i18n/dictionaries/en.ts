@@ -180,10 +180,11 @@ export const en: Dictionary = {
   },
 
   studio: {
-    title: "Who are we putting in the video?",
-    subtitle:
-      "Drop in a filmed clip and an image of a character: it takes the person's place, with their moves, the set, the camera and the sound.",
-    steps: ["A filmed clip", "An image of the character", "It takes their place"],
+    createTitle: "Create a video",
+    poweredBy: "Powered by Higgsfield Genjutsu · premium quality",
+    historyTitle: "My creations",
+    historyEmpty: "Your creations will appear here. Drop in a clip and a character to start.",
+    examplesTitle: "Examples made with Genjutsu",
     video: "Source clip",
     videoHint: "MP4, MOV or WebM · {max} s kept · one clearly visible person",
     segment: "Part kept ({max} s)",

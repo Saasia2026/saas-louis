@@ -6,6 +6,7 @@ import { magichourEnabled } from "@/lib/magichour";
 import { SWAP_PRESETS } from "@/lib/presets";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { listSwapHistory } from "../swap-history";
 import { Studio, type Job } from "./studio";
 
 export const metadata: Metadata = {
@@ -45,11 +46,14 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
     .lt("created_at", stalePendingBefore());
   for (const g of stale ?? []) await admin.rpc("fail_generation", { p_generation_id: g.id });
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("credits_remaining, auto_recharge_pack, auto_recharge_failed")
-    .eq("id", auth.claims.sub)
-    .single();
+  const [{ data: profile }, history] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("credits_remaining, auto_recharge_pack, auto_recharge_failed")
+      .eq("id", auth.claims.sub)
+      .single(),
+    listSwapHistory(),
+  ]);
 
   // Remplacement encore en cours : il n'avance que suivi, on le reprend donc
   // plutôt que d'afficher un studio vide, même longtemps après (son rendu est
@@ -90,6 +94,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
   return (
     <Studio
       presets={presets}
+      history={history}
       userId={auth.claims.sub}
       resume={resume}
       credits={profile?.credits_remaining ?? 0}

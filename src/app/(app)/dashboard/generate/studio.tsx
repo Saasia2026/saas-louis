@@ -3,7 +3,6 @@
 import { Check, ChevronDown, Download, RefreshCw, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { LogoMark } from "@/app/logo-mark";
 import { fmt, plural } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -18,7 +17,9 @@ import {
   type SwapEngine,
 } from "@/lib/generation";
 import type { SwapPreset } from "@/lib/presets";
+import type { SwapHistoryItem } from "../swap-history";
 import { getGeneration, type GenerationView } from "./actions";
+import { HistoryEmpty, HistoryList } from "./history-list";
 import { cancelSwap, redoSwapShot, startSwap } from "./swap-actions";
 import { SwapInput, clampedStart, type SwapCharacter, type SwapFile } from "./swap-input";
 
@@ -63,6 +64,7 @@ export function Studio({
   autoRecharge = false,
   engines,
   presets = [],
+  history = [],
   resume,
 }: {
   userId: string;
@@ -74,6 +76,8 @@ export function Studio({
   engines: SwapEngine[];
   // Plans prêts (voir presets.ts), dont le clip est déjà signé.
   presets?: StudioPreset[];
+  // Créations passées et en cours, de la plus récente à la plus ancienne.
+  history?: SwapHistoryItem[];
   // Remplacement encore en cours, repris à l'ouverture de la page.
   resume?: Active;
 }) {
@@ -119,7 +123,7 @@ export function Studio({
   );
   const [active, setActive] = useState<Active | null>(resume ?? null);
 
-  const resultEnd = useRef<HTMLDivElement>(null);
+  const resultEnd = useRef<HTMLElement>(null);
   const busy = phase.kind === "generating";
   const started = phase.kind !== "idle";
 
@@ -143,8 +147,11 @@ export function Studio({
     : swapCredits(1, engine, undefined, characters.length, hd, false, fidelity);
   const canSend = available && !busy && Boolean(video) && imagesReady && targetsReady && (credits >= gate || autoRecharge);
 
+  // Lancement, fin ou erreur : le rendu suivi revient à l'écran (sur mobile,
+  // il est sous le formulaire).
   useEffect(() => {
-    resultEnd.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    if (phase.kind === "idle") return;
+    resultEnd.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [phase.kind]);
 
   // Suivi du remplacement actif. Sans webhook joignable, c'est aussi ce suivi
@@ -298,7 +305,7 @@ export function Studio({
         maxPhotos={maxPhotos}
         presetPeople={preset?.people.map((p) => p.label[locale])}
         maxSeconds={preset ? preset.seconds : maxSeconds}
-        compact={started}
+        compact={false}
         decorPhoto={decorPhoto}
         onDecorPhoto={setDecorPhoto}
         showDecor
@@ -323,7 +330,7 @@ export function Studio({
                   preset?.id === p.id
                     ? "border-accent shadow-[0_0_0_1px_var(--accent)]"
                     : "border-line hover:border-line-strong"
-                } ${started ? "h-24" : "h-44"}`}
+                } h-32`}
               >
                 <video
                   src={p.previewUrl}
@@ -348,17 +355,18 @@ export function Studio({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 px-3 pb-3">
+      <div className="space-y-3 border-t border-line px-3 py-3">
         {several && (
-          <span className="px-1 text-xs text-muted">
+          <p className="px-1 text-xs text-muted">
             {fmt(t.studio.severalHint, { sheet: SWAP_SHEET_CREDITS })}
-          </span>
+          </p>
         )}
+        <div className="flex flex-wrap items-center gap-1">
         {/* Méthode (une passe, ou le mannequin en haute fidélité) et rendu
             (720p ou 1080p) ; les tarifs affichés suivent les deux choix. */}
         <Menu
           label={fidelity ? t.studio.methodFidelity : t.studio.methodStandard}
-          openUp={started}
+          openUp
           options={[
             {
               value: "standard",
@@ -380,7 +388,7 @@ export function Studio({
         />
         <Menu
           label={hd ? t.swapEngines.genjutsuHd.label : t.swapEngines.genjutsu.label}
-          openUp={started}
+          openUp
           options={[
             {
               value: "sd",
@@ -409,7 +417,7 @@ export function Studio({
                 ? `${length} s`
                 : fmt(t.studio.lengthAll, { seconds: wholeSeconds })
             }
-            openUp={started}
+            openUp
             options={[
               ...lengths.map((l) => ({ value: String(l), label: `${l} s` })),
               { value: "all", label: fmt(t.studio.lengthAll, { seconds: wholeSeconds }) },
@@ -419,8 +427,8 @@ export function Studio({
           />
         )}
 
-        <div className="ml-auto flex min-w-0 items-center gap-2">
-          <span className="truncate px-1 text-xs text-faint">
+        </div>
+        <p className="px-1 text-xs text-faint">
             {!video || !imagesReady
               ? t.studio.pick
               : !targetsReady
@@ -434,65 +442,49 @@ export function Studio({
                     })
                   : `≤ ${cost} ${plural(cost, t.common.credit, t.common.credits)}`
                 : t.studio.notEnoughCredits}
-          </span>
-          {durationKnown && seconds > 15 && (
-            <span className="truncate px-1 text-xs text-warning">
-              {t.studio.longClipWarning}
-            </span>
-          )}
-          <button type="submit" disabled={!canSend} className="btn btn-accent shrink-0">
-            <WandSparkles />
-            {t.studio.launch}
-          </button>
-        </div>
+        </p>
+        {durationKnown && seconds > 15 && (
+          <p className="px-1 text-xs text-warning">{t.studio.longClipWarning}</p>
+        )}
+        <button type="submit" disabled={!canSend} className="btn btn-accent w-full">
+          <WandSparkles />
+          {t.studio.launch}
+        </button>
       </div>
     </form>
   );
 
+  // Le rendu suivi est affiché en tête, pas une seconde fois dans l'historique.
+  const shownId = phase.kind === "generating" || phase.kind === "done" ? phase.id : null;
+  const pastItems = history.filter((item) => item.id !== shownId);
+
+  // Deux colonnes : la création à gauche (fixe au défilement), le rendu en
+  // cours puis l'historique à droite. Sur mobile, l'une sous l'autre.
   return (
-    <div className="relative isolate -mt-10 flex min-h-[calc(100dvh-8.5rem)] flex-col">
-      {!started ? (
-        <div className="flex flex-1 flex-col items-center justify-center py-12">
-          <h1 className="flex animate-fade-up flex-col items-center gap-4 text-center font-wide text-[1.6rem] leading-[1.05] uppercase sm:flex-row sm:text-4xl">
-            <LogoMark className="size-10 shrink-0 sm:size-12" />
-            <span className="text-gradient">{t.studio.title}</span>
-          </h1>
-          <p className="mt-3 max-w-xl animate-fade-up px-1 text-center text-sm leading-relaxed text-muted [animation-delay:80ms] sm:mt-4 sm:text-[0.9375rem]">
-            {t.studio.subtitle}
-          </p>
-
-          <div className="relative z-20 mt-6 w-full max-w-3xl animate-fade-up [animation-delay:160ms] sm:mt-10">
-            {composer}
-          </div>
-
-          <ol className="mt-6 flex max-w-3xl animate-fade-up flex-wrap justify-center gap-2 [animation-delay:240ms]">
-            {t.studio.steps.map((step, i) => (
-              <li key={step} className="tag">
-                <span className="mr-1.5 text-accent-light tabular-nums">{i + 1}</span>
-                {step}
-              </li>
-            ))}
-          </ol>
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
+      <aside className="relative z-20 animate-fade-up lg:sticky lg:top-24">
+        <div className="mb-4 px-1">
+          <h1 className="text-xl font-semibold tracking-tight">{t.studio.createTitle}</h1>
+          <p className="mt-1 text-xs text-muted">{t.studio.poweredBy}</p>
         </div>
-      ) : (
-        <>
-          <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 pt-4 pb-6">
-            <Result
-              phase={phase}
-              credits={credits}
-              sourcePreview={video?.previewUrl}
-              characterPreview={characters[0]?.image?.previewUrl}
-              onReset={() => setPhase({ kind: "idle" })}
-              onRedo={redo}
-              onCancel={cancel}
-            />
-            <div ref={resultEnd} />
-          </div>
+        {composer}
+      </aside>
 
-          {/* Sous le résultat, pas par-dessus : ses boutons restent visibles. */}
-          <div className="mx-auto w-full max-w-3xl pb-6">{composer}</div>
-        </>
-      )}
+      <section ref={resultEnd} className="min-w-0 scroll-mt-24 space-y-3">
+        <h2 className="px-1 text-xl font-semibold tracking-tight">{t.studio.historyTitle}</h2>
+        {started && (
+          <Result
+            phase={phase}
+            credits={credits}
+            sourcePreview={video?.previewUrl}
+            characterPreview={characters[0]?.image?.previewUrl}
+            onReset={() => setPhase({ kind: "idle" })}
+            onRedo={redo}
+            onCancel={cancel}
+          />
+        )}
+        {pastItems.length > 0 ? <HistoryList items={pastItems} /> : !started && <HistoryEmpty />}
+      </section>
     </div>
   );
 }

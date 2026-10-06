@@ -182,10 +182,11 @@ export const fr = {
   },
 
   studio: {
-    title: "Qui met-on dans la vidéo ?",
-    subtitle:
-      "Dépose un clip filmé et l'image d'un personnage : il prend la place de la personne, avec ses gestes, le décor, la caméra et le son.",
-    steps: ["Un clip filmé", "Une image du personnage", "Il prend sa place"],
+    createTitle: "Créer une vidéo",
+    poweredBy: "Propulsé par Higgsfield Genjutsu · qualité premium",
+    historyTitle: "Mes créations",
+    historyEmpty: "Tes créations apparaîtront ici. Dépose un clip et un personnage pour commencer.",
+    examplesTitle: "Exemples réalisés avec Genjutsu",
     video: "Clip à reprendre",
     videoHint: "MP4, MOV ou WebM · {max} s gardées · une personne bien visible",
     segment: "Passage gardé ({max} s)",
