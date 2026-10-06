@@ -4,9 +4,9 @@
 
 export const fr = {
   meta: {
-    title: "Remplacement de personnage par IA · propulsé par Genjutsu",
+    title: "Remplacement de personnage par IA · TwinPost",
     description:
-      "Studio vidéo premium propulsé par Higgsfield Genjutsu : mets ton personnage dans n'importe quelle vidéo, en gardant les gestes, le décor, la caméra et le son.",
+      "Studio vidéo premium : mets ton personnage dans n'importe quelle vidéo, en gardant les gestes, le décor, la caméra et le son.",
     login: "Connexion",
     password: "Nouveau mot de passe",
     studio: "Studio",
@@ -47,11 +47,11 @@ export const fr = {
       { title: "Le combat du siècle" },
     ],
     creatorsEyebrow: "Vu sur YouTube",
-    creatorsTitle: "Genjutsu en action",
-    creatorsNote: "Des démos de Higgsfield et de créateurs indépendants, intégrées telles quelles depuis YouTube. Elles montrent Genjutsu, le moteur qu'utilise TwinPost — pas TwinPost lui-même.",
+    creatorsTitle: "Le moteur en action",
+    creatorsNote: "Des démos de créateurs indépendants, intégrées telles quelles depuis YouTube. Elles montrent le moteur de transformation qu'utilise TwinPost — pas TwinPost lui-même.",
     creatorPlay: "Lire la vidéo de {author}",
-    heroText: "Dépose un clip filmé et la photo d'un personnage. Genjutsu, le moteur de transformation vidéo de Higgsfield, lui fait rejouer chaque geste et chaque plan, sur le son d'origine.",
-    reelEyebrow: "Rendus Genjutsu, faits sur TwinPost",
+    heroText: "Dépose un clip filmé et la photo d'un personnage. Notre moteur de transformation vidéo lui fait rejouer chaque geste et chaque plan, sur le son d'origine.",
+    reelEyebrow: "Rendus faits sur TwinPost",
     navCreators: "Démos",
     pricingSubs: "En abonnement : jusqu'à {off} sur les mêmes crédits.",
     wipeEyebrow: "Avant / après",
@@ -67,12 +67,12 @@ export const fr = {
     openStudio: "Ouvrir le studio",
     studioShort: "Studio",
     start: "Commencer",
-    eyebrow: "Le studio premium · propulsé par Higgsfield Genjutsu",
+    eyebrow: "Le studio premium de transformation vidéo par IA",
     titleTop: "Ton personnage.",
     titleBottom: "Dans la vidéo.",
     ctaFirst: "Créer ma première vidéo",
     ctaPricing: "Voir les tarifs",
-    perks: ["Qualité Genjutsu, jusqu'en 1080p", "Sans abonnement obligatoire", "Crédits rendus en cas d'échec"],
+    perks: ["Qualité premium, jusqu'en 1080p", "Sans abonnement obligatoire", "Crédits rendus en cas d'échec"],
     compareBefore: "Original",
     compareAfter: "Ton personnage",
     compareHint: "Glisse le rideau : le même clip, la même performance — seul le personnage change.",
@@ -93,7 +93,7 @@ export const fr = {
     ],
     mockBadge: "720p · 17 s",
     models: [
-      "Propulsé par Higgsfield Genjutsu",
+      "Transformation vidéo par IA",
       "720p et 1080p",
       "Son d'origine gardé",
       "Coupes respectées",
@@ -102,8 +102,8 @@ export const fr = {
     featuresTitle: "Un seul moteur. Le meilleur.",
     featureList: [
       {
-        title: "Genjutsu, et rien d'autre",
-        text: "TwinPost n'utilise qu'un moteur : Higgsfield Genjutsu, conçu pour garder un vrai jeu d'acteur. Pas de modèle au rabais, pas de rendu approximatif.",
+        title: "Le meilleur moteur",
+        text: "TwinPost n'utilise qu'un moteur, conçu pour garder un vrai jeu d'acteur. Pas de modèle au rabais, pas de rendu approximatif.",
       },
       {
         title: "Remplacer",
@@ -202,10 +202,10 @@ export const fr = {
 
   studio: {
     createTitle: "Créer une vidéo",
-    poweredBy: "Propulsé par Higgsfield Genjutsu · qualité premium",
+    poweredBy: "Qualité premium · transformation par IA",
     historyTitle: "Mes créations",
     historyEmpty: "Tes créations apparaîtront ici. Dépose un clip et un personnage pour commencer.",
-    examplesTitle: "Exemples réalisés avec Genjutsu",
+    examplesTitle: "Exemples réalisés sur TwinPost",
     video: "Clip à reprendre",
     videoHint: "MP4, MOV ou WebM · {max} s gardées · une personne bien visible",
     segment: "Passage gardé ({max} s)",
@@ -235,7 +235,7 @@ export const fr = {
     notEnoughCredits: "Crédits insuffisants",
     longClipWarning: "Les vidéos de plus de 15 s sont découpées en plusieurs segments — certains peuvent échouer.",
     methodStandard: "Standard",
-    methodStandardHint: "Une passe Genjutsu · {rate} crédits/s · le plus rapide",
+    methodStandardHint: "Une passe · {rate} crédits/s · le plus rapide",
     methodFidelity: "Haute fidélité",
     methodFidelityHint: "Méthode du mannequin · {rate} crédits/s · rien de la personne d'origine ne transparaît, rendu 2× plus long",
     modeReplace: "Remplacer",

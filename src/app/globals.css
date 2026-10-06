@@ -520,6 +520,19 @@ body {
   }
 }
 
+@utility btn-hot {
+  --btn-edge: color-mix(in oklab, var(--accent-hot) 62%, black);
+  color: #fff;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--accent-hot) 85%, white), var(--accent-hot));
+  box-shadow: 0 4px 0 var(--btn-edge);
+  &:hover:not(:disabled) {
+    filter: brightness(1.07);
+  }
+  &:active:not(:disabled) {
+    box-shadow: 0 2px 0 var(--btn-edge);
+  }
+}
+
 @utility btn-secondary {
   --btn-edge: color-mix(in oklab, var(--surface-3) 55%, black);
   background: var(--surface-3);

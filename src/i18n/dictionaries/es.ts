@@ -2,9 +2,9 @@ import type { Dictionary } from "./fr";
 
 export const es: Dictionary = {
   meta: {
-    title: "Reemplazo de personaje con IA · con Genjutsu",
+    title: "Reemplazo de personaje con IA · TwinPost",
     description:
-      "Estudio de vídeo premium con la tecnología de Higgsfield Genjutsu: pon a tu personaje en cualquier vídeo, conservando los gestos, el decorado, la cámara y el sonido.",
+      "Estudio de vídeo premium: pon a tu personaje en cualquier vídeo, conservando los gestos, el decorado, la cámara y el sonido.",
     login: "Iniciar sesión",
     password: "Nueva contraseña",
     studio: "Studio",
@@ -45,11 +45,11 @@ export const es: Dictionary = {
       { title: "El combate del siglo" },
     ],
     creatorsEyebrow: "Visto en YouTube",
-    creatorsTitle: "Genjutsu en acción",
-    creatorsNote: "Demos de Higgsfield y de creadores independientes, integradas tal cual desde YouTube. Muestran Genjutsu, el motor que usa TwinPost, no TwinPost en sí.",
+    creatorsTitle: "El motor en acción",
+    creatorsNote: "Demos de creadores independientes, integradas tal cual desde YouTube. Muestran el motor de transformación que usa TwinPost, no TwinPost en sí.",
     creatorPlay: "Reproducir el vídeo de {author}",
-    heroText: "Sube un clip grabado y la foto de un personaje. Genjutsu, el motor de transformación de vídeo de Higgsfield, le hace repetir cada gesto y cada plano, con el sonido original.",
-    reelEyebrow: "Renders de Genjutsu, hechos en TwinPost",
+    heroText: "Sube un clip grabado y la foto de un personaje. Nuestro motor de transformación de vídeo le hace repetir cada gesto y cada plano, con el sonido original.",
+    reelEyebrow: "Renders hechos en TwinPost",
     navCreators: "Demos",
     pricingSubs: "Con suscripción: hasta {off} en los mismos créditos.",
     wipeEyebrow: "Antes / después",
@@ -65,12 +65,12 @@ export const es: Dictionary = {
     openStudio: "Abrir el estudio",
     studioShort: "Studio",
     start: "Empezar",
-    eyebrow: "El estudio premium · con la tecnología de Higgsfield Genjutsu",
+    eyebrow: "El estudio premium de transformación de vídeo con IA",
     titleTop: "Tu personaje.",
     titleBottom: "En el vídeo.",
     ctaFirst: "Crear mi primer vídeo",
     ctaPricing: "Ver precios",
-    perks: ["Calidad Genjutsu, hasta 1080p", "Sin suscripción obligatoria", "Créditos devueltos si falla"],
+    perks: ["Calidad premium, hasta 1080p", "Sin suscripción obligatoria", "Créditos devueltos si falla"],
     compareBefore: "Original",
     compareAfter: "Tu personaje",
     compareHint: "Desliza la cortina: el mismo clip, la misma actuación — solo cambia el personaje.",
@@ -91,7 +91,7 @@ export const es: Dictionary = {
     ],
     mockBadge: "720p · 17 s",
     models: [
-      "Con la tecnología de Higgsfield Genjutsu",
+      "Transformación de vídeo con IA",
       "720p y 1080p",
       "Sonido original conservado",
       "Cortes respetados",
@@ -100,8 +100,8 @@ export const es: Dictionary = {
     featuresTitle: "Un solo motor. El mejor.",
     featureList: [
       {
-        title: "Genjutsu y nada más",
-        text: "TwinPost usa un único motor: Higgsfield Genjutsu, pensado para conservar una actuación real. Sin modelos baratos ni renders aproximados.",
+        title: "El mejor motor",
+        text: "TwinPost usa un único motor, pensado para conservar una actuación real. Sin modelos baratos ni renders aproximados.",
       },
       {
         title: "Reemplazar",
@@ -200,10 +200,10 @@ export const es: Dictionary = {
 
   studio: {
     createTitle: "Crear un vídeo",
-    poweredBy: "Con la tecnología de Higgsfield Genjutsu · calidad premium",
+    poweredBy: "Calidad premium · transformación con IA",
     historyTitle: "Mis creaciones",
     historyEmpty: "Tus creaciones aparecerán aquí. Sube un clip y un personaje para empezar.",
-    examplesTitle: "Ejemplos hechos con Genjutsu",
+    examplesTitle: "Ejemplos hechos en TwinPost",
     video: "Clip de origen",
     videoHint: "MP4, MOV o WebM · se usan {max} s · una persona bien visible",
     segment: "Fragmento usado ({max} s)",
@@ -233,7 +233,7 @@ export const es: Dictionary = {
     notEnoughCredits: "Créditos insuficientes",
     longClipWarning: "Los videos de más de 15 s se dividen en segmentos — algunos pueden fallar.",
     methodStandard: "Estándar",
-    methodStandardHint: "Una pasada de Genjutsu · {rate} créditos/s · lo más rápido",
+    methodStandardHint: "Una pasada · {rate} créditos/s · lo más rápido",
     methodFidelity: "Alta fidelidad",
     methodFidelityHint: "Método del maniquí · {rate} créditos/s · nada de la persona original se transparenta, render 2× más largo",
     modeReplace: "Reemplazar",

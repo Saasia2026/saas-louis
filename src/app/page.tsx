@@ -22,14 +22,13 @@ import { createClient } from "@/lib/supabase/server";
 // landing.exampleList : de vrais rendus du site.
 const EXAMPLES = ["ours", "chien"];
 
-// Rendus Genjutsu verticaux du bandeau, dans l'ordre des textes de
+// Rendus verticaux du bandeau, dans l'ordre des textes de
 // landing.showcaseList.
 const REEL = ["genjutsu-diable", "genjutsu-lincoln", "genjutsu-cage"];
 
-// Démos Genjutsu publiées sur YouTube, toutes vérifiées intégrables : la
-// chaîne officielle de Higgsfield d'abord, puis des créateurs indépendants.
-// Titres et auteurs tels que YouTube les affiche ; rien n'est téléchargé ni
-// rehébergé, le lecteur YouTube les joue.
+// Démos publiées sur YouTube, toutes vérifiées intégrables : la chaîne
+// officielle d'abord, puis des créateurs indépendants. Titres et auteurs
+// tels que YouTube les affiche ; rien n'est téléchargé ni rehébergé.
 const DEMOS = [
   { id: "FW_tIpEBJ0U", author: "Higgsfield AI", title: "Hybrid Production With Higgsfield Genjutsu | From Studio to Any Scene" },
   { id: "cvA5TONXrDY", author: "Arjun Bhavaraju", title: "I Turned 1 Video Into 8 Characters With AI | Higgsfield Genjutsu" },
@@ -101,7 +100,7 @@ export default async function Home() {
             </a>
             <ThemeToggle />
             <LanguageSwitcher />
-            <Link href={start} className="btn btn-primary ml-0.5 shrink-0 px-2.5 text-[0.8125rem] sm:ml-1 sm:px-4 sm:text-sm">
+            <Link href={start} className="btn btn-accent ml-0.5 shrink-0 px-3 text-[0.8125rem] sm:ml-1 sm:px-5 sm:text-sm">
               {loggedIn ? L.studioShort : L.start}
               <ArrowRight className="hidden sm:inline-flex" />
             </Link>
@@ -127,11 +126,11 @@ export default async function Home() {
                 {L.heroText}
               </p>
               <div className="mt-8 flex animate-fade-up flex-col justify-center gap-3 [animation-delay:240ms] sm:flex-row sm:flex-wrap lg:justify-start">
-                <Link href={start} className="btn btn-accent w-full px-5 py-3 text-[0.9375rem] sm:w-auto">
+                <Link href={start} className="btn btn-accent w-full px-7 py-4 text-base sm:w-auto sm:text-lg">
                   <WandSparkles />
                   {L.ctaFirst}
                 </Link>
-                <a href="#tarifs" className="btn btn-primary w-full px-5 py-3 text-[0.9375rem] sm:w-auto">
+                <a href="#tarifs" className="btn btn-hot w-full px-7 py-4 text-base sm:w-auto sm:text-lg">
                   {L.ctaPricing}
                 </a>
               </div>
@@ -165,8 +164,8 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Bandeau de rendus Genjutsu, sur toute la largeur, puis ce que le
-            moteur garde du clip. */}
+        {/* Bandeau de rendus sur toute la largeur, puis ce que le moteur
+            garde du clip. */}
         <section aria-label={L.reelEyebrow} className="border-y border-line bg-surface/40 py-8 sm:py-12">
           <p className="eyebrow mb-6 px-4 text-center">{L.reelEyebrow}</p>
           <VideoMarquee items={reel} />
@@ -339,7 +338,7 @@ export default async function Home() {
                   </p>
                   <Link
                     href={start}
-                    className={`btn mt-8 w-full py-3 text-[0.9375rem] ${featured ? "btn-accent" : "btn-primary"}`}
+                    className={`btn mt-8 w-full py-3.5 text-base ${featured ? "btn-accent" : i === 2 ? "btn-hot" : "btn-primary"}`}
                   >
                     {L.start}
                   </Link>
@@ -369,7 +368,7 @@ export default async function Home() {
               <span className="text-shine">{L.finalTitleBottom}</span>
             </h2>
             <Magnetic>
-              <Link href={start} className="btn btn-accent mt-10 px-8 py-3.5 text-base">
+              <Link href={start} className="btn btn-accent mt-10 px-10 py-5 text-lg">
                 {loggedIn ? L.openStudio : L.startFree}
                 <ArrowRight />
               </Link>

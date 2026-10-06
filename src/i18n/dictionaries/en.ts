@@ -2,9 +2,9 @@ import type { Dictionary } from "./fr";
 
 export const en: Dictionary = {
   meta: {
-    title: "AI character replacement · powered by Genjutsu",
+    title: "AI character replacement · TwinPost",
     description:
-      "Premium video studio powered by Higgsfield Genjutsu: put your character in any video, keeping the moves, the set, the camera and the sound.",
+      "Premium video studio: put your character in any video, keeping the moves, the set, the camera and the sound.",
     login: "Sign in",
     password: "New password",
     studio: "Studio",
@@ -45,11 +45,11 @@ export const en: Dictionary = {
       { title: "Fight of the century" },
     ],
     creatorsEyebrow: "Seen on YouTube",
-    creatorsTitle: "Genjutsu in action",
-    creatorsNote: "Demos from Higgsfield and independent creators, embedded as is from YouTube. They show Genjutsu, the engine TwinPost uses — not TwinPost itself.",
+    creatorsTitle: "The engine in action",
+    creatorsNote: "Demos from independent creators, embedded as is from YouTube. They show the transformation engine TwinPost uses — not TwinPost itself.",
     creatorPlay: "Play {author}'s video",
-    heroText: "Drop a filmed clip and a photo of a character. Genjutsu, Higgsfield's video transformation engine, has it replay every gesture and every shot, on the original sound.",
-    reelEyebrow: "Genjutsu renders, made on TwinPost",
+    heroText: "Drop a filmed clip and a photo of a character. Our video transformation engine has it replay every gesture and every shot, on the original sound.",
+    reelEyebrow: "Renders made on TwinPost",
     navCreators: "Demos",
     pricingSubs: "With a subscription: up to {off} on the same credits.",
     wipeEyebrow: "Before / after",
@@ -65,12 +65,12 @@ export const en: Dictionary = {
     openStudio: "Open the studio",
     studioShort: "Studio",
     start: "Get started",
-    eyebrow: "The premium studio · powered by Higgsfield Genjutsu",
+    eyebrow: "The premium AI video transformation studio",
     titleTop: "Your character.",
     titleBottom: "In the video.",
     ctaFirst: "Create my first video",
     ctaPricing: "See pricing",
-    perks: ["Genjutsu quality, up to 1080p", "No subscription required", "Credits refunded if it fails"],
+    perks: ["Premium quality, up to 1080p", "No subscription required", "Credits refunded if it fails"],
     compareBefore: "Original",
     compareAfter: "Your character",
     compareHint: "Drag the curtain: same clip, same performance — only the character changes.",
@@ -91,7 +91,7 @@ export const en: Dictionary = {
     ],
     mockBadge: "720p · 17 s",
     models: [
-      "Powered by Higgsfield Genjutsu",
+      "AI video transformation",
       "720p and 1080p",
       "Original sound kept",
       "Cuts preserved",
@@ -100,8 +100,8 @@ export const en: Dictionary = {
     featuresTitle: "One engine. The best one.",
     featureList: [
       {
-        title: "Genjutsu, nothing else",
-        text: "TwinPost uses a single engine: Higgsfield Genjutsu, built to keep a real performance. No cut-price model, no approximate render.",
+        title: "The best engine",
+        text: "TwinPost uses a single engine, built to keep a real performance. No cut-price model, no approximate render.",
       },
       {
         title: "Replace",
@@ -200,10 +200,10 @@ export const en: Dictionary = {
 
   studio: {
     createTitle: "Create a video",
-    poweredBy: "Powered by Higgsfield Genjutsu · premium quality",
+    poweredBy: "Premium quality · AI transformation",
     historyTitle: "My creations",
     historyEmpty: "Your creations will appear here. Drop in a clip and a character to start.",
-    examplesTitle: "Examples made with Genjutsu",
+    examplesTitle: "Examples made on TwinPost",
     video: "Source clip",
     videoHint: "MP4, MOV or WebM · {max} s kept · one clearly visible person",
     segment: "Part kept ({max} s)",
@@ -233,7 +233,7 @@ export const en: Dictionary = {
     notEnoughCredits: "Not enough credits",
     longClipWarning: "Videos over 15s are split into segments — some may fail.",
     methodStandard: "Standard",
-    methodStandardHint: "One Genjutsu pass · {rate} credits/s · fastest",
+    methodStandardHint: "One pass · {rate} credits/s · fastest",
     methodFidelity: "High fidelity",
     methodFidelityHint: "Mannequin method · {rate} credits/s · nothing of the original person shows through, 2× longer render",
     modeReplace: "Replace",
