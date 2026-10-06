@@ -58,6 +58,10 @@ export const fr = {
     wipeTitleTop: "Même combat.",
     wipeTitleBottom: "Autre combattant.",
     wipeText: "Fais défiler : le rideau découvre le rendu. Les coups, la caméra et la foule viennent du clip d'origine — seul le combattant a changé.",
+    refundClip: "Combat · 15 s · 720p",
+    refundStatus: "Passage refusé",
+    refundCredits: "+{n} crédits rendus",
+    refundBalance: "Solde",
     features: "Fonctionnalités",
     pricing: "Tarifs",
     openStudio: "Ouvrir le studio",
@@ -118,7 +122,6 @@ export const fr = {
         text: "Un passage refusé ou raté te rend automatiquement ses crédits.",
       },
     ],
-    noSubscription: "d'abonnement obligatoire. Les crédits n'expirent pas.",
     howItWorks: "Comment ça marche",
     steps: [
       {

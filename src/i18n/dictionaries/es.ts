@@ -56,6 +56,10 @@ export const es: Dictionary = {
     wipeTitleTop: "Mismo combate.",
     wipeTitleBottom: "Otro luchador.",
     wipeText: "Desplázate: la cortina descubre el render. Los golpes, la cámara y el público vienen del clip original; solo cambió el luchador.",
+    refundClip: "Combate · 15 s · 720p",
+    refundStatus: "Pase rechazado",
+    refundCredits: "+{n} créditos devueltos",
+    refundBalance: "Saldo",
     features: "Funciones",
     pricing: "Precios",
     openStudio: "Abrir el estudio",
@@ -116,7 +120,6 @@ export const es: Dictionary = {
         text: "Un fragmento rechazado o fallido te devuelve sus créditos automáticamente.",
       },
     ],
-    noSubscription: "de suscripción obligatoria. Los créditos no caducan.",
     howItWorks: "Cómo funciona",
     steps: [
       {

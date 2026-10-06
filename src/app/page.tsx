@@ -1,17 +1,6 @@
-import {
-  ArrowRight,
-  Check,
-  Gem,
-  Infinity as InfinityIcon,
-  Layers,
-  Move,
-  Replace,
-  ShieldCheck,
-  Sparkles,
-  WandSparkles,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowRight, Check, Sparkles, WandSparkles } from "lucide-react";
 import Link from "next/link";
+import { FeatureShowcase } from "@/app/feature-showcase";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { CompareSlider } from "@/app/compare-slider";
 import { ExampleVideo } from "@/app/example-video";
@@ -56,16 +45,9 @@ const DEMOS = [
   { id: "nEPkQhaANNU", author: "Reel Success", title: "Motion Transfer & Object Swap - #Higgsfield #Genjutsu" },
 ];
 
-// Icône et largeur de chaque carte de fonctionnalité, dans l'ordre des
-// textes de landing.featureList : avec la carte du prix, trois rangées
-// pleines en zigzag (2+1, 1+2, 2+1).
-const FEATURE_ICONS: { icon: LucideIcon; wide?: boolean }[] = [
-  { icon: Gem, wide: true },
-  { icon: Replace },
-  { icon: Move },
-  { icon: Layers, wide: true },
-  { icon: ShieldCheck, wide: true },
-];
+// Rendu montré pour chaque fonctionnalité, dans l'ordre des textes de
+// landing.featureList ; null : la carte « crédits rendus » à la place.
+const FEATURE_MEDIA: (string | null)[] = ["genjutsu-cage", "ours", "genjutsu-diable", "mma-apres", null];
 
 // Meilleure réduction réelle d'un abonnement (annuel) sur le pack aux mêmes
 // crédits — le même calcul que la page Crédits.
@@ -278,32 +260,26 @@ export default async function Home() {
           <h2 className="reveal text-gradient mt-5 max-w-3xl font-headline text-5xl leading-[0.92] sm:text-7xl">
             {L.featuresTitle}
           </h2>
-          <ul className="mt-12 grid gap-4 md:grid-cols-3">
-            {L.featureList.map(({ title, text }, i) => {
-              const { icon: Icon, wide } = FEATURE_ICONS[i];
-              return (
-                <li
-                  key={title}
-                  className={`panel spotlight lift reveal group p-6 sm:p-8 ${wide ? "md:col-span-2" : ""}`}
-                >
-                  <span className="flex size-10 items-center justify-center rounded-lg bg-accent-soft text-accent-light">
-                    <Icon className="size-5" />
-                  </span>
-                  <h3 className="mt-5 text-lg font-semibold">{title}</h3>
-                  <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">{text}</p>
-                </li>
-              );
+          <FeatureShowcase
+            items={L.featureList.map(({ title, text }, i) => {
+              const file = FEATURE_MEDIA[i];
+              return {
+                title,
+                text,
+                media: file
+                  ? { kind: "video" as const, src: `/examples/${file}.mp4`, poster: `/examples/${file}.jpg` }
+                  : { kind: "refund" as const },
+              };
             })}
-            <li className="panel spotlight lift group flex flex-col justify-between p-6 sm:p-8">
-              <span className="flex size-10 items-center justify-center rounded-lg bg-accent-soft text-accent-light">
-                <InfinityIcon className="size-5" />
-              </span>
-              <div>
-                <p className="mt-5 font-headline text-4xl">{price(0)}</p>
-                <p className="mt-2 text-sm text-muted">{L.noSubscription}</p>
-              </div>
-            </li>
-          </ul>
+            refund={{
+              clip: L.refundClip,
+              status: L.refundStatus,
+              refunded: fmt(L.refundCredits, { n: 15 * swapMethodRate() + SWAP_SHEET_CREDITS }),
+              balance: L.refundBalance,
+              balanceValue: `${CREDIT_PACKS[1].credits} ${t.common.credits}`,
+              poster: "/examples/mma-avant.jpg",
+            }}
+          />
         </section>
 
         {/* Étapes */}

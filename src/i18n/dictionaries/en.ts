@@ -56,6 +56,10 @@ export const en: Dictionary = {
     wipeTitleTop: "Same fight.",
     wipeTitleBottom: "New fighter.",
     wipeText: "Scroll: the curtain reveals the render. The punches, the camera and the crowd come from the original clip — only the fighter changed.",
+    refundClip: "Fight · 15 s · 720p",
+    refundStatus: "Pass refused",
+    refundCredits: "+{n} credits refunded",
+    refundBalance: "Balance",
     features: "Features",
     pricing: "Pricing",
     openStudio: "Open the studio",
@@ -116,7 +120,6 @@ export const en: Dictionary = {
         text: "A refused or failed shot automatically gives you its credits back.",
       },
     ],
-    noSubscription: "subscription required. Credits never expire.",
     howItWorks: "How it works",
     steps: [
       {

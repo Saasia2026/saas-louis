@@ -167,6 +167,7 @@
   --animate-marquee: marquee 40s linear infinite;
   --animate-scan: scan 3.2s ease-in-out infinite;
   --animate-grow: grow 2.8s var(--ease-out) infinite;
+  --animate-feature-progress: feature-progress 6s linear forwards;
 
   /* translate (et non transform) : l'effet de survol "lift" reste actif
      une fois l'apparition terminée. */
@@ -222,6 +223,16 @@
     100% {
       top: 100%;
       opacity: 0;
+    }
+  }
+  /* Jauge de la fonctionnalité affichée : à la fin, la suivante prend sa
+     place (voir feature-showcase.tsx). */
+  @keyframes feature-progress {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
     }
   }
   @keyframes grow {
