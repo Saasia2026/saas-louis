@@ -27,7 +27,6 @@ export const fr = {
 
   shell: {
     newVideo: "Nouvelle vidéo",
-    workspace: "Espace de travail",
     recharge: "Recharger",
     nav: { studio: "Studio", videos: "Mes vidéos", credits: "Crédits" },
     navHint: { studio: "Créer une vidéo", videos: "Tes créations", credits: "Solde et recharge" },

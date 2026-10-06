@@ -10,7 +10,7 @@ import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { swapMethodRate } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
-import { Breadcrumb, SidebarNav, TopNav } from "./nav-links";
+import { MainNav, TopNav } from "./nav-links";
 
 // Espace connecté. Le proxy redirige déjà, mais on revérifie ici :
 // le proxy n'est qu'une vérification optimiste.
@@ -40,58 +40,61 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       ? fmt(t.shell.creditsMinutes, { n: numberFormat.format(Math.floor(videoSeconds / 60)) })
       : fmt(t.shell.creditsSeconds, { n: videoSeconds });
 
-  const avatar = (
-    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-surface-3 to-surface-2 text-xs font-semibold uppercase ring-1 ring-line-strong">
-      {displayName.charAt(0)}
-    </span>
-  );
-
   return (
-    <div className="flex flex-1 overflow-x-clip">
+    <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
       {/* Même fond que le landing, en plus discret : l'outil reste
           concentré, le site reste un seul monde. */}
       <ParticleField subtle />
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-surface/80 px-3 py-4 md:flex">
-        <div className="px-2">
-          <Logo href="/dashboard" />
-        </div>
 
-        <Link href="/dashboard/generate" className="btn btn-accent mt-6 w-full">
-          <Plus />
-          {t.shell.newVideo}
-        </Link>
+      {/* Barre du haut, sur toute la largeur : la navigation y tient en une
+          ligne et laisse tout l'écran au contenu. */}
+      <header className="glass sticky top-0 z-20 border-b border-line">
+        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5 sm:px-6">
+          <div className="min-w-0 shrink">
+            <Logo href="/dashboard" compact />
+          </div>
+          <div className="ml-2 hidden md:block lg:ml-6">
+            <MainNav />
+          </div>
 
-        <p className="mt-7 mb-2 px-2.5 text-[0.6875rem] font-semibold tracking-[0.14em] text-faint uppercase">
-          {t.shell.workspace}
-        </p>
-        <SidebarNav />
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {/* Solde : en grand, traduit en durée de vidéo, avec la recharge. */}
+            <div
+              title={videoLabel}
+              className="flex items-center gap-2.5 rounded-xl border border-line bg-surface-2/80 py-1 pr-1 pl-3"
+            >
+              <Coins className="size-4 shrink-0 text-accent-light" />
+              <span className="min-w-0">
+                <span className="block max-w-[9rem] truncate font-headline text-lg leading-none tabular-nums sm:max-w-none">
+                  {creditsLabel}
+                </span>
+                <span className="hidden text-[0.6875rem] leading-tight text-faint xl:block">{videoLabel}</span>
+              </span>
+              <Link
+                href="/dashboard/credits"
+                title={t.shell.recharge}
+                className="btn btn-accent px-2.5 py-1.5 text-[0.8125rem]"
+              >
+                <Plus />
+                <span className="hidden lg:inline">{t.shell.recharge}</span>
+              </Link>
+            </div>
 
-        <div className="mt-auto flex flex-col gap-3 pt-4">
-          {/* Solde : en grand, traduit en durée de vidéo, avec la recharge. */}
-          <div className="rounded-xl border border-line bg-surface-2 p-3">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-muted">
-              <Coins className="size-3.5 text-accent-light" />
-              {t.shell.nav.credits}
-            </p>
-            <p className="mt-2 truncate font-headline text-3xl leading-none tabular-nums" title={creditsLabel}>
-              {creditsLabel}
-            </p>
-            <p className="mt-1.5 truncate text-xs text-faint">{videoLabel}</p>
-            <Link href="/dashboard/credits" className="btn btn-accent mt-3 w-full">
+            <Link href="/dashboard/generate" className="btn btn-primary hidden lg:inline-flex">
               <Plus />
-              {t.shell.recharge}
+              {t.shell.newVideo}
             </Link>
-          </div>
 
-          <div className="flex items-center justify-between border-t border-line px-1 pt-3">
-            <ThemeToggle />
-            <LanguageSwitcher up />
-          </div>
+            <div className="flex items-center">
+              <ThemeToggle />
+              <LanguageSwitcher />
+            </div>
 
-          <div className="flex items-center gap-3 rounded-xl px-2 py-1">
-            {avatar}
-            <span className="min-w-0 flex-1 truncate text-sm text-muted" title={displayName}>
-              {displayName}
+            <span
+              title={displayName}
+              className="hidden size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-surface-3 to-surface-2 text-xs font-semibold uppercase ring-1 ring-line-strong xl:flex"
+            >
+              {displayName.charAt(0)}
             </span>
             <form action={signOut}>
               <button type="submit" title={t.common.signOut} className="btn btn-ghost p-2">
@@ -101,44 +104,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </form>
           </div>
         </div>
-      </aside>
+        <div className="border-t border-line px-4 py-2 md:hidden">
+          <TopNav />
+        </div>
+      </header>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="glass sticky top-0 z-20 border-b border-line">
-          <div className="flex items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-8">
-            <div className="min-w-0 shrink md:hidden">
-              <Logo href="/dashboard" />
-            </div>
-            <div className="hidden md:block">
-              <Breadcrumb />
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <Link href="/dashboard/credits" className="chip min-w-0 shrink">
-                <span className="size-1.5 shrink-0 rounded-full bg-accent" />
-                <span className="truncate font-medium text-text tabular-nums">{creditsLabel}</span>
-                <span className="hidden sm:inline">{t.common.credits}</span>
-              </Link>
-              <div className="flex items-center md:hidden">
-                <ThemeToggle />
-                <LanguageSwitcher />
-              </div>
-              <form action={signOut} className="md:hidden">
-                <button type="submit" title={t.common.signOut} className="btn btn-ghost p-2">
-                  <LogOut />
-                  <span className="sr-only">{t.common.signOut}</span>
-                </button>
-              </form>
-            </div>
-          </div>
-          <div className="border-t border-line px-4 py-2 md:hidden">
-            <TopNav />
-          </div>
-        </header>
-
-        <main className="relative isolate min-w-0 flex-1 overflow-x-clip px-4 py-6 sm:px-8 sm:py-10">
-          <div className="mx-auto max-w-6xl">{children}</div>
-        </main>
-      </div>
+      <main className="relative isolate min-w-0 flex-1 overflow-x-clip px-4 py-6 sm:px-8 sm:py-10">
+        <div className="mx-auto max-w-7xl">{children}</div>
+      </main>
     </div>
   );
 }

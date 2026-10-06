@@ -25,7 +25,6 @@ export const es: Dictionary = {
 
   shell: {
     newVideo: "Nuevo vídeo",
-    workspace: "Espacio de trabajo",
     recharge: "Recargar",
     nav: { studio: "Studio", videos: "Mis vídeos", credits: "Créditos" },
     navHint: { studio: "Crear un vídeo", videos: "Tus creaciones", credits: "Saldo y recarga" },

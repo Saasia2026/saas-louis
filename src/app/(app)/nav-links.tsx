@@ -3,6 +3,7 @@
 import { Clapperboard, Coins, Film, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLayoutEffect, useRef } from "react";
 import { useI18n } from "@/i18n/provider";
 
 const NAV_LINKS: { href: string; key: "studio" | "videos" | "credits"; icon: LucideIcon }[] = [
@@ -16,51 +17,75 @@ function useActive() {
   return (href: string) => pathname.startsWith(href);
 }
 
-// Hauteur d'une entrée et écart entre deux (h-14, gap-1) : le fond de
-// l'entrée active glisse de l'une à l'autre de ce pas.
-const ITEM_PX = 56;
-const GAP_PX = 4;
-
-// Navigation de la barre latérale (écrans larges) : une tuile d'icône, le
-// nom et une ligne d'explication par entrée.
-export function SidebarNav() {
+// Navigation de la barre du haut (écrans larges) : une tuile d'icône et le
+// nom par entrée (le nom à partir des écrans larges, l'explication en
+// infobulle). Le fond de l'entrée active glisse de l'une à l'autre ; les
+// entrées n'ayant pas la même largeur, il est mesuré sur la page.
+export function MainNav() {
   const isActive = useActive();
   const { t } = useI18n();
   const activeIndex = NAV_LINKS.findIndex((l) => isActive(l.href));
+  const links = useRef<(HTMLAnchorElement | null)[]>([]);
+  const pill = useRef<HTMLSpanElement>(null);
+  const placed = useRef(false);
+
+  useLayoutEffect(() => {
+    const el = pill.current;
+    if (!el) return;
+    const place = () => {
+      const link = links.current[activeIndex];
+      el.style.opacity = link ? "1" : "0";
+      if (!link) return;
+      el.style.width = `${link.offsetWidth}px`;
+      el.style.transform = `translateX(${link.offsetLeft}px)`;
+    };
+    // Première pose sans glissement ; ensuite, il glisse.
+    if (!placed.current) {
+      el.style.transition = "none";
+      place();
+      void el.offsetWidth;
+      el.style.transition = "";
+      placed.current = true;
+    } else {
+      place();
+    }
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [activeIndex, t]);
+
   return (
-    <nav className="relative flex flex-col gap-1">
+    <nav className="relative flex items-center gap-1">
       <span
+        ref={pill}
         aria-hidden
-        className={`absolute inset-x-0 top-0 h-14 rounded-xl border border-line bg-surface-3 transition-[transform,opacity] duration-300 [transition-timing-function:var(--ease-out)] ${
-          activeIndex < 0 ? "opacity-0" : ""
-        }`}
-        style={{ transform: `translateY(${Math.max(activeIndex, 0) * (ITEM_PX + GAP_PX)}px)` }}
+        className="absolute inset-y-0 left-0 rounded-xl border border-line bg-surface-3 opacity-0 transition-[transform,width,opacity] duration-300 [transition-timing-function:var(--ease-out)]"
       />
       {NAV_LINKS.map(({ href, key, icon: Icon }, i) => {
         const active = i === activeIndex;
         return (
           <Link
             key={href}
+            ref={(node) => {
+              links.current[i] = node;
+            }}
             href={href}
+            title={t.shell.navHint[key]}
             aria-current={active ? "page" : undefined}
-            className={`group relative flex h-14 items-center gap-3 rounded-xl px-2.5 transition-colors ${
+            className={`group relative flex items-center gap-2.5 rounded-xl p-1.5 transition-colors lg:pr-3.5 ${
               active ? "text-text" : "text-muted hover:bg-surface-2/70 hover:text-text"
             }`}
           >
             <span
-              className={`flex size-9 shrink-0 items-center justify-center rounded-lg border transition-[background-color,border-color,color,transform] duration-200 group-hover:-translate-y-0.5 ${
+              className={`flex size-8 shrink-0 items-center justify-center rounded-lg border transition-[background-color,border-color,color,transform] duration-200 group-hover:-translate-y-0.5 ${
                 active
                   ? "border-transparent bg-gradient-to-b from-accent-2 to-accent text-white"
                   : "border-line bg-surface-2 text-faint group-hover:border-line-strong group-hover:text-text"
               }`}
               style={active ? { boxShadow: "0 3px 0 color-mix(in oklab, var(--accent) 62%, black)" } : undefined}
             >
-              <Icon className="size-[1.1rem]" />
+              <Icon className="size-4" />
             </span>
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold">{t.shell.nav[key]}</span>
-              <span className="block truncate text-xs text-faint">{t.shell.navHint[key]}</span>
-            </span>
+            <span className="hidden text-sm font-semibold lg:inline">{t.shell.nav[key]}</span>
           </Link>
         );
       })}
@@ -83,24 +108,10 @@ export function TopNav() {
             isActive(href) ? "bg-surface-3 text-text" : "text-muted"
           }`}
         >
-          <Icon className="size-4" />
+          <Icon className={`size-4 ${isActive(href) ? "text-accent-light" : ""}`} />
           {t.shell.nav[key]}
         </Link>
       ))}
     </nav>
-  );
-}
-
-// Fil d'Ariane de la barre du haut.
-export function Breadcrumb() {
-  const isActive = useActive();
-  const { t } = useI18n();
-  const current = NAV_LINKS.find((l) => isActive(l.href));
-  return (
-    <p className="flex items-center gap-2 text-sm">
-      <span className="text-faint">{t.shell.workspace}</span>
-      <span className="text-faint">/</span>
-      <span className="font-medium text-text">{t.shell.nav[current?.key ?? "studio"]}</span>
-    </p>
   );
 }
