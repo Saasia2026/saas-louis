@@ -504,14 +504,14 @@ export function Studio({
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
       <aside className="relative z-20 animate-fade-up lg:sticky lg:top-24">
         <div className="mb-4 px-1">
-          <h1 className="text-xl font-semibold tracking-tight">{t.studio.createTitle}</h1>
-          <p className="mt-1 text-xs text-muted">{t.studio.poweredBy}</p>
+          <h1 className="font-headline text-4xl leading-none">{t.studio.createTitle}</h1>
+          <p className="mt-1.5 text-xs font-medium text-accent-light">{t.studio.poweredBy}</p>
         </div>
         {composer}
       </aside>
 
       <section ref={resultEnd} className="min-w-0 scroll-mt-24 space-y-3">
-        <h2 className="px-1 text-xl font-semibold tracking-tight">{t.studio.historyTitle}</h2>
+        <h2 className="px-1 font-headline text-4xl leading-none">{t.studio.historyTitle}</h2>
         {started && (
           <Result
             phase={phase}

@@ -85,7 +85,7 @@ export default async function Home() {
         <section className="relative isolate">
           <div className="mx-auto max-w-6xl px-4 pt-16 pb-10 text-center sm:px-6 sm:pt-32">
             <p className="eyebrow animate-fade-up">{L.eyebrow}</p>
-            <h1 className="mx-auto mt-8 max-w-6xl animate-fade-up font-wide text-[2.1rem] leading-[1.02] uppercase [animation-delay:80ms] min-[420px]:text-[2.7rem] sm:text-7xl lg:text-8xl">
+            <h1 className="mx-auto mt-8 max-w-6xl animate-fade-up font-headline text-[3.4rem] leading-[0.9] [animation-delay:80ms] min-[420px]:text-[4rem] sm:text-8xl lg:text-[9.5rem]">
               <span className="text-gradient">{L.titleTop}</span>
               <br />
               <span className="text-shine">
@@ -141,7 +141,7 @@ export default async function Home() {
         {/* Exemples */}
         <section id="exemples" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-16 sm:px-6 sm:pt-24">
           <p className="eyebrow">{L.examples}</p>
-          <h2 className="reveal text-gradient mt-5 max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h2 className="reveal text-gradient mt-5 max-w-3xl font-headline text-5xl leading-[0.92] sm:text-7xl">
             {L.examplesTitle}
           </h2>
           {/* Galerie sans cadre : la vidéo est la carte, la légende reste en
@@ -182,7 +182,7 @@ export default async function Home() {
         {/* Fonctionnalités */}
         <section id="fonctionnalites" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
           <p className="eyebrow">{L.features}</p>
-          <h2 className="reveal text-gradient mt-5 max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h2 className="reveal text-gradient mt-5 max-w-3xl font-headline text-5xl leading-[0.92] sm:text-7xl">
             {L.featuresTitle}
           </h2>
           <ul className="mt-12 grid gap-4 md:grid-cols-3">
@@ -206,7 +206,7 @@ export default async function Home() {
                 <InfinityIcon className="size-5" />
               </span>
               <div>
-                <p className="mt-5 font-wide text-4xl">{price(0)}</p>
+                <p className="mt-5 font-headline text-4xl">{price(0)}</p>
                 <p className="mt-2 text-sm text-muted">{L.noSubscription}</p>
               </div>
             </li>
@@ -222,10 +222,10 @@ export default async function Home() {
                 key={step.title}
                 className="group reveal grid gap-2 py-8 transition-colors hover:bg-surface/70 sm:grid-cols-[7rem_1fr_1.4fr] sm:gap-8 sm:px-4"
               >
-                <span className="font-wide text-3xl text-line-strong transition-colors duration-300 group-hover:text-accent-light">
+                <span className="font-headline text-4xl text-line-strong transition-colors duration-300 group-hover:text-accent-light">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <h3 className="font-wide text-xl uppercase">{step.title}</h3>
+                <h3 className="font-headline text-3xl leading-none">{step.title}</h3>
                 <p className="text-sm leading-relaxed text-muted">{step.text}</p>
               </li>
             ))}
@@ -252,7 +252,7 @@ export default async function Home() {
         {/* Tarifs */}
         <section id="tarifs" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
           <p className="eyebrow">{L.pricing}</p>
-          <h2 className="reveal text-gradient mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h2 className="reveal text-gradient mt-5 font-headline text-5xl leading-[0.92] sm:text-7xl">
             {L.pricingTitle}
           </h2>
           <p className="mt-4 max-w-xl text-[0.9375rem] leading-relaxed text-muted">
@@ -279,7 +279,7 @@ export default async function Home() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-6 font-wide text-5xl">{price(pack.amount)}</p>
+                  <p className="mt-6 font-headline text-5xl">{price(pack.amount)}</p>
                   <p className="mt-2 text-sm text-muted tabular-nums">
                     {pack.credits} {t.common.credits} · {price(Math.round(pack.amount / pack.credits))}{" "}
                     {L.perCredit}
@@ -301,7 +301,7 @@ export default async function Home() {
             se dérouler assez et laisser la section invisible. */}
         <section className="relative isolate overflow-hidden border-t border-line px-4 py-20 sm:px-6 sm:py-40">
           <div className="mx-auto max-w-6xl text-center">
-            <h2 className="mx-auto font-wide text-[1.9rem] leading-[1.05] uppercase sm:text-6xl lg:text-7xl">
+            <h2 className="mx-auto font-headline text-[2.8rem] leading-[0.92] sm:text-7xl lg:text-8xl">
               <span className="text-gradient">{L.finalTitleTop}</span>
               <br className="hidden sm:block" />{" "}
               <span className="text-shine">{L.finalTitleBottom}</span>

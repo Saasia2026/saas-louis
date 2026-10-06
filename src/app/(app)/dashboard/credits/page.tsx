@@ -148,7 +148,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
       <div className="mt-8 flex animate-fade-up flex-wrap items-end justify-between gap-4">
         <div>
           <p className="label">{P.balance}</p>
-          <p className="mt-1 font-wide text-5xl">
+          <p className="mt-1 font-headline text-5xl">
             {profile?.credits_remaining ?? 0}
             <span className="ml-2 font-sans text-base font-normal text-muted">{t.common.credits}</span>
           </p>
@@ -367,7 +367,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                       </span>
                     )}
                   </div>
-                  <p className="mt-6 font-wide text-4xl">
+                  <p className="mt-6 font-headline text-4xl">
                     {price(plan[billing])}
                     <span className="ml-1 font-sans text-base font-normal text-muted">
                       / {billing === "year" ? S.perYear : S.perMonth}
@@ -429,7 +429,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                   </span>
                 )}
               </div>
-              <p className="mt-6 font-wide text-4xl">{price(pack.amount)}</p>
+              <p className="mt-6 font-headline text-4xl">{price(pack.amount)}</p>
               <dl className="mt-6 divide-y divide-line border-y border-line text-sm">
                 <div className="flex justify-between py-2.5">
                   <dt className="text-muted">{P.creditsRow}</dt>

@@ -29,7 +29,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         <div className="flex justify-center">
           <LogoMark className="size-16" />
         </div>
-        <h1 className="text-gradient mt-8 animate-fade-up text-center font-wide text-2xl uppercase [animation-delay:80ms]">
+        <h1 className="text-gradient mt-8 animate-fade-up text-center font-headline text-4xl leading-[0.95] [animation-delay:80ms]">
           {t.login.welcome}
         </h1>
         <p className="mt-2 mb-8 animate-fade-up text-center text-sm text-muted [animation-delay:120ms]">

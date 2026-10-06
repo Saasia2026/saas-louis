@@ -12,7 +12,8 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-// Police variable : sa largeur (wdth) sert aux titres larges (font-wide).
+// Police variable : sa largeur (wdth) sert au logo élargi (font-wide) et aux
+// titres condensés (font-headline).
 const archivo = Archivo({
   variable: "--font-archivo",
   subsets: ["latin"],
