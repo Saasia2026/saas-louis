@@ -24,6 +24,7 @@ import {
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
+import { BADGE, OFF_BADGE, TIERS, tierCard } from "@/app/tier-style";
 import { PageHeader } from "../../page-header";
 import {
   buyCredits,
@@ -40,25 +41,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const ERRORS = ["unavailable", "checkout", "card", "nocard", "portal", "subscribed"] as const;
-
-// Teinte de chaque offre (variables --tier-*, plus foncées en thème clair) et
-// force du dégradé de sa carte ; Pro est la plus mise en avant.
-const TIERS = {
-  starter: { color: "var(--tier-basic)", strength: 14, badge: null },
-  creator: { color: "var(--tier-pro)", strength: 26, badge: "popular" },
-  studio: { color: "var(--tier-creator)", strength: 18, badge: "best" },
-} as const;
-
-function tierCard(color: string, strength: number): React.CSSProperties {
-  return {
-    background: `linear-gradient(165deg, color-mix(in oklab, ${color} ${strength}%, var(--surface)) 0%, var(--surface) 62%)`,
-    borderColor: `color-mix(in oklab, ${color} 38%, var(--line))`,
-  };
-}
-
-// Badges penchés : réduction en rose, mention d'offre à côté.
-const BADGE = "inline-flex -skew-x-6 items-center rounded-md px-2 py-0.5 text-xs font-extrabold italic";
-const OFF_BADGE = `${BADGE} bg-rose-600 text-white`;
 
 // Les crédits d'une offre et ce qu'ils représentent en vidéo (720p, une
 // passe, fiche d'un personnage comprise ; 15 s ; haute fidélité).

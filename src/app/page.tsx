@@ -7,6 +7,7 @@ import {
   Move,
   Replace,
   ShieldCheck,
+  Sparkles,
   WandSparkles,
   type LucideIcon,
 } from "lucide-react";
@@ -19,32 +20,61 @@ import { ParticleField } from "@/app/particle-field";
 import { PhoneFrame } from "@/app/phone-frame";
 import { Logo } from "@/app/logo";
 import { ThemeToggle } from "@/app/theme-toggle";
+import { BADGE, OFF_BADGE, TIERS, tierCard } from "@/app/tier-style";
+import { VideoMarquee } from "@/app/video-marquee";
+import { YouTubeLite } from "@/app/youtube-lite";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
-import { CREDIT_PACKS, formatPrice } from "@/lib/credit-packs";
-import { SWAP_SHEET_CREDITS, swapMethodRate } from "@/lib/generation";
+import { CREDIT_PACKS, SUBSCRIPTION_PLANS, formatPrice } from "@/lib/credit-packs";
+import { SWAP_SHEET_CREDITS, swapMethodRate, swapMethodSecondsFor } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
 
 // Vidéos d'exemple (public/examples), dans l'ordre des textes de
 // landing.exampleList : de vrais rendus du site.
 const EXAMPLES = ["ours", "chien"];
 
-// Rendus Genjutsu muets, dans l'ordre des textes de landing.showcaseList.
-const SHOWCASE = [
-  { file: "genjutsu-diable", aspectRatio: "9:16" },
-  { file: "genjutsu-lincoln", aspectRatio: "9:16" },
-  { file: "genjutsu-cage", aspectRatio: "9:16" },
+// Rendus Genjutsu verticaux du bandeau, dans l'ordre des textes de
+// landing.showcaseList.
+const REEL = ["genjutsu-diable", "genjutsu-lincoln", "genjutsu-cage"];
+
+// Démos Genjutsu publiées sur YouTube, toutes vérifiées intégrables : la
+// chaîne officielle de Higgsfield d'abord, puis des créateurs indépendants.
+// Titres et auteurs tels que YouTube les affiche ; rien n'est téléchargé ni
+// rehébergé, le lecteur YouTube les joue.
+const DEMOS = [
+  { id: "FW_tIpEBJ0U", author: "Higgsfield AI", title: "Hybrid Production With Higgsfield Genjutsu | From Studio to Any Scene" },
+  { id: "cvA5TONXrDY", author: "Arjun Bhavaraju", title: "I Turned 1 Video Into 8 Characters With AI | Higgsfield Genjutsu" },
+  { id: "yIkrhybARms", author: "Zubair Trabzada | AI Workshop", title: "Higgsfield Genjutsu Can Replace Anyone in Any Video" },
+  { id: "emP2xj2hCpQ", author: "Backlash", title: "This AI Can Replace Anything in Your Video (Higgsfield Genjutsu)" },
+  { id: "bHqRUo9R3Ao", author: "Richard Galapate", title: "Higgsfield Genjutsu is UNREAL! (AI Motion Transfer)" },
+  { id: "XiRaW1OzZFM", author: "Airt", title: "Higgsfield Genjutsu Is INSANE (Real Examples)" },
+  { id: "wM9S_iyuRUo", author: "AI BORDER", title: "Higgsfield Genjutsu Can Change Almost Anything in a Video" },
+  { id: "P3dPIGTtUXE", author: "Spasciz", title: "Higgsfield Genjutsu: Reality Manipulation for Music Videos" },
+  { id: "0moHSN0-L5E", author: "Prompt Engineer 48", title: "Higgsfield Genjutsu: One Video, Every Version You Need" },
+  { id: "mDofSLaCWqw", author: "Viral Shah Ai", title: "The New Way to Make AI Videos: Higgsfield Genjutsu Demo" },
+  { id: "cE0GAkSGiUU", author: "Artificial Quotient", title: "Higgsfield Genjutsu Tutorial: Replace Characters And Swap Objects In Video! (Motion Transfer)" },
+  { id: "nEPkQhaANNU", author: "Reel Success", title: "Motion Transfer & Object Swap - #Higgsfield #Genjutsu" },
 ];
 
 // Icône et largeur de chaque carte de fonctionnalité, dans l'ordre des
-// textes de landing.featureList.
+// textes de landing.featureList : avec la carte du prix, trois rangées
+// pleines en zigzag (2+1, 1+2, 2+1).
 const FEATURE_ICONS: { icon: LucideIcon; wide?: boolean }[] = [
   { icon: Gem, wide: true },
   { icon: Replace },
   { icon: Move },
-  { icon: Layers },
+  { icon: Layers, wide: true },
   { icon: ShieldCheck, wide: true },
 ];
+
+// Meilleure réduction réelle d'un abonnement (annuel) sur le pack aux mêmes
+// crédits — le même calcul que la page Crédits.
+const MAX_SUBSCRIPTION_OFF = Math.max(
+  ...SUBSCRIPTION_PLANS.map((plan) => {
+    const pack = CREDIT_PACKS.find((p) => p.id === plan.id)!;
+    return Math.round((1 - Math.round(plan.year / 12) / pack.amount) * 100);
+  }),
+);
 
 export default async function Home() {
   const [t, locale, supabase] = await Promise.all([getDictionary(), getLocale(), createClient()]);
@@ -52,7 +82,20 @@ export default async function Home() {
   const loggedIn = Boolean(data?.claims);
   const start = loggedIn ? "/dashboard/generate" : "/login";
   const L = t.landing;
+  const P = t.creditsPage;
   const price = (amount: number) => formatPrice(amount, INTL_LOCALES[locale]);
+  // La réduction s'affiche en badge au milieu de la phrase.
+  const [subsBefore, subsAfter = ""] = L.pricingSubs.split("{off}");
+
+  const reel = [
+    ...REEL.map((file, i) => ({
+      src: `/examples/${file}.mp4`,
+      poster: `/examples/${file}.jpg`,
+      label: L.showcaseList[i].title,
+    })),
+    { src: "/examples/micro-apres.mp4", poster: "/examples/micro-apres.jpg", label: L.compareAfter },
+    { src: "/examples/mma-apres.mp4", poster: "/examples/mma-apres.jpg", label: L.compareAfter },
+  ];
 
   return (
     <div className="flex flex-1 flex-col overflow-x-clip">
@@ -64,6 +107,9 @@ export default async function Home() {
           <nav className="flex shrink-0 items-center gap-0.5 text-sm sm:gap-1">
             <a href="#exemples" className="btn btn-ghost hidden px-3 sm:inline-flex">
               {L.examples}
+            </a>
+            <a href="#demos" className="btn btn-ghost hidden px-3 lg:inline-flex">
+              {L.navCreators}
             </a>
             <a href="#fonctionnalites" className="btn btn-ghost hidden px-3 sm:inline-flex">
               {L.features}
@@ -82,60 +128,74 @@ export default async function Home() {
       </header>
 
       <main className="flex-1">
-        {/* Accroche */}
+        {/* Accroche : le texte à gauche, la démo dans un téléphone à droite —
+            l'un sous l'autre sur mobile. */}
         <section className="relative isolate">
-          <div className="mx-auto max-w-6xl px-4 pt-16 pb-10 text-center sm:px-6 sm:pt-32">
-            <p className="eyebrow animate-fade-up">{L.eyebrow}</p>
-            <h1 className="mx-auto mt-8 max-w-6xl animate-fade-up font-headline text-[3.4rem] leading-[0.9] [animation-delay:80ms] min-[420px]:text-[4rem] sm:text-8xl lg:text-[9.5rem]">
-              <span className="text-gradient">{L.titleTop}</span>
-              <br />
-              <span className="text-shine">
-                {L.titleBottom}
-              </span>
-            </h1>
-            <div className="mt-10 flex animate-fade-up flex-col justify-center gap-3 [animation-delay:240ms] sm:mt-9 sm:flex-row sm:flex-wrap">
-              <Link href={start} className="btn btn-accent w-full px-5 py-3 text-[0.9375rem] sm:w-auto">
-                <WandSparkles />
-                {L.ctaFirst}
-              </Link>
-              <a href="#tarifs" className="btn btn-primary w-full px-5 py-3 text-[0.9375rem] sm:w-auto">
-                {L.ctaPricing}
-              </a>
+          <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-10 pb-16 sm:px-6 sm:pt-20 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-14 lg:pt-20 lg:pb-24">
+            <div className="text-center lg:text-left">
+              <p className="inline-flex max-w-full animate-fade-up items-center gap-2 rounded-full border border-line bg-surface/80 px-3 py-1.5 text-[0.6875rem] font-medium text-muted sm:text-xs">
+                <Sparkles className="size-3.5 shrink-0 text-accent-hot" />
+                {L.eyebrow}
+              </p>
+              <h1 className="mt-6 animate-fade-up font-headline text-[3.25rem] leading-[0.88] [animation-delay:80ms] min-[400px]:text-[3.75rem] sm:text-8xl lg:text-[6.5rem] xl:text-[7.25rem]">
+                <span className="block text-gradient">{L.titleTop}</span>
+                <span className="block text-shine">{L.titleBottom}</span>
+              </h1>
+              <p className="mx-auto mt-6 max-w-xl animate-fade-up text-[0.9375rem] leading-relaxed text-muted [animation-delay:160ms] sm:text-lg lg:mx-0">
+                {L.heroText}
+              </p>
+              <div className="mt-8 flex animate-fade-up flex-col justify-center gap-3 [animation-delay:240ms] sm:flex-row sm:flex-wrap lg:justify-start">
+                <Link href={start} className="btn btn-accent w-full px-5 py-3 text-[0.9375rem] sm:w-auto">
+                  <WandSparkles />
+                  {L.ctaFirst}
+                </Link>
+                <a href="#tarifs" className="btn btn-primary w-full px-5 py-3 text-[0.9375rem] sm:w-auto">
+                  {L.ctaPricing}
+                </a>
+              </div>
+              <p className="mt-5 flex animate-fade-up flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted [animation-delay:300ms] lg:justify-start">
+                {L.perks.map((perk) => (
+                  <span key={perk} className="flex items-center gap-1.5">
+                    <Check className="size-3.5 text-success" />
+                    {perk}
+                  </span>
+                ))}
+              </p>
             </div>
-            <p className="mt-5 flex animate-fade-up flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted [animation-delay:300ms]">
-              {L.perks.map((perk) => (
-                <span key={perk} className="flex items-center gap-1.5">
-                  <Check className="size-3.5 text-success" />
-                  {perk}
-                </span>
-              ))}
-            </p>
-          </div>
 
-          {/* Démo : le rideau avant/après sur un vrai plan fourni, en vidéo. */}
-          <div className="mx-auto max-w-6xl animate-fade-up px-4 pb-24 [animation-delay:380ms] sm:px-6">
-            <PhoneFrame ambient="/examples/micro-apres.jpg" className="mx-auto w-full max-w-[19rem] sm:max-w-[21rem]">
-              <CompareSlider
-                before="/examples/micro-avant.mp4"
-                after="/examples/micro-apres.mp4"
-                posterBefore="/examples/micro-avant.jpg"
-                posterAfter="/examples/micro-apres.jpg"
-                labelBefore={L.compareBefore}
-                labelAfter={L.compareAfter}
-                bare
-              />
-            </PhoneFrame>
-            <p className="mx-auto mt-5 max-w-sm text-center text-xs leading-relaxed text-faint">
-              {L.compareHint}
-            </p>
+            {/* Démo : le rideau avant/après sur un vrai plan fourni, en vidéo. */}
+            <div className="animate-fade-up [animation-delay:380ms]">
+              <PhoneFrame ambient="/examples/micro-apres.jpg" className="mx-auto w-full max-w-[17rem] sm:max-w-[19rem]">
+                <CompareSlider
+                  before="/examples/micro-avant.mp4"
+                  after="/examples/micro-apres.mp4"
+                  posterBefore="/examples/micro-avant.jpg"
+                  posterAfter="/examples/micro-apres.jpg"
+                  labelBefore={L.compareBefore}
+                  labelAfter={L.compareAfter}
+                  bare
+                />
+              </PhoneFrame>
+              <p className="mx-auto mt-5 max-w-[17rem] text-center text-xs leading-relaxed text-faint sm:max-w-[19rem]">
+                {L.compareHint}
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* Modèles */}
-        <section className="border-y border-line py-5">
-          <ul className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-8 gap-y-2 px-4 text-sm text-muted sm:px-6">
-            {L.models.map((model) => (
-              <li key={model}>{model}</li>
+        {/* Bandeau de rendus Genjutsu, sur toute la largeur, puis ce que le
+            moteur garde du clip. */}
+        <section aria-label={L.reelEyebrow} className="border-y border-line bg-surface/40 py-8 sm:py-12">
+          <p className="eyebrow mb-6 px-4 text-center">{L.reelEyebrow}</p>
+          <VideoMarquee items={reel} />
+          <ul className="mx-auto mt-8 flex max-w-6xl flex-wrap items-center justify-center gap-2 px-4 sm:px-6">
+            {L.models.map((model, i) => (
+              <li
+                key={model}
+                className={`rounded-full border px-3 py-1 text-xs font-medium ${i === 0 ? "border-accent/50 text-accent-light" : "border-line text-muted"}`}
+              >
+                {model}
+              </li>
             ))}
           </ul>
         </section>
@@ -146,9 +206,7 @@ export default async function Home() {
           <h2 className="reveal text-gradient mt-5 max-w-3xl font-headline text-5xl leading-[0.92] sm:text-7xl">
             {L.examplesTitle}
           </h2>
-          {/* Galerie sans cadre : la vidéo est la carte, la légende reste en
-              retrait — présentation d'études de cas, pas de vitrine SaaS. */}
-          <ul className="mt-12 grid gap-x-6 gap-y-12 md:grid-cols-2">
+          <ul className="mt-12 grid gap-x-6 gap-y-10 md:grid-cols-2">
             {L.exampleList.map(({ title }, i) => (
               <li key={title} className="reveal">
                 <ExampleVideo
@@ -159,17 +217,55 @@ export default async function Home() {
               </li>
             ))}
           </ul>
+        </section>
 
-          {/* Rendus Genjutsu verticaux : défilement horizontal sur mobile,
-              trois colonnes au-delà. */}
-          <ul className="mt-12 flex snap-x gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:items-start sm:gap-6 sm:overflow-visible">
-            {L.showcaseList.map(({ title }, i) => (
-              <li key={title} className="w-[72%] shrink-0 snap-start sm:w-auto">
-                <ExampleVideo
-                  src={`/examples/${SHOWCASE[i].file}.mp4`}
-                  poster={`/examples/${SHOWCASE[i].file}.jpg`}
-                  label={title}
-                  aspectRatio={SHOWCASE[i].aspectRatio}
+        {/* Bande cinéma : le remplacement se rejoue tout seul au rythme du
+            défilement. Un combat, rendu par le site avec la méthode du
+            mannequin ; le texte à côté sur ordinateur, au-dessus sur mobile. */}
+        <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
+          <div className="text-center lg:text-left">
+            <p className="eyebrow">{L.wipeEyebrow}</p>
+            <h2 className="reveal mt-5 font-headline text-5xl leading-[0.92] sm:text-7xl lg:text-8xl">
+              <span className="block text-gradient">{L.wipeTitleTop}</span>
+              <span className="block text-shine">{L.wipeTitleBottom}</span>
+            </h2>
+            <p className="mx-auto mt-5 max-w-md text-[0.9375rem] leading-relaxed text-muted lg:mx-0">{L.wipeText}</p>
+          </div>
+          <div>
+            <ScrollWipe
+              before="/examples/mma-avant.mp4"
+              after="/examples/mma-apres.mp4"
+              posterBefore="/examples/mma-avant.jpg"
+              posterAfter="/examples/mma-apres.jpg"
+              labelBefore={L.compareBefore}
+              labelAfter={L.compareAfter}
+            />
+          </div>
+        </section>
+
+        {/* Démos YouTube : la vidéo officielle en grand, puis les créateurs.
+            Sur mobile, une rangée qui défile au doigt plutôt qu'une colonne
+            de douze vidéos. */}
+        <section id="demos" className="scroll-mt-20 border-y border-line bg-surface/40 py-16 sm:py-24">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <p className="eyebrow">{L.creatorsEyebrow}</p>
+            <h2 className="reveal mt-5 max-w-3xl font-headline text-5xl leading-[0.92] sm:text-7xl">
+              <span className="text-shine">{L.creatorsTitle}</span>
+            </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted">{L.creatorsNote}</p>
+          </div>
+          <ul className="mx-auto mt-10 flex max-w-6xl snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-6 sm:pb-0 lg:grid-cols-3">
+            {DEMOS.map(({ id, author, title }, i) => (
+              <li
+                key={id}
+                className={`w-[82%] shrink-0 snap-start sm:w-auto ${i === 0 ? "lg:col-span-2 lg:row-span-2" : ""}`}
+              >
+                <YouTubeLite
+                  id={id}
+                  title={title}
+                  author={author}
+                  playLabel={fmt(L.creatorPlay, { author })}
+                  large={i === 0}
                 />
               </li>
             ))}
@@ -190,7 +286,7 @@ export default async function Home() {
                   key={title}
                   className={`panel spotlight lift reveal group p-6 sm:p-8 ${wide ? "md:col-span-2" : ""}`}
                 >
-                  <span className="flex size-10 items-center justify-center rounded-lg border border-line bg-surface-2 text-text">
+                  <span className="flex size-10 items-center justify-center rounded-lg bg-accent-soft text-accent-light">
                     <Icon className="size-5" />
                   </span>
                   <h3 className="mt-5 text-lg font-semibold">{title}</h3>
@@ -199,7 +295,7 @@ export default async function Home() {
               );
             })}
             <li className="panel spotlight lift group flex flex-col justify-between p-6 sm:p-8">
-              <span className="flex size-10 items-center justify-center rounded-lg border border-line bg-surface-2 text-text">
+              <span className="flex size-10 items-center justify-center rounded-lg bg-accent-soft text-accent-light">
                 <InfinityIcon className="size-5" />
               </span>
               <div>
@@ -219,7 +315,7 @@ export default async function Home() {
                 key={step.title}
                 className="group reveal grid gap-2 py-8 transition-colors hover:bg-surface/70 sm:grid-cols-[7rem_1fr_1.4fr] sm:gap-8 sm:px-4"
               >
-                <span className="font-headline text-4xl text-line-strong transition-colors duration-300 group-hover:text-accent-light">
+                <span className="font-headline text-4xl text-accent-light/60 transition-colors duration-300 group-hover:text-accent-hot">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <h3 className="font-headline text-3xl leading-none">{step.title}</h3>
@@ -229,25 +325,8 @@ export default async function Home() {
           </ol>
         </section>
 
-        {/* Bande cinéma : le remplacement se rejoue tout seul au rythme du
-            défilement — l'argument du produit, sans un mot. Un second
-            exemple, différent du hero : un combat, rendu par le site avec la
-            méthode du mannequin. */}
-        <section className="relative isolate border-y border-line px-4 py-16 sm:py-24">
-          <div className="relative mx-auto max-w-6xl">
-            <ScrollWipe
-              before="/examples/mma-avant.mp4"
-              after="/examples/mma-apres.mp4"
-              posterBefore="/examples/mma-avant.jpg"
-              posterAfter="/examples/mma-apres.jpg"
-              labelBefore={L.compareBefore}
-              labelAfter={L.compareAfter}
-            />
-          </div>
-        </section>
-
-        {/* Tarifs */}
-        <section id="tarifs" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
+        {/* Tarifs : une couleur par offre, comme la page Crédits. */}
+        <section id="tarifs" className="mx-auto max-w-6xl scroll-mt-20 px-4 pb-16 sm:px-6 sm:pb-24">
           <p className="eyebrow">{L.pricing}</p>
           <h2 className="reveal text-gradient mt-5 font-headline text-5xl leading-[0.92] sm:text-7xl">
             {L.pricingTitle}
@@ -259,31 +338,32 @@ export default async function Home() {
               sheet: SWAP_SHEET_CREDITS,
             })}
           </p>
-          <ul className="mt-10 grid gap-4 md:grid-cols-3">
+          <ul className="mt-10 grid gap-5 lg:grid-cols-3">
             {CREDIT_PACKS.map((pack, i) => {
-              const featured = "highlight" in pack && pack.highlight;
+              const tier = TIERS[pack.id];
+              const featured = tier.badge === "popular";
               return (
                 <li
                   key={pack.id}
-                  className={`panel spotlight lift flex animate-fade-up flex-col p-6 ${featured ? "glow" : ""}`}
-                  style={{ animationDelay: `${i * 90}ms` }}
+                  className="flex animate-fade-up flex-col rounded-2xl border p-6 transition-transform duration-200 hover:-translate-y-1"
+                  style={{ ...tierCard(tier.color, tier.strength), animationDelay: `${i * 90}ms` }}
                 >
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-semibold">{t.creditsPage.packs[pack.id]}</h3>
-                    {featured && (
-                      <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-white">
-                        {L.popular}
-                      </span>
-                    )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-headline text-4xl leading-none">{P.packs[pack.id]}</h3>
+                    {featured && <span className={`${BADGE} bg-accent text-white`}>{L.popular}</span>}
                   </div>
-                  <p className="mt-6 font-headline text-5xl">{price(pack.amount)}</p>
-                  <p className="mt-2 text-sm text-muted tabular-nums">
-                    {pack.credits} {t.common.credits} · {price(Math.round(pack.amount / pack.credits))}{" "}
-                    {L.perCredit}
+                  <p className="mt-2 text-sm text-muted">{P.taglines[pack.id]}</p>
+                  <p className="mt-6 font-headline text-6xl leading-none">{price(pack.amount)}</p>
+                  <p className="mt-3 flex items-center gap-2 text-sm font-semibold tabular-nums">
+                    <Sparkles className="size-4 shrink-0" style={{ color: tier.color }} />
+                    {pack.credits} {t.common.credits}
+                  </p>
+                  <p className="mt-1 pl-6 text-sm text-muted tabular-nums">
+                    {fmt(P.eqSeconds, { n: swapMethodSecondsFor(pack.credits) })}
                   </p>
                   <Link
                     href={start}
-                    className={`btn mt-8 w-full ${featured ? "btn-accent" : "btn-secondary"}`}
+                    className={`btn mt-8 w-full py-3 text-[0.9375rem] ${featured ? "btn-accent" : "btn-primary"}`}
                   >
                     {L.start}
                   </Link>
@@ -291,6 +371,15 @@ export default async function Home() {
               );
             })}
           </ul>
+          <Link
+            href={loggedIn ? "/dashboard/credits" : "/login"}
+            className="mt-6 inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted hover:text-text"
+          >
+            {subsBefore}
+            <span className={OFF_BADGE}>{fmt(P.off, { pct: MAX_SUBSCRIPTION_OFF })}</span>
+            {subsAfter}
+            <ArrowRight className="size-3.5" />
+          </Link>
         </section>
 
         {/* Appel final : une déclaration pleine page, pas une carte. Pas de
@@ -304,7 +393,7 @@ export default async function Home() {
               <span className="text-shine">{L.finalTitleBottom}</span>
             </h2>
             <Magnetic>
-              <Link href={start} className="btn btn-primary mt-10 px-8 py-3.5 text-base">
+              <Link href={start} className="btn btn-accent mt-10 px-8 py-3.5 text-base">
                 {loggedIn ? L.openStudio : L.startFree}
                 <ArrowRight />
               </Link>

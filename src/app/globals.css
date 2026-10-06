@@ -7,26 +7,28 @@
    (choix de l'utilisateur, voir theme-toggle.tsx) ou, sans choix, si
    l'appareil est en mode clair. */
 :root {
-  --bg: #09090b;
-  --surface: #101013;
-  --surface-2: #16161a;
-  --surface-3: #1d1d23;
-  --surface-hover: #26262e;
+  --bg: #07060c;
+  --surface: #0f0d16;
+  --surface-2: #16131f;
+  --surface-3: #1e1a2a;
+  --surface-hover: #282338;
   --line: rgb(255 255 255 / 0.08);
   --line-strong: rgb(255 255 255 / 0.16);
-  --text: #f7f7f8;
-  --text-muted: #a3a3ad;
-  --text-faint: #64646e;
+  --text: #f8f7fc;
+  --text-muted: #aaa5bd;
+  --text-faint: #6d6882;
   /* Anciennes lueurs néon : devenues des ombres d'élévation neutres, les
      noms restent pour ne pas toucher aux composants. */
   --neon: 0 0 0 1px rgb(255 255 255 / 0.16), 0 24px 56px -16px rgb(0 0 0 / 0.85);
   --neon-soft: 0 0 0 1px rgb(255 255 255 / 0.09), 0 14px 36px -14px rgb(0 0 0 / 0.65);
   --neon-text: none;
   --ambient-opacity: 0.45;
-  --accent: #5e6cf2;
-  --accent-light: #9aa4ff;
-  --accent-2: #7d88ff;
-  --accent-soft: rgb(94 108 242 / 0.16);
+  --accent: #7c5cff;
+  --accent-light: #b4a3ff;
+  --accent-2: #9b7fff;
+  --accent-soft: rgb(124 92 255 / 0.18);
+  /* Second accent, pour les dégradés des titres. */
+  --accent-hot: #ff4fd8;
   --success: #3fcf8e;
   --warning: #f5b74e;
   --danger: #f4586a;
@@ -34,9 +36,9 @@
   --on-primary: #0a0a0a;
   --primary-hover: #ffffff;
   --primary-glow: rgb(255 255 255 / 0.25);
-  --glass-bg: rgb(9 9 11 / 0.9);
-  --composer-bg: rgb(16 16 20 / 0.85);
-  --menu-bg: rgb(22 22 27 / 0.97);
+  --glass-bg: rgb(7 6 12 / 0.88);
+  --composer-bg: rgb(15 13 22 / 0.88);
+  --menu-bg: rgb(22 19 31 / 0.97);
   --dot: rgb(255 255 255 / 0.07);
   --highlight: rgb(255 255 255 / 0.05);
   --gradient-from: #ffffff;
@@ -65,20 +67,21 @@
 }
 
 :root[data-theme="light"] {
-  --bg: #f6f6f8;
+  --bg: #f7f5fc;
   --surface: #ffffff;
-  --surface-2: #f3f3f5;
-  --surface-3: #e8e8ec;
-  --surface-hover: #dedee4;
-  --line: rgb(10 10 20 / 0.09);
-  --line-strong: rgb(10 10 20 / 0.18);
-  --text: #0a0a0f;
-  --text-muted: #52525b;
-  --text-faint: #8b8b94;
-  --accent: #4f5ce0;
-  --accent-light: #3a47c8;
-  --accent-2: #6a76e8;
-  --accent-soft: rgb(79 92 224 / 0.14);
+  --surface-2: #f2eff9;
+  --surface-3: #e7e2f3;
+  --surface-hover: #dcd5ec;
+  --line: rgb(20 10 40 / 0.09);
+  --line-strong: rgb(20 10 40 / 0.18);
+  --text: #0e0a18;
+  --text-muted: #554e68;
+  --text-faint: #8a849c;
+  --accent: #6a46ff;
+  --accent-light: #5532ea;
+  --accent-2: #8667ff;
+  --accent-soft: rgb(106 70 255 / 0.13);
+  --accent-hot: #d6249f;
   --success: #059669;
   --warning: #d97706;
   --danger: #e11d48;
@@ -101,20 +104,21 @@
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
-    --bg: #f6f6f8;
+    --bg: #f7f5fc;
     --surface: #ffffff;
-    --surface-2: #f3f3f5;
-    --surface-3: #e8e8ec;
-    --surface-hover: #dedee4;
-    --line: rgb(10 10 20 / 0.09);
-    --line-strong: rgb(10 10 20 / 0.18);
-    --text: #0a0a0f;
-    --text-muted: #52525b;
-    --text-faint: #8b8b94;
-    --accent: #4f5ce0;
-    --accent-light: #3a47c8;
-    --accent-2: #6a76e8;
-    --accent-soft: rgb(79 92 224 / 0.14);
+    --surface-2: #f2eff9;
+    --surface-3: #e7e2f3;
+    --surface-hover: #dcd5ec;
+    --line: rgb(20 10 40 / 0.09);
+    --line-strong: rgb(20 10 40 / 0.18);
+    --text: #0e0a18;
+    --text-muted: #554e68;
+    --text-faint: #8a849c;
+    --accent: #6a46ff;
+    --accent-light: #5532ea;
+    --accent-2: #8667ff;
+    --accent-soft: rgb(106 70 255 / 0.13);
+    --accent-hot: #d6249f;
     --success: #059669;
     --warning: #d97706;
     --danger: #e11d48;
@@ -294,7 +298,10 @@ body {
 /* Mot mis en avant dans un titre : lettres néon, comme une enseigne. */
 @utility text-shine {
   color: var(--accent-light);
-  text-shadow: var(--neon-text);
+  background: linear-gradient(90deg, var(--accent-light), var(--accent-hot));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Intitulé de champ ou de valeur. */
