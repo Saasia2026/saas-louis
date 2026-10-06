@@ -16,6 +16,7 @@ import { CompareSlider } from "@/app/compare-slider";
 import { ExampleVideo } from "@/app/example-video";
 import { Magnetic, ScrollWipe, SmoothScroll } from "@/app/landing-motion";
 import { ParticleField } from "@/app/particle-field";
+import { PhoneFrame } from "@/app/phone-frame";
 import { Logo } from "@/app/logo";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
@@ -113,16 +114,17 @@ export default async function Home() {
 
           {/* Démo : le rideau avant/après sur un vrai plan fourni, en vidéo. */}
           <div className="mx-auto max-w-6xl animate-fade-up px-4 pb-24 [animation-delay:380ms] sm:px-6">
-            <CompareSlider
-              before="/examples/micro-avant.mp4"
-              after="/examples/micro-apres.mp4"
-              posterBefore="/examples/micro-avant.jpg"
-              posterAfter="/examples/micro-apres.jpg"
-              labelBefore={L.compareBefore}
-              labelAfter={L.compareAfter}
-              ambient
-              className="mx-auto w-full max-w-[21rem] sm:max-w-[23rem]"
-            />
+            <PhoneFrame ambient="/examples/micro-apres.jpg" className="mx-auto w-full max-w-[19rem] sm:max-w-[21rem]">
+              <CompareSlider
+                before="/examples/micro-avant.mp4"
+                after="/examples/micro-apres.mp4"
+                posterBefore="/examples/micro-avant.jpg"
+                posterAfter="/examples/micro-apres.jpg"
+                labelBefore={L.compareBefore}
+                labelAfter={L.compareAfter}
+                bare
+              />
+            </PhoneFrame>
             <p className="mx-auto mt-5 max-w-sm text-center text-xs leading-relaxed text-faint">
               {L.compareHint}
             </p>

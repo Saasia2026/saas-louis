@@ -18,6 +18,7 @@ export function CompareSlider({
   labelAfter,
   aspectRatio = "9:16",
   ambient = false,
+  bare = false,
   className = "",
 }: {
   before: string;
@@ -30,6 +31,8 @@ export function CompareSlider({
   // Copie floue de la vidéo « après » derrière le cadre, comme le mode
   // ambiant de YouTube.
   ambient?: boolean;
+  // Sans bordure ni coins arrondis : posé dans un cadre (voir PhoneFrame).
+  bare?: boolean;
   className?: string;
 }) {
   // Position du rideau, en % depuis la gauche.
@@ -79,7 +82,9 @@ export function CompareSlider({
       onPointerMove={(e) => dragging && moveTo(e.clientX)}
       onPointerUp={() => setDragging(false)}
       onPointerCancel={() => setDragging(false)}
-      className="relative isolate w-full cursor-ew-resize touch-none overflow-hidden rounded-2xl border border-line bg-black select-none"
+      className={`relative isolate w-full cursor-ew-resize touch-none overflow-hidden bg-black select-none ${
+        bare ? "" : "rounded-2xl border border-line"
+      }`}
       style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
     >
       <video
