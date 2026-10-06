@@ -34,31 +34,15 @@ export const es: Dictionary = {
     examples: "Ejemplos",
     examplesTitle: "Grabado con una persona. Interpretado por tu personaje.",
     exampleList: [
-      {
-        title: "El oso al micrófono",
-        text: "Una entrevista grabada: el oso repite cada gesto, cada giro de cabeza y movimiento de boca. Micrófono, decorado y voz original intactos.",
-      },
-      {
-        title: "El perro en el escenario",
-        text: "En el escenario, micrófono en mano, frente al público: solo cambia el orador, el resto de la sala queda intacto.",
-      },
+      { title: "El oso al micrófono" },
+      { title: "El perro en el escenario" },
     ],
     soundOn: "Activar el sonido",
     soundOff: "Silenciar",
-    showcaseTitle: "Hecho con Genjutsu",
     showcaseList: [
-      {
-        title: "El diablo baila",
-        text: "Dos personajes en un baile grabado en una azotea: cada paso sigue el clip original.",
-      },
-      {
-        title: "Lincoln hace vlog",
-        text: "Un vlog grabado con el móvil: el personaje copia cada mueca y cada mirada a cámara.",
-      },
-      {
-        title: "El combate del siglo",
-        text: "Un combate real de MMA con ambos luchadores reemplazados: cada golpe y cada esquiva vienen del clip grabado.",
-      },
+      { title: "El diablo baila" },
+      { title: "Lincoln hace vlog" },
+      { title: "El combate del siglo" },
     ],
     features: "Funciones",
     pricing: "Precios",
@@ -68,8 +52,6 @@ export const es: Dictionary = {
     eyebrow: "El estudio premium · con la tecnología de Higgsfield Genjutsu",
     titleTop: "Tu personaje.",
     titleBottom: "En el vídeo.",
-    subtitle:
-      "Uno de los motores de vídeo más fieles del momento, en un estudio sencillo. Reemplaza a una persona en un clip real, o vuelve a rodar toda la escena en un nuevo lugar: gestos, cámara y sonido originales conservados.",
     ctaFirst: "Crear mi primer vídeo",
     ctaPricing: "Ver precios",
     perks: ["Calidad Genjutsu, hasta 1080p", "Sin suscripción", "Créditos devueltos si falla"],

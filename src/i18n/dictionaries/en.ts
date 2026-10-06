@@ -34,31 +34,15 @@ export const en: Dictionary = {
     examples: "Examples",
     examplesTitle: "Filmed with a person. Played by your character.",
     exampleList: [
-      {
-        title: "The bear at the mic",
-        text: "A filmed interview: the bear replays every gesture, head turn and mouth movement. Mic, set and original voice kept.",
-      },
-      {
-        title: "The dog on stage",
-        text: "On stage, mic in hand, in front of the audience: only the speaker changes, the rest of the room is untouched.",
-      },
+      { title: "The bear at the mic" },
+      { title: "The dog on stage" },
     ],
     soundOn: "Turn sound on",
     soundOff: "Mute",
-    showcaseTitle: "Made with Genjutsu",
     showcaseList: [
-      {
-        title: "The devil dances",
-        text: "Two characters on a dance filmed on a rooftop: every step follows the original clip.",
-      },
-      {
-        title: "Lincoln vlogs",
-        text: "A phone-filmed vlog: the character copies every face and every look at the camera.",
-      },
-      {
-        title: "Fight of the century",
-        text: "A real MMA fight with both fighters replaced: every strike and dodge comes from the filmed clip.",
-      },
+      { title: "The devil dances" },
+      { title: "Lincoln vlogs" },
+      { title: "Fight of the century" },
     ],
     features: "Features",
     pricing: "Pricing",
@@ -68,8 +52,6 @@ export const en: Dictionary = {
     eyebrow: "The premium studio · powered by Higgsfield Genjutsu",
     titleTop: "Your character.",
     titleBottom: "In the video.",
-    subtitle:
-      "One of the most faithful video engines around, in a simple studio. Replace a person in a real clip, or replay the whole scene in a new location: original moves, camera and sound kept.",
     ctaFirst: "Create my first video",
     ctaPricing: "See pricing",
     perks: ["Genjutsu quality, up to 1080p", "No subscription", "Credits refunded if it fails"],

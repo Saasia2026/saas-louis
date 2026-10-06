@@ -36,31 +36,15 @@ export const fr = {
     examples: "Exemples",
     examplesTitle: "Filmé par une personne. Joué par ton personnage.",
     exampleList: [
-      {
-        title: "L'ours au micro",
-        text: "Une interview filmée : l'ours reprend chaque geste, chaque mouvement de tête et de bouche. Micro, décor et voix d'origine gardés.",
-      },
-      {
-        title: "Le chien sur scène",
-        text: "Sur scène, micro en main, devant le public : seul l'orateur change, tout le reste de la salle est intact.",
-      },
+      { title: "L'ours au micro" },
+      { title: "Le chien sur scène" },
     ],
     soundOn: "Activer le son",
     soundOff: "Couper le son",
-    showcaseTitle: "Créé avec Genjutsu",
     showcaseList: [
-      {
-        title: "Le diable danse",
-        text: "Deux personnages sur une danse filmée sur un toit : chaque pas suit le clip d'origine.",
-      },
-      {
-        title: "Lincoln en vlog",
-        text: "Un vlog filmé au téléphone : le personnage reprend chaque grimace et chaque regard caméra.",
-      },
-      {
-        title: "Le combat du siècle",
-        text: "Un vrai combat de MMA, les deux combattants remplacés : chaque coup et chaque esquive viennent du clip filmé.",
-      },
+      { title: "Le diable danse" },
+      { title: "Lincoln en vlog" },
+      { title: "Le combat du siècle" },
     ],
     features: "Fonctionnalités",
     pricing: "Tarifs",
@@ -70,8 +54,6 @@ export const fr = {
     eyebrow: "Le studio premium · propulsé par Higgsfield Genjutsu",
     titleTop: "Ton personnage.",
     titleBottom: "Dans la vidéo.",
-    subtitle:
-      "L'un des moteurs vidéo les plus fidèles du moment, dans un studio simple et en français. Remplace une personne dans un vrai clip, ou rejoue toute la scène dans un nouveau lieu : gestes, caméra et son d'origine gardés.",
     ctaFirst: "Créer ma première vidéo",
     ctaPricing: "Voir les tarifs",
     perks: ["Qualité Genjutsu, jusqu'en 1080p", "Sans abonnement", "Crédits rendus en cas d'échec"],

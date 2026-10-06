@@ -62,7 +62,7 @@ export default async function OpengraphImage() {
           {t.landing.titleBottom}
         </div>
         <div style={{ fontSize: 28, color: "#a3a3ad", marginTop: 40, maxWidth: 900, lineHeight: 1.4 }}>
-          {t.landing.subtitle}
+          {t.meta.description}
         </div>
       </div>
     ),

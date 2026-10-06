@@ -92,10 +92,7 @@ export default async function Home() {
                 {L.titleBottom}
               </span>
             </h1>
-            <p className="mx-auto mt-5 max-w-xl animate-fade-up text-[0.9375rem] leading-relaxed text-muted [animation-delay:160ms] sm:mt-7 sm:text-lg">
-              {L.subtitle}
-            </p>
-            <div className="mt-8 flex animate-fade-up flex-col justify-center gap-3 [animation-delay:240ms] sm:mt-9 sm:flex-row sm:flex-wrap">
+            <div className="mt-10 flex animate-fade-up flex-col justify-center gap-3 [animation-delay:240ms] sm:mt-9 sm:flex-row sm:flex-wrap">
               <Link href={start} className="btn btn-accent w-full px-5 py-3 text-[0.9375rem] sm:w-auto">
                 <WandSparkles />
                 {L.ctaFirst}
@@ -150,7 +147,7 @@ export default async function Home() {
           {/* Galerie sans cadre : la vidéo est la carte, la légende reste en
               retrait — présentation d'études de cas, pas de vitrine SaaS. */}
           <ul className="mt-12 grid gap-x-6 gap-y-12 md:grid-cols-2">
-            {L.exampleList.map(({ title, text }, i) => (
+            {L.exampleList.map(({ title }, i) => (
               <li key={title} className="reveal">
                 <ExampleVideo
                   src={`/examples/${EXAMPLES[i]}.mp4`}
@@ -159,17 +156,14 @@ export default async function Home() {
                   soundOn={L.soundOn}
                   soundOff={L.soundOff}
                 />
-                <h3 className="mt-5 text-lg font-semibold tracking-tight">{title}</h3>
-                <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted">{text}</p>
               </li>
             ))}
           </ul>
 
           {/* Rendus Genjutsu verticaux : défilement horizontal sur mobile,
               trois colonnes au-delà. */}
-          <h3 className="mt-20 text-sm font-medium text-muted">{L.showcaseTitle}</h3>
-          <ul className="mt-6 flex snap-x gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:items-start sm:gap-6 sm:overflow-visible">
-            {L.showcaseList.map(({ title, text }, i) => (
+          <ul className="mt-12 flex snap-x gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:items-start sm:gap-6 sm:overflow-visible">
+            {L.showcaseList.map(({ title }, i) => (
               <li key={title} className="w-[72%] shrink-0 snap-start sm:w-auto">
                 <ExampleVideo
                   src={`/examples/${SHOWCASE[i].file}.mp4`}
@@ -180,8 +174,6 @@ export default async function Home() {
                   aspectRatio={SHOWCASE[i].aspectRatio}
                   hasSound={false}
                 />
-                <p className="mt-4 text-base font-semibold tracking-tight">{title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-muted">{text}</p>
               </li>
             ))}
           </ul>
