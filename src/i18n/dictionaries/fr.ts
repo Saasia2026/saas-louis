@@ -4,8 +4,9 @@
 
 export const fr = {
   meta: {
+    title: "Remplacement de personnage par IA · propulsé par Genjutsu",
     description:
-      "Mets ton personnage dans n'importe quelle vidéo : TwinPost remplace la personne d'un clip filmé en gardant ses gestes, le décor, la caméra et le son.",
+      "Studio vidéo premium propulsé par Higgsfield Genjutsu : mets ton personnage dans n'importe quelle vidéo, en gardant les gestes, le décor, la caméra et le son.",
     login: "Connexion",
     password: "Nouveau mot de passe",
     studio: "Studio",
@@ -46,19 +47,34 @@ export const fr = {
     ],
     soundOn: "Activer le son",
     soundOff: "Couper le son",
+    showcaseTitle: "Créé avec Genjutsu",
+    showcaseList: [
+      {
+        title: "En smoking sur la plage",
+        text: "Chaque pas de danse vient du clip d'origine, filmé au coucher du soleil.",
+      },
+      {
+        title: "Lincoln en vlog",
+        text: "Un vlog filmé au téléphone : le personnage reprend chaque grimace et chaque regard caméra.",
+      },
+      {
+        title: "Le bras de fer des dieux",
+        text: "Deux personnes remplacées dans le même plan, chacune par son propre personnage.",
+      },
+    ],
     features: "Fonctionnalités",
     pricing: "Tarifs",
     openStudio: "Ouvrir le studio",
     studioShort: "Studio",
     start: "Commencer",
-    eyebrow: "Remplacement de personnage par IA · dans de vraies vidéos",
+    eyebrow: "Le studio premium · propulsé par Higgsfield Genjutsu",
     titleTop: "Ton personnage.",
     titleBottom: "Dans la vidéo.",
     subtitle:
-      "Dépose un clip filmé et la photo d'un personnage : il prend la place de la personne, avec ses gestes, le décor, la caméra et le son d'origine.",
-    ctaFirst: "Remplacer mon premier personnage",
+      "L'un des moteurs vidéo les plus fidèles du moment, dans un studio simple et en français. Remplace une personne dans un vrai clip, ou rejoue toute la scène dans un nouveau lieu : gestes, caméra et son d'origine gardés.",
+    ctaFirst: "Créer ma première vidéo",
     ctaPricing: "Voir les tarifs",
-    perks: ["Une seule photo suffit", "Sans abonnement", "Crédits rendus en cas d'échec"],
+    perks: ["Qualité Genjutsu, jusqu'en 1080p", "Sans abonnement", "Crédits rendus en cas d'échec"],
     compareBefore: "Original",
     compareAfter: "Ton personnage",
     compareHint: "Glisse le rideau : le même clip, la même performance — seul le personnage change.",
@@ -79,28 +95,34 @@ export const fr = {
     ],
     mockBadge: "720p · 17 s",
     models: [
-      "Genjutsu",
-      "Nano Banana Pro",
+      "Propulsé par Higgsfield Genjutsu",
+      "720p et 1080p",
       "Son d'origine gardé",
       "Coupes respectées",
       "Jusqu'à 90 s",
     ],
-    featuresTitle: "Le vrai mouvement. Ton personnage.",
+    featuresTitle: "Un seul moteur. Le meilleur.",
     featureList: [
       {
-        title: "Le mouvement vient du vrai",
-        text: "Gestes, regards, caméra, décor et lumière sont repris de ton clip. Rien à décrire : ce qui est filmé est rejoué par ton personnage.",
+        title: "Genjutsu, et rien d'autre",
+        text: "TwinPost n'utilise qu'un moteur : Higgsfield Genjutsu, conçu pour garder un vrai jeu d'acteur. Pas de modèle au rabais, pas de rendu approximatif.",
       },
       {
-        title: "Une photo suffit",
-        text: "À partir d'une seule image, TwinPost prépare la fiche du personnage pour qu'il reste le même d'un plan à l'autre.",
+        title: "Remplacer",
+        text: "Change une personne et garde tout le reste : décor, caméra, lumière et son.",
       },
-      { title: "Le son d'origine", text: "Voix, musique et ambiance du clip sont gardées telles quelles." },
       {
-        title: "Les coupes respectées",
-        text: "Un clip monté reste monté : jusqu'à 90 s, avec ses changements de plan.",
+        title: "Transférer le mouvement",
+        text: "Garde les gestes et la caméra, et rejoue la scène dans le lieu de ta photo.",
       },
-      { title: "Zéro risque", text: "Un remplacement qui échoue te rend automatiquement ses crédits." },
+      {
+        title: "Haute fidélité",
+        text: "Pour les clips difficiles, la méthode du mannequin efface toute trace de la personne d'origine.",
+      },
+      {
+        title: "Zéro risque",
+        text: "Un passage refusé ou raté te rend automatiquement ses crédits.",
+      },
     ],
     noSubscription: "d'abonnement. Les crédits n'expirent pas.",
     howItWorks: "Comment ça marche",

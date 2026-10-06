@@ -1,12 +1,12 @@
 import {
   ArrowRight,
-  AudioLines,
   Check,
-  Clapperboard,
+  Gem,
   Infinity as InfinityIcon,
-  Scissors,
+  Layers,
+  Move,
+  Replace,
   ShieldCheck,
-  UserRound,
   WandSparkles,
   type LucideIcon,
 } from "lucide-react";
@@ -28,13 +28,20 @@ import { createClient } from "@/lib/supabase/server";
 // landing.exampleList : de vrais rendus du site.
 const EXAMPLES = ["ours", "chien"];
 
+// Rendus Genjutsu muets, dans l'ordre des textes de landing.showcaseList.
+const SHOWCASE = [
+  { file: "genjutsu-plage", aspectRatio: "9:16" },
+  { file: "genjutsu-lincoln", aspectRatio: "9:16" },
+  { file: "genjutsu-dieux", aspectRatio: "1:1" },
+];
+
 // Icône et largeur de chaque carte de fonctionnalité, dans l'ordre des
 // textes de landing.featureList.
 const FEATURE_ICONS: { icon: LucideIcon; wide?: boolean }[] = [
-  { icon: Clapperboard, wide: true },
-  { icon: UserRound },
-  { icon: AudioLines },
-  { icon: Scissors },
+  { icon: Gem, wide: true },
+  { icon: Replace },
+  { icon: Move },
+  { icon: Layers },
   { icon: ShieldCheck, wide: true },
 ];
 
@@ -154,6 +161,27 @@ export default async function Home() {
                 />
                 <h3 className="mt-5 text-lg font-semibold tracking-tight">{title}</h3>
                 <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted">{text}</p>
+              </li>
+            ))}
+          </ul>
+
+          {/* Rendus Genjutsu verticaux : défilement horizontal sur mobile,
+              trois colonnes au-delà. */}
+          <h3 className="mt-20 text-sm font-medium text-muted">{L.showcaseTitle}</h3>
+          <ul className="mt-6 flex snap-x gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:items-start sm:gap-6 sm:overflow-visible">
+            {L.showcaseList.map(({ title, text }, i) => (
+              <li key={title} className="w-[72%] shrink-0 snap-start sm:w-auto">
+                <ExampleVideo
+                  src={`/examples/${SHOWCASE[i].file}.mp4`}
+                  poster={`/examples/${SHOWCASE[i].file}.jpg`}
+                  label={title}
+                  soundOn={L.soundOn}
+                  soundOff={L.soundOff}
+                  aspectRatio={SHOWCASE[i].aspectRatio}
+                  hasSound={false}
+                />
+                <p className="mt-4 text-base font-semibold tracking-tight">{title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-muted">{text}</p>
               </li>
             ))}
           </ul>

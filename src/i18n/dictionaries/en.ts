@@ -2,8 +2,9 @@ import type { Dictionary } from "./fr";
 
 export const en: Dictionary = {
   meta: {
+    title: "AI character replacement · powered by Genjutsu",
     description:
-      "Put your character in any video: TwinPost replaces the person in a filmed clip while keeping their moves, the set, the camera and the sound.",
+      "Premium video studio powered by Higgsfield Genjutsu: put your character in any video, keeping the moves, the set, the camera and the sound.",
     login: "Sign in",
     password: "New password",
     studio: "Studio",
@@ -44,19 +45,34 @@ export const en: Dictionary = {
     ],
     soundOn: "Turn sound on",
     soundOff: "Mute",
+    showcaseTitle: "Made with Genjutsu",
+    showcaseList: [
+      {
+        title: "Tuxedo on the beach",
+        text: "Every dance step comes from the original clip, filmed at sunset.",
+      },
+      {
+        title: "Lincoln vlogs",
+        text: "A phone-filmed vlog: the character copies every face and every look at the camera.",
+      },
+      {
+        title: "Arm-wrestling gods",
+        text: "Two people replaced in the same shot, each by their own character.",
+      },
+    ],
     features: "Features",
     pricing: "Pricing",
     openStudio: "Open the studio",
     studioShort: "Studio",
     start: "Get started",
-    eyebrow: "AI character replacement · in real videos",
+    eyebrow: "The premium studio · powered by Higgsfield Genjutsu",
     titleTop: "Your character.",
     titleBottom: "In the video.",
     subtitle:
-      "Drop in a filmed clip and a photo of a character: it takes the person's place, with their moves, the set, the camera and the original sound.",
-    ctaFirst: "Replace my first character",
+      "One of the most faithful video engines around, in a simple studio. Replace a person in a real clip, or replay the whole scene in a new location: original moves, camera and sound kept.",
+    ctaFirst: "Create my first video",
     ctaPricing: "See pricing",
-    perks: ["One photo is enough", "No subscription", "Credits refunded if it fails"],
+    perks: ["Genjutsu quality, up to 1080p", "No subscription", "Credits refunded if it fails"],
     compareBefore: "Original",
     compareAfter: "Your character",
     compareHint: "Drag the curtain: same clip, same performance — only the character changes.",
@@ -77,28 +93,34 @@ export const en: Dictionary = {
     ],
     mockBadge: "720p · 17 s",
     models: [
-      "Genjutsu",
-      "Nano Banana Pro",
+      "Powered by Higgsfield Genjutsu",
+      "720p and 1080p",
       "Original sound kept",
       "Cuts preserved",
       "Up to 90 s",
     ],
-    featuresTitle: "The real movement. Your character.",
+    featuresTitle: "One engine. The best one.",
     featureList: [
       {
-        title: "The movement is real",
-        text: "Moves, looks, camera, set and lighting are taken from your clip. Nothing to describe: whatever was filmed is replayed by your character.",
+        title: "Genjutsu, nothing else",
+        text: "TwinPost uses a single engine: Higgsfield Genjutsu, built to keep a real performance. No cut-price model, no approximate render.",
       },
       {
-        title: "One photo is enough",
-        text: "From a single image, TwinPost builds the character sheet so it stays the same from one shot to the next.",
+        title: "Replace",
+        text: "Swap a person and keep everything else: set, camera, lighting and sound.",
       },
-      { title: "The original sound", text: "The clip's voices, music and ambience are kept exactly as they are." },
       {
-        title: "Cuts preserved",
-        text: "An edited clip stays edited: up to 90 s, with its shot changes.",
+        title: "Motion transfer",
+        text: "Keep the moves and the camera, and replay the scene in the location from your photo.",
       },
-      { title: "Zero risk", text: "A replacement that fails automatically refunds its credits." },
+      {
+        title: "High fidelity",
+        text: "For difficult clips, the mannequin method erases every trace of the original person.",
+      },
+      {
+        title: "Zero risk",
+        text: "A refused or failed shot automatically gives you its credits back.",
+      },
     ],
     noSubscription: "subscription. Credits never expire.",
     howItWorks: "How it works",

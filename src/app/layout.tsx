@@ -21,7 +21,7 @@ const archivo = Archivo({
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
-  const title = `TwinPost — ${t.landing.eyebrow}`;
+  const title = `TwinPost — ${t.meta.title}`;
   return {
     // Base des liens absolus : vignette de partage, sitemap, adresse canonique.
     metadataBase: new URL(siteUrl()),

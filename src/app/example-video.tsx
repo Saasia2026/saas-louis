@@ -12,12 +12,17 @@ export function ExampleVideo({
   label,
   soundOn,
   soundOff,
+  aspectRatio = "16:9",
+  hasSound = true,
 }: {
   src: string;
   poster: string;
   label: string;
   soundOn: string;
   soundOff: string;
+  aspectRatio?: string;
+  // Fichier sans piste son : pas de bouton.
+  hasSound?: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const container = useRef<HTMLDivElement>(null);
@@ -31,7 +36,10 @@ export function ExampleVideo({
           vidéo en lecture repeint chaque image et met les GPU à genoux. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={poster} alt="" aria-hidden className="ambient" />
-      <div className="relative aspect-video overflow-hidden rounded-xl border border-line bg-black">
+      <div
+        className="relative overflow-hidden rounded-xl border border-line bg-black"
+        style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
+      >
       <video
         ref={ref}
         src={src}
@@ -44,6 +52,7 @@ export function ExampleVideo({
         preload="metadata"
         className="size-full object-cover"
       />
+      {hasSound && (
       <button
         type="button"
         onClick={() => {
@@ -59,6 +68,7 @@ export function ExampleVideo({
       >
         {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
       </button>
+      )}
       </div>
     </div>
   );

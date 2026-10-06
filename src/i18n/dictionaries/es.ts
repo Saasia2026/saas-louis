@@ -2,8 +2,9 @@ import type { Dictionary } from "./fr";
 
 export const es: Dictionary = {
   meta: {
+    title: "Reemplazo de personaje con IA · con Genjutsu",
     description:
-      "Pon a tu personaje en cualquier vídeo: TwinPost reemplaza a la persona de un clip grabado conservando sus gestos, el decorado, la cámara y el sonido.",
+      "Estudio de vídeo premium con la tecnología de Higgsfield Genjutsu: pon a tu personaje en cualquier vídeo, conservando los gestos, el decorado, la cámara y el sonido.",
     login: "Iniciar sesión",
     password: "Nueva contraseña",
     studio: "Studio",
@@ -44,19 +45,34 @@ export const es: Dictionary = {
     ],
     soundOn: "Activar el sonido",
     soundOff: "Silenciar",
+    showcaseTitle: "Hecho con Genjutsu",
+    showcaseList: [
+      {
+        title: "De esmoquin en la playa",
+        text: "Cada paso de baile viene del clip original, grabado al atardecer.",
+      },
+      {
+        title: "Lincoln hace vlog",
+        text: "Un vlog grabado con el móvil: el personaje copia cada mueca y cada mirada a cámara.",
+      },
+      {
+        title: "El pulso de los dioses",
+        text: "Dos personas reemplazadas en el mismo plano, cada una por su propio personaje.",
+      },
+    ],
     features: "Funciones",
     pricing: "Precios",
     openStudio: "Abrir el estudio",
     studioShort: "Studio",
     start: "Empezar",
-    eyebrow: "Reemplazo de personaje con IA · en vídeos reales",
+    eyebrow: "El estudio premium · con la tecnología de Higgsfield Genjutsu",
     titleTop: "Tu personaje.",
     titleBottom: "En el vídeo.",
     subtitle:
-      "Sube un clip grabado y la foto de un personaje: ocupa el lugar de la persona, con sus gestos, el decorado, la cámara y el sonido original.",
-    ctaFirst: "Reemplazar mi primer personaje",
+      "Uno de los motores de vídeo más fieles del momento, en un estudio sencillo. Reemplaza a una persona en un clip real, o vuelve a rodar toda la escena en un nuevo lugar: gestos, cámara y sonido originales conservados.",
+    ctaFirst: "Crear mi primer vídeo",
     ctaPricing: "Ver precios",
-    perks: ["Basta con una foto", "Sin suscripción", "Créditos devueltos si falla"],
+    perks: ["Calidad Genjutsu, hasta 1080p", "Sin suscripción", "Créditos devueltos si falla"],
     compareBefore: "Original",
     compareAfter: "Tu personaje",
     compareHint: "Desliza la cortina: el mismo clip, la misma actuación — solo cambia el personaje.",
@@ -77,28 +93,34 @@ export const es: Dictionary = {
     ],
     mockBadge: "720p · 17 s",
     models: [
-      "Genjutsu",
-      "Nano Banana Pro",
+      "Con la tecnología de Higgsfield Genjutsu",
+      "720p y 1080p",
       "Sonido original conservado",
       "Cortes respetados",
       "Hasta 90 s",
     ],
-    featuresTitle: "El movimiento real. Tu personaje.",
+    featuresTitle: "Un solo motor. El mejor.",
     featureList: [
       {
-        title: "El movimiento es real",
-        text: "Gestos, miradas, cámara, decorado y luz se toman de tu clip. Nada que describir: lo que está grabado lo repite tu personaje.",
+        title: "Genjutsu y nada más",
+        text: "TwinPost usa un único motor: Higgsfield Genjutsu, pensado para conservar una actuación real. Sin modelos baratos ni renders aproximados.",
       },
       {
-        title: "Basta con una foto",
-        text: "A partir de una sola imagen, TwinPost prepara la ficha del personaje para que siga siendo el mismo de un plano a otro.",
+        title: "Reemplazar",
+        text: "Cambia a una persona y conserva todo lo demás: decorado, cámara, luz y sonido.",
       },
-      { title: "El sonido original", text: "Las voces, la música y el ambiente del clip se conservan tal cual." },
       {
-        title: "Cortes respetados",
-        text: "Un clip montado sigue montado: hasta 90 s, con sus cambios de plano.",
+        title: "Transferir el movimiento",
+        text: "Conserva los gestos y la cámara, y vuelve a rodar la escena en el lugar de tu foto.",
       },
-      { title: "Riesgo cero", text: "Un reemplazo que falla te devuelve automáticamente sus créditos." },
+      {
+        title: "Alta fidelidad",
+        text: "Para los clips difíciles, el método del maniquí borra cualquier rastro de la persona original.",
+      },
+      {
+        title: "Riesgo cero",
+        text: "Un fragmento rechazado o fallido te devuelve sus créditos automáticamente.",
+      },
     ],
     noSubscription: "de suscripción. Los créditos no caducan.",
     howItWorks: "Cómo funciona",
