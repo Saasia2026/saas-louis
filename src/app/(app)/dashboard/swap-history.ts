@@ -24,6 +24,8 @@ export type SwapHistoryItem = {
   date: string;
   hd: boolean;
   fidelity: boolean;
+  // Mouvement transféré dans un nouveau lieu (Motion Transfer).
+  transfer: boolean;
   // Photos des personnages, dans l'ordre.
   thumbs: string[];
 };
@@ -32,6 +34,7 @@ type HistoryMetadata = {
   aspect_ratio?: unknown;
   hd?: boolean;
   vessel?: boolean;
+  decor_image_path?: string;
   swap_parts?: { original?: boolean }[];
   character_image_path?: string;
   characters?: { image_path?: string }[];
@@ -95,6 +98,7 @@ export async function listSwapHistory(limit = 24): Promise<SwapHistoryItem[]> {
         date: dateFormat.format(new Date(g.created_at)),
         hd: g.meta.hd === true,
         fidelity: g.meta.vessel === true,
+        transfer: Boolean(g.meta.decor_image_path),
         thumbs: photoPaths[i].flatMap((p) => photoUrl.get(p) ?? []),
       };
     }),

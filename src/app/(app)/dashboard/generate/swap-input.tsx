@@ -46,6 +46,7 @@ export function SwapInput({
   decorPhoto = null,
   onDecorPhoto,
   showDecor = false,
+  decorTitle,
   instructions = "",
   onInstructions,
   showInstructions = false,
@@ -59,6 +60,8 @@ export function SwapInput({
   decorPhoto?: SwapFile | null;
   onDecorPhoto?: (file: SwapFile | null) => void;
   showDecor?: boolean;
+  // Titre du bloc décor (par défaut : facultatif).
+  decorTitle?: string;
   // Consignes libres à l'IA (moteur Qualité max), facultatives : demandes en
   // plus du remplacement (« transforme la chaise en voiture de sport »).
   // Vides : seuls les références et les champs remplis comptent.
@@ -352,7 +355,7 @@ export function SwapInput({
       )}
       {showDecor && (
         <div className="mt-3">
-          <p className="text-xs text-faint">{t.studio.decorTitle}</p>
+          <p className="text-xs text-faint">{decorTitle ?? t.studio.decorTitle}</p>
           <div className="mt-1.5 flex items-center gap-3">
             <label
               title={t.studio.decorHint}

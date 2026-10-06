@@ -71,6 +71,7 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
               <span className="tag">{item.hd ? "1080p" : "720p"}</span>
               {item.seconds ? <span className="tag">{fmt(V.seconds, { seconds: item.seconds })}</span> : null}
               <span className="tag">{item.aspectRatio}</span>
+              {item.transfer && <span className="tag">{t.studio.modeTransfer}</span>}
               {item.fidelity && <span className="tag">{t.studio.methodFidelity}</span>}
             </div>
             {item.incomplete && <p className="text-xs text-amber-300">{item.incomplete}</p>}

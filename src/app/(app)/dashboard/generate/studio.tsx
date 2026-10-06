@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, Download, RefreshCw, WandSparkles, X } from "lucide-react";
+import { Check, ChevronDown, Download, Move, RefreshCw, Replace, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { fmt, plural } from "@/i18n/config";
@@ -93,6 +93,9 @@ export function Studio({
   const [hd, setHd] = useState(false);
   // Haute fidélité : méthode du mannequin, deux passes, au double du prix.
   const [fidelity, setFidelity] = useState(false);
+  // Remplacer (Object Swap, la scène est gardée) ou transférer le mouvement
+  // (Motion Transfer, la scène est rejouée dans le lieu de la photo).
+  const [mode, setMode] = useState<"replace" | "transfer">("replace");
   // Changement de décor : photo du lieu, facultative. Sans photo, seuls les
   // personnages et les cases remplies comptent, le décor du clip est gardé.
   const [decorPhoto, setDecorPhoto] = useState<SwapFile | null>(null);
@@ -115,6 +118,8 @@ export function Studio({
   // Seul, le personnage remplace la personne principale ; à plusieurs, il
   // faut dire qui chacun remplace.
   const targetsReady = !several || characters.every((c) => c.target.trim());
+  // Transfert : la photo du nouveau lieu est ce qui le distingue.
+  const decorReady = mode === "replace" || Boolean(decorPhoto);
   // Durée du passage choisie ; rien = tout le clip, dans la limite du moteur.
   const [length, setLength] = useState<number | null>(null);
 
@@ -145,7 +150,14 @@ export function Studio({
   const gate = durationKnown
     ? cost
     : swapCredits(1, engine, undefined, characters.length, hd, false, fidelity);
-  const canSend = available && !busy && Boolean(video) && imagesReady && targetsReady && (credits >= gate || autoRecharge);
+  const canSend =
+    available &&
+    !busy &&
+    Boolean(video) &&
+    imagesReady &&
+    targetsReady &&
+    decorReady &&
+    (credits >= gate || autoRecharge);
 
   // Lancement, fin ou erreur : le rendu suivi revient à l'écran (sur mobile,
   // il est sous le formulaire).
@@ -226,7 +238,7 @@ export function Studio({
       seconds: maxSeconds,
       hd,
       vessel: fidelity,
-      decorImagePath: decorPhoto?.path,
+      decorImagePath: mode === "transfer" ? decorPhoto?.path : undefined,
       instructions: instructions.trim() || undefined,
     });
     router.refresh();
@@ -284,6 +296,31 @@ export function Studio({
       }}
       className="composer"
     >
+      <div className="px-4 pt-4">
+        <div role="tablist" className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface-2/60 p-1">
+          {(["replace", "transfer"] as const).map((m) => {
+            const Icon = m === "replace" ? Replace : Move;
+            return (
+              <button
+                key={m}
+                type="button"
+                role="tab"
+                aria-selected={mode === m}
+                onClick={() => setMode(m)}
+                className={`flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium transition-colors ${
+                  mode === m ? "bg-surface-3 text-text" : "text-muted hover:text-text"
+                }`}
+              >
+                <Icon className="size-4 shrink-0" />
+                <span className="truncate">{m === "replace" ? t.studio.modeReplace : t.studio.modeTransfer}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 px-1 text-xs leading-relaxed text-muted">
+          {mode === "replace" ? t.studio.modeReplaceHint : t.studio.modeTransferHint}
+        </p>
+      </div>
       <SwapInput
         userId={userId}
         video={video}
@@ -308,7 +345,8 @@ export function Studio({
         compact={false}
         decorPhoto={decorPhoto}
         onDecorPhoto={setDecorPhoto}
-        showDecor
+        showDecor={mode === "transfer"}
+        decorTitle={t.studio.decorRequiredTitle}
         instructions={instructions}
         onInstructions={setInstructions}
         showInstructions
@@ -433,6 +471,8 @@ export function Studio({
               ? t.studio.pick
               : !targetsReady
                 ? t.studio.targetsMissing
+                : !decorReady
+                ? t.studio.decorMissing
                 : credits >= gate || autoRecharge
                 ? durationKnown
                   ? // Prix final connu une fois le clip découpé (voir swapCredits).
