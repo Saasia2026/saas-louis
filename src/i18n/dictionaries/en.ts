@@ -99,7 +99,7 @@ export const en: Dictionary = {
       "720p and 1080p",
       "Original sound kept",
       "Cuts preserved",
-      "Up to 90 s",
+      "Up to 30 s",
     ],
     featuresTitle: "One engine. The best one.",
     featureList: [
@@ -128,7 +128,7 @@ export const en: Dictionary = {
     steps: [
       {
         title: "You drop in your clip",
-        text: "A filmed video, up to 90 s: a dance, a sketch, a fight, an iconic scene. The person to replace must be clearly visible.",
+        text: "A filmed video: a dance, a sketch, a fight, an iconic scene. 30 s max; if it's longer, you pick the part. The person to replace must be clearly visible.",
       },
       {
         title: "You add your character",
@@ -159,6 +159,7 @@ export const en: Dictionary = {
     submitSignIn: "Sign in",
     submitSignUp: "Create my account",
     freeCredits: "3 free credits when you sign up",
+    fromStudio: "Your project is saved: sign in to start the render.",
     invalidLink: "This confirmation link is invalid or has expired.",
     google: "Continue with Google",
     or: "or",
@@ -209,7 +210,7 @@ export const en: Dictionary = {
     examplesTitle: "Examples made with Genjutsu",
     video: "Source clip",
     videoHint: "MP4, MOV or WebM · {max} s kept · one clearly visible person",
-    segment: "Part kept ({max} s)",
+    segment: "Pick the part ({max} s)",
     target: "Who to replace?",
     targetPlaceholder: "Who does this character replace? One person, e.g. the fighter in green shorts",
     image: "Character",
@@ -233,6 +234,8 @@ export const en: Dictionary = {
     launch: "Generate",
     costFrom: "From {cost} {credits}",
     notEnoughCredits: "Not enough credits",
+    pricingCta: "Pick a pack to generate",
+    restoring: "Restoring your project…",
     longClipWarning: "Videos over 15s are split into segments — some may fail.",
     methodStandard: "Standard",
     methodStandardHint: "One Genjutsu pass · {rate} credits/s · fastest",

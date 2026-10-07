@@ -101,7 +101,7 @@ export const fr = {
       "720p et 1080p",
       "Son d'origine gardé",
       "Coupes respectées",
-      "Jusqu'à 90 s",
+      "Jusqu'à 30 s",
     ],
     featuresTitle: "Un seul moteur. Le meilleur.",
     featureList: [
@@ -130,7 +130,7 @@ export const fr = {
     steps: [
       {
         title: "Tu déposes ton clip",
-        text: "Une vidéo filmée, jusqu'à 90 s : une danse, un sketch, un combat, une scène culte. La personne à remplacer doit être bien visible.",
+        text: "Une vidéo filmée : une danse, un sketch, un combat, une scène culte. 30 s au plus ; plus longue, tu choisis le passage. La personne à remplacer doit être bien visible.",
       },
       {
         title: "Tu ajoutes ton personnage",
@@ -161,6 +161,7 @@ export const fr = {
     submitSignIn: "Se connecter",
     submitSignUp: "Créer mon compte",
     freeCredits: "3 crédits offerts à l'inscription",
+    fromStudio: "Ton projet est gardé : connecte-toi pour lancer la génération.",
     invalidLink: "Ce lien de confirmation est invalide ou a expiré.",
     google: "Continuer avec Google",
     or: "ou",
@@ -211,7 +212,7 @@ export const fr = {
     examplesTitle: "Exemples réalisés avec Genjutsu",
     video: "Clip à reprendre",
     videoHint: "MP4, MOV ou WebM · {max} s gardées · une personne bien visible",
-    segment: "Passage gardé ({max} s)",
+    segment: "Choisis le passage ({max} s)",
     target: "Qui remplacer ?",
     targetPlaceholder: "Qui ce personnage remplace ? Une seule personne, ex. : le combattant au short vert",
     image: "Personnage",
@@ -235,6 +236,8 @@ export const fr = {
     launch: "Générer",
     costFrom: "Dès {cost} {credits}",
     notEnoughCredits: "Crédits insuffisants",
+    pricingCta: "Choisir un pack pour générer",
+    restoring: "Récupération de ton projet…",
     longClipWarning: "Les vidéos de plus de 15 s sont découpées en plusieurs segments — certains peuvent échouer.",
     methodStandard: "Standard",
     methodStandardHint: "Une passe Genjutsu · {rate} crédits/s · le plus rapide",

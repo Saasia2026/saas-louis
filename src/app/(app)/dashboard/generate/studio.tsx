@@ -4,6 +4,7 @@ import { Coins, Download, Move, RefreshCw, Replace, WandSparkles, X } from "luci
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fmt, plural } from "@/i18n/config";
+import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/i18n/provider";
 import {
   SWAP_ENGINES,
@@ -18,9 +19,10 @@ import {
 import type { SwapPreset } from "@/lib/presets";
 import type { SwapHistoryItem } from "../swap-history";
 import { getGeneration, type GenerationView } from "./actions";
+import { clearDraft, loadDraft, saveDraft, type DraftFile } from "./draft";
 import { HistoryEmpty, HistoryList } from "./history-list";
 import { cancelSwap, redoSwapShot, startSwap } from "./swap-actions";
-import { SwapInput, clampedStart, type SwapCharacter, type SwapFile } from "./swap-input";
+import { SwapInput, clampedStart, uploadSwapFile, type SwapCharacter, type SwapFile } from "./swap-input";
 
 const POLL_INTERVAL_MS = 5_000;
 // Durée annoncée d'un rendu. Les séquences se rendent en même temps (quelques
@@ -66,7 +68,9 @@ export function Studio({
   history = [],
   resume,
 }: {
-  userId: string;
+  // null : visiteur sans compte. Il prépare tout ; au lancement, son projet
+  // est gardé dans le navigateur et il passe par la connexion (voir draft.ts).
+  userId: string | null;
   credits: number;
   // Recharge automatique activée : un solde trop bas ne bloque pas le
   // lancement, la carte est débitée au besoin (voir startSwap).
@@ -82,6 +86,10 @@ export function Studio({
 }) {
   const router = useRouter();
   const { t, locale } = useI18n();
+  const guest = !userId;
+  const [supabase] = useState(createClient);
+  // Projet repris après connexion : ses fichiers partent dans le stockage.
+  const [restoring, setRestoring] = useState(false);
 
   // Clip filmé et image de chaque personnage, déjà déposés.
   const [video, setVideo] = useState<SwapFile | null>(null);
@@ -161,14 +169,10 @@ export function Studio({
   const gate = durationKnown
     ? cost
     : swapCredits(1, engine, undefined, characters.length, hd, false, fidelity);
-  const canSend =
-    available &&
-    !busy &&
-    Boolean(video) &&
-    imagesReady &&
-    targetsReady &&
-    decorReady &&
-    (credits >= gate || autoRecharge);
+  const ready = Boolean(video) && imagesReady && targetsReady && decorReady;
+  // Connecté mais à court de crédits : le bouton mène aux offres.
+  const short = !guest && ready && credits < gate && !autoRecharge;
+  const canSend = available && !busy && !restoring && ready && (guest || !short);
 
   // Lancement, fin ou erreur : le rendu suivi revient à l'écran (sur mobile,
   // il est sous le formulaire).
@@ -216,6 +220,86 @@ export function Studio({
     };
   }, [active, resume, router, t]);
 
+  // Projet courant gardé dans le navigateur, pour la connexion ou le détour
+  // par la page Crédits.
+  async function keepDraft() {
+    const draftFile = (f: SwapFile): DraftFile => ({
+      file: f.file!,
+      path: f.path || undefined,
+      seconds: f.seconds,
+      start: f.start,
+    });
+    if (!video?.file || characters.some((c) => !c.image?.file)) return;
+    await saveDraft({
+      video: draftFile(video),
+      characters: characters.map((c) => ({
+        image: draftFile(c.image!),
+        extras: c.extras.filter((f) => f.file).map(draftFile),
+        target: c.target,
+      })),
+      decor: decorPhoto?.file ? draftFile(decorPhoto) : null,
+      mode,
+      hd,
+      fidelity,
+      instructions,
+      length,
+    });
+  }
+
+  // Projet préparé avant la connexion (ou avant un achat de crédits) : il
+  // revient tel quel, ses fichiers envoyés au passage.
+  useEffect(() => {
+    if (!userId || resume) return;
+    let cancelled = false;
+    (async () => {
+      const draft = await loadDraft();
+      if (!draft || cancelled) return;
+      setRestoring(true);
+      try {
+        const restore = async (d: DraftFile): Promise<SwapFile | null> => {
+          const path = d.path ?? (await uploadSwapFile(supabase, userId, d.file));
+          if (!path) return null;
+          return { path, previewUrl: URL.createObjectURL(d.file), seconds: d.seconds, start: d.start, file: d.file };
+        };
+        const restored = await restore(draft.video);
+        const chars = await Promise.all(
+          draft.characters.map(async (c) => ({
+            image: await restore(c.image),
+            extras: (await Promise.all(c.extras.map(restore))).filter((f): f is SwapFile => Boolean(f)),
+            target: c.target,
+          })),
+        );
+        const decor = draft.decor ? await restore(draft.decor) : null;
+        if (cancelled || !restored || chars.some((c) => !c.image)) return;
+        setVideo(restored);
+        setCharacters(chars);
+        setDecorPhoto(decor);
+        setMode(draft.mode);
+        setHd(draft.hd);
+        setFidelity(draft.fidelity);
+        setInstructions(draft.instructions);
+        setLength(draft.length);
+        // Fichiers désormais dans le stockage : un prochain retour ne les
+        // renvoie pas.
+        await saveDraft({
+          ...draft,
+          video: { ...draft.video, path: restored.path },
+          characters: draft.characters.map((c, i) => ({
+            ...c,
+            image: { ...c.image, path: chars[i].image!.path },
+            extras: c.extras.map((e, j) => ({ ...e, path: chars[i].extras[j]?.path })),
+          })),
+          decor: draft.decor && decor ? { ...draft.decor, path: decor.path } : null,
+        });
+      } finally {
+        if (!cancelled) setRestoring(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, resume, supabase]);
+
   function choosePreset(p: StudioPreset) {
     setPreset(p);
     setVideo({ path: p.path, previewUrl: p.previewUrl, seconds: p.seconds, start: 0 });
@@ -232,6 +316,12 @@ export function Studio({
 
   async function launch() {
     if (!canSend || !video) return;
+    // Visiteur : le projet est gardé, la connexion d'abord.
+    if (guest) {
+      await keepDraft();
+      router.push(`/login?next=${encodeURIComponent("/dashboard/generate")}&from=studio`);
+      return;
+    }
     setPhase({
       kind: "generating",
       job: { aspectRatio: preset?.aspectRatio ?? "9:16", durationSeconds: seconds, vessel: fidelity },
@@ -257,6 +347,7 @@ export function Studio({
       setPhase({ kind: "error", message: res.error });
       return;
     }
+    clearDraft();
     const job: Job = {
       aspectRatio: res.data.aspectRatio,
       durationSeconds: res.data.durationSeconds,
@@ -460,7 +551,14 @@ export function Studio({
           <div className="flex flex-wrap gap-1 pt-1">
             {[
               ...lengths.map((l) => ({ value: l as number | null, label: `${l} s` })),
-              { value: null, label: fmt(t.studio.lengthAll, { seconds: wholeSeconds }) },
+              {
+                value: null,
+                // Clip plus long que le maximum : c'est un passage, pas le clip entier.
+                label:
+                  durationKnown && video.seconds! > engineMax
+                    ? `${engineMax} s`
+                    : fmt(t.studio.lengthAll, { seconds: wholeSeconds }),
+              },
             ].map((o) => {
               const on = o.value === null ? !length || length >= engineMax : length === o.value;
               return (
@@ -484,30 +582,45 @@ export function Studio({
       </div>
 
       <div className="border-t border-line px-4 pt-3 pb-4">
-        {video && imagesReady && (!targetsReady || (credits < gate && !autoRecharge)) && (
+        {restoring && <p className="mb-3 text-xs text-muted">{t.studio.restoring}</p>}
+        {video && imagesReady && (!targetsReady || short) && (
           <p className={`mb-3 text-xs ${targetsReady ? "text-danger" : "text-warning"}`}>
             {!targetsReady ? t.studio.targetsMissing : t.studio.notEnoughCredits}
           </p>
         )}
         {durationKnown && seconds > 15 && <p className="mb-3 text-xs text-warning">{t.studio.longClipWarning}</p>}
         {/* Le prix est dans le bouton : rien d'autre à lire avant de lancer. */}
-        <button
-          type="submit"
-          disabled={!canSend}
-          title={
-            video ? fmt(t.studio.costFrom, { cost, credits: plural(cost, t.common.credit, t.common.credits) }) : undefined
-          }
-          className="btn btn-accent w-full py-3.5 text-base"
-        >
-          <WandSparkles />
-          {t.studio.launch}
-          {video && (
-            <span className="ml-1 inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-sm tabular-nums">
-              <Coins className="size-3.5" />
-              {costLabel}
-            </span>
-          )}
-        </button>
+        {short ? (
+          <button
+            type="button"
+            onClick={async () => {
+              await keepDraft();
+              router.push("/dashboard/credits");
+            }}
+            className="btn btn-hot w-full py-3.5 text-base"
+          >
+            <Coins />
+            {t.studio.pricingCta}
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={!canSend}
+            title={
+              video ? fmt(t.studio.costFrom, { cost, credits: plural(cost, t.common.credit, t.common.credits) }) : undefined
+            }
+            className="btn btn-accent w-full py-3.5 text-base"
+          >
+            <WandSparkles />
+            {t.studio.launch}
+            {video && (
+              <span className="ml-1 inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-sm tabular-nums">
+                <Coins className="size-3.5" />
+                {costLabel}
+              </span>
+            )}
+          </button>
+        )}
       </div>
     </form>
   );
@@ -520,7 +633,7 @@ export function Studio({
   // cours puis l'historique à droite. Sur mobile, l'une sous l'autre.
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
-      <aside className="relative z-20 animate-fade-up lg:sticky lg:top-24">
+      <aside className="relative z-20 animate-fade-up lg:sticky lg:top-24 lg:-mx-3 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:px-3 lg:pb-3">
         <h1 className="mb-4 px-1 font-headline text-4xl leading-none">{t.studio.createTitle}</h1>
         {composer}
       </aside>

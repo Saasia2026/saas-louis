@@ -13,7 +13,7 @@ export const SWAP_INPUTS_BUCKET = "swap-inputs";
 // - genjutsu (Higgsfield Genjutsu Object Swap) : 0,681 $ la seconde en 720p.
 //   Il suit les coupes tout seul ; le passage est rendu en séquences de
 //   quelques secondes, toutes en même temps (voir GENJUTSU_BLOCK_SECONDS),
-//   sans nouvel essai automatique : 7 crédits la seconde, 90 s au plus ;
+//   sans nouvel essai automatique : 7 crédits la seconde, 30 s au plus ;
 // - kling (Kling O3 Pro Edit) : 0,168 $ la seconde, plus l'image clé de
 //   chaque plan (~0,15 $) et les plans refaits après contrôle : 2,5 crédits
 //   la seconde, 15 s au plus ;
@@ -22,7 +22,7 @@ export const SWAP_INPUTS_BUCKET = "swap-inputs";
 //   1 crédit la seconde, 90 s au plus, sans fiche personnage.
 // La fiche personnage (deux images Nano Banana Pro, ~0,30 $) : 3 crédits.
 export const SWAP_ENGINES = {
-  genjutsu: { creditsPerSecond: 7, maxSeconds: 90 },
+  genjutsu: { creditsPerSecond: 7, maxSeconds: 30 },
   kling: { creditsPerSecond: 2.5, maxSeconds: 15 },
   magichour: { creditsPerSecond: 1, maxSeconds: 90 },
 } as const;

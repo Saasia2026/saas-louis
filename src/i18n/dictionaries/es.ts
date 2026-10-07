@@ -99,7 +99,7 @@ export const es: Dictionary = {
       "720p y 1080p",
       "Sonido original conservado",
       "Cortes respetados",
-      "Hasta 90 s",
+      "Hasta 30 s",
     ],
     featuresTitle: "Un solo motor. El mejor.",
     featureList: [
@@ -128,7 +128,7 @@ export const es: Dictionary = {
     steps: [
       {
         title: "Subes tu clip",
-        text: "Un vídeo grabado, de hasta 90 s: un baile, un sketch, una pelea, una escena mítica. La persona a reemplazar debe verse bien.",
+        text: "Un vídeo grabado: un baile, un sketch, una pelea, una escena mítica. 30 s como máximo; si es más largo, eliges el fragmento. La persona a reemplazar debe verse bien.",
       },
       {
         title: "Añades tu personaje",
@@ -159,6 +159,7 @@ export const es: Dictionary = {
     submitSignIn: "Iniciar sesión",
     submitSignUp: "Crear mi cuenta",
     freeCredits: "3 créditos gratis al registrarte",
+    fromStudio: "Tu proyecto está guardado: inicia sesión para lanzar la generación.",
     invalidLink: "Este enlace de confirmación no es válido o ha caducado.",
     google: "Continuar con Google",
     or: "o",
@@ -209,7 +210,7 @@ export const es: Dictionary = {
     examplesTitle: "Ejemplos hechos con Genjutsu",
     video: "Clip de origen",
     videoHint: "MP4, MOV o WebM · se usan {max} s · una persona bien visible",
-    segment: "Fragmento usado ({max} s)",
+    segment: "Elige el fragmento ({max} s)",
     target: "¿A quién reemplazar?",
     targetPlaceholder: "¿A quién reemplaza este personaje? Una sola persona, p. ej.: el luchador de pantalón verde",
     image: "Personaje",
@@ -233,6 +234,8 @@ export const es: Dictionary = {
     launch: "Generar",
     costFrom: "Desde {cost} {credits}",
     notEnoughCredits: "Créditos insuficientes",
+    pricingCta: "Elige un pack para generar",
+    restoring: "Recuperando tu proyecto…",
     longClipWarning: "Los videos de más de 15 s se dividen en segmentos — algunos pueden fallar.",
     methodStandard: "Estándar",
     methodStandardHint: "Una pasada de Genjutsu · {rate} créditos/s · lo más rápido",

@@ -14,7 +14,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const { next, error } = await searchParams;
+  const { next, error, from } = await searchParams;
+  // Arrivée depuis le studio, projet prêt : on le dit, et on propose
+  // d'abord l'inscription.
+  const fromStudio = from === "studio";
   const t = await getDictionary();
 
   return (
@@ -33,10 +36,11 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           {t.login.welcome}
         </h1>
         <p className="mt-2 mb-8 animate-fade-up text-center text-sm text-muted [animation-delay:120ms]">
-          {t.login.tagline}
+          {fromStudio ? t.login.fromStudio : t.login.tagline}
         </p>
         <AuthForm
           next={typeof next === "string" ? next : undefined}
+          initialMode={fromStudio ? "signup" : "signin"}
           initialError={
             error === "lien_invalide"
               ? t.login.invalidLink

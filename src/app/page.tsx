@@ -44,6 +44,8 @@ export default async function Home() {
   const { data } = await supabase.auth.getClaims();
   const loggedIn = Boolean(data?.claims);
   const start = loggedIn ? "/dashboard/generate" : "/login";
+  // Le studio s'ouvre sans compte : la connexion vient au lancement.
+  const studio = loggedIn ? "/dashboard/generate" : "/studio";
   const L = t.landing;
   const P = t.creditsPage;
   const price = (amount: number) => formatPrice(amount, INTL_LOCALES[locale]);
@@ -82,7 +84,7 @@ export default async function Home() {
             </a>
             <ThemeToggle />
             <LanguageSwitcher />
-            <Link href={start} className="btn btn-accent ml-0.5 shrink-0 px-3 text-[0.8125rem] sm:ml-1 sm:px-5 sm:text-sm">
+            <Link href={studio} className="btn btn-accent ml-0.5 shrink-0 px-3 text-[0.8125rem] sm:ml-1 sm:px-5 sm:text-sm">
               {loggedIn ? L.studioShort : L.start}
               <ArrowRight className="hidden sm:inline-flex" />
             </Link>
@@ -108,7 +110,7 @@ export default async function Home() {
                 {L.heroText}
               </p>
               <div className="mt-8 flex animate-fade-up flex-col justify-center gap-3 [animation-delay:240ms] sm:flex-row sm:flex-wrap lg:justify-start">
-                <Link href={start} className="btn btn-accent w-full px-7 py-4 text-base sm:w-auto sm:text-lg">
+                <Link href={studio} className="btn btn-accent w-full px-7 py-4 text-base sm:w-auto sm:text-lg">
                   <WandSparkles />
                   {L.ctaFirst}
                 </Link>
@@ -331,7 +333,7 @@ export default async function Home() {
               <span className="text-shine">{L.finalTitleBottom}</span>
             </h2>
             <Magnetic>
-              <Link href={start} className="btn btn-accent mt-10 px-10 py-5 text-lg">
+              <Link href={studio} className="btn btn-accent mt-10 px-10 py-5 text-lg">
                 {loggedIn ? L.openStudio : L.startFree}
                 <ArrowRight />
               </Link>

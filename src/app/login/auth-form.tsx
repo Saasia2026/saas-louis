@@ -15,11 +15,13 @@ type Mode = "signin" | "signup";
 export function AuthForm({
   next,
   initialError,
+  initialMode = "signin",
 }: {
   next?: string;
   initialError?: string;
+  initialMode?: Mode;
 }) {
-  const [mode, setMode] = useState<Mode>("signin");
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [forgot, setForgot] = useState(false);
   const { t } = useI18n();
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Film, Mountain, Plus, UserRound, X } from "lucide-react";
-import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -12,11 +12,33 @@ import {
 } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/client";
 
+type Supabase = ReturnType<typeof createClient>;
+
 // Fichier déposé dans swap-inputs. `seconds` : durée lue par le navigateur,
 // pour afficher le coût (le serveur la remesure) ; NaN s'il ne sait pas la
 // lire (certains .mov). `start` : début du passage gardé d'un clip plus
 // long que la durée du moteur (`maxSeconds`), découpé par le serveur.
-export type SwapFile = { path: string; previewUrl: string; seconds?: number; start?: number };
+// `path` vide : visiteur sans compte, le fichier reste dans le navigateur
+// (`file`) jusqu'à sa connexion.
+export type SwapFile = { path: string; previewUrl: string; seconds?: number; start?: number; file?: File };
+
+// Envoie un fichier dans swap-inputs, sous le dossier de l'utilisateur ;
+// null si l'envoi échoue.
+export async function uploadSwapFile(supabase: Supabase, userId: string, file: File) {
+  const path = `${userId}/${crypto.randomUUID()}.${file.name.split(".").pop() ?? "bin"}`;
+  const { error } = await supabase.storage.from(SWAP_INPUTS_BUCKET).upload(path, file, { contentType: file.type });
+  return error ? null : path;
+}
+
+export function readDuration(url: string) {
+  return new Promise<number>((resolve) => {
+    const el = document.createElement("video");
+    el.preload = "metadata";
+    el.onloadedmetadata = () => resolve(el.duration);
+    el.onerror = () => resolve(NaN);
+    el.src = url;
+  });
+}
 
 // Un personnage, ses autres photos (Qualité max : visage, profil…) et qui il
 // remplace dans le clip (facultatif s'il est seul).
@@ -52,7 +74,8 @@ export function SwapInput({
   showInstructions = false,
   presetPeople,
 }: {
-  userId: string;
+  // null : visiteur sans compte, rien n'est envoyé avant sa connexion.
+  userId: string | null;
   video: SwapFile | null;
   onVideo: (file: SwapFile | null) => void;
   // Changement de décor : photo du lieu, facultative.
@@ -100,7 +123,8 @@ export function SwapInput({
     onCharacters((list) => list.filter((_, i) => i !== index));
   }
 
-  // Dépose un fichier dans swap-inputs ; null si refusé ou raté (erreur affichée).
+  // Dépose un fichier dans swap-inputs (ou le garde dans le navigateur pour
+  // un visiteur) ; null si refusé ou raté (erreur affichée).
   async function upload(slot: string | number, kind: "video" | "image", file: File | undefined) {
     if (!file) return null;
     setError(null);
@@ -112,21 +136,15 @@ export function SwapInput({
     const previewUrl = URL.createObjectURL(file);
     const [seconds, stored] = await Promise.all([
       kind === "video" ? readDuration(previewUrl) : undefined,
-      (async () => {
-        const path = `${userId}/${crypto.randomUUID()}.${file.name.split(".").pop() ?? "bin"}`;
-        const { error } = await supabase.storage
-          .from(SWAP_INPUTS_BUCKET)
-          .upload(path, file, { contentType: file.type });
-        return error ? null : path;
-      })(),
+      userId ? uploadSwapFile(supabase, userId, file) : "",
     ]);
     setUploading(null);
-    if (!stored) {
+    if (stored === null) {
       URL.revokeObjectURL(previewUrl);
       setError(t.generateErrors.swapUpload);
       return null;
     }
-    return { path: stored, previewUrl, seconds, start: 0 } satisfies SwapFile;
+    return { path: stored, previewUrl, seconds, start: 0, file } satisfies SwapFile;
   }
 
   async function pickExtra(index: number, file: File | undefined) {
@@ -443,15 +461,6 @@ export function SwapInput({
   );
 }
 
-function readDuration(url: string) {
-  return new Promise<number>((resolve) => {
-    const el = document.createElement("video");
-    el.preload = "metadata";
-    el.onloadedmetadata = () => resolve(el.duration);
-    el.onerror = () => resolve(NaN);
-    el.src = url;
-  });
-}
 
 // Aperçu du clip, en boucle sur le passage gardé.
 function SegmentPreview({ file, maxSeconds }: { file: SwapFile; maxSeconds: number }) {
@@ -481,7 +490,9 @@ function SegmentPreview({ file, maxSeconds }: { file: SwapFile; maxSeconds: numb
   );
 }
 
-// Clip trop long : le créateur choisit le passage de `maxSeconds` gardé.
+// Clip trop long : le créateur choisit le passage de `maxSeconds` gardé, en
+// faisant glisser une fenêtre sur la frise du clip (le curseur natif, masqué,
+// sert au clavier).
 function SegmentPicker({
   video,
   maxSeconds,
@@ -495,27 +506,106 @@ function SegmentPicker({
   const total = video.seconds ?? 0;
   const max = Math.max(0, Math.floor(total - maxSeconds));
   const start = clampedStart(video, maxSeconds);
+  const track = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const frames = useFilmstrip(video.previewUrl, total);
+
+  // La fenêtre se centre sous le doigt.
+  const pick = (clientX: number) => {
+    const box = track.current?.getBoundingClientRect();
+    if (!box) return;
+    const at = ((clientX - box.left) / box.width) * total - maxSeconds / 2;
+    onChange(Math.round(Math.min(Math.max(at, 0), max)));
+  };
+
   return (
-    <label className="mt-3 block">
-      <span className="flex items-baseline justify-between gap-3 text-xs">
-        <span className="font-medium text-muted">
-          {fmt(t.studio.segment, { max: maxSeconds })}
-        </span>
+    <div className="mt-3">
+      <p className="flex items-baseline justify-between gap-3 text-xs">
+        <span className="font-medium text-muted">{fmt(t.studio.segment, { max: maxSeconds })}</span>
         <span className="text-faint tabular-nums">
           {clock(start)} → {clock(start + maxSeconds)} / {clock(total)}
         </span>
-      </span>
-      <input
-        type="range"
-        min={0}
-        max={max}
-        step={1}
-        value={start}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-2 w-full accent-[var(--accent)]"
-      />
-    </label>
+      </p>
+      <div
+        ref={track}
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          setDragging(true);
+          pick(e.clientX);
+        }}
+        onPointerMove={(e) => dragging && pick(e.clientX)}
+        onPointerUp={() => setDragging(false)}
+        onPointerCancel={() => setDragging(false)}
+        className={`relative mt-2 h-12 touch-none overflow-hidden rounded-lg border border-line bg-surface-2 select-none ${
+          dragging ? "cursor-grabbing" : "cursor-grab"
+        }`}
+      >
+        <div className="flex h-full opacity-60">
+          {frames.map((src, i) => (
+            // Images tirées du clip local (blob:) : pas d'optimisation Next.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={i} src={src} alt="" className="h-full min-w-0 flex-1 object-cover" />
+          ))}
+        </div>
+        <span
+          aria-hidden
+          className="absolute inset-y-0 rounded-md border-2 border-accent bg-accent/15 shadow-[0_0_0_9999px_rgb(0_0_0/0.35)] transition-[left] duration-75"
+          style={{ left: `${(start / total) * 100}%`, width: `${(maxSeconds / total) * 100}%` }}
+        />
+        <input
+          type="range"
+          min={0}
+          max={max}
+          step={1}
+          value={start}
+          onChange={(e) => onChange(Number(e.target.value))}
+          aria-label={fmt(t.studio.segment, { max: maxSeconds })}
+          className="sr-only"
+        />
+      </div>
+    </div>
   );
+}
+
+// Huit images réparties sur le clip, tirées localement pour la frise.
+const FILMSTRIP_FRAMES = 8;
+function useFilmstrip(url: string, total: number) {
+  const [frames, setFrames] = useState<string[]>([]);
+  useEffect(() => {
+    if (!Number.isFinite(total) || total <= 0) return;
+    let cancelled = false;
+    const el = document.createElement("video");
+    el.muted = true;
+    el.preload = "auto";
+    el.src = url;
+    const canvas = document.createElement("canvas");
+    const seek = (time: number) =>
+      new Promise<void>((resolve) => {
+        el.onseeked = () => resolve();
+        el.currentTime = time;
+      });
+    (async () => {
+      await new Promise<void>((resolve) => {
+        el.onloadeddata = () => resolve();
+        el.onerror = () => resolve();
+      });
+      const shots: string[] = [];
+      for (let i = 0; i < FILMSTRIP_FRAMES && !cancelled; i++) {
+        await seek(((i + 0.5) / FILMSTRIP_FRAMES) * total);
+        canvas.height = 96;
+        canvas.width = Math.max(1, Math.round((el.videoWidth / Math.max(1, el.videoHeight)) * 96));
+        canvas.getContext("2d")?.drawImage(el, 0, 0, canvas.width, canvas.height);
+        shots.push(canvas.toDataURL("image/jpeg", 0.6));
+      }
+      if (!cancelled) setFrames(shots);
+    })();
+    return () => {
+      cancelled = true;
+      el.removeAttribute("src");
+      el.load();
+    };
+  }, [url, total]);
+  return frames;
 }
 
 function clock(seconds: number) {
