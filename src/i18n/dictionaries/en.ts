@@ -204,9 +204,8 @@ export const en: Dictionary = {
   },
 
   studio: {
-    createTitle: "Create a video",
+    createTitle: "Create video",
     poweredByLabel: "Powered by",
-    historyTitle: "My creations",
     historyEmpty: "Your creations will appear here. Drop in a clip and a character to start.",
     examplesTitle: "Examples made with Genjutsu",
     video: "Source clip",

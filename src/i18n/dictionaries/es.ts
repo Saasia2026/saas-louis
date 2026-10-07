@@ -206,7 +206,6 @@ export const es: Dictionary = {
   studio: {
     createTitle: "Crear un vídeo",
     poweredByLabel: "Con la tecnología de",
-    historyTitle: "Mis creaciones",
     historyEmpty: "Tus creaciones aparecerán aquí. Sube un clip y un personaje para empezar.",
     examplesTitle: "Ejemplos hechos con Genjutsu",
     video: "Clip de origen",

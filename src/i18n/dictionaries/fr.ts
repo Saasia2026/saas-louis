@@ -208,7 +208,6 @@ export const fr = {
   studio: {
     createTitle: "Créer une vidéo",
     poweredByLabel: "Propulsé par",
-    historyTitle: "Mes créations",
     historyEmpty: "Tes créations apparaîtront ici. Dépose un clip et un personnage pour commencer.",
     examplesTitle: "Exemples réalisés avec Genjutsu",
     video: "Clip à reprendre",

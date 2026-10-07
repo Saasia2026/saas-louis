@@ -404,6 +404,7 @@ export function Studio({
       className="composer overflow-hidden"
     >
       <div className="px-4 pt-4">
+        <h1 className="mb-3 px-1 text-base font-semibold">{t.studio.createTitle}</h1>
         <div role="tablist" className="relative grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface-2/60 p-1">
           {/* Fond de l'onglet actif : il glisse d'un onglet à l'autre. */}
           <span
@@ -635,13 +636,11 @@ export function Studio({
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
       <aside className="relative z-20 animate-fade-up lg:sticky lg:top-24 lg:-mx-3 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:px-3 lg:pb-3">
-        <h1 className="mb-4 px-1 font-headline text-4xl leading-none">{t.studio.createTitle}</h1>
         {composer}
       </aside>
 
       <section ref={resultEnd} className="min-w-0 scroll-mt-24 space-y-3">
         <GenjutsuBanner />
-        <h2 className="px-1 pt-3 font-headline text-4xl leading-none">{t.studio.historyTitle}</h2>
         {started && (
           <Result
             phase={phase}
