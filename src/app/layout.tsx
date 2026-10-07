@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Inter } from "next/font/google";
+import { Archivo, Geist_Mono, Inter } from "next/font/google";
 import { cookies } from "next/headers";
 import { I18nProvider } from "@/i18n/provider";
 import { siteUrl } from "@/lib/site";
@@ -9,6 +9,12 @@ import { isTheme, THEME_COOKIE } from "./theme";
 
 const inter = Inter({
   variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+// Chiffres, unités et étiquettes techniques du studio.
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
@@ -66,7 +72,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       lang={locale}
       data-theme={isTheme(theme) ? theme : undefined}
       suppressHydrationWarning
-      className={`${inter.variable} ${archivo.variable} h-full antialiased`}
+      className={`${inter.variable} ${archivo.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">
         <I18nProvider locale={locale}>{children}</I18nProvider>

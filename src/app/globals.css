@@ -159,6 +159,7 @@
   --color-danger: var(--danger);
   --font-sans: var(--font-inter);
   --font-display: var(--font-archivo);
+  --font-mono: var(--font-geist-mono);
 
   --animate-fade-up: fade-up 0.7s var(--ease-out) both;
   --animate-aurora: aurora 18s ease-in-out infinite alternate;
@@ -703,6 +704,73 @@ body {
   &:focus-within {
     border-color: var(--accent);
     box-shadow: var(--neon);
+  }
+}
+
+/* Étiquette technique du studio : mono, petites capitales espacées. */
+@utility spec {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  line-height: 1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Coins de visée d'une zone de dépôt (quatre spans .viewfinder > i) : ils
+   s'écartent et prennent l'accent au survol, en transformation seulement. */
+@utility viewfinder {
+  position: absolute;
+  inset: 0.5rem;
+  pointer-events: none;
+  & > i {
+    position: absolute;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-color: var(--line-strong);
+    transition:
+      border-color 200ms,
+      translate 250ms var(--ease-out);
+  }
+  & > i:nth-child(1) {
+    top: 0;
+    left: 0;
+    border-top-width: 1.5px;
+    border-left-width: 1.5px;
+  }
+  & > i:nth-child(2) {
+    top: 0;
+    right: 0;
+    border-top-width: 1.5px;
+    border-right-width: 1.5px;
+  }
+  & > i:nth-child(3) {
+    bottom: 0;
+    left: 0;
+    border-bottom-width: 1.5px;
+    border-left-width: 1.5px;
+  }
+  & > i:nth-child(4) {
+    bottom: 0;
+    right: 0;
+    border-bottom-width: 1.5px;
+    border-right-width: 1.5px;
+  }
+  :where(.group):hover & > i {
+    border-color: var(--accent);
+  }
+  :where(.group):hover & > i:nth-child(1) {
+    translate: -3px -3px;
+  }
+  :where(.group):hover & > i:nth-child(2) {
+    translate: 3px -3px;
+  }
+  :where(.group):hover & > i:nth-child(3) {
+    translate: -3px 3px;
+  }
+  :where(.group):hover & > i:nth-child(4) {
+    translate: 3px 3px;
   }
 }
 

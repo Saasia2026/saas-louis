@@ -1,7 +1,7 @@
 "use client";
 
-import { Film, Mountain, Plus, Sparkles, UserRound, X } from "lucide-react";
-import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { Check, Film, Mountain, Plus, UserRound, X } from "lucide-react";
+import { useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -51,7 +51,12 @@ export function SwapInput({
   onInstructions,
   showInstructions = false,
   presetPeople,
+  sourcesHeader,
+  promptHeader,
 }: {
+  // Intitulés des deux blocs (fichiers, puis consigne).
+  sourcesHeader?: ReactNode;
+  promptHeader?: ReactNode;
   userId: string;
   video: SwapFile | null;
   onVideo: (file: SwapFile | null) => void;
@@ -170,10 +175,18 @@ export function SwapInput({
       <label
         key={slot}
         title={hint}
-        className={`group relative flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed text-center transition-colors ${
-          file ? "border-line bg-black" : "border-line-strong bg-surface-2/60 hover:border-accent/60 hover:bg-surface-2"
+        className={`group relative flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border text-center transition-colors ${
+          file ? "border-line-strong bg-black" : "dot-bg border-line bg-surface-2/50 hover:bg-surface-2"
         } ${compact ? "h-24" : "h-36"}`}
       >
+        {!file && (
+          <span aria-hidden className="viewfinder">
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
+        )}
         <input
           type="file"
           accept={(kind === "video" ? SWAP_VIDEO_TYPES : SWAP_IMAGE_TYPES).join(",")}
@@ -193,20 +206,25 @@ export function SwapInput({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={file.previewUrl} alt="" className="absolute inset-0 size-full object-contain" />
             )}
+            {/* Fichier pris : coche, et pour le clip sa durée, en mono. */}
+            <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-md bg-black/70 px-1.5 py-0.5 font-mono text-[0.625rem] text-white tabular-nums">
+              <Check className="size-3 text-success" />
+              {kind === "video" && Number.isFinite(file.seconds) ? clock(file.seconds!) : "OK"}
+            </span>
             <span className="absolute right-2 bottom-2 rounded-full bg-black/70 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
               {t.studio.change}
             </span>
           </>
         ) : (
           <>
-            <span className="flex size-10 items-center justify-center rounded-xl border border-line bg-surface-3 text-muted transition-[transform,color,border-color] duration-200 group-hover:-translate-y-0.5 group-hover:border-accent/50 group-hover:text-accent-light">
+            <span className="relative flex size-10 items-center justify-center rounded-lg border border-line bg-surface text-muted transition-[translate,color,border-color] duration-200 group-hover:-translate-y-0.5 group-hover:border-accent/50 group-hover:text-accent-light">
               <Icon className="size-5" />
             </span>
-            <span className="text-sm font-semibold">
+            <span className="relative text-sm font-semibold">
               {kind === "video" ? t.studio.video : t.studio.image}
             </span>
-            <span className="text-[0.6875rem] text-faint">
-              {kind === "video" ? "MP4 · MOV · WebM" : "JPG · PNG · WebP"}
+            <span className="relative font-mono text-[0.625rem] tracking-[0.1em] text-faint uppercase">
+              {kind === "video" ? "MP4 · MOV · WEBM" : "JPG · PNG · WEBP"}
             </span>
           </>
         )}
@@ -246,6 +264,7 @@ export function SwapInput({
 
   return (
     <div className="px-4 pt-4 pb-2">
+      {sourcesHeader}
       <div className="grid grid-cols-2 gap-3">
         {tile("video")}
         {characters.map((_, i) => tile(i))}
@@ -411,19 +430,6 @@ export function SwapInput({
           </div>
         </div>
       )}
-      {showInstructions && (
-        <label className="mt-3 flex items-center gap-2 rounded-full border border-line bg-surface-2/60 px-3 focus-within:border-accent/60">
-          <Sparkles className="size-4 shrink-0 text-muted" />
-          <input
-            value={instructions}
-            onChange={(e) => onInstructions?.(e.target.value)}
-            maxLength={500}
-            placeholder={t.studio.instructionsPlaceholder}
-            aria-label={t.studio.instructions}
-            className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-faint"
-          />
-        </label>
-      )}
       {video && (video.seconds ?? 0) > maxSeconds + 0.5 && (
         <SegmentPicker
           video={video}
@@ -432,6 +438,26 @@ export function SwapInput({
         />
       )}
       {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      {showInstructions && (
+        <div className="mt-5">
+          {promptHeader}
+          {/* Ligne de commande : invite mono, compteur de caractères. */}
+          <label className="flex items-center gap-2.5 rounded-lg border border-line bg-surface-2/60 px-3 transition-colors focus-within:border-accent/60 focus-within:bg-surface">
+            <span aria-hidden className="font-mono text-sm font-semibold text-accent-light">
+              ›
+            </span>
+            <input
+              value={instructions}
+              onChange={(e) => onInstructions?.(e.target.value)}
+              maxLength={500}
+              placeholder={t.studio.instructionsPlaceholder}
+              aria-label={t.studio.instructions}
+              className="w-full bg-transparent py-2.5 text-sm outline-none placeholder:text-faint"
+            />
+            <span className="shrink-0 font-mono text-[0.625rem] text-faint tabular-nums">{instructions.length}/500</span>
+          </label>
+        </div>
+      )}
     </div>
   );
 }
