@@ -313,6 +313,16 @@ body {
   letter-spacing: -0.01em;
 }
 
+/* Accroche en capitales larges et grasses, sous le titre de l'accueil : la
+   police du logo, un peu moins élargie. */
+@utility font-statement {
+  font-family: var(--font-archivo);
+  font-stretch: 112%;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+}
+
 /* Titres condensés, gras, en capitales : accueil, studio, en-têtes, prix. */
 @utility font-headline {
   font-family: var(--font-archivo);

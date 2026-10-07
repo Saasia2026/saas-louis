@@ -44,7 +44,7 @@ export const en: Dictionary = {
       { title: "Lincoln vlogs" },
       { title: "Fight of the century" },
     ],
-    heroText: "Drop a filmed clip and a photo of a character. Genjutsu, the video transformation engine, has it replay every gesture and every shot, on the original sound.",
+    heroText: "One clip, one photo\nGenjutsu does the rest",
     reelEyebrow: "Genjutsu renders",
     genjutsuTitle: "Genjutsu in action",
     genjutsuList: [

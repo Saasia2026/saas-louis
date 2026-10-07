@@ -44,7 +44,7 @@ export const es: Dictionary = {
       { title: "Lincoln hace vlog" },
       { title: "El combate del siglo" },
     ],
-    heroText: "Sube un clip grabado y la foto de un personaje. Genjutsu, el motor de transformación de vídeo, le hace repetir cada gesto y cada plano, con el sonido original.",
+    heroText: "Un clip, una foto\nGenjutsu hace el resto",
     reelEyebrow: "Renders de Genjutsu",
     genjutsuTitle: "Genjutsu en acción",
     genjutsuList: [

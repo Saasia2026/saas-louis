@@ -101,7 +101,7 @@ export default async function Home() {
                 <span className="block text-gradient">{L.titleTop}</span>
                 <span className="block text-shine">{L.titleBottom}</span>
               </h1>
-              <p className="mx-auto mt-6 max-w-xl animate-fade-up text-[0.9375rem] leading-relaxed text-muted [animation-delay:160ms] sm:text-lg lg:mx-0">
+              <p className="mx-auto mt-6 max-w-xl animate-fade-up font-statement text-xl leading-[1.12] whitespace-pre-line text-text/80 [animation-delay:160ms] sm:text-2xl lg:mx-0">
                 {L.heroText}
               </p>
               <div className="mt-8 flex animate-fade-up flex-col justify-center gap-3 [animation-delay:240ms] sm:flex-row sm:flex-wrap lg:justify-start">

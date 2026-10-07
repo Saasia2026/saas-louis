@@ -46,7 +46,7 @@ export const fr = {
       { title: "Lincoln en vlog" },
       { title: "Le combat du siècle" },
     ],
-    heroText: "Dépose un clip filmé et la photo d'un personnage. Genjutsu, le moteur de transformation vidéo, lui fait rejouer chaque geste et chaque plan, sur le son d'origine.",
+    heroText: "Un clip, une photo\nGenjutsu fait le reste",
     reelEyebrow: "Rendus Genjutsu",
     genjutsuTitle: "Genjutsu en action",
     genjutsuList: [
