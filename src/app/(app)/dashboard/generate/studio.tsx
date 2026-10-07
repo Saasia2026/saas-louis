@@ -20,6 +20,7 @@ import type { SwapPreset } from "@/lib/presets";
 import type { SwapHistoryItem } from "../swap-history";
 import { getGeneration, type GenerationView } from "./actions";
 import { clearDraft, loadDraft, saveDraft, type DraftFile } from "./draft";
+import { GenjutsuBanner } from "./genjutsu-banner";
 import { HistoryEmpty, HistoryList } from "./history-list";
 import { cancelSwap, redoSwapShot, startSwap } from "./swap-actions";
 import { SwapInput, clampedStart, uploadSwapFile, type SwapCharacter, type SwapFile } from "./swap-input";
@@ -639,7 +640,8 @@ export function Studio({
       </aside>
 
       <section ref={resultEnd} className="min-w-0 scroll-mt-24 space-y-3">
-        <h2 className="px-1 font-headline text-4xl leading-none">{t.studio.historyTitle}</h2>
+        <GenjutsuBanner />
+        <h2 className="px-1 pt-3 font-headline text-4xl leading-none">{t.studio.historyTitle}</h2>
         {started && (
           <Result
             phase={phase}
