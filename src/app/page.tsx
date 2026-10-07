@@ -10,6 +10,7 @@ import { PhoneFrame } from "@/app/phone-frame";
 import { Logo } from "@/app/logo";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { BADGE, OFF_BADGE, TIERS, tierCard } from "@/app/tier-style";
+import { GenjutsuShowcase } from "@/app/genjutsu-showcase";
 import { VideoMarquee } from "@/app/video-marquee";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
@@ -69,6 +70,9 @@ export default async function Home() {
           <nav className="flex shrink-0 items-center gap-0.5 text-sm sm:gap-1">
             <a href="#exemples" className="btn btn-ghost hidden px-3 sm:inline-flex">
               {L.examples}
+            </a>
+            <a href="#genjutsu" className="btn btn-ghost hidden px-3 lg:inline-flex">
+              Genjutsu
             </a>
             <a href="#fonctionnalites" className="btn btn-ghost hidden px-3 sm:inline-flex">
               {L.features}
@@ -200,6 +204,16 @@ export default async function Home() {
               labelAfter={L.compareAfter}
             />
           </div>
+        </section>
+
+        {/* Vitrine Genjutsu : des rendus seuls, en mosaïque. */}
+        <section id="genjutsu" className="scroll-mt-20 border-y border-line bg-surface/40 py-16 sm:py-24">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <h2 className="reveal font-headline text-5xl leading-[0.92] sm:text-7xl">
+              <span className="text-shine">{L.genjutsuTitle}</span>
+            </h2>
+          </div>
+          <GenjutsuShowcase labels={L.genjutsuList} />
         </section>
 
         {/* Fonctionnalités */}
