@@ -88,10 +88,6 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col gap-3 py-1">
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-accent-light">
-              <Sparkles className="size-3.5" />
-              {t.studio.poweredBy}
-            </p>
             {item.thumbs.length > 0 && (
               <div className="flex gap-2">
                 {item.thumbs.map((src) => (

@@ -1,8 +1,8 @@
 "use client";
 
-import { Check, Clapperboard, Download, Move, RefreshCw, Replace, WandSparkles, X } from "lucide-react";
+import { Coins, Download, Move, RefreshCw, Replace, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fmt, plural } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -11,7 +11,6 @@ import {
   photosPerCharacter,
   swapCredits,
   swapMethodRate,
-  swapSheetCredits,
   swapShotCredits,
   type AspectRatio,
   type SwapEngine,
@@ -131,13 +130,7 @@ export function Studio({
   const resultEnd = useRef<HTMLElement>(null);
   const busy = phase.kind === "generating";
   const started = phase.kind !== "idle";
-  // Raccourci affiché sur le bouton : ⌘ sur Apple, Ctrl ailleurs (faux au
-  // rendu serveur, corrigé à l'hydratation).
-  const isMac = useSyncExternalStore(
-    subscribeNoop,
-    () => /Mac|iPhone|iPad/.test(navigator.userAgent),
-    () => false,
-  );
+  // Ctrl/⌘ + Entrée lance le rendu.
   const onShortcut = useEffectEvent(() => launch());
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -306,11 +299,9 @@ export function Studio({
     setActive({ id, job: res.data });
   }
 
-  // Étapes à remplir avant de lancer, dans l'ordre de la barre du haut.
-  const checks = [Boolean(video), imagesReady, ...(mode === "transfer" ? [Boolean(decorPhoto)] : [])];
-  const doneCount = checks.filter(Boolean).length;
-  const rate = swapMethodRate(hd, fidelity);
-  const sheet = swapSheetCredits(engine, characters.length);
+  // Prix affiché dans le bouton : le plus bas possible, connu une fois le clip
+  // découpé (voir swapCredits) ; borne haute si la durée est illisible.
+  const costLabel = durationKnown ? String(cost) : `≤ ${cost}`;
 
   const composer = (
     <form
@@ -320,34 +311,6 @@ export function Studio({
       }}
       className="composer overflow-hidden"
     >
-      {/* Barre du rendu : son nom, et l'avancement des étapes à remplir. */}
-      <div className="flex items-center gap-3 border-b border-line bg-surface-2/40 px-4 py-2.5">
-        <span className="flex items-center gap-2 font-mono text-[0.6875rem] font-medium tracking-[0.12em] text-muted uppercase">
-          <Clapperboard className="size-3.5 text-accent-light" />
-          {t.studio.composerTitle}
-        </span>
-        <span className="ml-auto flex items-center gap-2.5">
-          <span className="flex gap-1" aria-hidden>
-            {checks.map((done, i) => (
-              <span key={i} className="h-1 w-5 overflow-hidden rounded-full bg-line-strong">
-                <span
-                  className={`block h-full origin-left rounded-full bg-accent transition-transform duration-500 [transition-timing-function:var(--ease-out)] ${
-                    done ? "scale-x-100" : "scale-x-0"
-                  }`}
-                />
-              </span>
-            ))}
-          </span>
-          <span
-            className={`font-mono text-[0.625rem] font-medium tracking-[0.12em] uppercase tabular-nums transition-colors ${
-              doneCount === checks.length ? "text-success" : "text-faint"
-            }`}
-          >
-            {doneCount === checks.length ? t.studio.ready : `${doneCount}/${checks.length}`}
-          </span>
-        </span>
-      </div>
-
       <div className="px-4 pt-4">
         <div role="tablist" className="relative grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface-2/60 p-1">
           {/* Fond de l'onglet actif : il glisse d'un onglet à l'autre. */}
@@ -364,6 +327,7 @@ export function Studio({
                 type="button"
                 role="tab"
                 aria-selected={mode === m}
+                title={m === "replace" ? t.studio.modeReplaceHint : t.studio.modeTransferHint}
                 onClick={() => setMode(m)}
                 className={`relative flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${
                   mode === m ? "text-text" : "text-muted hover:text-text"
@@ -375,9 +339,6 @@ export function Studio({
             );
           })}
         </div>
-        <p className="mt-2 px-1 text-xs leading-relaxed text-muted">
-          {mode === "replace" ? t.studio.modeReplaceHint : t.studio.modeTransferHint}
-        </p>
       </div>
       <SwapInput
         userId={userId}
@@ -408,15 +369,6 @@ export function Studio({
         instructions={instructions}
         onInstructions={setInstructions}
         showInstructions
-        sourcesHeader={<Step n={1} title={t.studio.stepSources} done={doneCount === checks.length} />}
-        promptHeader={
-          <Step
-            n={2}
-            title={t.studio.stepPrompt}
-            done={Boolean(instructions.trim())}
-            aside={<span className="spec">{t.studio.optional}</span>}
-          />
-        }
       />
 
       {availablePresets.length > 0 && (
@@ -460,130 +412,101 @@ export function Studio({
         </div>
       )}
 
-      {/* Réglages du rendu, en fiche technique : chaque choix affiche son
-          tarif, qui suit l'autre réglage. */}
-      <div className="px-4 pt-2 pb-4">
-        <Step n={3} title={t.studio.stepOutput} done={Boolean(video)} />
-        <div className="grid grid-cols-[4.75rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2.5">
-          <span className="spec">{t.studio.method}</span>
-          <Segmented
-            value={fidelity ? "fidelity" : "standard"}
-            onChange={(v) => setFidelity(v === "fidelity")}
-            options={[
-              {
-                value: "standard",
-                label: t.studio.methodStandard,
-                detail: `${swapMethodRate(hd).toLocaleString(locale)} cr/s`,
-                title: fmt(t.studio.methodStandardHint, { rate: swapMethodRate(hd).toLocaleString(locale) }),
-              },
-              {
-                value: "fidelity",
-                label: t.studio.methodFidelity,
-                detail: `${swapMethodRate(hd, true).toLocaleString(locale)} cr/s`,
-                title: fmt(t.studio.methodFidelityHint, { rate: swapMethodRate(hd, true).toLocaleString(locale) }),
-              },
-            ]}
-          />
-          <span className="spec">{t.studio.resolution}</span>
-          <Segmented
-            value={hd ? "hd" : "sd"}
-            onChange={(v) => setHd(v === "hd")}
-            options={[
-              {
-                value: "sd",
-                label: t.swapEngines.genjutsu.label,
-                detail: `${swapMethodRate(false, fidelity).toLocaleString(locale)} cr/s`,
-                title: fmt(t.swapEngines.genjutsu.hint, {
-                  max: SWAP_ENGINES.genjutsu.maxSeconds,
-                  rate: swapMethodRate(false, fidelity).toLocaleString(locale),
-                }),
-              },
-              {
-                value: "hd",
-                label: t.swapEngines.genjutsuHd.label,
-                detail: `${swapMethodRate(true, fidelity).toLocaleString(locale)} cr/s`,
-                title: fmt(t.swapEngines.genjutsuHd.hint, {
-                  max: SWAP_ENGINES.genjutsu.maxSeconds,
-                  rate: swapMethodRate(true, fidelity).toLocaleString(locale),
-                }),
-              },
-            ]}
-          />
-          {video && lengths.length > 0 && (
-            <>
-              <span className="spec">{t.studio.length}</span>
-              <div className="flex flex-wrap gap-1">
-                {[
-                  ...lengths.map((l) => ({ value: l as number | null, label: `${l} s` })),
-                  { value: null, label: fmt(t.studio.lengthAll, { seconds: wholeSeconds }) },
-                ].map((o) => {
-                  const on = o.value === null ? !length || length >= engineMax : length === o.value;
-                  return (
-                    <button
-                      key={o.label}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => setLength(o.value)}
-                      className={`rounded-md border px-2 py-1 font-mono text-[0.6875rem] tabular-nums transition-colors ${
-                        on
-                          ? "border-accent bg-accent-soft text-text"
-                          : "border-line bg-surface-2/60 text-muted hover:border-line-strong hover:text-text"
-                      }`}
-                    >
-                      {o.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
+      {/* Réglages : chaque choix affiche son tarif, qui suit l'autre réglage. */}
+      <div className="space-y-2 px-4 pt-2 pb-4">
+        <Segmented
+          value={fidelity ? "fidelity" : "standard"}
+          onChange={(v) => setFidelity(v === "fidelity")}
+          options={[
+            {
+              value: "standard",
+              label: t.studio.methodStandard,
+              detail: `${swapMethodRate(hd).toLocaleString(locale)} cr/s`,
+              title: fmt(t.studio.methodStandardHint, { rate: swapMethodRate(hd).toLocaleString(locale) }),
+            },
+            {
+              value: "fidelity",
+              label: t.studio.methodFidelity,
+              detail: `${swapMethodRate(hd, true).toLocaleString(locale)} cr/s`,
+              title: fmt(t.studio.methodFidelityHint, { rate: swapMethodRate(hd, true).toLocaleString(locale) }),
+            },
+          ]}
+        />
+        <Segmented
+          value={hd ? "hd" : "sd"}
+          onChange={(v) => setHd(v === "hd")}
+          options={[
+            {
+              value: "sd",
+              label: t.swapEngines.genjutsu.label,
+              detail: `${swapMethodRate(false, fidelity).toLocaleString(locale)} cr/s`,
+              title: fmt(t.swapEngines.genjutsu.hint, {
+                max: SWAP_ENGINES.genjutsu.maxSeconds,
+                rate: swapMethodRate(false, fidelity).toLocaleString(locale),
+              }),
+            },
+            {
+              value: "hd",
+              label: t.swapEngines.genjutsuHd.label,
+              detail: `${swapMethodRate(true, fidelity).toLocaleString(locale)} cr/s`,
+              title: fmt(t.swapEngines.genjutsuHd.hint, {
+                max: SWAP_ENGINES.genjutsu.maxSeconds,
+                rate: swapMethodRate(true, fidelity).toLocaleString(locale),
+              }),
+            },
+          ]}
+        />
+        {video && lengths.length > 0 && (
+          <div className="flex flex-wrap gap-1 pt-1">
+            {[
+              ...lengths.map((l) => ({ value: l as number | null, label: `${l} s` })),
+              { value: null, label: fmt(t.studio.lengthAll, { seconds: wholeSeconds }) },
+            ].map((o) => {
+              const on = o.value === null ? !length || length >= engineMax : length === o.value;
+              return (
+                <button
+                  key={o.label}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setLength(o.value)}
+                  className={`rounded-lg border px-2.5 py-1 text-xs font-medium tabular-nums transition-colors ${
+                    on
+                      ? "border-accent bg-accent-soft text-text"
+                      : "border-line bg-surface-2/60 text-muted hover:border-line-strong hover:text-text"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Reçu : le prix, son calcul, le solde qui restera ; puis le lancement. */}
-      <div className="border-t border-line bg-surface-2/40 px-4 pt-3.5 pb-4">
-        <dl className="space-y-1 tabular-nums">
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="spec">{t.studio.estimate}</dt>
-            <dd className="font-mono text-sm font-semibold">
-              {!video
-                ? "—"
-                : durationKnown
-                  ? // Prix final connu une fois le clip découpé (voir swapCredits).
-                    fmt(t.studio.costFrom, { cost, credits: plural(cost, t.common.credit, t.common.credits) })
-                  : `≤ ${cost} ${plural(cost, t.common.credit, t.common.credits)}`}
-            </dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-3 font-mono text-[0.6875rem] text-faint">
-            <dt className="truncate">
-              {video ? fmt(t.studio.breakdown, { seconds, rate, sheet }) : `${rate} cr/s`}
-            </dt>
-            {video && (credits >= cost || autoRecharge) && (
-              <dd className="shrink-0">
-                {t.studio.balanceAfter} · {Math.max(0, credits - cost).toLocaleString(locale)}
-              </dd>
-            )}
-          </div>
-        </dl>
+      <div className="border-t border-line px-4 pt-3 pb-4">
         {video && imagesReady && (!targetsReady || (credits < gate && !autoRecharge)) && (
-          <p className={`mt-2 text-xs ${targetsReady ? "text-danger" : "text-warning"}`}>
+          <p className={`mb-3 text-xs ${targetsReady ? "text-danger" : "text-warning"}`}>
             {!targetsReady ? t.studio.targetsMissing : t.studio.notEnoughCredits}
           </p>
         )}
-        {durationKnown && seconds > 15 && <p className="mt-2 text-xs text-warning">{t.studio.longClipWarning}</p>}
-        <button type="submit" disabled={!canSend} className="btn btn-accent relative mt-3 w-full py-3.5 text-base">
+        {durationKnown && seconds > 15 && <p className="mb-3 text-xs text-warning">{t.studio.longClipWarning}</p>}
+        {/* Le prix est dans le bouton : rien d'autre à lire avant de lancer. */}
+        <button
+          type="submit"
+          disabled={!canSend}
+          title={
+            video ? fmt(t.studio.costFrom, { cost, credits: plural(cost, t.common.credit, t.common.credits) }) : undefined
+          }
+          className="btn btn-accent w-full py-3.5 text-base"
+        >
           <WandSparkles />
           {t.studio.launch}
-          <span aria-hidden className="absolute right-3 hidden items-center gap-1 sm:flex">
-            {[isMac ? "⌘" : "Ctrl", "↵"].map((k) => (
-              <span
-                key={k}
-                className="rounded-md border border-white/30 bg-white/15 px-1.5 py-0.5 font-mono text-[0.625rem] leading-none font-medium text-white/90"
-              >
-                {k}
-              </span>
-            ))}
-          </span>
+          {video && (
+            <span className="ml-1 inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-sm tabular-nums">
+              <Coins className="size-3.5" />
+              {costLabel}
+            </span>
+          )}
         </button>
       </div>
     </form>
@@ -598,10 +521,7 @@ export function Studio({
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
       <aside className="relative z-20 animate-fade-up lg:sticky lg:top-24">
-        <div className="mb-4 px-1">
-          <h1 className="font-headline text-4xl leading-none">{t.studio.createTitle}</h1>
-          <p className="mt-1.5 text-xs font-medium text-accent-light">{t.studio.poweredBy}</p>
-        </div>
+        <h1 className="mb-4 px-1 font-headline text-4xl leading-none">{t.studio.createTitle}</h1>
         {composer}
       </aside>
 
@@ -624,26 +544,8 @@ export function Studio({
   );
 }
 
-// Intitulé d'une étape du formulaire : numéro mono, coché une fois remplie.
-function Step({ n, title, done, aside }: { n: number; title: string; done?: boolean; aside?: React.ReactNode }) {
-  return (
-    <div className="mb-2.5 flex items-center gap-2">
-      <span
-        className={`flex h-5 min-w-5 items-center justify-center rounded-md border px-1 font-mono text-[0.625rem] font-medium tabular-nums transition-colors ${
-          done ? "border-success/40 bg-success/10 text-success" : "border-line-strong text-muted"
-        }`}
-      >
-        {done ? <Check className="size-3" /> : String(n).padStart(2, "0")}
-      </span>
-      <span className="font-mono text-[0.6875rem] font-medium tracking-[0.12em] text-muted uppercase">{title}</span>
-      <span className="h-px flex-1 bg-line" />
-      {aside}
-    </div>
-  );
-}
-
-// Choix entre quelques options, chacune avec son détail (tarif) ; le fond de
-// l'option choisie glisse de l'une à l'autre.
+// Choix entre quelques options, chacune avec son tarif ; le fond de l'option
+// choisie glisse de l'une à l'autre.
 function Segmented<T extends string>({
   value,
   onChange,
@@ -657,13 +559,13 @@ function Segmented<T extends string>({
   return (
     <div
       role="radiogroup"
-      className="relative grid rounded-lg border border-line bg-surface-2/60 p-0.5"
+      className="relative grid rounded-xl border border-line bg-surface-2/60 p-1"
       style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
     >
       <span
         aria-hidden
-        className="absolute inset-y-0.5 left-0.5 rounded-md border border-line-strong bg-surface-3 transition-transform duration-300 [transition-timing-function:var(--ease-out)]"
-        style={{ width: `calc((100% - 0.25rem) / ${options.length})`, transform: `translateX(${index * 100}%)` }}
+        className="absolute inset-y-1 left-1 rounded-lg border border-line-strong bg-surface-3 transition-transform duration-300 [transition-timing-function:var(--ease-out)]"
+        style={{ width: `calc((100% - 0.5rem) / ${options.length})`, transform: `translateX(${index * 100}%)` }}
       />
       {options.map((o) => {
         const on = o.value === value;
@@ -675,12 +577,12 @@ function Segmented<T extends string>({
             aria-checked={on}
             title={o.title}
             onClick={() => onChange(o.value)}
-            className={`relative flex min-w-0 flex-col items-start rounded-md px-2.5 py-1.5 text-left transition-colors ${
+            className={`relative flex min-w-0 items-baseline justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
               on ? "text-text" : "text-muted hover:text-text"
             }`}
           >
-            <span className="w-full truncate text-[0.8125rem] font-semibold">{o.label}</span>
-            <span className={`font-mono text-[0.625rem] tabular-nums transition-colors ${on ? "text-accent-light" : "text-faint"}`}>
+            <span className="truncate text-sm font-semibold">{o.label}</span>
+            <span className={`shrink-0 text-xs tabular-nums transition-colors ${on ? "text-accent-light" : "text-faint"}`}>
               {o.detail}
             </span>
           </button>
@@ -689,8 +591,6 @@ function Segmented<T extends string>({
     </div>
   );
 }
-
-const subscribeNoop = () => () => {};
 
 function Result({
   phase,
