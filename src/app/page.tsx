@@ -14,7 +14,7 @@ import { GenjutsuShowcase } from "@/app/genjutsu-showcase";
 import { VideoMarquee } from "@/app/video-marquee";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
-import { CREDIT_PACKS, SUBSCRIPTION_PLANS, formatPrice } from "@/lib/credit-packs";
+import { CREDIT_PACKS, SUBSCRIPTION_PLANS, formatPrice, subscriptionOff } from "@/lib/credit-packs";
 import { SWAP_SHEET_CREDITS, swapMethodRate, swapMethodSecondsFor } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -32,12 +32,7 @@ const FEATURE_MEDIA: (string | null)[] = ["genjutsu-cage", "ours", "genjutsu-dia
 
 // Meilleure réduction réelle d'un abonnement (annuel) sur le pack aux mêmes
 // crédits — le même calcul que la page Crédits.
-const MAX_SUBSCRIPTION_OFF = Math.max(
-  ...SUBSCRIPTION_PLANS.map((plan) => {
-    const pack = CREDIT_PACKS.find((p) => p.id === plan.id)!;
-    return Math.round((1 - Math.round(plan.year / 12) / pack.amount) * 100);
-  }),
-);
+const MAX_SUBSCRIPTION_OFF = Math.max(...SUBSCRIPTION_PLANS.map((plan) => subscriptionOff(plan, "year")));
 
 export default async function Home() {
   const [t, locale, supabase] = await Promise.all([getDictionary(), getLocale(), createClient()]);

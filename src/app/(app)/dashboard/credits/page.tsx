@@ -8,7 +8,10 @@ import {
   SUBSCRIPTION_PLANS,
   findCreditPack,
   formatPrice,
+  packMonthlyEquivalent,
   planCredits,
+  subscriptionMonthly,
+  subscriptionOff,
   type BillingInterval,
 } from "@/lib/credit-packs";
 import { SWAP_SHEET_CREDITS, swapMethodRate, swapMethodSecondsFor } from "@/lib/generation";
@@ -386,11 +389,11 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
             {SUBSCRIPTION_PLANS.map((plan) => {
               const tier = TIERS[plan.id];
               const credits = planCredits(plan, billing);
-              // Référence : le pack au même nombre de crédits par mois.
-              const pack = CREDIT_PACKS.find((p) => p.id === plan.id)!;
-              const monthly = billing === "year" ? Math.round(plan.year / 12) : plan.month;
-              const pct = Math.round((1 - monthly / pack.amount) * 100);
-              const saving = pack.amount * 12 - (billing === "year" ? plan.year : plan.month * 12);
+              // Référence : les mêmes crédits achetés en packs de l'offre.
+              const reference = packMonthlyEquivalent(plan);
+              const monthly = subscriptionMonthly(plan, billing);
+              const pct = subscriptionOff(plan, billing);
+              const saving = reference * 12 - (billing === "year" ? plan.year : plan.month * 12);
               return (
                 <li
                   key={plan.id}
@@ -409,13 +412,13 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
 
                   <div className="mt-6 flex flex-wrap items-baseline gap-x-2">
                     <span className="font-headline text-2xl text-faint line-through decoration-rose-500/80 decoration-2">
-                      {price(pack.amount)}
+                      {price(reference)}
                     </span>
                     <span className="font-headline text-5xl leading-none">{price(monthly)}</span>
                     <span className="text-sm text-muted">/ {S.perMonth}</span>
                   </div>
                   <p className="mt-1.5 text-xs text-muted">
-                    {fmt(P.vsPacks, { price: price(pack.amount) })}
+                    {fmt(P.vsPacks, { price: price(reference) })}
                     {billing === "year" && <> · {fmt(P.billedYearly, { price: price(plan.year) })}</>}
                   </p>
 
