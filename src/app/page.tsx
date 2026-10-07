@@ -11,7 +11,6 @@ import { Logo } from "@/app/logo";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { BADGE, OFF_BADGE, TIERS, tierCard } from "@/app/tier-style";
 import { VideoMarquee } from "@/app/video-marquee";
-import { YouTubeLite } from "@/app/youtube-lite";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { CREDIT_PACKS, SUBSCRIPTION_PLANS, formatPrice } from "@/lib/credit-packs";
@@ -25,24 +24,6 @@ const EXAMPLES = ["ours", "chien"];
 // Rendus verticaux du bandeau, dans l'ordre des textes de
 // landing.showcaseList.
 const REEL = ["genjutsu-diable", "genjutsu-lincoln", "genjutsu-cage"];
-
-// Démos publiées sur YouTube, toutes vérifiées intégrables : la chaîne
-// officielle d'abord, puis des créateurs indépendants. Titres et auteurs
-// tels que YouTube les affiche ; rien n'est téléchargé ni rehébergé.
-const DEMOS = [
-  { id: "FW_tIpEBJ0U", author: "Higgsfield AI", title: "Hybrid Production With Higgsfield Genjutsu | From Studio to Any Scene" },
-  { id: "cvA5TONXrDY", author: "Arjun Bhavaraju", title: "I Turned 1 Video Into 8 Characters With AI | Higgsfield Genjutsu" },
-  { id: "yIkrhybARms", author: "Zubair Trabzada | AI Workshop", title: "Higgsfield Genjutsu Can Replace Anyone in Any Video" },
-  { id: "emP2xj2hCpQ", author: "Backlash", title: "This AI Can Replace Anything in Your Video (Higgsfield Genjutsu)" },
-  { id: "bHqRUo9R3Ao", author: "Richard Galapate", title: "Higgsfield Genjutsu is UNREAL! (AI Motion Transfer)" },
-  { id: "XiRaW1OzZFM", author: "Airt", title: "Higgsfield Genjutsu Is INSANE (Real Examples)" },
-  { id: "wM9S_iyuRUo", author: "AI BORDER", title: "Higgsfield Genjutsu Can Change Almost Anything in a Video" },
-  { id: "P3dPIGTtUXE", author: "Spasciz", title: "Higgsfield Genjutsu: Reality Manipulation for Music Videos" },
-  { id: "0moHSN0-L5E", author: "Prompt Engineer 48", title: "Higgsfield Genjutsu: One Video, Every Version You Need" },
-  { id: "mDofSLaCWqw", author: "Viral Shah Ai", title: "The New Way to Make AI Videos: Higgsfield Genjutsu Demo" },
-  { id: "cE0GAkSGiUU", author: "Artificial Quotient", title: "Higgsfield Genjutsu Tutorial: Replace Characters And Swap Objects In Video! (Motion Transfer)" },
-  { id: "nEPkQhaANNU", author: "Reel Success", title: "Motion Transfer & Object Swap - #Higgsfield #Genjutsu" },
-];
 
 // Rendu montré pour chaque fonctionnalité, dans l'ordre des textes de
 // landing.featureList ; null : la carte « crédits rendus » à la place.
@@ -88,9 +69,6 @@ export default async function Home() {
           <nav className="flex shrink-0 items-center gap-0.5 text-sm sm:gap-1">
             <a href="#exemples" className="btn btn-ghost hidden px-3 sm:inline-flex">
               {L.examples}
-            </a>
-            <a href="#demos" className="btn btn-ghost hidden px-3 lg:inline-flex">
-              {L.navCreators}
             </a>
             <a href="#fonctionnalites" className="btn btn-ghost hidden px-3 sm:inline-flex">
               {L.features}
@@ -222,35 +200,6 @@ export default async function Home() {
               labelAfter={L.compareAfter}
             />
           </div>
-        </section>
-
-        {/* Démos YouTube : la vidéo officielle en grand, puis les créateurs.
-            Sur mobile, une rangée qui défile au doigt plutôt qu'une colonne
-            de douze vidéos. */}
-        <section id="demos" className="scroll-mt-20 border-y border-line bg-surface/40 py-16 sm:py-24">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <p className="eyebrow">{L.creatorsEyebrow}</p>
-            <h2 className="reveal mt-5 max-w-3xl font-headline text-5xl leading-[0.92] sm:text-7xl">
-              <span className="text-shine">{L.creatorsTitle}</span>
-            </h2>
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted">{L.creatorsNote}</p>
-          </div>
-          <ul className="mx-auto mt-10 flex max-w-6xl snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-6 sm:pb-0 lg:grid-cols-3">
-            {DEMOS.map(({ id, author, title }, i) => (
-              <li
-                key={id}
-                className={`w-[82%] shrink-0 snap-start sm:w-auto ${i === 0 ? "lg:col-span-2 lg:row-span-2" : ""}`}
-              >
-                <YouTubeLite
-                  id={id}
-                  title={title}
-                  author={author}
-                  playLabel={fmt(L.creatorPlay, { author })}
-                  large={i === 0}
-                />
-              </li>
-            ))}
-          </ul>
         </section>
 
         {/* Fonctionnalités */}
