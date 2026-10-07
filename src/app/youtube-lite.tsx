@@ -27,7 +27,7 @@ export function YouTubeLite({
   return (
     <figure className={large ? "flex h-full flex-col" : undefined}>
       <div
-        className={`relative aspect-video overflow-hidden rounded-2xl border border-line bg-black ${large ? "lg:aspect-auto lg:min-h-0 lg:flex-1" : ""}`}
+        className={`relative aspect-video overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding ${large ? "lg:aspect-auto lg:min-h-0 lg:flex-1" : ""}`}
       >
         {playing ? (
           <iframe

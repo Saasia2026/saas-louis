@@ -82,7 +82,7 @@ export function CompareSlider({
       onPointerMove={(e) => dragging && moveTo(e.clientX)}
       onPointerUp={() => setDragging(false)}
       onPointerCancel={() => setDragging(false)}
-      className={`relative isolate w-full cursor-ew-resize touch-none overflow-hidden bg-black select-none ${
+      className={`relative isolate w-full cursor-ew-resize touch-none overflow-hidden bg-black bg-clip-padding select-none ${
         bare ? "" : "rounded-2xl border border-line"
       }`}
       style={{ aspectRatio: aspectRatio.replace(":", " / ") }}

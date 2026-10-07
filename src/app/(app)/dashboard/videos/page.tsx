@@ -57,7 +57,7 @@ export default async function VideosPage() {
               style={{ animationDelay: `${Math.min(i, 8) * 60}ms` }}
             >
               <div
-                className="flex w-full items-center justify-center overflow-hidden rounded-xl border border-line bg-black"
+                className="flex w-full items-center justify-center overflow-hidden rounded-xl border border-line bg-black bg-clip-padding"
                 style={{ aspectRatio: video.aspectRatio.replace(":", " / ") }}
               >
                 {video.mediaUrl ? (

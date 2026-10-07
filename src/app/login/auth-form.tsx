@@ -37,7 +37,7 @@ export function AuthForm({
                 onClick={() => setMode(m)}
                 aria-pressed={mode === m}
                 className={`rounded-lg py-2 font-medium transition-colors ${
-                  mode === m ? "bg-surface-3 text-text shadow-sm" : "text-muted hover:text-text"
+                  mode === m ? "thumb text-text" : "text-muted hover:text-text"
                 }`}
               >
                 {m === "signin" ? t.login.signIn : t.login.signUp}

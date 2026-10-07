@@ -54,7 +54,7 @@ export function FeatureShowcase({ items, refund }: { items: Feature[]; refund: R
       onPointerLeave={() => setHovered(false)}
       className="mt-12 grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-14"
     >
-      <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-line bg-black sm:aspect-[16/11] lg:order-2 lg:aspect-square">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-line bg-black bg-clip-padding sm:aspect-[16/11] lg:order-2 lg:aspect-square">
         {items.map(({ title, media }, i) => (
           <div
             key={title}

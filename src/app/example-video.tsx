@@ -27,7 +27,7 @@ export function ExampleVideo({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={poster} alt="" aria-hidden className="ambient" />
       <div
-        className="relative overflow-hidden rounded-xl border border-line bg-black"
+        className="relative overflow-hidden rounded-xl border border-line bg-black bg-clip-padding"
         style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
       >
         <video

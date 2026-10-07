@@ -44,6 +44,13 @@
   --gradient-from: #ffffff;
   --gradient-to: #9c9ca6;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --panel-shadow: 0 0 #0000;
+  --thumb-bg: var(--surface-3);
+  --thumb-shadow: none;
+  --btn-secondary-bg: var(--surface-3);
+  --btn-secondary-hover: var(--surface-hover);
+  --btn-secondary-border: var(--line);
+  --btn-secondary-edge: color-mix(in oklab, var(--surface-3) 55%, black);
   color-scheme: dark;
 }
 
@@ -67,75 +74,89 @@
 }
 
 :root[data-theme="light"] {
-  --bg: #f7f5fc;
+  --bg: #f6f6f7;
   --surface: #ffffff;
-  --surface-2: #f2eff9;
-  --surface-3: #e7e2f3;
-  --surface-hover: #dcd5ec;
-  --line: rgb(20 10 40 / 0.09);
-  --line-strong: rgb(20 10 40 / 0.18);
-  --text: #0e0a18;
-  --text-muted: #554e68;
-  --text-faint: #8a849c;
+  --surface-2: #f2f2f4;
+  --surface-3: #e9e9ec;
+  --surface-hover: #e0e0e4;
+  --line: rgb(12 12 20 / 0.08);
+  --line-strong: rgb(12 12 20 / 0.15);
+  --text: #0b0b10;
+  --text-muted: #55555f;
+  --text-faint: #83838d;
   --accent: #6a46ff;
   --accent-light: #5532ea;
   --accent-2: #8667ff;
-  --accent-soft: rgb(106 70 255 / 0.13);
+  --accent-soft: rgb(106 70 255 / 0.1);
   --accent-hot: #d6249f;
   --success: #059669;
   --warning: #d97706;
   --danger: #e11d48;
   --on-primary: #ffffff;
-  --primary-hover: #26262e;
+  --primary-hover: #2a2a33;
   --primary-glow: rgb(10 10 20 / 0.25);
-  --glass-bg: rgb(255 255 255 / 0.92);
+  --glass-bg: rgb(255 255 255 / 0.97);
   --composer-bg: rgb(255 255 255 / 0.86);
-  --menu-bg: rgb(255 255 255 / 0.97);
-  --dot: rgb(10 10 20 / 0.12);
-  --highlight: rgb(255 255 255 / 0.9);
+  --menu-bg: rgb(255 255 255 / 0.98);
+  --dot: rgb(12 12 20 / 0.1);
+  --highlight: rgb(255 255 255 / 1);
   --gradient-from: #0a0a0f;
   --gradient-to: #52525b;
-  --neon: 0 0 0 1px rgb(10 10 20 / 0.16), 0 18px 44px -18px rgb(10 10 20 / 0.3);
-  --neon-soft: 0 0 0 1px rgb(10 10 20 / 0.1), 0 10px 28px -14px rgb(10 10 20 / 0.18);
+  --neon: 0 0 0 1px rgb(12 12 20 / 0.12), 0 20px 48px -20px rgb(12 12 20 / 0.28);
+  --neon-soft: 0 0 0 1px rgb(12 12 20 / 0.07), 0 12px 32px -16px rgb(12 12 20 / 0.18);
   --neon-text: none;
-  --ambient-opacity: 0.35;
+  --ambient-opacity: 0;
+  --panel-shadow: 0 1px 2px rgb(12 12 20 / 0.04), 0 10px 28px -18px rgb(12 12 20 / 0.16);
+  --thumb-bg: #ffffff;
+  --thumb-shadow: 0 1px 2px rgb(12 12 20 / 0.1), 0 1px 1px rgb(12 12 20 / 0.04);
+  --btn-secondary-bg: #ffffff;
+  --btn-secondary-hover: #f6f6f7;
+  --btn-secondary-border: var(--line-strong);
+  --btn-secondary-edge: #d4d4da;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
-    --bg: #f7f5fc;
+    --bg: #f6f6f7;
     --surface: #ffffff;
-    --surface-2: #f2eff9;
-    --surface-3: #e7e2f3;
-    --surface-hover: #dcd5ec;
-    --line: rgb(20 10 40 / 0.09);
-    --line-strong: rgb(20 10 40 / 0.18);
-    --text: #0e0a18;
-    --text-muted: #554e68;
-    --text-faint: #8a849c;
+    --surface-2: #f2f2f4;
+    --surface-3: #e9e9ec;
+    --surface-hover: #e0e0e4;
+    --line: rgb(12 12 20 / 0.08);
+    --line-strong: rgb(12 12 20 / 0.15);
+    --text: #0b0b10;
+    --text-muted: #55555f;
+    --text-faint: #83838d;
     --accent: #6a46ff;
     --accent-light: #5532ea;
     --accent-2: #8667ff;
-    --accent-soft: rgb(106 70 255 / 0.13);
+    --accent-soft: rgb(106 70 255 / 0.1);
     --accent-hot: #d6249f;
     --success: #059669;
     --warning: #d97706;
     --danger: #e11d48;
     --on-primary: #ffffff;
-    --primary-hover: #26262e;
+    --primary-hover: #2a2a33;
     --primary-glow: rgb(10 10 20 / 0.25);
-    --glass-bg: rgb(255 255 255 / 0.92);
+    --glass-bg: rgb(255 255 255 / 0.97);
     --composer-bg: rgb(255 255 255 / 0.86);
-    --menu-bg: rgb(255 255 255 / 0.97);
-    --dot: rgb(10 10 20 / 0.12);
-    --highlight: rgb(255 255 255 / 0.9);
+    --menu-bg: rgb(255 255 255 / 0.98);
+    --dot: rgb(12 12 20 / 0.1);
+    --highlight: rgb(255 255 255 / 1);
     --gradient-from: #0a0a0f;
     --gradient-to: #52525b;
-    --neon: 0 0 0 1px rgb(10 10 20 / 0.16), 0 18px 44px -18px rgb(10 10 20 / 0.3);
-    --neon-soft: 0 0 0 1px rgb(10 10 20 / 0.1), 0 10px 28px -14px rgb(10 10 20 / 0.18);
+    --neon: 0 0 0 1px rgb(12 12 20 / 0.12), 0 20px 48px -20px rgb(12 12 20 / 0.28);
+    --neon-soft: 0 0 0 1px rgb(12 12 20 / 0.07), 0 12px 32px -16px rgb(12 12 20 / 0.18);
     --neon-text: none;
-    --ambient-opacity: 0.35;
+    --ambient-opacity: 0;
+    --panel-shadow: 0 1px 2px rgb(12 12 20 / 0.04), 0 10px 28px -18px rgb(12 12 20 / 0.16);
+    --thumb-bg: #ffffff;
+    --thumb-shadow: 0 1px 2px rgb(12 12 20 / 0.1), 0 1px 1px rgb(12 12 20 / 0.04);
+    --btn-secondary-bg: #ffffff;
+    --btn-secondary-hover: #f6f6f7;
+    --btn-secondary-border: var(--line-strong);
+    --btn-secondary-edge: #d4d4da;
     color-scheme: light;
   }
 }
@@ -389,7 +410,9 @@ body {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 1rem;
-  box-shadow: inset 0 1px 0 var(--highlight);
+  box-shadow:
+    inset 0 1px 0 var(--highlight),
+    var(--panel-shadow);
 }
 
 /* Surface vitrée : laisse deviner le fond. Sans backdrop-filter — le flou
@@ -534,14 +557,14 @@ body {
 }
 
 @utility btn-secondary {
-  --btn-edge: color-mix(in oklab, var(--surface-3) 55%, black);
-  background: var(--surface-3);
-  border: 1px solid var(--line);
+  --btn-edge: var(--btn-secondary-edge);
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--btn-secondary-border);
   color: var(--text);
   box-shadow: 0 4px 0 var(--btn-edge);
   &:hover:not(:disabled) {
     border-color: var(--line-strong);
-    background: var(--surface-hover);
+    background: var(--btn-secondary-hover);
   }
   &:active:not(:disabled) {
     box-shadow: 0 2px 0 var(--btn-edge);
@@ -704,6 +727,14 @@ body {
     border-color: var(--accent);
     box-shadow: var(--neon);
   }
+}
+
+/* Option choisie d'un sélecteur (onglets, choix segmentés) : en clair, un
+   blanc détaché du rail gris par une ombre fine ; en sombre, la surface la
+   plus claire. */
+@utility thumb {
+  background: var(--thumb-bg);
+  box-shadow: var(--thumb-shadow);
 }
 
 /* Coins de visée d'une zone de dépôt (quatre spans .viewfinder > i) : ils

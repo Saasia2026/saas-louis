@@ -316,7 +316,7 @@ export function Studio({
           {/* Fond de l'onglet actif : il glisse d'un onglet à l'autre. */}
           <span
             aria-hidden
-            className="absolute inset-y-1 left-1 w-[calc(50%-0.375rem)] rounded-lg border border-line-strong bg-surface-3 transition-transform duration-300 [transition-timing-function:var(--ease-out)]"
+            className="absolute inset-y-1 left-1 w-[calc(50%-0.375rem)] rounded-lg border border-line-strong thumb transition-transform duration-300 [transition-timing-function:var(--ease-out)]"
             style={{ transform: mode === "transfer" ? "translateX(calc(100% + 0.25rem))" : undefined }}
           />
           {(["replace", "transfer"] as const).map((m) => {
@@ -383,7 +383,7 @@ export function Studio({
                 type="button"
                 onClick={() => choosePreset(p)}
                 aria-pressed={preset?.id === p.id}
-                className={`group relative aspect-[9/16] shrink-0 overflow-hidden rounded-xl border bg-black text-left transition-[border-color,box-shadow] duration-200 ${
+                className={`group relative aspect-[9/16] shrink-0 overflow-hidden rounded-xl border bg-black bg-clip-padding text-left transition-[border-color,box-shadow] duration-200 ${
                   preset?.id === p.id
                     ? "border-accent shadow-[0_0_0_1px_var(--accent)]"
                     : "border-line hover:border-line-strong"
@@ -564,7 +564,7 @@ function Segmented<T extends string>({
     >
       <span
         aria-hidden
-        className="absolute inset-y-1 left-1 rounded-lg border border-line-strong bg-surface-3 transition-transform duration-300 [transition-timing-function:var(--ease-out)]"
+        className="absolute inset-y-1 left-1 rounded-lg border border-line-strong thumb transition-transform duration-300 [transition-timing-function:var(--ease-out)]"
         style={{ width: `calc((100% - 0.5rem) / ${options.length})`, transform: `translateX(${index * 100}%)` }}
       />
       {options.map((o) => {
@@ -628,7 +628,7 @@ function Result({
           <p className="max-w-sm py-10 text-center text-sm text-danger">{phase.message}</p>
         ) : (
           <div
-            className={`relative flex w-full items-center justify-center overflow-hidden rounded-xl border bg-black ${
+            className={`relative flex w-full items-center justify-center overflow-hidden rounded-xl border bg-black bg-clip-padding ${
               aspectRatio === "16:9" ? "max-w-xl" : "max-w-[16rem]"
             } ${phase.kind === "generating" ? "glow" : "border-line"}`}
             style={{ aspectRatio: aspectRatio.replace(":", " / ") }}

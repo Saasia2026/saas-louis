@@ -22,7 +22,7 @@ export function VideoMarquee({ items }: { items: { src: string; poster: string; 
           <li
             key={`${item.src}-${i}`}
             aria-hidden={i >= items.length}
-            className="w-36 shrink-0 overflow-hidden rounded-2xl border border-line bg-black sm:w-48 lg:w-56"
+            className="w-36 shrink-0 overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding sm:w-48 lg:w-56"
             style={{ aspectRatio: "9 / 16" }}
           >
             <video

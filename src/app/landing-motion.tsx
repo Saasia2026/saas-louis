@@ -67,7 +67,7 @@ export function ScrollWipe({
   return (
     <div
       ref={frame}
-      className="relative isolate mx-auto aspect-[9/16] w-full max-w-[20rem] overflow-hidden rounded-2xl border border-line bg-black sm:max-w-[22rem]"
+      className="relative isolate mx-auto aspect-[9/16] w-full max-w-[20rem] overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding sm:max-w-[22rem]"
     >
       <video
         ref={beforeRef}

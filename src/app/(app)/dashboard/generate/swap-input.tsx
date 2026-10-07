@@ -171,7 +171,7 @@ export function SwapInput({
         key={slot}
         title={hint}
         className={`group relative flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border text-center transition-colors ${
-          file ? "border-line-strong bg-black" : "border-line bg-surface-2/50 hover:bg-surface-2"
+          file ? "border-line-strong bg-black bg-clip-padding" : "border-line bg-surface-2/50 hover:bg-surface-2"
         } ${compact ? "h-24" : "h-36"}`}
       >
         {!file && (
@@ -283,7 +283,7 @@ export function SwapInput({
                 {c.extras.map((f) => (
                   <span
                     key={f.path}
-                    className="relative size-12 overflow-hidden rounded-lg border border-line bg-black"
+                    className="relative size-12 overflow-hidden rounded-lg border border-line bg-black bg-clip-padding"
                   >
                     {/* Aperçu local (blob:) : pas d'optimisation Next. */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -376,7 +376,7 @@ export function SwapInput({
               title={t.studio.decorHint}
               className={`group relative flex h-20 w-32 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed transition-colors ${
                 decorPhoto
-                  ? "border-line bg-black"
+                  ? "border-line bg-black bg-clip-padding"
                   : "border-line-strong bg-surface-2/60 hover:border-accent/60"
               }`}
             >

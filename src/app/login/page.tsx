@@ -57,7 +57,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       {/* Œuvre générée (voir public/login-art.webp) : le côté galerie de la
           page, masqué sur petit écran. */}
       <aside aria-hidden className="relative hidden w-[42%] p-4 lg:block">
-        <div className="relative size-full overflow-hidden rounded-2xl border border-line bg-black">
+        <div className="relative size-full overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding">
           <Image
             src="/login-art.webp"
             alt=""

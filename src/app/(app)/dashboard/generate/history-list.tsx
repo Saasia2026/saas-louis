@@ -67,7 +67,7 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
           className="panel flex animate-fade-up flex-col gap-4 p-3 transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-line-strong sm:flex-row"
         >
           <div
-            className={`flex w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-black ${THUMB_WIDTH[item.aspectRatio]}`}
+            className={`flex w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-black bg-clip-padding ${THUMB_WIDTH[item.aspectRatio]}`}
             style={{ aspectRatio: item.aspectRatio.replace(":", " / ") }}
           >
             {item.mediaUrl ? (
@@ -168,7 +168,7 @@ export function HistoryEmpty() {
             playsInline
             preload="metadata"
             aria-hidden
-            className="w-full rounded-xl border border-line bg-black object-cover"
+            className="w-full rounded-xl border border-line bg-black bg-clip-padding object-cover"
             style={{ aspectRatio: ex.aspectRatio.replace(":", " / ") }}
           />
         ))}
