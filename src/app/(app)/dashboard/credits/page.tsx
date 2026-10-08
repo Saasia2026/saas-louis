@@ -198,7 +198,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
       )}
 
       {/* Solde et moyen de paiement côte à côte. */}
-      <div className="mt-8 grid animate-fade-up gap-5 lg:grid-cols-5">
+      <div className="mt-8 grid animate-fade-up gap-5 lg:grid-cols-5 lg:items-start">
         <div className="panel flex flex-col p-6 lg:col-span-2">
           <p className="label">{P.balance}</p>
           <p className="mt-3 font-headline text-6xl leading-none tabular-nums">
