@@ -19,6 +19,7 @@ import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import type { AspectRatio } from "@/lib/generation";
 import type { SwapHistoryItem } from "../swap-history";
+import { DeleteButton } from "../videos/delete-button";
 
 // Exemples montrés tant que l'historique est vide.
 const EXAMPLES = [
@@ -64,7 +65,7 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
       {items.map((item) => (
         <li
           key={item.id}
-          className="panel flex animate-fade-up flex-col gap-4 p-3 transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-line-strong sm:flex-row"
+          className="panel relative flex animate-fade-up flex-col gap-4 p-3 transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-line-strong sm:flex-row"
         >
           <div
             className={`flex w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-black bg-clip-padding ${THUMB_WIDTH[item.aspectRatio]}`}
@@ -87,7 +88,13 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
             )}
           </div>
 
-          <div className="flex min-w-0 flex-1 flex-col gap-3 py-1">
+          <DeleteButton
+            id={item.id}
+            confirm={V.deleteConfirm}
+            className="absolute top-2 right-2 z-10 size-8 text-faint hover:bg-red-500/15 hover:text-red-400"
+          />
+
+          <div className="flex min-w-0 flex-1 flex-col gap-3 py-1 sm:pr-8">
             {item.thumbs.length > 0 && (
               <div className="flex gap-2">
                 {item.thumbs.map((src) => (

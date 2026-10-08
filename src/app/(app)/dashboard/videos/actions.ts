@@ -23,4 +23,5 @@ export async function deleteGeneration(id: string) {
 
   await supabase.from("generations").delete().eq("id", id);
   revalidatePath("/dashboard/videos");
+  revalidatePath("/dashboard/generate");
 }
