@@ -371,6 +371,7 @@ export const fr = {
     incomplete: "Incomplète · {done}/{total} séquences remplacées",
     resume: "Suivre dans le studio",
     download: "Télécharger",
+    deleteConfirm: "Supprimer cette vidéo ?",
     seconds: "{seconds} s",
   },
 

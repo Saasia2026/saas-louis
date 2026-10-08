@@ -369,6 +369,7 @@ export const en: Dictionary = {
     incomplete: "Incomplete · {done}/{total} sequences replaced",
     resume: "Follow in the studio",
     download: "Download",
+    deleteConfirm: "Delete this video?",
     seconds: "{seconds} s",
   },
 
