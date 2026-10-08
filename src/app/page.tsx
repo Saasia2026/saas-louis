@@ -22,9 +22,19 @@ import { createClient } from "@/lib/supabase/server";
 // landing.exampleList : de vrais rendus du site.
 const EXAMPLES = ["ours", "chien"];
 
-// Rendus verticaux du bandeau, dans l'ordre des textes de
-// landing.showcaseList.
-const REEL = ["genjutsu-diable", "genjutsu-lincoln", "genjutsu-cage"];
+// Rendus verticaux du bandeau : les 3 du départ + les 6 anciens de la
+// mosaïque Genjutsu (remplacée par les clips showcase).
+const REEL = [
+  "genjutsu-diable",
+  "genjutsu-lincoln",
+  "genjutsu-cage",
+  "genjutsu-salle",
+  "genjutsu-danse",
+  "genjutsu-dunk",
+  "genjutsu-panier",
+  "genjutsu-bras-de-fer",
+  "genjutsu-camion",
+];
 
 // Rendu montré pour chaque fonctionnalité, dans l'ordre des textes de
 // landing.featureList ; null : la carte « crédits rendus » à la place.
@@ -51,7 +61,7 @@ export default async function Home() {
     ...REEL.map((file, i) => ({
       src: `/examples/${file}.mp4`,
       poster: `/examples/${file}.jpg`,
-      label: L.showcaseList[i].title,
+      label: L.showcaseList[i]?.title ?? "Genjutsu",
     })),
     { src: "/examples/micro-apres.mp4", poster: "/examples/micro-apres.jpg", label: L.compareAfter },
     { src: "/examples/mma-apres.mp4", poster: "/examples/mma-apres.jpg", label: L.compareAfter },
