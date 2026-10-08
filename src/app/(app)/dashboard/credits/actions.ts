@@ -90,6 +90,35 @@ export async function buyCredits(formData: FormData) {
   redirect(url ?? `${PAGE}?error=checkout`);
 }
 
+// Enregistre une carte sans rien débiter (Checkout en mode setup) : Stripe
+// l'attache au client, savedCard() la retrouve ensuite.
+export async function addCard() {
+  if (!stripeEnabled()) redirect(`${PAGE}?error=unavailable`);
+  const user = await currentUser();
+  const [locale, base] = await Promise.all([getLocale(), origin()]);
+  let url: string | null;
+  try {
+    const customer = await getOrCreateCustomer(user.id, user.email);
+    const session = await createStripe().checkout.sessions.create({
+      mode: "setup",
+      locale,
+      customer,
+      currency: CREDIT_CURRENCY,
+      payment_method_types: ["card"],
+      client_reference_id: user.id,
+      metadata: { user_id: user.id },
+      success_url: `${base}${PAGE}?added=1`,
+      cancel_url: `${base}${PAGE}`,
+    });
+    url = session.url;
+  } catch (e) {
+    console.error("addCard", e instanceof Error ? e.message : e);
+    url = null;
+  }
+
+  redirect(url ?? `${PAGE}?error=checkout`);
+}
+
 // Achat en un clic avec la carte enregistrée. Si la banque demande une
 // vérification, le client y est envoyé puis revient sur la page des crédits.
 // `nonce` : posé à l'affichage de la page, il empêche un double clic de payer
