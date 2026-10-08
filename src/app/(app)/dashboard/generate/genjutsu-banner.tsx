@@ -19,8 +19,8 @@ export function GenjutsuBanner() {
       className="relative isolate h-52 animate-fade-up overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding sm:h-64"
     >
       <video
-        src="/showcase/fight.mp4"
-        poster="/showcase/fight.jpg"
+        src="/examples/genjutsu-salle.mp4"
+        poster="/examples/genjutsu-salle.jpg"
         autoPlay
         muted
         loop
