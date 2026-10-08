@@ -189,6 +189,7 @@
   --animate-scan: scan 3.2s ease-in-out infinite;
   --animate-grow: grow 2.8s var(--ease-out) infinite;
   --animate-feature-progress: feature-progress 6s linear forwards;
+  --animate-demo-drop: demo-drop 0.6s var(--ease-out) 0.35s both;
 
   /* translate (et non transform) : l'effet de survol "lift" reste actif
      une fois l'apparition terminée. */
@@ -254,6 +255,17 @@
     }
     to {
       transform: scaleX(1);
+    }
+  }
+  /* Fichier déposé dans une tuile de la démo du studio. */
+  @keyframes demo-drop {
+    from {
+      opacity: 0;
+      transform: translateY(-14px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: none;
     }
   }
   @keyframes grow {

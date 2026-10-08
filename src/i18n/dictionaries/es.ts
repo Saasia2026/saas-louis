@@ -209,7 +209,15 @@ export const es: Dictionary = {
     createTitle: "Crear un vídeo",
     poweredByLabel: "Con la tecnología de",
     historyEmpty: "Tus creaciones aparecerán aquí. Sube un clip y un personaje para empezar.",
-    examplesTitle: "Ejemplos hechos con Genjutsu",
+    demo: {
+      title: "Cómo funciona",
+      steps: [
+        { title: "Sube tu clip", text: "Una persona bien visible." },
+        { title: "Añade tu personaje", text: "Una foto nítida de cuerpo entero." },
+        { title: "Pulsa Generar", text: "Ves el precio antes." },
+        { title: "Descarga tu vídeo", text: "Mismos gestos, decorado y sonido." },
+      ],
+    },
     video: "Clip de origen",
     videoHint: "MP4, MOV o WebM · se usan {max} s · una persona bien visible",
     segment: "Elige el fragmento ({max} s)",

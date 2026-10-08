@@ -211,7 +211,15 @@ export const fr = {
     createTitle: "Créer une vidéo",
     poweredByLabel: "Propulsé par",
     historyEmpty: "Tes créations apparaîtront ici. Dépose un clip et un personnage pour commencer.",
-    examplesTitle: "Exemples réalisés avec Genjutsu",
+    demo: {
+      title: "Comment ça marche",
+      steps: [
+        { title: "Dépose ton clip", text: "Une personne bien visible." },
+        { title: "Ajoute ton personnage", text: "Une photo nette, en pied." },
+        { title: "Clique sur Générer", text: "Le prix s'affiche avant." },
+        { title: "Récupère ta vidéo", text: "Mêmes gestes, décor et son." },
+      ],
+    },
     video: "Clip à reprendre",
     videoHint: "MP4, MOV ou WebM · {max} s gardées · une personne bien visible",
     segment: "Choisis le passage ({max} s)",
