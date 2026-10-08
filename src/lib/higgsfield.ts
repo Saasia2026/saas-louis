@@ -255,6 +255,16 @@ export async function createGenjutsuSwap(input: {
   return `hf:swap:${request_id}`;
 }
 
+// Annule une requête Higgsfield encore en file ; refusé une fois le rendu commencé.
+export async function cancelHiggsfieldRequest(id: string) {
+  const requestId = id.split(":")[2];
+  const response = await fetch(`${BASE_URL}/requests/${requestId}/cancel`, {
+    method: "POST",
+    headers: headers(),
+  });
+  return response.ok;
+}
+
 // État d'une requête Higgsfield ("hf:swap:<id>"). Une requête « failed » ou
 // « nsfw » n'est pas facturée par Higgsfield.
 export async function getHiggsfieldPrediction(id: string): Promise<PredictionState> {

@@ -379,6 +379,7 @@ export const fr = {
     insufficientCredits: "Pas assez de crédits. Recharge-les depuis la page Crédits.",
     outOfCredit: "Le compte du service de génération n'a plus de crédit. Tes crédits ont été rendus.",
     genjutsuUnavailable: "Le moteur est momentanément indisponible. Tes crédits ont été rendus : réessaie dans quelques minutes.",
+    genjutsuRefused: "Genjutsu a refusé une séquence de ce clip : le remplacement est arrêté. Tes crédits ont été rendus. Essaie un autre passage ou un autre personnage.",
     swapTooShort: "Le passage doit durer au moins {min} s.",
     precheckMinor:
       "Le modèle vidéo refuse les scènes avec des enfants. {reason} Choisis un clip ou une photo avec uniquement des adultes. Aucun crédit n'a été débité.",

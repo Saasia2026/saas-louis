@@ -382,6 +382,7 @@ export const es: Dictionary = {
     outOfCredit:
       "La cuenta del servicio de generación se ha quedado sin crédito. Te hemos devuelto los créditos.",
     genjutsuUnavailable: "El motor no está disponible por el momento. Te hemos devuelto los créditos: inténtalo de nuevo en unos minutos.",
+    genjutsuRefused: "Genjutsu rechazó una secuencia de este clip y el reemplazo se detuvo. Te devolvimos los créditos. Prueba otro fragmento u otro personaje.",
     swapTooShort: "El fragmento debe durar al menos {min} s.",
     swapRedoUnavailable: "Este plano no se puede rehacer.",
     cancelUnavailable: "Demasiado tarde para cancelar: el vídeo ya se está montando.",

@@ -10,6 +10,7 @@ import {
 } from "@/lib/generation";
 import {
   CONTENT_REFUSED_ERROR,
+  GENJUTSU_REFUSED_ERROR,
   GENJUTSU_UNAVAILABLE_ERROR,
   OUT_OF_CREDIT_ERROR,
   errorMessage,
@@ -27,6 +28,7 @@ function translateStoredError(error: string | null, t: Dictionary) {
   if (error === OUT_OF_CREDIT_ERROR) return t.generateErrors.outOfCredit;
   if (error === CONTENT_REFUSED_ERROR) return t.generateErrors.contentRefused;
   if (error === GENJUTSU_UNAVAILABLE_ERROR) return t.generateErrors.genjutsuUnavailable;
+  if (error === GENJUTSU_REFUSED_ERROR) return t.generateErrors.genjutsuRefused;
   return error;
 }
 

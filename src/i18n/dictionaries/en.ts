@@ -381,6 +381,7 @@ export const en: Dictionary = {
     insufficientCredits: "Not enough credits. Top up from the Credits page.",
     outOfCredit: "The generation service account is out of credit. Your credits have been refunded.",
     genjutsuUnavailable: "The engine is temporarily unavailable. Your credits were refunded: try again in a few minutes.",
+    genjutsuRefused: "Genjutsu refused a sequence of this clip, so the replacement was stopped. Your credits have been refunded. Try another section or another character.",
     swapTooShort: "The clip must be at least {min} s long.",
     swapRedoUnavailable: "This shot can't be redone.",
     cancelUnavailable: "Too late to cancel: the video is already being assembled.",

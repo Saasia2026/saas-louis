@@ -23,6 +23,7 @@ import {
   type SwapEngine,
 } from "@/lib/generation";
 import {
+  cancelHiggsfieldRequest,
   createGenjutsuSwap,
   getHiggsfieldPrediction,
   mannequinTarget,
@@ -32,6 +33,7 @@ import {
 import { createMagicHourSwap, getMagicHourPrediction } from "@/lib/magichour";
 import {
   CONTENT_REFUSED_ERROR,
+  GENJUTSU_REFUSED_ERROR,
   GENJUTSU_UNAVAILABLE_ERROR,
   OUT_OF_CREDIT_ERROR,
   copyOutputToStorage,
@@ -117,10 +119,6 @@ const LOCK_SECONDS = 150;
 const MAX_STATUS_ERRORS = 24;
 // Compte Higgsfield saturé : essais espacés, abandon au bout de 10 min.
 const GENJUTSU_RETRY_MS = 30_000;
-// Solde Higgsfield jugé trop bas : le même solde accepte souvent une requête
-// quelques secondes plus tard (réservations des autres requêtes libérées).
-// Un second essai, puis la séquence est abandonnée.
-const GENJUTSU_CREDIT_RETRY_MS = 30_000;
 // Séquence livrée avec ses images d'origine sans autre raison enregistrée.
 export const PART_NOT_RENDERED = "non rendue";
 // Montage : essais avant d'abandonner, et délai au-delà duquel un montage
@@ -165,8 +163,6 @@ export type SwapPart = {
   // Genjutsu : compte Higgsfield saturé, en attente d'une place.
   waitingSince?: number;
   retryAt?: number;
-  // Genjutsu : refus pour solde trop bas déjà retenté une fois.
-  creditRetried?: boolean;
   // Genjutsu : envoi en cours. Resté vrai au suivi suivant, son résultat n'a
   // jamais été connu : la séquence n'est pas renvoyée (elle serait payée deux fois).
   posting?: boolean;
@@ -691,9 +687,6 @@ async function advanceParts(
   const calledAt = Date.now();
   // Séquences Genjutsu en cours de rendu.
   let inFlight = parts.filter((p) => p.stage === "video" && p.predictionId).length;
-  // Séquences refusées faute de solde chez Higgsfield (refus non facturé) :
-  // abandonnées sitôt le passage fini, sans attendre une recharge du compte.
-  const starved: SwapPart[] = [];
   // Rendus finis, copiés dans le stockage tous en même temps.
   const copies: Promise<void>[] = [];
 
@@ -719,46 +712,18 @@ async function advanceParts(
 
   // Abandon d'un plan.
   // - Refait à la demande : l'ancien reprend sa place, la vidéo reste entière.
-  // - Genjutsu, quand d'autres séquences sont déjà envoyées (donc payées) :
-  //   celle-ci garde ses images d'origine, son prix est rendu, la vidéo est
-  //   livrée ; elle reste signalée et peut être refaite seule.
+  // - Genjutsu : un seul refus arrête tout, sans nouvel essai ni vidéo
+  //   partielle ; les séquences encore en file sont annulées.
   // - Sinon tout le remplacement échoue, crédits rendus.
-  const giveUp = async (part: SwapPart, i: number, error?: string) => {
+  const giveUp = async (part: SwapPart, error?: string) => {
     if (part.redo) {
       await abandonRedo(generation.id, part, error);
       return null;
     }
-    const othersPaid = parts.some(
-      (p) => p !== part && (p.predictionId || (p.clipPath && !p.original)),
-    );
-    if (genjutsu && othersPaid && part.videoUrl) {
-      try {
-        part.clipPath = await copyOutputToStorage(
-          part.videoUrl,
-          `${generation.user_id}/${generation.id}/part-${String(i).padStart(2, "0")}-source`,
-        );
-      } catch (e) {
-        console.error("swap: séquence d'origine", errorMessage(e));
-        return error ? fail(generation.id, error) : ("failed" as const);
-      }
-      part.predictionId = undefined;
-      part.posting = false;
-      part.original = true;
-      part.check = error ?? PART_NOT_RENDERED;
-      part.stage = "done";
-      // Enregistré avant de rendre son prix : jamais deux fois.
-      if (!(await persist())) return "continue" as const;
-      await createAdminClient().rpc("refund_swap_redo", {
-        p_generation_id: generation.id,
-        p_credits: swapShotCredits(
-          part.seconds,
-          "genjutsu",
-          metadata.hd,
-          Boolean(metadata.face),
-          Boolean(metadata.vessel),
-        ),
-      });
-      return null;
+    if (genjutsu) {
+      console.error("swap: refus Genjutsu, arrêt", generation.id, part.lastError ?? error ?? "");
+      await cancelQueued(parts.filter((p) => p !== part));
+      return fail(generation.id, error ?? GENJUTSU_UNAVAILABLE_ERROR);
     }
     return error ? fail(generation.id, error) : ("failed" as const);
   };
@@ -788,7 +753,7 @@ async function advanceParts(
       const url = outputUrlOf(prediction);
       if (prediction.status !== "succeeded" || !url) {
         if (prediction.outOfCredit) {
-          const out = await giveUp(part, i, OUT_OF_CREDIT_ERROR);
+          const out = await giveUp(part, OUT_OF_CREDIT_ERROR);
           if (out) return out;
           continue;
         }
@@ -812,7 +777,7 @@ async function advanceParts(
           // Envoi précédent au résultat inconnu (fonction coupée en plein
           // envoi), ou échéance dépassée : on n'envoie plus.
           if (part.posting || expired) {
-            const out = await giveUp(part, i);
+            const out = await giveUp(part);
             if (out) return out;
             continue;
           }
@@ -820,7 +785,7 @@ async function advanceParts(
           if (inFlight >= GENJUTSU_IN_FLIGHT) continue;
           if (Date.now() - calledAt > GENJUTSU_POST_WINDOW_MS) continue;
           if ((part.attempts ?? 0) >= MAX_ATTEMPTS) {
-            const out = await giveUp(part, i);
+            const out = await giveUp(part);
             if (out) return out;
             continue;
           }
@@ -873,7 +838,7 @@ async function advanceParts(
               part.attempts -= 1;
               part.waitingSince ??= Date.now();
               if (Date.now() - part.waitingSince > GENJUTSU_WAIT_MAX_MS) {
-                const out = await giveUp(part, i);
+                const out = await giveUp(part);
                 if (out) return out;
                 continue;
               }
@@ -883,32 +848,12 @@ async function advanceParts(
               continue;
             }
             part.lastError = errorMessage(e).slice(0, 200);
-            // Solde Higgsfield jugé trop bas (403 dès la création, non
-            // facturé) : un second essai un peu plus tard, puis abandon. Les
-            // autres séquences partent quand même : le refus dépend du solde
-            // à l'instant de l'envoi.
-            if (isOutOfCredit(e)) {
-              part.attempts -= 1;
-              if (!part.creditRetried) {
-                part.creditRetried = true;
-                part.retryAt = Date.now() + GENJUTSU_CREDIT_RETRY_MS;
-                continue;
-              }
-              if (part.redo) {
-                const out = await giveUp(part, i, GENJUTSU_UNAVAILABLE_ERROR);
-                if (out) return out;
-              } else {
-                starved.push(part);
-              }
-              continue;
-            }
-            // Seul un refus net (4xx) se retente : après une coupure, un délai
-            // dépassé ou un 5xx, la requête a pu être acceptée, et un second
-            // envoi serait payé deux fois.
-            if (!rejected || part.attempts >= MAX_ATTEMPTS) {
-              const out = await giveUp(part, i);
-              if (out) return out;
-            }
+            // Refus de Genjutsu (solde, contenu, requête) : on s'arrête là.
+            const out = await giveUp(
+              part,
+              isOutOfCredit(e) ? GENJUTSU_UNAVAILABLE_ERROR : rejected ? GENJUTSU_REFUSED_ERROR : undefined,
+            );
+            if (out) return out;
             continue;
           }
           part.posting = false;
@@ -923,7 +868,7 @@ async function advanceParts(
           // Envoi précédent au résultat inconnu (fonction coupée en plein
           // envoi), échéance dépassée ou essais épuisés : on n'envoie plus.
           if (part.posting || expired || (part.attempts ?? 0) >= MAX_ATTEMPTS) {
-            const out = await giveUp(part, i);
+            const out = await giveUp(part);
             if (out) return out;
             continue;
           }
@@ -947,7 +892,7 @@ async function advanceParts(
             // Refus net : rien n'a été créé ni facturé, on peut réessayer.
             if (rejected) part.posting = false;
             if (isOutOfCredit(e) || !rejected || part.attempts >= MAX_ATTEMPTS) {
-              const out = await giveUp(part, i, isOutOfCredit(e) ? OUT_OF_CREDIT_ERROR : undefined);
+              const out = await giveUp(part, isOutOfCredit(e) ? OUT_OF_CREDIT_ERROR : undefined);
               if (out) return out;
             }
             continue;
@@ -982,14 +927,14 @@ async function advanceParts(
         console.error("swap: suivi", errorMessage(e));
         part.statusErrors = (part.statusErrors ?? 0) + 1;
         if (part.statusErrors < MAX_STATUS_ERRORS && !expired) continue;
-        const out = await giveUp(part, i);
+        const out = await giveUp(part);
         if (out) return out;
         continue;
       }
       if (!isTerminal(prediction.status)) {
         if (!expired) continue;
         // Rendu jamais revenu avant l'échéance.
-        const out = await giveUp(part, i);
+        const out = await giveUp(part);
         if (out) return out;
         continue;
       }
@@ -997,28 +942,26 @@ async function advanceParts(
       const url = outputUrlOf(prediction);
       if (prediction.status !== "succeeded" || !url) {
         part.lastError = prediction.error;
+        // Genjutsu a refusé la séquence : tout s'arrête (voir giveUp).
+        if (genjutsu) {
+          const out = await giveUp(
+            part,
+            prediction.refused
+              ? CONTENT_REFUSED_ERROR
+              : prediction.outOfCredit
+                ? GENJUTSU_UNAVAILABLE_ERROR
+                : GENJUTSU_REFUSED_ERROR,
+          );
+          if (out) return out;
+          continue;
+        }
         if (prediction.outOfCredit) {
-          // Genjutsu : refus non facturé, l'essai ne compte pas. Un second
-          // essai un peu plus tard (voir GENJUTSU_CREDIT_RETRY_MS), puis abandon.
-          if (genjutsu) {
-            part.predictionId = undefined;
-            part.attempts = Math.max((part.attempts ?? 1) - 1, 0);
-            if (!part.creditRetried) {
-              part.creditRetried = true;
-              part.retryAt = Date.now() + GENJUTSU_CREDIT_RETRY_MS;
-              continue;
-            }
-            if (!part.redo) {
-              starved.push(part);
-              continue;
-            }
-          }
-          const out = await giveUp(part, i, genjutsu ? GENJUTSU_UNAVAILABLE_ERROR : OUT_OF_CREDIT_ERROR);
+          const out = await giveUp(part, OUT_OF_CREDIT_ERROR);
           if (out) return out;
           continue;
         }
         if (prediction.refused || (part.attempts ?? 1) >= MAX_ATTEMPTS) {
-          const out = await giveUp(part, i, prediction.refused ? CONTENT_REFUSED_ERROR : undefined);
+          const out = await giveUp(part, prediction.refused ? CONTENT_REFUSED_ERROR : undefined);
           if (out) return out;
           continue;
         }
@@ -1032,7 +975,6 @@ async function advanceParts(
         part.vesselUrl = url;
         part.predictionId = undefined;
         part.attempts = 0;
-        part.creditRetried = undefined;
         part.retryAt = undefined;
         part.lastError = undefined;
         await persist();
@@ -1134,29 +1076,9 @@ async function advanceParts(
 
   // Échéance dépassée et rendu fini impossible à copier : séquence abandonnée.
   if (expired) {
-    for (const [i, part] of parts.entries()) {
+    for (const part of parts) {
       if (part.stage !== "video" || !part.predictionId) continue;
-      const out = await giveUp(part, i);
-      if (out) return out;
-    }
-  }
-
-  if (starved.length) {
-    console.error(
-      "ALERTE : solde Higgsfield épuisé",
-      generation.id,
-      `${starved.length} séquence(s)`,
-      starved[0].lastError ?? "",
-    );
-    // Rien de payé ni en cours : échec immédiat, sans frais.
-    if (!parts.some((p) => p.predictionId || (p.clipPath && !p.original))) {
-      return fail(generation.id, GENJUTSU_UNAVAILABLE_ERROR);
-    }
-    // Des séquences sont déjà payées : celles-ci sont livrées avec leurs
-    // images d'origine, prix rendu, sans faire attendre le créateur. Il
-    // pourra les refaire seules une fois le compte rechargé.
-    for (const part of starved) {
-      const out = await giveUp(part, parts.indexOf(part), GENJUTSU_UNAVAILABLE_ERROR);
+      const out = await giveUp(part);
       if (out) return out;
     }
   }
@@ -1369,6 +1291,16 @@ export async function cancelSwap(generationId: string, userId: string) {
 // Refus du filtre de contenu : message clair, crédits rendus.
 function refuse(generationId: string) {
   return fail(generationId, CONTENT_REFUSED_ERROR);
+}
+
+// Séquences Genjutsu encore en file : annulées chez Higgsfield, qui ne le
+// permet plus une fois le rendu commencé (celles-là restent facturées).
+async function cancelQueued(parts: SwapPart[]) {
+  await Promise.all(
+    parts
+      .filter((p) => p.stage === "video" && p.predictionId?.startsWith("hf:"))
+      .map((p) => cancelHiggsfieldRequest(p.predictionId!).catch(() => false)),
+  );
 }
 
 // Requête Genjutsu ni créée ni facturée : trop de requêtes en cours sur le

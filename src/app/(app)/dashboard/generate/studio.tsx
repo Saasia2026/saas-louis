@@ -1,6 +1,6 @@
 "use client";
 
-import { Coins, Download, Move, RefreshCw, Replace, WandSparkles, X } from "lucide-react";
+import { Coins, Download, Move, RefreshCw, Replace, TriangleAlert, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fmt, plural } from "@/i18n/config";
@@ -739,7 +739,13 @@ function Result({
     <section className="panel animate-fade-up overflow-hidden">
       <div className="dot-bg flex justify-center p-6">
         {phase.kind === "error" ? (
-          <p className="max-w-sm py-10 text-center text-sm text-danger">{phase.message}</p>
+          <div
+            role="alert"
+            className="my-8 flex max-w-md items-start gap-3 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger"
+          >
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+            <p>{phase.message}</p>
+          </div>
         ) : (
           <div
             className={`relative flex w-full items-center justify-center overflow-hidden rounded-xl border bg-black bg-clip-padding ${

@@ -53,6 +53,8 @@ export const OUT_OF_CREDIT_ERROR =
 // clé de traduction pour les erreurs déjà enregistrées : ne pas le changer.
 export const GENJUTSU_UNAVAILABLE_ERROR =
   "Le moteur Qualité max est momentanément indisponible. Tes crédits ont été rendus.";
+export const GENJUTSU_REFUSED_ERROR =
+  "Genjutsu a refusé une séquence de ce clip. Tes crédits ont été rendus.";
 export const CONTENT_REFUSED_ERROR =
   "Le filtre de contenu du modèle vidéo a refusé une scène. Tes crédits ont été rendus.";
 
