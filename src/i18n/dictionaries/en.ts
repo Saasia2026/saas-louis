@@ -452,7 +452,7 @@ export const en: Dictionary = {
       title: "Your wallet",
       subtitle: "Save your card to pay in one click and never run out of credits.",
       addCardCta: "Add a card",
-      addCardHint: "No charge when you save it",
+      addCardHint: "No charge when you save it · card details handled by Stripe",
       cardSaved: "Saved card",
       cardValue: "{brand} •••• {last4} · expires {month}/{year}",
       remove: "Remove card",
@@ -465,14 +465,6 @@ export const en: Dictionary = {
       save: "Save",
       on: "On: {pack} ({price}) when fewer than {threshold} credits remain.",
       failed: "Paused: your bank declined the last charge. Check your card, then turn it back on.",
-      benefits: {
-        oneClick: "One-click purchase",
-        oneClickDesc: "No need to re-enter your card every time.",
-        autoRecharge: "Auto top-up",
-        autoRechargeDesc: "Your balance refills itself when it gets low.",
-        secure: "100% secure",
-        secureDesc: "Stripe handles your card data, never us.",
-      },
     },
     notices: {
       subscribed: "Subscription active: your credits have been added. Thank you!",

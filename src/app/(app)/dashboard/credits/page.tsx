@@ -1,4 +1,4 @@
-import { Check, CreditCard, Plus, RefreshCw, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { Check, CreditCard, Lock, Plus, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -45,13 +45,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const ERRORS = ["unavailable", "checkout", "card", "nocard", "portal", "subscribed"] as const;
-
-// Ce que la carte enregistrée permet, chacun avec sa petite icône.
-const BENEFITS = [
-  { key: "oneClick", icon: Zap, tile: "bg-amber-500/15 text-amber-500" },
-  { key: "autoRecharge", icon: RefreshCw, tile: "bg-emerald-500/15 text-emerald-500" },
-  { key: "secure", icon: ShieldCheck, tile: "bg-accent/15 text-accent" },
-] as const;
 
 // Les crédits d'une offre et ce qu'ils représentent en vidéo (720p, une
 // passe, fiche d'un personnage comprise ; 15 s ; haute fidélité).
@@ -235,28 +228,18 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
           </div>
 
           {!card ? (
-            <>
-              <ul className="mt-6 grid gap-5 sm:grid-cols-3">
-                {BENEFITS.map(({ key, icon: Icon, tile }) => (
-                  <li key={key}>
-                    <span className={`flex size-9 items-center justify-center rounded-lg ${tile}`}>
-                      <Icon className="size-4" />
-                    </span>
-                    <p className="mt-3 text-sm font-semibold">{A.benefits[key]}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-muted">{A.benefits[`${key}Desc`]}</p>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-line pt-5">
-                <form action={addCard}>
-                  <button type="submit" disabled={!enabled} className="btn btn-accent">
-                    <Plus />
-                    {A.addCardCta}
-                  </button>
-                </form>
-                <p className="text-xs text-faint">{A.addCardHint}</p>
-              </div>
-            </>
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <form action={addCard}>
+                <button type="submit" disabled={!enabled} className="btn btn-accent">
+                  <Plus />
+                  {A.addCardCta}
+                </button>
+              </form>
+              <p className="flex items-center gap-1.5 text-xs text-faint">
+                <Lock className="size-3.5 shrink-0" />
+                {A.addCardHint}
+              </p>
+            </div>
           ) : (
             <>
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface-2/60 px-4 py-3">

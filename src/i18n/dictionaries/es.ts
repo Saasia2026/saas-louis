@@ -453,7 +453,7 @@ export const es: Dictionary = {
       title: "Tu cartera",
       subtitle: "Guarda tu tarjeta para pagar con un clic y no quedarte nunca sin créditos.",
       addCardCta: "Añadir una tarjeta",
-      addCardHint: "Sin cargo al guardarla",
+      addCardHint: "Sin cargo al guardarla · datos bancarios gestionados por Stripe",
       cardSaved: "Tarjeta guardada",
       cardValue: "{brand} •••• {last4} · caduca {month}/{year}",
       remove: "Eliminar la tarjeta",
@@ -466,14 +466,6 @@ export const es: Dictionary = {
       save: "Guardar",
       on: "Activada: {pack} ({price}) cuando queden menos de {threshold} créditos.",
       failed: "En pausa: tu banco rechazó el último cobro. Revisa tu tarjeta y vuelve a activarla.",
-      benefits: {
-        oneClick: "Compra con un clic",
-        oneClickDesc: "No necesitas volver a introducir tu tarjeta.",
-        autoRecharge: "Recarga automática",
-        autoRechargeDesc: "Tu saldo se recarga solo cuando baja.",
-        secure: "100 % seguro",
-        secureDesc: "Stripe gestiona tus datos bancarios, nunca nosotros.",
-      },
     },
     notices: {
       subscribed: "Suscripción activada: tus créditos se han añadido. ¡Gracias!",

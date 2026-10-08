@@ -454,7 +454,7 @@ export const fr = {
       title: "Ton portefeuille",
       subtitle: "Enregistre ta carte pour payer en un clic et ne jamais tomber à court de crédits.",
       addCardCta: "Ajouter une carte",
-      addCardHint: "Aucun débit à l'enregistrement",
+      addCardHint: "Aucun débit à l'enregistrement · données bancaires gérées par Stripe",
       cardSaved: "Carte enregistrée",
       cardValue: "{brand} •••• {last4} · expire {month}/{year}",
       remove: "Retirer la carte",
@@ -467,14 +467,6 @@ export const fr = {
       save: "Enregistrer",
       on: "Activée : {pack} ({price}) quand il reste moins de {threshold} crédits.",
       failed: "Suspendue : ta banque a refusé le dernier débit. Vérifie ta carte puis réactive-la.",
-      benefits: {
-        oneClick: "Achat en un clic",
-        oneClickDesc: "Plus besoin de ressaisir ta carte à chaque fois.",
-        autoRecharge: "Recharge automatique",
-        autoRechargeDesc: "Ton solde se recharge tout seul quand il est bas.",
-        secure: "100 % sécurisé",
-        secureDesc: "Stripe gère tes données bancaires, jamais nous.",
-      },
     },
     notices: {
       subscribed: "Abonnement activé : tes crédits ont été ajoutés. Merci !",
