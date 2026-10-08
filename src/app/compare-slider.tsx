@@ -31,7 +31,8 @@ export function CompareSlider({
   // Copie floue de la vidéo « après » derrière le cadre, comme le mode
   // ambiant de YouTube.
   ambient?: boolean;
-  // Sans bordure ni coins arrondis : posé dans un cadre (voir PhoneFrame).
+  // Posé dans un cadre (voir PhoneFrame) : sans bordure ni coins arrondis, il
+  // en prend toute la surface.
   bare?: boolean;
   className?: string;
 }) {
@@ -55,7 +56,7 @@ export function CompareSlider({
   }
 
   return (
-    <div ref={outer} className={`relative isolate ${className}`}>
+    <div ref={outer} className={`relative isolate ${bare ? "size-full" : ""} ${className}`}>
       {/* Lumière d'ambiance : l'affiche floutée, statique — flouter une
           vidéo en lecture repeint chaque image et met les GPU à genoux. */}
       {ambient && posterAfter && (
@@ -83,9 +84,9 @@ export function CompareSlider({
       onPointerUp={() => setDragging(false)}
       onPointerCancel={() => setDragging(false)}
       className={`relative isolate w-full cursor-ew-resize touch-none overflow-hidden bg-black bg-clip-padding select-none ${
-        bare ? "" : "rounded-2xl border border-line"
+        bare ? "h-full" : "rounded-2xl border border-line"
       }`}
-      style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
+      style={bare ? undefined : { aspectRatio: aspectRatio.replace(":", " / ") }}
     >
       <video
         ref={beforeRef}
@@ -122,10 +123,10 @@ export function CompareSlider({
         </span>
       </div>
 
-      <span className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
+      <span className={`pointer-events-none absolute left-3 z-10 ${bare ? "bottom-[5%]" : "bottom-3"} rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm`}>
         {labelBefore}
       </span>
-      <span className="pointer-events-none absolute right-3 bottom-3 z-10 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
+      <span className={`pointer-events-none absolute right-3 z-10 ${bare ? "bottom-[5%]" : "bottom-3"} rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm`}>
         {labelAfter}
       </span>
     </div>
