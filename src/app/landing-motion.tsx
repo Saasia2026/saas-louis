@@ -76,6 +76,8 @@ export function ScrollWipe({
         autoPlay
         muted
         playsInline
+        disablePictureInPicture
+        disableRemotePlayback
         preload="metadata"
         aria-hidden
         className="absolute inset-0 size-full object-cover"
@@ -87,6 +89,8 @@ export function ScrollWipe({
         autoPlay
         muted
         playsInline
+        disablePictureInPicture
+        disableRemotePlayback
         preload="metadata"
         aria-hidden
         className="absolute inset-0 size-full object-cover"

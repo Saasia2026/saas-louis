@@ -25,6 +25,8 @@ export function GenjutsuBanner() {
         muted
         loop
         playsInline
+        disablePictureInPicture
+        disableRemotePlayback
         preload="metadata"
         aria-hidden
         className="absolute inset-0 -z-10 size-full object-cover"

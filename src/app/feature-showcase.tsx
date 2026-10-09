@@ -76,6 +76,8 @@ export function FeatureShowcase({ items, refund }: { items: Feature[]; refund: R
                   muted
                   loop
                   playsInline
+                  disablePictureInPicture
+                  disableRemotePlayback
                   preload="metadata"
                   className="relative size-full object-contain"
                 />

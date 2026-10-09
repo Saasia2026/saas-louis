@@ -38,6 +38,8 @@ export function ExampleVideo({
           muted
           loop
           playsInline
+          disablePictureInPicture
+          disableRemotePlayback
           preload="metadata"
           className="size-full object-cover"
         />

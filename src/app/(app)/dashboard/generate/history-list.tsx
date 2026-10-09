@@ -235,6 +235,8 @@ export function HistoryEmpty() {
             loop
             autoPlay
             playsInline
+            disablePictureInPicture
+            disableRemotePlayback
             preload="metadata"
             aria-hidden
             className={`absolute inset-0 size-full object-cover ${drop}`}
@@ -289,6 +291,8 @@ export function HistoryEmpty() {
           loop
           autoPlay
           playsInline
+          disablePictureInPicture
+          disableRemotePlayback
           preload="metadata"
           aria-hidden
           className={`absolute inset-0 size-full object-cover transition-opacity duration-700 ${

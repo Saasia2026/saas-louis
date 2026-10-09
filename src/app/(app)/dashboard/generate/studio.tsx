@@ -488,6 +488,8 @@ export function Studio({
                   autoPlay
                   loop
                   playsInline
+                  disablePictureInPicture
+                  disableRemotePlayback
                   className="size-full scale-[1.01] object-cover transition-transform duration-500 [transition-timing-function:var(--ease-out)] group-hover:scale-[1.07]"
                 />
                 <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-2.5 pt-8 pb-2 text-[11px] leading-tight text-white">

@@ -33,6 +33,8 @@ export function VideoMarquee({ items }: { items: { src: string; poster: string; 
               muted
               loop
               playsInline
+              disablePictureInPicture
+              disableRemotePlayback
               preload="metadata"
               className="size-full object-cover"
             />
