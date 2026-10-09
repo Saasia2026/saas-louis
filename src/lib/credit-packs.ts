@@ -13,11 +13,11 @@ export const CREDIT_PACKS = [
   { id: "studio", label: "Creator", credits: 900, amount: 9999 },
 ] as const;
 
-// Abonnements : un peu moins chers au crédit que le pack de la même offre.
+// Abonnements (Pro et Creator ; pas de Basic) : un peu moins chers au crédit
+// que le pack de la même offre.
 // L'annuel livre les 12 mois de crédits d'un coup, ~10 % sous le prix des
 // mêmes crédits en packs (pas plus : au-delà, il se vendrait à perte).
 export const SUBSCRIPTION_PLANS = [
-  { id: "starter", credits: 80, month: 899, year: 9790 },
   { id: "creator", credits: 230, month: 2499, year: 27990, highlight: true },
   { id: "studio", credits: 750, month: 7999, year: 89990 },
 ] as const;

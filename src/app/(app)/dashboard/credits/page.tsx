@@ -380,7 +380,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
             </form>
           </div>
         ) : (
-          <ul className="mt-8 grid gap-5 lg:grid-cols-3">
+          <ul className="mt-8 grid gap-5 md:grid-cols-2">
             {SUBSCRIPTION_PLANS.map((plan) => {
               const tier = TIERS[plan.id];
               const credits = planCredits(plan, billing);
