@@ -39,7 +39,6 @@
   --glass-bg: rgb(7 6 12 / 0.88);
   --composer-bg: rgb(15 13 22 / 0.88);
   --menu-bg: rgb(22 19 31 / 0.97);
-  --dot: rgb(255 255 255 / 0.07);
   --highlight: rgb(255 255 255 / 0.05);
   --gradient-from: #ffffff;
   --gradient-to: #9c9ca6;
@@ -98,7 +97,6 @@
   --glass-bg: rgb(255 255 255 / 0.97);
   --composer-bg: rgb(255 255 255 / 0.86);
   --menu-bg: rgb(255 255 255 / 0.98);
-  --dot: rgb(12 12 20 / 0.1);
   --highlight: rgb(255 255 255 / 1);
   --gradient-from: #0a0a0f;
   --gradient-to: #52525b;
@@ -142,7 +140,6 @@
     --glass-bg: rgb(255 255 255 / 0.97);
     --composer-bg: rgb(255 255 255 / 0.86);
     --menu-bg: rgb(255 255 255 / 0.98);
-    --dot: rgb(12 12 20 / 0.1);
     --highlight: rgb(255 255 255 / 1);
     --gradient-from: #0a0a0f;
     --gradient-to: #52525b;
@@ -420,12 +417,6 @@ body {
   .particle-field {
     animation: none;
   }
-}
-
-/* Trame de points, pour les zones d'aperçu. */
-@utility dot-bg {
-  background-image: radial-gradient(var(--dot) 1px, transparent 1px);
-  background-size: 18px 18px;
 }
 
 @utility panel {

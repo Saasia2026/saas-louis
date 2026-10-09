@@ -739,7 +739,7 @@ function Result({
 
   return (
     <section className="panel animate-fade-up overflow-hidden">
-      <div className="dot-bg flex justify-center p-6">
+      <div className="flex justify-center p-6">
         {phase.kind === "error" ? (
           <div
             role="alert"

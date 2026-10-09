@@ -193,7 +193,7 @@ export function SwapInput({
         className={`group relative flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border text-center transition-colors ${
           file
             ? "border-line-strong bg-black bg-clip-padding"
-            : "border-dashed border-line-strong bg-surface-2/40 px-4 hover:border-accent/50 hover:bg-surface-2"
+            : "border-line bg-surface-2/40 px-4 hover:border-accent/50 hover:bg-surface-2"
         } ${compact ? "h-24" : "h-44"}`}
       >
         <input
@@ -293,7 +293,7 @@ export function SwapInput({
         <button
           type="button"
           onClick={() => onCharacters((list) => [...list, { image: null, extras: [], target: "" }])}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-dashed border-line-strong px-3 py-1.5 text-sm text-muted transition-colors hover:border-accent/60 hover:text-text"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-line-strong px-3 py-1.5 text-sm text-muted transition-colors hover:border-accent/60 hover:text-text"
         >
           <Plus className="size-4" />
           {t.studio.addCharacter}
@@ -331,7 +331,7 @@ export function SwapInput({
                 {1 + c.extras.length < maxPhotos && (
                   <label
                     title={t.studio.addPhoto}
-                    className="relative flex size-12 cursor-pointer items-center justify-center rounded-lg border border-dashed border-line-strong text-muted transition-colors hover:border-accent/60 hover:text-text"
+                    className="relative flex size-12 cursor-pointer items-center justify-center rounded-lg border border-line-strong text-muted transition-colors hover:border-accent/60 hover:text-text"
                   >
                     <input
                       type="file"
@@ -403,7 +403,7 @@ export function SwapInput({
           <div className="mt-1.5 flex items-center gap-3">
             <label
               title={t.studio.decorHint}
-              className={`group relative flex h-20 w-32 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed transition-colors ${
+              className={`group relative flex h-20 w-32 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border transition-colors ${
                 decorPhoto
                   ? "border-line bg-black bg-clip-padding"
                   : "border-line-strong bg-surface-2/60 hover:border-accent/60"

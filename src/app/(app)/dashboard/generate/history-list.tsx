@@ -317,7 +317,7 @@ export function HistoryEmpty() {
             <li key={s.title} className={`transition-opacity duration-300 ${active || reduced ? "" : "opacity-55"}`}>
               <div
                 className={`relative aspect-[9/16] overflow-hidden rounded-xl border bg-surface-2/40 bg-clip-padding transition-colors duration-300 ${
-                  active ? "border-accent/60" : i === 2 ? "border-line" : "border-dashed border-line-strong"
+                  active ? "border-accent/60" : i === 2 ? "border-line" : "border-line"
                 }`}
               >
                 {visual(i)}
