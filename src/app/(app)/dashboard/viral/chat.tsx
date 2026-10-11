@@ -21,6 +21,7 @@ import { useI18n } from "@/i18n/provider";
 import { coverSrc } from "@/lib/trend-cover";
 import { clearChat } from "./actions";
 import { ASK_EVENT } from "./ask-button";
+import { HashtagLabel } from "./hashtag-label";
 import { Markdown } from "./markdown";
 import { Sparkline } from "./sparkline";
 
@@ -68,8 +69,13 @@ type StreamEvent =
   | { type: "error" }
   | { type: "done" };
 
-// Une icône par suggestion de départ, dans l'ordre du dictionnaire.
-const SUGGESTION_ICONS: LucideIcon[] = [Clapperboard, Flame, Play, ChartNoAxesColumn];
+// Une icône et une couleur par suggestion de départ, dans l'ordre du dictionnaire.
+const SUGGESTIONS: { icon: LucideIcon; tile: string; card: string }[] = [
+  { icon: Clapperboard, tile: "bg-violet-500/15 text-violet-400", card: "hover:border-violet-400/40" },
+  { icon: Flame, tile: "bg-orange-500/15 text-orange-400", card: "hover:border-orange-400/40" },
+  { icon: Play, tile: "bg-pink-500/15 text-pink-400", card: "hover:border-pink-400/40" },
+  { icon: ChartNoAxesColumn, tile: "bg-sky-500/15 text-sky-400", card: "hover:border-sky-400/40" },
+];
 
 // Un même hashtag peut revenir de deux recherches (7 jours, nouveautés).
 function uniqueHashtags(list: ChatHashtag[]) {
@@ -217,24 +223,26 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
           <div className="mx-auto flex h-full max-w-2xl flex-col justify-center py-10">
             <span
               aria-hidden
-              className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-b from-accent-2 to-accent text-white"
+              className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-hot text-white"
               style={{ boxShadow: "0 3px 0 color-mix(in oklab, var(--accent) 62%, black)" }}
             >
               <TrendingUp className="size-5" />
             </span>
-            <h2 className="mt-5 font-headline text-[clamp(2.25rem,5vw,3.5rem)] leading-[0.9]">{V.emptyTitle}</h2>
+            <h2 className="mt-5 font-headline text-[clamp(2.25rem,5vw,3.5rem)] leading-[0.9]">
+              {V.emptyTitle} <span className="text-shine">{V.emptyTitleShine}</span>
+            </h2>
             <p className="mt-3 text-sm text-muted">{V.empty}</p>
             <div className="mt-7 grid gap-2.5 sm:grid-cols-2">
               {V.suggestions.map((s, i) => {
-                const Icon = SUGGESTION_ICONS[i] ?? TrendingUp;
+                const { icon: Icon, tile, card } = SUGGESTIONS[i] ?? SUGGESTIONS[0];
                 return (
                   <button
                     key={s}
                     type="button"
                     onClick={() => send(s)}
-                    className="group flex items-center gap-3 rounded-xl border border-line bg-surface-2/50 px-3.5 py-3 text-left text-sm font-medium transition-[border-color,background-color,translate] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:bg-surface-2"
+                    className={`group flex items-center gap-3 rounded-xl border border-line bg-surface-2/50 px-3.5 py-3 text-left text-sm font-medium transition-[border-color,background-color,translate] duration-200 hover:-translate-y-0.5 hover:bg-surface-2 ${card}`}
                   >
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-muted transition-colors group-hover:text-accent-light">
+                    <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${tile}`}>
                       <Icon className="size-4" />
                     </span>
                     {s}
@@ -276,7 +284,7 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
                     {m.hashtags && m.hashtags.length > 0 && (
                       <div className="rounded-xl border border-line bg-surface-2/40 p-3">
                         <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
-                          <Music2 className="size-3.5" />
+                          <Music2 className="size-3.5 text-accent-hot" />
                           {V.tiktokTitle}
                         </p>
                         <ol className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
@@ -289,7 +297,9 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
                                 className="flex items-center gap-2 rounded-md py-0.5 text-sm hover:text-text"
                               >
                                 <span className="w-5 shrink-0 text-right text-xs text-faint tabular-nums">{h.rank}</span>
-                                <span className="min-w-0 flex-1 truncate font-medium text-text">{h.hashtag}</span>
+                                <span className="min-w-0 flex-1 truncate font-medium text-text">
+                                  <HashtagLabel tag={h.hashtag} />
+                                </span>
                                 <Sparkline values={h.curve} />
                                 <span className="w-12 shrink-0 text-right text-xs text-faint tabular-nums">
                                   {compact.format(h.views)}

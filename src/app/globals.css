@@ -171,6 +171,7 @@
   --color-accent: var(--accent);
   --color-accent-light: var(--accent-light);
   --color-accent-2: var(--accent-2);
+  --color-accent-hot: var(--accent-hot);
   --color-accent-soft: var(--accent-soft);
   --color-success: var(--success);
   --color-warning: var(--warning);

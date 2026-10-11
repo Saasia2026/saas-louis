@@ -464,7 +464,8 @@ export const fr = {
   viral: {
     eyebrow: "Viralité",
     title: "Analyste viral",
-    emptyTitle: "Qu'est-ce qui buzze aujourd'hui ?",
+    emptyTitle: "Qu'est-ce qui buzze",
+    emptyTitleShine: "aujourd'hui ?",
     tiktokBoard: "TikTok · {country}",
     lastDays: "7 derniers jours",
     askHashtag: "Quelle vidéo générer avec la tendance {hashtag} ?",

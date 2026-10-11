@@ -215,7 +215,7 @@ type RawVideo = {
 export async function hashtagVideos(hashtags: string[], perTag = 2): Promise<TrendVideo[]> {
   const tags = [...new Set(hashtags.map((h) => h.replace(/^#/, "").toLowerCase()).filter(Boolean))].slice(0, 4);
   if (!tags.length) return [];
-  return cached(
+  const list = await cached(
     `videos:${tags.join(",")}:${perTag}`,
     async () => {
       const raw = await runActor<RawVideo>(VIDEO_ACTOR, { hashtags: tags, resultsPerPage: 8 });
@@ -229,11 +229,17 @@ export async function hashtagVideos(hashtags: string[], perTag = 2): Promise<Tre
           v.createTimeISO &&
           Date.now() - Date.parse(v.createTimeISO) < VIDEO_MAX_AGE_MS,
       );
+      // Une vidéo qui porte plusieurs de ces hashtags n'est montrée qu'une fois.
+      const seen = new Set<string>();
       return tags.flatMap((tag) =>
         recent
-          .filter((v) => v.searchHashtag?.name?.toLowerCase() === tag)
+          .filter((v) => v.searchHashtag?.name?.toLowerCase() === tag && !seen.has(v.id ?? v.webVideoUrl!))
           .sort((a, b) => (b.playCount ?? 0) - (a.playCount ?? 0))
           .slice(0, perTag)
+          .map((v) => {
+            seen.add(v.id ?? v.webVideoUrl!);
+            return v;
+          })
           .map((v) => ({
             id: v.id ?? v.webVideoUrl!,
             hashtag: `#${tag}`,
@@ -253,4 +259,6 @@ export async function hashtagVideos(hashtags: string[], perTag = 2): Promise<Tre
     },
     (list) => list.length > 0,
   );
+  // Listes déjà en cache d'avant le dédoublonnage.
+  return list.filter((v, i) => list.findIndex((o) => o.id === v.id) === i);
 }

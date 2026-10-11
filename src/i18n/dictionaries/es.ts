@@ -462,7 +462,8 @@ export const es: Dictionary = {
   viral: {
     eyebrow: "Viralidad",
     title: "Analista viral",
-    emptyTitle: "¿Qué está pegando hoy?",
+    emptyTitle: "¿Qué está pegando",
+    emptyTitleShine: "hoy?",
     tiktokBoard: "TikTok · {country}",
     lastDays: "Últimos 7 días",
     askHashtag: "¿Qué vídeo genero con la tendencia {hashtag}?",

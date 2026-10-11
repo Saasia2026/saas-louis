@@ -12,6 +12,7 @@ import {
 } from "@/lib/tiktok-trends";
 import { coverSrc } from "@/lib/trend-cover";
 import { AskButton } from "./ask-button";
+import { HashtagLabel } from "./hashtag-label";
 import { Sparkline } from "./sparkline";
 
 // Colonne « en ce moment » : les tendances TikTok du pays utiles à TwinPost
@@ -33,7 +34,7 @@ export async function TrendsAside() {
       <section className="panel animate-fade-up p-4">
         <div className="flex items-baseline justify-between gap-3 px-1">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <Music2 className="size-4 text-accent-light" />
+            <Music2 className="size-4 text-accent-hot" />
             {fmt(V.tiktokBoard, { country })}
           </h2>
           <span className="text-xs text-faint">{V.lastDays}</span>
@@ -47,7 +48,7 @@ export async function TrendsAside() {
               >
                 <span className="flex items-center gap-2.5">
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold group-hover:text-text">
-                    {p.hashtag}
+                    <HashtagLabel tag={p.hashtag} />
                   </span>
                   <Sparkline values={p.curve} />
                   <span className="w-11 shrink-0 text-right text-xs text-faint tabular-nums">
@@ -85,7 +86,7 @@ async function TrendVideos({ hashtags }: { hashtags: string[] }) {
   return (
     <section className="panel animate-fade-up p-4">
       <h2 className="flex items-center gap-2 px-1 text-sm font-semibold">
-        <Play className="size-4 text-accent-light" />
+        <Play className="size-4 text-accent-hot" />
         {V.videosBoard}
       </h2>
       <div className="mt-3 grid grid-cols-2 gap-2.5">
