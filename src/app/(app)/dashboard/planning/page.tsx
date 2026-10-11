@@ -1,26 +1,16 @@
-import { BellRing, CircleAlert, Clapperboard, Plus, Unlink } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { fmt } from "@/i18n/config";
 import { getDictionary } from "@/i18n/server";
-import {
-  ALERT_DAY_OPTIONS,
-  MAX_PLAN_TIMES,
-  PLAN_HORIZON_DAYS,
-  PLAN_TIMEZONES,
-  sameSlot,
-  upcomingSlots,
-} from "@/lib/posting-plan";
+import { PLAN_HORIZON_DAYS, PLAN_TIMEZONES, sameSlot, upcomingDays, upcomingSlots } from "@/lib/posting-plan";
 import { activePosts, userAccounts, userPlan } from "@/lib/social";
 import { createClient } from "@/lib/supabase/server";
-import { SOCIAL_PLATFORMS, zernioEnabled, type SocialAccount } from "@/lib/zernio";
+import { zernioEnabled, type SocialAccount } from "@/lib/zernio";
 import { PageHeader } from "../../page-header";
 import { listSwapHistory } from "../swap-history";
-import { connectAccount, disconnectAccount, savePlan } from "./actions";
-import { ConfirmButton } from "./confirm-button";
-import { PlanningCalendar, type CalendarEntry, type CalendarPost } from "./planning-calendar";
-import { PlatformBadge } from "./platform-badge";
+import { ConnectHero } from "./connect-hero";
+import { PlanningBoard, type BoardEntry, type BoardPost } from "./planning-board";
 
 // Envoi d'une vidéo à Zernio pendant la programmation.
 export const maxDuration = 120;
@@ -29,9 +19,6 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
   return { title: `${t.meta.planning} — TwinPost` };
 }
-
-// Lundi d'abord.
-const WEEK = [1, 2, 3, 4, 5, 6, 0];
 
 export default async function PlanningPage(props: PageProps<"/dashboard/planning">) {
   const params = await props.searchParams;
@@ -60,19 +47,20 @@ export default async function PlanningPage(props: PageProps<"/dashboard/planning
     .filter((v): v is typeof v & { mediaUrl: string } => !v.running && Boolean(v.mediaUrl))
     .map((v) => ({ id: v.id, mediaUrl: v.mediaUrl, date: v.date }));
 
-  const toPost = (p: (typeof posts)[number]): CalendarPost => ({
+  const toPost = (p: (typeof posts)[number]): BoardPost => ({
     id: p.id,
-    status: p.status as CalendarPost["status"],
+    status: p.status as BoardPost["status"],
     caption: p.caption,
     accountIds: p.account_ids,
     generationId: p.generation_id,
     links: Array.isArray(p.results)
-      ? (p.results as { platform?: string; url?: string | null }[])
-          .filter((r): r is { platform: string; url: string } => Boolean(r.platform && r.url))
+      ? (p.results as { platform?: string; url?: string | null }[]).filter(
+          (r): r is { platform: string; url: string } => Boolean(r.platform && r.url),
+        )
       : [],
   });
   // Créneaux du rythme, plus les publications hors rythme (rythme changé depuis).
-  const entries: CalendarEntry[] = [
+  const entries: BoardEntry[] = [
     ...slots.map((slot) => {
       const post = posts.find((p) => p.status !== "failed" && sameSlot(p.scheduled_for, slot));
       return { at: slot.toISOString(), post: post && toPost(post) };
@@ -96,16 +84,17 @@ export default async function PlanningPage(props: PageProps<"/dashboard/planning
     notice = {
       ok: false,
       text:
-        params.error === "plan" ? P.errors.plan : params.error === "connect" ? P.errors.connect : fmt(P.connectFailed, { platform }),
+        params.error === "plan"
+          ? P.errors.plan
+          : params.error === "connect"
+            ? P.errors.connect
+            : fmt(P.connectFailed, { platform }),
     };
   }
 
   const timezones = PLAN_TIMEZONES.includes(plan.timezone as (typeof PLAN_TIMEZONES)[number])
     ? PLAN_TIMEZONES
     : [plan.timezone, ...PLAN_TIMEZONES];
-  const timeInputs = Array.from({ length: MAX_PLAN_TIMES }, (_, i) => plan.times[i] ?? "");
-  const pill =
-    "flex cursor-pointer items-center justify-center rounded-lg border border-line bg-surface-2/60 px-2.5 py-1.5 text-sm font-medium text-muted transition-colors has-[:checked]:border-accent/60 has-[:checked]:bg-accent-soft has-[:checked]:text-text";
 
   return (
     <div>
@@ -124,185 +113,38 @@ export default async function PlanningPage(props: PageProps<"/dashboard/planning
         </p>
       )}
 
-      {missingSoon > 0 && (
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-          <p className="flex items-center gap-2 text-sm font-medium text-amber-300">
-            <BellRing className="size-4 shrink-0" />
-            {fmt(missingSoon === 1 ? P.missingBannerOne : P.missingBanner, { n: missingSoon, days: plan.alertDays })}
-          </p>
-          <Link href="/dashboard/generate" className="btn btn-hot">
-            <Clapperboard />
-            {P.createVideo}
-          </Link>
-        </div>
+      {!enabled ? (
+        <p className="panel mt-8 flex items-start gap-2 p-5 text-sm text-muted">
+          <CircleAlert className="mt-0.5 size-4 shrink-0" />
+          {P.notReady}
+        </p>
+      ) : (
+        accounts.length === 0 && <ConnectHero />
       )}
 
-      <div className="mt-8 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <section>
-          <h2 className="text-lg font-semibold">{P.calendarTitle}</h2>
-          <div className="mt-4">
-            <PlanningCalendar
-              entries={entries}
-              videos={videos}
-              accounts={accounts.map((a) => ({
-                id: a.id,
-                platform: a.platform,
-                username: a.username,
-                needsReconnection: a.needsReconnection,
-              }))}
-              defaultAccountIds={plan.accountIds}
-              timezone={plan.timezone}
-              enabled={enabled}
-            />
-          </div>
-        </section>
-
-        <div className="space-y-6">
-          <section className="panel p-5">
-            <h2 className="font-semibold">{P.accountsTitle}</h2>
-            {!enabled ? (
-              <p className="mt-3 flex items-start gap-2 text-sm text-muted">
-                <CircleAlert className="mt-0.5 size-4 shrink-0" />
-                {P.notReady}
-              </p>
-            ) : (
-              <>
-                {accounts.length ? (
-                  <ul className="mt-3 space-y-2">
-                    {accounts.map((a) => (
-                      <li key={a.id} className="flex items-center gap-3">
-                        {a.avatar ? (
-                          // Photo du compte hébergée par le réseau : pas d'optimisation Next.
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={a.avatar} alt="" className="size-8 rounded-full object-cover" />
-                        ) : (
-                          <PlatformBadge platform={a.platform} />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold">{a.displayName || a.username}</p>
-                          <p className="flex items-center gap-1.5 text-xs text-muted">
-                            <PlatformBadge platform={a.platform} className="size-3.5" />
-                            {a.needsReconnection ? (
-                              <span className="text-amber-300">{P.reconnect}</span>
-                            ) : a.followers !== null ? (
-                              fmt(P.followers, { n: a.followers.toLocaleString() })
-                            ) : (
-                              `@${a.username}`
-                            )}
-                          </p>
-                        </div>
-                        <form action={disconnectAccount}>
-                          <input type="hidden" name="accountId" value={a.id} />
-                          <ConfirmButton confirm={P.disconnectConfirm} className="btn btn-ghost p-2">
-                            <Unlink />
-                            <span className="sr-only">{P.disconnect}</span>
-                          </ConfirmButton>
-                        </form>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-sm text-muted">{P.noAccounts}</p>
-                )}
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  {SOCIAL_PLATFORMS.map((platform) => (
-                    <form key={platform} action={connectAccount}>
-                      <input type="hidden" name="platform" value={platform} />
-                      <button type="submit" className="btn btn-secondary w-full justify-start px-2.5 text-xs">
-                        <PlatformBadge platform={platform} className="size-5" />
-                        {P.platforms[platform]}
-                        <Plus className="ml-auto" />
-                      </button>
-                    </form>
-                  ))}
-                </div>
-              </>
-            )}
-          </section>
-
-          <form action={savePlan} className="panel space-y-5 p-5">
-            <h2 className="font-semibold">{P.rhythmTitle}</h2>
-            <fieldset>
-              <legend className="label">{P.days}</legend>
-              <div className="mt-1.5 grid grid-cols-7 gap-1">
-                {WEEK.map((d) => (
-                  <label key={d} className={`${pill} px-0`}>
-                    <input
-                      type="checkbox"
-                      name="weekday"
-                      value={d}
-                      defaultChecked={plan.weekdays.includes(d)}
-                      className="sr-only"
-                    />
-                    {P.weekdays[d]}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-            <fieldset>
-              <legend className="label">{P.times}</legend>
-              <div className="mt-1.5 grid grid-cols-3 gap-2">
-                {timeInputs.map((time, i) => (
-                  <input key={i} type="time" name="time" defaultValue={time} className="field px-2 tabular-nums" />
-                ))}
-              </div>
-            </fieldset>
-            <label className="block">
-              <span className="label">{P.timezone}</span>
-              <select name="timezone" defaultValue={plan.timezone} className="field mt-1.5">
-                {timezones.map((tz) => (
-                  <option key={tz} value={tz}>
-                    {tz.replace(/_/g, " ")}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {accounts.length > 0 && (
-              <fieldset>
-                <legend className="label">{P.defaultAccounts}</legend>
-                <div className="mt-1.5 flex flex-wrap gap-2">
-                  {accounts.map((a) => (
-                    <label key={a.id} className={`${pill} gap-2`}>
-                      <input
-                        type="checkbox"
-                        name="account"
-                        value={a.id}
-                        defaultChecked={plan.accountIds.includes(a.id)}
-                        className="sr-only"
-                      />
-                      <PlatformBadge platform={a.platform} className="size-5" />
-                      {a.username}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            )}
-            <div className="space-y-3 border-t border-line pt-4">
-              <label className="block">
-                <span className="label">{P.alertDays}</span>
-                <select name="alertDays" defaultValue={String(plan.alertDays)} className="field mt-1.5">
-                  {ALERT_DAY_OPTIONS.map((n) => (
-                    <option key={n} value={n}>
-                      {fmt(n === 1 ? P.alertDayOne : P.alertDayOption, { n })}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex cursor-pointer items-center justify-between gap-4 text-sm font-medium">
-                {P.alertEmail}
-                <span className="relative inline-flex shrink-0">
-                  <input type="checkbox" name="alertEmail" defaultChecked={plan.alertEmail} className="peer sr-only" />
-                  <span className="h-6 w-11 rounded-full border border-line-strong bg-surface-3 transition-colors peer-checked:border-transparent peer-checked:bg-accent peer-focus-visible:ring-2 peer-focus-visible:ring-accent/50" />
-                  <span className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
-                </span>
-              </label>
-            </div>
-            <button type="submit" className="btn btn-accent w-full">
-              {P.save}
-            </button>
-          </form>
-        </div>
-      </div>
+      <PlanningBoard
+        days={upcomingDays(plan.timezone, PLAN_HORIZON_DAYS, now)}
+        entries={entries}
+        videos={videos}
+        accounts={accounts.map((a) => ({
+          id: a.id,
+          platform: a.platform,
+          username: a.username,
+          avatar: a.avatar,
+          needsReconnection: a.needsReconnection,
+        }))}
+        plan={{
+          weekdays: plan.weekdays,
+          times: plan.times,
+          timezone: plan.timezone,
+          accountIds: plan.accountIds,
+          alertDays: plan.alertDays,
+          alertEmail: plan.alertEmail,
+        }}
+        timezones={timezones}
+        enabled={enabled}
+        missingSoon={missingSoon}
+      />
     </div>
   );
 }

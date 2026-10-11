@@ -122,6 +122,19 @@ export function upcomingSlots(plan: Pick<PostingPlan, "weekdays" | "times" | "ti
   return slots;
 }
 
+// Jour du calendrier (AAAA-MM-JJ) d'un instant dans un fuseau.
+export function dayKey(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+}
+
+// Les `count` prochains jours du calendrier local, aujourd'hui compris.
+export function upcomingDays(timeZone: string, count: number, now = new Date()) {
+  const today = zonedParts(now, timeZone);
+  return Array.from({ length: count }, (_, i) =>
+    new Date(Date.UTC(today.year, today.month - 1, today.day + i)).toISOString().slice(0, 10),
+  );
+}
+
 // Une publication programmée occupe le créneau à la minute près.
 export function sameSlot(a: Date | string, b: Date | string) {
   return Math.abs(new Date(a).getTime() - new Date(b).getTime()) < 60_000;
