@@ -50,15 +50,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           ligne et laisse tout l'écran au contenu. */}
       <header className="glass sticky top-0 z-20 border-b border-line">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5 sm:px-6">
-          <div className="min-w-0 shrink">
+          <div className="shrink-0">
             <Logo href="/dashboard" compact />
           </div>
-          <div className="ml-2 hidden md:block lg:ml-6">
+          <div className="ml-2 hidden min-w-0 md:block lg:ml-4">
             <MainNav />
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-2">
-            {/* Solde : en grand, traduit en durée de vidéo, avec la recharge. */}
+            {/* Solde en grand (sa durée de vidéo en infobulle), avec la recharge. */}
             <div
               title={videoLabel}
               className="flex items-center gap-2.5 rounded-xl border border-line bg-surface-2/80 py-1 pr-1 pl-3"
@@ -68,7 +68,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 <span className="block max-w-[9rem] truncate font-headline text-lg leading-none tabular-nums sm:max-w-none">
                   {creditsLabel}
                 </span>
-                <span className="hidden text-[0.6875rem] leading-tight text-faint xl:block">{videoLabel}</span>
               </span>
               <Link
                 href="/dashboard/credits"
@@ -76,14 +75,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 className="btn btn-accent px-2.5 py-1.5 text-[0.8125rem]"
               >
                 <Plus />
-                <span className="hidden lg:inline">{t.shell.recharge}</span>
+                <span className="sr-only">{t.shell.recharge}</span>
               </Link>
             </div>
-
-            <Link href="/dashboard/generate" className="btn btn-hot hidden lg:inline-flex">
-              <Plus />
-              {t.shell.newVideo}
-            </Link>
 
             <div className="flex items-center">
               <ThemeToggle />

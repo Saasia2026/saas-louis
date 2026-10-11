@@ -77,7 +77,7 @@ export function MainNav() {
             href={href}
             title={t.shell.navHint[key]}
             aria-current={active ? "page" : undefined}
-            className={`group relative flex items-center gap-2.5 rounded-xl p-1.5 transition-colors lg:pr-3.5 ${
+            className={`group relative flex items-center gap-2.5 rounded-xl p-1.5 transition-colors xl:pr-3.5 ${
               active ? "text-text" : "text-muted hover:bg-surface-2/70 hover:text-text"
             }`}
           >
@@ -91,7 +91,7 @@ export function MainNav() {
             >
               <Icon className="size-4" />
             </span>
-            <span className="hidden text-sm font-semibold whitespace-nowrap lg:inline">{t.shell.nav[key]}</span>
+            <span className="hidden text-sm font-semibold whitespace-nowrap xl:inline">{t.shell.nav[key]}</span>
           </Link>
         );
       })}
