@@ -210,14 +210,13 @@ export const es: Dictionary = {
   studio: {
     createTitle: "Crear un vídeo",
     poweredByLabel: "Con la tecnología de",
-    historyEmpty: "Tus creaciones aparecerán aquí. Sube un clip y un personaje para empezar.",
     demo: {
       title: "Cómo funciona",
       steps: [
-        { title: "Sube tu clip", text: "Una persona bien visible." },
-        { title: "Añade tu personaje", text: "Una foto nítida de cuerpo entero." },
-        { title: "Pulsa Generar", text: "Ves el precio antes." },
-        { title: "Descarga tu vídeo", text: "Mismos gestos, decorado y sonido." },
+        { title: "Sube tu clip" },
+        { title: "Añade tu personaje" },
+        { title: "Pulsa Generar" },
+        { title: "Descarga tu vídeo" },
       ],
     },
     video: "Clip de origen",
@@ -390,7 +389,6 @@ export const es: Dictionary = {
   planning: {
     eyebrow: "Redes",
     title: "Planificación",
-    intro: "Programa tus vídeos en TikTok, Instagram, YouTube y Facebook: salen solos, a su hora.",
     notReady: "La publicación en redes llega pronto.",
     connectFirst: "Conecta primero una cuenta, en el panel de la derecha.",
     disconnect: "Desconectar",
@@ -424,7 +422,6 @@ export const es: Dictionary = {
     calendarTitle: "Tus dos semanas",
     heroTitle: "Publica sin pensarlo",
     heroText: "Conecta tus redes, elige tus días: cada vídeo sale a su hora, con la etiqueta de «contenido IA» que exigen las plataformas.",
-    steps: ["Conecta tus redes", "Elige tus días", "Añade tus vídeos"],
     editRhythm: "Editar",
     toFill: "{n} por llenar",
     addVideo: "Añadir",
@@ -466,7 +463,6 @@ export const es: Dictionary = {
   viral: {
     eyebrow: "Viralidad",
     title: "Analista viral",
-    intro: "Lee las tendencias del momento, los vídeos que despegan y tus cuentas, y te dice qué vídeo generar.",
     emptyTitle: "¿Qué está pegando hoy?",
     tiktokBoard: "TikTok · {country}",
     lastDays: "Últimos 7 días",
@@ -529,7 +525,6 @@ export const es: Dictionary = {
   creditsPage: {
     eyebrow: "Facturación",
     title: "Créditos",
-    intro: "{max} créditos por segundo en 720p, {hd} en 1080p, el doble en alta fidelidad. Más {sheet} créditos por personaje. En packs, o cada mes con una suscripción.",
     balance: "Saldo actual",
     topUp: "Comprar créditos",
     popular: "Popular",

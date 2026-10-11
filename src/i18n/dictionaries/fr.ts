@@ -212,14 +212,13 @@ export const fr = {
   studio: {
     createTitle: "Créer une vidéo",
     poweredByLabel: "Propulsé par",
-    historyEmpty: "Tes créations apparaîtront ici. Dépose un clip et un personnage pour commencer.",
     demo: {
       title: "Comment ça marche",
       steps: [
-        { title: "Dépose ton clip", text: "Une personne bien visible." },
-        { title: "Ajoute ton personnage", text: "Une photo nette, en pied." },
-        { title: "Clique sur Générer", text: "Le prix s'affiche avant." },
-        { title: "Récupère ta vidéo", text: "Mêmes gestes, décor et son." },
+        { title: "Dépose ton clip" },
+        { title: "Ajoute ton personnage" },
+        { title: "Clique sur Générer" },
+        { title: "Récupère ta vidéo" },
       ],
     },
     video: "Clip à reprendre",
@@ -392,7 +391,6 @@ export const fr = {
   planning: {
     eyebrow: "Réseaux",
     title: "Planning",
-    intro: "Programme tes vidéos sur TikTok, Instagram, YouTube et Facebook : elles partent toutes seules, à l'heure.",
     notReady: "La publication sur les réseaux arrive bientôt.",
     connectFirst: "Connecte d'abord un compte, dans le panneau de droite.",
     disconnect: "Déconnecter",
@@ -426,7 +424,6 @@ export const fr = {
     calendarTitle: "Tes deux semaines",
     heroTitle: "Publie sans y penser",
     heroText: "Connecte tes réseaux, choisis tes jours : chaque vidéo part à l'heure, avec la mention « contenu IA » exigée par les plateformes.",
-    steps: ["Connecte tes réseaux", "Choisis tes jours", "Ajoute tes vidéos"],
     editRhythm: "Modifier",
     toFill: "{n} à remplir",
     addVideo: "Ajouter",
@@ -468,7 +465,6 @@ export const fr = {
   viral: {
     eyebrow: "Viralité",
     title: "Analyste viral",
-    intro: "Il lit les tendances du moment, les vidéos qui décollent et tes comptes, puis te dit quelle vidéo générer.",
     emptyTitle: "Qu'est-ce qui buzze aujourd'hui ?",
     tiktokBoard: "TikTok · {country}",
     lastDays: "7 derniers jours",
@@ -530,7 +526,6 @@ export const fr = {
   creditsPage: {
     eyebrow: "Facturation",
     title: "Crédits",
-    intro: "{max} crédits la seconde en 720p, {hd} en 1080p, le double en haute fidélité. Plus {sheet} crédits par personnage. En packs, ou chaque mois avec un abonnement.",
     balance: "Solde actuel",
     topUp: "Acheter des crédits",
     popular: "Populaire",

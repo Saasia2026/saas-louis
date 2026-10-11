@@ -176,13 +176,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
 
   return (
     <div>
-      <PageHeader eyebrow={P.eyebrow} title={P.title}>
-        {fmt(P.intro, {
-          max: swapMethodRate().toLocaleString(intl),
-          hd: swapMethodRate(true).toLocaleString(intl),
-          sheet: SWAP_SHEET_CREDITS,
-        })}
-      </PageHeader>
+      <PageHeader eyebrow={P.eyebrow} title={P.title} />
 
       {notice && (
         <p

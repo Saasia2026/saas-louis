@@ -305,8 +305,7 @@ export function HistoryEmpty() {
 
   return (
     <div ref={root} className="panel animate-fade-up p-5">
-      <p className="text-sm text-muted">{t.studio.historyEmpty}</p>
-      <p className="mt-5 flex items-center gap-1.5 text-xs font-semibold text-accent-light">
+      <p className="flex items-center gap-1.5 text-xs font-semibold text-accent-light">
         <CirclePlay className="size-3.5" />
         {D.title}
       </p>
@@ -332,7 +331,6 @@ export function HistoryEmpty() {
                 </span>
                 {s.title}
               </p>
-              <p className="mt-0.5 pl-7 text-xs text-muted">{s.text}</p>
             </li>
           );
         })}

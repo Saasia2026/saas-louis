@@ -44,9 +44,7 @@ export default async function ViralPage() {
 
   return (
     <div>
-      <PageHeader eyebrow={V.eyebrow} title={V.title}>
-        {V.intro}
-      </PageHeader>
+      <PageHeader eyebrow={V.eyebrow} title={V.title} />
       <div className="mt-8 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <ViralChat initial={initial} />
         {/* Tendances chargées à part : un appel lent aux fournisseurs ne

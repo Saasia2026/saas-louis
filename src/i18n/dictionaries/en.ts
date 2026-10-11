@@ -210,14 +210,13 @@ export const en: Dictionary = {
   studio: {
     createTitle: "Create video",
     poweredByLabel: "Powered by",
-    historyEmpty: "Your creations will appear here. Drop in a clip and a character to start.",
     demo: {
       title: "How it works",
       steps: [
-        { title: "Drop your clip", text: "One clearly visible person." },
-        { title: "Add your character", text: "A sharp, full-body photo." },
-        { title: "Click Generate", text: "You see the price first." },
-        { title: "Get your video", text: "Same moves, set and sound." },
+        { title: "Drop your clip" },
+        { title: "Add your character" },
+        { title: "Click Generate" },
+        { title: "Get your video" },
       ],
     },
     video: "Source clip",
@@ -390,7 +389,6 @@ export const en: Dictionary = {
   planning: {
     eyebrow: "Socials",
     title: "Schedule",
-    intro: "Schedule your videos on TikTok, Instagram, YouTube and Facebook: they go out on their own, on time.",
     notReady: "Posting to social networks is coming soon.",
     connectFirst: "Connect an account first, in the right-hand panel.",
     disconnect: "Disconnect",
@@ -424,7 +422,6 @@ export const en: Dictionary = {
     calendarTitle: "Your two weeks",
     heroTitle: "Post without thinking about it",
     heroText: "Connect your socials, pick your days: every video goes out on time, with the AI-content label the platforms require.",
-    steps: ["Connect your socials", "Pick your days", "Add your videos"],
     editRhythm: "Edit",
     toFill: "{n} to fill",
     addVideo: "Add",
@@ -466,7 +463,6 @@ export const en: Dictionary = {
   viral: {
     eyebrow: "Virality",
     title: "Viral analyst",
-    intro: "It reads today's trends, the videos taking off and your accounts, then tells you which video to generate.",
     emptyTitle: "What's blowing up today?",
     tiktokBoard: "TikTok · {country}",
     lastDays: "Last 7 days",
@@ -528,7 +524,6 @@ export const en: Dictionary = {
   creditsPage: {
     eyebrow: "Billing",
     title: "Credits",
-    intro: "{max} credits per second in 720p, {hd} in 1080p, twice that in high fidelity. Plus {sheet} credits per character. In packs, or every month with a subscription.",
     balance: "Current balance",
     topUp: "Buy credits",
     popular: "Popular",

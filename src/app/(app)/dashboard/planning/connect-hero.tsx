@@ -19,16 +19,6 @@ export async function ConnectHero() {
       <div>
         <h2 className="font-headline text-[clamp(2.5rem,5vw,4rem)] leading-[0.88]">{P.heroTitle}</h2>
         <p className="mt-4 max-w-lg text-[0.9375rem] leading-relaxed text-muted">{P.heroText}</p>
-        <ol className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium">
-          {P.steps.map((step, i) => (
-            <li key={step} className="flex items-center gap-2">
-              <span className="flex size-6 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white tabular-nums">
-                {i + 1}
-              </span>
-              {step}
-            </li>
-          ))}
-        </ol>
         <div className="mt-7 grid max-w-lg grid-cols-2 gap-2.5">
           {SOCIAL_PLATFORMS.map((platform) => (
             <form key={platform} action={connectAccount}>

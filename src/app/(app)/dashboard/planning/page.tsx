@@ -98,9 +98,7 @@ export default async function PlanningPage(props: PageProps<"/dashboard/planning
 
   return (
     <div>
-      <PageHeader eyebrow={P.eyebrow} title={P.title}>
-        {P.intro}
-      </PageHeader>
+      <PageHeader eyebrow={P.eyebrow} title={P.title} />
 
       {notice && (
         <p
