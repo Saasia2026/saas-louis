@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowUp, Globe, LoaderCircle, RotateCcw, TrendingUp } from "lucide-react";
+import { ArrowDownRight, ArrowUp, ArrowUpRight, Globe, LoaderCircle, Music2, RotateCcw, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { fmt } from "@/i18n/config";
+import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { clearChat } from "./actions";
 import { Markdown } from "./markdown";
@@ -16,12 +16,37 @@ export type ChatVideo = {
   url: string;
 };
 export type ChatSource = { url: string; title: string };
+export type ChatHashtag = {
+  rank: number;
+  hashtag: string;
+  views: number;
+  direction: string | null;
+  url: string;
+  curve: number[];
+};
 export type ChatMessage = {
   role: "user" | "assistant";
   text: string;
   videos?: ChatVideo[];
+  hashtags?: ChatHashtag[];
   sources?: ChatSource[];
 };
+
+// Courbe d'intérêt du hashtag sur la période (valeurs 0 à 100).
+function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+  const points = values.map((v, i) => `${(i / (values.length - 1)) * 40},${14 - (v / 100) * 12}`).join(" ");
+  return (
+    <svg viewBox="0 0 40 16" aria-hidden className="h-4 w-10 shrink-0 text-accent-light">
+      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// Un même hashtag peut revenir de deux recherches (7 jours, nouveautés).
+function uniqueHashtags(list: ChatHashtag[]) {
+  return list.filter((h, i) => list.findIndex((o) => o.hashtag === h.hashtag) === i);
+}
 
 // Nom de domaine d'une source ; une adresse illisible reste affichée telle quelle.
 function hostOf(url: string) {
@@ -36,13 +61,15 @@ type StreamEvent =
   | { type: "text"; text: string }
   | { type: "status"; tool: string }
   | { type: "videos"; items: ChatVideo[] }
+  | { type: "hashtags"; items: ChatHashtag[] }
   | { type: "sources"; items: ChatSource[] }
   | { type: "error" }
   | { type: "done" };
 
 export function ViralChat({ initial }: { initial: ChatMessage[] }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const V = t.viral;
+  const compact = new Intl.NumberFormat(INTL_LOCALES[locale], { notation: "compact", maximumFractionDigits: 1 });
   const [messages, setMessages] = useState<ChatMessage[]>(initial);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -58,6 +85,7 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
   const statusLabel: Record<string, string> = {
     web_search: V.searching,
     web_fetch: V.reading,
+    tiktok_trends: V.tiktok,
     youtube_trending: V.trending,
     my_accounts: V.accounts,
     my_videos: V.videos,
@@ -99,6 +127,8 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
             setStatus(statusLabel[event.tool] ?? V.thinking);
           } else if (event.type === "videos") {
             updateLast((m) => ({ ...m, videos: [...(m.videos ?? []), ...event.items] }));
+          } else if (event.type === "hashtags") {
+            updateLast((m) => ({ ...m, hashtags: [...(m.hashtags ?? []), ...event.items] }));
           } else if (event.type === "sources") {
             updateLast((m) => ({ ...m, sources: event.items }));
           } else if (event.type === "error") {
@@ -185,6 +215,40 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
                   <LoaderCircle className="size-3.5 animate-spin" />
                   {status}
                 </p>
+              )}
+              {m.hashtags && m.hashtags.length > 0 && (
+                <div className="rounded-xl border border-line bg-surface-2/40 p-3">
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
+                    <Music2 className="size-3.5" />
+                    {V.tiktokTitle}
+                  </p>
+                  <ol className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
+                    {uniqueHashtags(m.hashtags).map((h) => (
+                      <li key={h.hashtag}>
+                        <a
+                          href={h.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-2 rounded-md py-0.5 text-sm hover:text-text"
+                        >
+                          <span className="w-5 shrink-0 text-right text-xs text-faint tabular-nums">{h.rank}</span>
+                          <span className="min-w-0 flex-1 truncate font-medium text-text">{h.hashtag}</span>
+                          <Sparkline values={h.curve} />
+                          <span className="w-12 shrink-0 text-right text-xs text-faint tabular-nums">
+                            {compact.format(h.views)}
+                          </span>
+                          {h.direction === "up" ? (
+                            <ArrowUpRight className="size-3.5 shrink-0 text-success" />
+                          ) : h.direction === "down" ? (
+                            <ArrowDownRight className="size-3.5 shrink-0 text-danger" />
+                          ) : (
+                            <span className="size-3.5 shrink-0" />
+                          )}
+                        </a>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               )}
               {m.videos && m.videos.length > 0 && (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

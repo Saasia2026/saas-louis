@@ -27,7 +27,13 @@ export default async function ViralPage() {
     if (row.role === "user") return { role: "user", text: row.content };
     try {
       const saved = JSON.parse(row.content) as Omit<ChatMessage, "role">;
-      return { role: "assistant", text: saved.text ?? "", videos: saved.videos, sources: saved.sources };
+      return {
+        role: "assistant",
+        text: saved.text ?? "",
+        videos: saved.videos,
+        hashtags: saved.hashtags,
+        sources: saved.sources,
+      };
     } catch {
       return { role: "assistant", text: row.content };
     }

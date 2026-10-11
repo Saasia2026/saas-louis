@@ -481,6 +481,8 @@ export const es: Dictionary = {
     searching: "Buscando en la web…",
     reading: "Leyendo una página…",
     trending: "Vídeos en tendencia…",
+    tiktok: "Tendencias de TikTok…",
+    tiktokTitle: "Hashtags en tendencia en TikTok",
     accounts: "Leyendo tus cuentas…",
     videos: "Leyendo tus vídeos…",
     thinking: "Analizando…",

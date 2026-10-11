@@ -483,6 +483,8 @@ export const fr = {
     searching: "Recherche sur le web…",
     reading: "Lecture d'une page…",
     trending: "Vidéos en tendance…",
+    tiktok: "Tendances TikTok…",
+    tiktokTitle: "Hashtags en tendance sur TikTok",
     accounts: "Lecture de tes comptes…",
     videos: "Lecture de tes vidéos…",
     thinking: "Analyse en cours…",

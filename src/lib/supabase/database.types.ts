@@ -501,6 +501,24 @@ export type Database = {
           },
         ]
       }
+      trend_cache: {
+        Row: {
+          data: Json
+          fetched_at: string
+          key: string
+        }
+        Insert: {
+          data: Json
+          fetched_at?: string
+          key: string
+        }
+        Update: {
+          data?: Json
+          fetched_at?: string
+          key?: string
+        }
+        Relationships: []
+      }
       twins: {
         Row: {
           appearance: string | null

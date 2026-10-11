@@ -5,6 +5,7 @@ import { getLocale } from "@/i18n/server";
 import { missingSlots, userAccounts, userPlan, zernioProfileId } from "@/lib/social";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { tiktokTrends, tiktokTrendsEnabled, type TikTokHashtag } from "@/lib/tiktok-trends";
 import { trendingVideos, youtubeEnabled, type TrendingVideo } from "@/lib/youtube";
 import { topPosts, zernioEnabled } from "@/lib/zernio";
 
@@ -23,7 +24,8 @@ const REGION: Record<Locale, string> = { fr: "FR", en: "US", es: "ES" };
 const SYSTEM = `You are TwinPost's virality analyst. TwinPost lets creators replace a person in a filmed clip with any character from a photo (Genjutsu engine): the moves, set, camera and sound stay; only the character changes. Your job is to help the creator decide which video to generate next and how to post it on TikTok, Instagram Reels and YouTube Shorts.
 
 How to work:
-- Trends move every day. For any question about what is viral or what to make, research before answering: use web_search for news and trend reports from the last 7 to 14 days (formats, memes, sounds, characters, events), and youtube_trending to show real trending Shorts in the creator's country. Prefer recent sources and say how recent they are.
+- Trends move every day. For any question about what is viral or what to make, research before answering. For TikTok, call tiktok_trends first: the real trending hashtags of TikTok's Creative Center in the creator's country, with views and direction. Use youtube_trending to show real trending Shorts. Use web_search for news and trend reports from the last 7 to 14 days (formats, memes, sounds, characters, events), and to explain a hashtag you do not know. Prefer recent sources and say how recent they are.
+- Many trending hashtags are characters (anime, games, films, series): that is exactly what TikTok creators put into a video with TwinPost. Say which trending characters fit a character swap and which kind of clip suits them.
 - When the creator asks about their own accounts or results, call my_accounts. To know what they already made and which slots of their posting schedule still need a video, call my_videos.
 - End with concrete ideas made for TwinPost, ranked by expected virality with the reason: the kind of source clip to film or pick (scene, action, 5 to 15 seconds), the character to swap in, the hook in the first second, a caption with 3 to 5 hashtags, and the best platform and time to post.
 - Be direct and specific: short sections, bullet lists, no filler. Answer in the creator's language.
@@ -34,11 +36,35 @@ const TrendingInput = z.object({
   shorts_only: z.boolean(),
   limit: z.number().int().min(1).max(12),
 });
+const TikTokInput = z.object({
+  country_code: z.string().regex(/^[A-Za-z]{2}$/),
+  period: z.enum(["7", "30"]),
+  only_new: z.boolean(),
+  limit: z.number().int().min(1).max(30),
+});
 const EmptyInput = z.object({});
 
 const TOOLS: Anthropic.Beta.BetaToolUnion[] = [
   { type: "web_search_20260209", name: "web_search", max_uses: 6 },
   { type: "web_fetch_20260209", name: "web_fetch", max_uses: 3 },
+  {
+    name: "tiktok_trends",
+    description:
+      "Trending hashtags on TikTok right now in a country, from TikTok's Creative Center: rank, posts, views, industries, direction (up or down) and daily interest over the period. Use only_new to get hashtags that just entered the ranking. The creator sees them under your answer.",
+    input_schema: {
+      type: "object",
+      properties: {
+        country_code: { type: "string", description: "ISO 3166-1 alpha-2 country code, e.g. FR, US, ES." },
+        period: { type: "string", enum: ["7", "30"], description: "Window in days." },
+        only_new: { type: "boolean", description: "Only hashtags that recently entered the ranking." },
+        limit: { type: "integer", description: "Number of hashtags to return, 1 to 30." },
+      },
+      required: ["country_code", "period", "only_new", "limit"],
+      additionalProperties: false,
+    },
+    strict: true,
+    eager_input_streaming: true,
+  },
   {
     name: "youtube_trending",
     description:
@@ -77,6 +103,20 @@ const TOOLS: Anthropic.Beta.BetaToolUnion[] = [
 type Send = (event: Record<string, unknown>) => void;
 
 async function runTool(name: string, input: unknown, userId: string, send: Send): Promise<string> {
+  if (name === "tiktok_trends") {
+    const parsed = TikTokInput.safeParse(input);
+    if (!parsed.success) return JSON.stringify({ error: "invalid input" });
+    if (!tiktokTrendsEnabled()) return JSON.stringify({ error: "TikTok trends are not available right now." });
+    const hashtags: TikTokHashtag[] = (
+      await tiktokTrends({
+        countryCode: parsed.data.country_code,
+        period: parsed.data.period,
+        onlyNew: parsed.data.only_new,
+      })
+    ).slice(0, parsed.data.limit);
+    send({ type: "hashtags", items: hashtags });
+    return JSON.stringify(hashtags);
+  }
   if (name === "youtube_trending") {
     const parsed = TrendingInput.safeParse(input);
     if (!parsed.success) return JSON.stringify({ error: "invalid input" });
@@ -209,8 +249,10 @@ export async function POST(request: Request) {
       const cited = new Map<string, string>();
       const sources = new Map<string, string>();
       const videos: TrendingVideo[] = [];
+      const hashtags: TikTokHashtag[] = [];
       const sendTracked: Send = (event) => {
         if (event.type === "videos") videos.push(...(event.items as TrendingVideo[]));
+        if (event.type === "hashtags") hashtags.push(...(event.items as TikTokHashtag[]));
         send(event);
       };
       try {
@@ -280,7 +322,7 @@ export async function POST(request: Request) {
           await admin.from("viral_messages").insert({
             user_id: userId,
             role: "assistant",
-            content: JSON.stringify({ text, sources: sourceList, videos }),
+            content: JSON.stringify({ text, sources: sourceList, videos, hashtags }),
           });
         }
         send({ type: "done" });
