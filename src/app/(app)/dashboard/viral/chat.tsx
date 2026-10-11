@@ -1,11 +1,27 @@
 "use client";
 
-import { ArrowDownRight, ArrowUp, ArrowUpRight, Globe, LoaderCircle, Music2, RotateCcw, TrendingUp } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUp,
+  ArrowUpRight,
+  ChartNoAxesColumn,
+  Clapperboard,
+  Flame,
+  Globe,
+  LoaderCircle,
+  Music2,
+  Play,
+  RotateCcw,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { clearChat } from "./actions";
+import { ASK_EVENT } from "./ask-button";
 import { Markdown } from "./markdown";
+import { Sparkline } from "./sparkline";
 
 export type ChatVideo = {
   id: string;
@@ -32,16 +48,17 @@ export type ChatMessage = {
   sources?: ChatSource[];
 };
 
-// Courbe d'intérêt du hashtag sur la période (valeurs 0 à 100).
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2) return null;
-  const points = values.map((v, i) => `${(i / (values.length - 1)) * 40},${14 - (v / 100) * 12}`).join(" ");
-  return (
-    <svg viewBox="0 0 40 16" aria-hidden className="h-4 w-10 shrink-0 text-accent-light">
-      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
-  );
-}
+type StreamEvent =
+  | { type: "text"; text: string }
+  | { type: "status"; tool: string }
+  | { type: "videos"; items: ChatVideo[] }
+  | { type: "hashtags"; items: ChatHashtag[] }
+  | { type: "sources"; items: ChatSource[] }
+  | { type: "error" }
+  | { type: "done" };
+
+// Une icône par suggestion de départ, dans l'ordre du dictionnaire.
+const SUGGESTION_ICONS: LucideIcon[] = [Clapperboard, Flame, Play, ChartNoAxesColumn];
 
 // Un même hashtag peut revenir de deux recherches (7 jours, nouveautés).
 function uniqueHashtags(list: ChatHashtag[]) {
@@ -57,14 +74,18 @@ function hostOf(url: string) {
   }
 }
 
-type StreamEvent =
-  | { type: "text"; text: string }
-  | { type: "status"; tool: string }
-  | { type: "videos"; items: ChatVideo[] }
-  | { type: "hashtags"; items: ChatHashtag[] }
-  | { type: "sources"; items: ChatSource[] }
-  | { type: "error" }
-  | { type: "done" };
+// Marque de l'analyste, comme la tuile active de la navigation.
+function AnalystMark() {
+  return (
+    <span
+      aria-hidden
+      className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-b from-accent-2 to-accent text-white"
+      style={{ boxShadow: "0 2px 0 color-mix(in oklab, var(--accent) 62%, black)" }}
+    >
+      <TrendingUp className="size-3.5" />
+    </span>
+  );
+}
 
 export function ViralChat({ initial }: { initial: ChatMessage[] }) {
   const { t, locale } = useI18n();
@@ -76,10 +97,12 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [clearing, startClear] = useTransition();
-  const bottom = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
+  const sendRef = useRef<(text: string) => void>(() => {});
 
   useEffect(() => {
-    bottom.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+    const el = scroller.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages, status]);
 
   const statusLabel: Record<string, string> = {
@@ -145,156 +168,176 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
       setStatus(null);
     }
   }
+  sendRef.current = send;
+
+  // Questions posées depuis la colonne des tendances.
+  useEffect(() => {
+    const ask = (e: Event) => sendRef.current((e as CustomEvent<string>).detail);
+    window.addEventListener(ASK_EVENT, ask);
+    return () => window.removeEventListener(ASK_EVENT, ask);
+  }, []);
+
+  const rows = Math.min(6, Math.max(1, input.split("\n").length));
 
   return (
-    <div className="panel flex min-h-[32rem] flex-col">
-      <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
-        <p className="flex items-center gap-2 text-sm font-semibold">
-          <TrendingUp className="size-4 text-accent-light" />
-          {V.chatTitle}
-        </p>
-        {messages.length > 0 && (
-          <button
-            type="button"
-            disabled={busy || clearing}
-            onClick={() =>
-              startClear(async () => {
-                await clearChat();
-                setMessages([]);
-              })
-            }
-            className="btn btn-ghost px-2.5 py-1.5 text-xs"
-          >
-            <RotateCcw />
-            {V.newChat}
-          </button>
-        )}
-      </div>
+    <div className="panel relative flex h-[calc(100dvh-15rem)] min-h-[34rem] animate-fade-up flex-col overflow-hidden">
+      {messages.length > 0 && (
+        <button
+          type="button"
+          disabled={busy || clearing}
+          onClick={() =>
+            startClear(async () => {
+              await clearChat();
+              setMessages([]);
+            })
+          }
+          className="btn btn-ghost absolute top-3 right-3 z-10 px-2.5 py-1.5 text-xs"
+        >
+          <RotateCcw />
+          {V.newChat}
+        </button>
+      )}
 
-      <div className="flex-1 space-y-6 overflow-y-auto px-5 py-6">
-        {messages.length === 0 && (
-          <div className="flex flex-col items-start gap-3">
-            <p className="text-sm text-muted">{V.empty}</p>
-            <div className="flex flex-wrap gap-2">
-              {V.suggestions.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => send(s)}
-                  className="rounded-full border border-line bg-surface-2/60 px-3 py-1.5 text-sm text-muted transition-colors hover:border-line-strong hover:text-text"
-                >
-                  {s}
-                </button>
-              ))}
+      <div ref={scroller} className="flex-1 overflow-y-auto px-4 sm:px-6">
+        {messages.length === 0 ? (
+          <div className="mx-auto flex h-full max-w-2xl flex-col justify-center py-10">
+            <span
+              aria-hidden
+              className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-b from-accent-2 to-accent text-white"
+              style={{ boxShadow: "0 3px 0 color-mix(in oklab, var(--accent) 62%, black)" }}
+            >
+              <TrendingUp className="size-5" />
+            </span>
+            <h2 className="mt-5 font-headline text-[clamp(2.25rem,5vw,3.5rem)] leading-[0.9]">{V.emptyTitle}</h2>
+            <p className="mt-3 text-sm text-muted">{V.empty}</p>
+            <div className="mt-7 grid gap-2.5 sm:grid-cols-2">
+              {V.suggestions.map((s, i) => {
+                const Icon = SUGGESTION_ICONS[i] ?? TrendingUp;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => send(s)}
+                    className="group flex items-center gap-3 rounded-xl border border-line bg-surface-2/50 px-3.5 py-3 text-left text-sm font-medium transition-[border-color,background-color,translate] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:bg-surface-2"
+                  >
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-muted transition-colors group-hover:text-accent-light">
+                      <Icon className="size-4" />
+                    </span>
+                    {s}
+                  </button>
+                );
+              })}
             </div>
           </div>
-        )}
-
-        {messages.map((m, i) =>
-          m.role === "user" ? (
-            <div key={i} className="flex justify-end">
-              <p className="max-w-[85%] rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-sm whitespace-pre-wrap text-white">
-                {m.text}
-              </p>
-            </div>
-          ) : (
-            <div key={i} className="max-w-[92%] space-y-4">
-              {m.text ? (
-                <Markdown text={m.text} />
+        ) : (
+          <div className="mx-auto max-w-3xl space-y-7 pt-14 pb-6">
+            {messages.map((m, i) =>
+              m.role === "user" ? (
+                <div key={i} className="flex justify-end">
+                  <p className="max-w-[85%] rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-sm whitespace-pre-wrap text-white">
+                    {m.text}
+                  </p>
+                </div>
               ) : (
-                busy &&
-                i === messages.length - 1 && (
-                  <p className="flex items-center gap-2 text-sm text-muted">
-                    <LoaderCircle className="size-4 animate-spin" />
-                    {status ?? V.thinking}
-                  </p>
-                )
-              )}
-              {busy && i === messages.length - 1 && m.text && status && (
-                <p className="flex items-center gap-2 text-xs text-faint">
-                  <LoaderCircle className="size-3.5 animate-spin" />
-                  {status}
-                </p>
-              )}
-              {m.hashtags && m.hashtags.length > 0 && (
-                <div className="rounded-xl border border-line bg-surface-2/40 p-3">
-                  <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
-                    <Music2 className="size-3.5" />
-                    {V.tiktokTitle}
-                  </p>
-                  <ol className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
-                    {uniqueHashtags(m.hashtags).map((h) => (
-                      <li key={h.hashtag}>
-                        <a
-                          href={h.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-2 rounded-md py-0.5 text-sm hover:text-text"
-                        >
-                          <span className="w-5 shrink-0 text-right text-xs text-faint tabular-nums">{h.rank}</span>
-                          <span className="min-w-0 flex-1 truncate font-medium text-text">{h.hashtag}</span>
-                          <Sparkline values={h.curve} />
-                          <span className="w-12 shrink-0 text-right text-xs text-faint tabular-nums">
-                            {compact.format(h.views)}
-                          </span>
-                          {h.direction === "up" ? (
-                            <ArrowUpRight className="size-3.5 shrink-0 text-success" />
-                          ) : h.direction === "down" ? (
-                            <ArrowDownRight className="size-3.5 shrink-0 text-danger" />
-                          ) : (
-                            <span className="size-3.5 shrink-0" />
-                          )}
-                        </a>
-                      </li>
-                    ))}
-                  </ol>
+                <div key={i} className="flex gap-3">
+                  <AnalystMark />
+                  <div className="min-w-0 flex-1 space-y-4 pt-0.5">
+                    {m.text ? (
+                      <Markdown text={m.text} />
+                    ) : (
+                      busy &&
+                      i === messages.length - 1 && (
+                        <p className="flex items-center gap-2 text-sm text-muted">
+                          <LoaderCircle className="size-4 animate-spin" />
+                          {status ?? V.thinking}
+                        </p>
+                      )
+                    )}
+                    {busy && i === messages.length - 1 && m.text && status && (
+                      <p className="flex items-center gap-2 text-xs text-faint">
+                        <LoaderCircle className="size-3.5 animate-spin" />
+                        {status}
+                      </p>
+                    )}
+                    {m.hashtags && m.hashtags.length > 0 && (
+                      <div className="rounded-xl border border-line bg-surface-2/40 p-3">
+                        <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
+                          <Music2 className="size-3.5" />
+                          {V.tiktokTitle}
+                        </p>
+                        <ol className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
+                          {uniqueHashtags(m.hashtags).map((h) => (
+                            <li key={h.hashtag}>
+                              <a
+                                href={h.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center gap-2 rounded-md py-0.5 text-sm hover:text-text"
+                              >
+                                <span className="w-5 shrink-0 text-right text-xs text-faint tabular-nums">{h.rank}</span>
+                                <span className="min-w-0 flex-1 truncate font-medium text-text">{h.hashtag}</span>
+                                <Sparkline values={h.curve} />
+                                <span className="w-12 shrink-0 text-right text-xs text-faint tabular-nums">
+                                  {compact.format(h.views)}
+                                </span>
+                                {h.direction === "down" ? (
+                                  <ArrowDownRight className="size-3.5 shrink-0 text-danger" />
+                                ) : (
+                                  <ArrowUpRight className="size-3.5 shrink-0 text-success" />
+                                )}
+                              </a>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+                    {m.videos && m.videos.length > 0 && (
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        {m.videos.map((v) => (
+                          <a
+                            key={v.id}
+                            href={v.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group overflow-hidden rounded-xl border border-line bg-surface-2/60 transition-colors hover:border-line-strong"
+                          >
+                            {/* Miniature hébergée par YouTube : pas d'optimisation Next. */}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={v.thumbnail} alt="" loading="lazy" className="aspect-video w-full object-cover" />
+                            <span className="block p-2.5">
+                              <span className="line-clamp-2 text-xs font-semibold text-text">{v.title}</span>
+                              <span className="mt-1 block truncate text-[0.6875rem] text-faint">
+                                {v.channel} · {fmt(V.views, { n: compact.format(v.views) })}
+                              </span>
+                            </span>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    {m.sources && m.sources.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-faint">
+                        <Globe className="size-3.5" />
+                        {m.sources.map((s) => (
+                          <a
+                            key={s.url}
+                            href={s.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="max-w-56 truncate rounded-md border border-line px-2 py-0.5 hover:text-text"
+                            title={s.title}
+                          >
+                            {hostOf(s.url)}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-              {m.videos && m.videos.length > 0 && (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {m.videos.map((v) => (
-                    <a
-                      key={v.id}
-                      href={v.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="group overflow-hidden rounded-xl border border-line bg-surface-2/60 transition-colors hover:border-line-strong"
-                    >
-                      {/* Miniature hébergée par YouTube : pas d'optimisation Next. */}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={v.thumbnail} alt="" loading="lazy" className="aspect-video w-full object-cover" />
-                      <span className="block p-2.5">
-                        <span className="line-clamp-2 text-xs font-semibold text-text">{v.title}</span>
-                        <span className="mt-1 block truncate text-[0.6875rem] text-faint">
-                          {v.channel} · {fmt(V.views, { n: v.views.toLocaleString() })}
-                        </span>
-                      </span>
-                    </a>
-                  ))}
-                </div>
-              )}
-              {m.sources && m.sources.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 text-xs text-faint">
-                  <Globe className="size-3.5" />
-                  {m.sources.map((s) => (
-                    <a
-                      key={s.url}
-                      href={s.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="max-w-56 truncate rounded-md border border-line px-2 py-0.5 hover:text-text"
-                      title={s.title}
-                    >
-                      {hostOf(s.url)}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          ),
+              ),
+            )}
+            {error && <p className="text-sm text-danger">{error}</p>}
+          </div>
         )}
-        {error && <p className="text-sm text-danger">{error}</p>}
-        <div ref={bottom} />
       </div>
 
       <form
@@ -302,25 +345,32 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
           e.preventDefault();
           send(input);
         }}
-        className="flex items-end gap-2 border-t border-line p-3"
+        className="border-t border-line bg-surface/80 px-4 py-3 sm:px-6"
       >
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              send(input);
-            }
-          }}
-          rows={1}
-          maxLength={2000}
-          placeholder={V.placeholder}
-          className="field max-h-40 min-h-11 flex-1 resize-none"
-        />
-        <button type="submit" disabled={busy || !input.trim()} className="btn btn-accent size-11 p-0" aria-label={V.send}>
-          {busy ? <LoaderCircle className="animate-spin" /> : <ArrowUp />}
-        </button>
+        <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-line bg-surface-2 p-1.5 pl-4 transition-colors focus-within:border-accent/50">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                send(input);
+              }
+            }}
+            rows={rows}
+            maxLength={2000}
+            placeholder={V.placeholder}
+            className="max-h-40 min-h-10 flex-1 resize-none bg-transparent py-2 text-sm outline-none placeholder:text-faint"
+          />
+          <button
+            type="submit"
+            disabled={busy || !input.trim()}
+            aria-label={V.send}
+            className="btn btn-accent size-10 shrink-0 rounded-xl p-0"
+          >
+            {busy ? <LoaderCircle className="animate-spin" /> : <ArrowUp />}
+          </button>
+        </div>
       </form>
     </div>
   );

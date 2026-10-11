@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { getDictionary } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "../../page-header";
 import { ViralChat, type ChatMessage } from "./chat";
+import { TrendsAside, TrendsAsideSkeleton } from "./trends-aside";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
@@ -44,8 +46,13 @@ export default async function ViralPage() {
       <PageHeader eyebrow={V.eyebrow} title={V.title}>
         {V.intro}
       </PageHeader>
-      <div className="mt-8">
+      <div className="mt-8 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <ViralChat initial={initial} />
+        {/* Tendances chargées à part : un appel lent aux fournisseurs ne
+            retarde pas le chat. */}
+        <Suspense fallback={<TrendsAsideSkeleton />}>
+          <TrendsAside />
+        </Suspense>
       </div>
     </div>
   );

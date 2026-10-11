@@ -471,7 +471,12 @@ export const fr = {
     eyebrow: "Viralité",
     title: "Analyste viral",
     intro: "Il lit les tendances du moment, les vidéos qui décollent et tes comptes, puis te dit quelle vidéo générer.",
-    chatTitle: "Marché de la viralité",
+    emptyTitle: "Qu'est-ce qui buzze aujourd'hui ?",
+    tiktokBoard: "TikTok · {country}",
+    lastDays: "7 derniers jours",
+    askHashtag: "Quelle vidéo générer avec la tendance {hashtag} ?",
+    askHint: "Clique un hashtag pour en tirer une vidéo.",
+    shortsBoard: "Shorts en tendance",
     newChat: "Nouvelle conversation",
     empty: "Pose ta question, ou commence par :",
     suggestions: [

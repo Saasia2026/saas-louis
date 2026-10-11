@@ -1,4 +1,5 @@
 import "server-only";
+import type { Locale } from "@/i18n/config";
 import type { Json } from "@/lib/supabase/database.types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -9,6 +10,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const ACTOR = "data_xplorer~tiktok-trends";
 const CACHE_MS = 6 * 3_600_000;
 const FETCHED = 30;
+
+// Pays des tendances par défaut, selon la langue du site.
+const REGION: Record<Locale, string> = { fr: "FR", en: "US", es: "ES" };
+export function trendRegion(locale: Locale) {
+  return REGION[locale];
+}
 
 export function tiktokTrendsEnabled() {
   return Boolean(process.env.APIFY_TOKEN);

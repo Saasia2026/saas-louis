@@ -469,7 +469,12 @@ export const en: Dictionary = {
     eyebrow: "Virality",
     title: "Viral analyst",
     intro: "It reads today's trends, the videos taking off and your accounts, then tells you which video to generate.",
-    chatTitle: "Virality market",
+    emptyTitle: "What's blowing up today?",
+    tiktokBoard: "TikTok · {country}",
+    lastDays: "Last 7 days",
+    askHashtag: "Which video should I generate with the {hashtag} trend?",
+    askHint: "Click a hashtag to turn it into a video.",
+    shortsBoard: "Trending Shorts",
     newChat: "New conversation",
     empty: "Ask a question, or start with:",
     suggestions: [

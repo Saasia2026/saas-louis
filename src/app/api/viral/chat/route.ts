@@ -1,11 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
-import type { Locale } from "@/i18n/config";
 import { getLocale } from "@/i18n/server";
 import { missingSlots, userAccounts, userPlan, zernioProfileId } from "@/lib/social";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { tiktokTrends, tiktokTrendsEnabled, type TikTokHashtag } from "@/lib/tiktok-trends";
+import { tiktokTrends, tiktokTrendsEnabled, trendRegion, type TikTokHashtag } from "@/lib/tiktok-trends";
 import { trendingVideos, youtubeEnabled, type TrendingVideo } from "@/lib/youtube";
 import { topPosts, zernioEnabled } from "@/lib/zernio";
 
@@ -19,7 +18,6 @@ const MODEL = "claude-opus-5-5";
 const DAILY_LIMIT = 40;
 const HISTORY_MESSAGES = 20;
 const MAX_TURNS = 8;
-const REGION: Record<Locale, string> = { fr: "FR", en: "US", es: "ES" };
 
 const SYSTEM = `You are TwinPost's virality analyst. TwinPost lets creators replace a person in a filmed clip with any character from a photo (Genjutsu engine): the moves, set, camera and sound stay; only the character changes. Your job is to help the creator decide which video to generate next and how to post it on TikTok, Instagram Reels and YouTube Shorts.
 
@@ -235,7 +233,7 @@ export async function POST(request: Request) {
     { role: "user", content: message },
     {
       role: "system",
-      content: `Today is ${new Date().toISOString().slice(0, 10)}. The creator's site language is "${locale}"; default country for trends: ${REGION[locale]}.`,
+      content: `Today is ${new Date().toISOString().slice(0, 10)}. The creator's site language is "${locale}"; default country for trends: ${trendRegion(locale)}.`,
     },
   ];
 

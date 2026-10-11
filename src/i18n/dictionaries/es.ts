@@ -469,7 +469,12 @@ export const es: Dictionary = {
     eyebrow: "Viralidad",
     title: "Analista viral",
     intro: "Lee las tendencias del momento, los vídeos que despegan y tus cuentas, y te dice qué vídeo generar.",
-    chatTitle: "Mercado de la viralidad",
+    emptyTitle: "¿Qué está pegando hoy?",
+    tiktokBoard: "TikTok · {country}",
+    lastDays: "Últimos 7 días",
+    askHashtag: "¿Qué vídeo genero con la tendencia {hashtag}?",
+    askHint: "Haz clic en un hashtag para sacar un vídeo.",
+    shortsBoard: "Shorts en tendencia",
     newChat: "Nueva conversación",
     empty: "Haz tu pregunta, o empieza por:",
     suggestions: [
