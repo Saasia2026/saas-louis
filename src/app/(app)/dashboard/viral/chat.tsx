@@ -18,6 +18,7 @@ import {
 import { useEffect, useRef, useState, useTransition } from "react";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
+import { coverSrc } from "@/lib/trend-cover";
 import { clearChat } from "./actions";
 import { ASK_EVENT } from "./ask-button";
 import { Markdown } from "./markdown";
@@ -40,11 +41,20 @@ export type ChatHashtag = {
   url: string;
   curve: number[];
 };
+export type ChatTikTokVideo = {
+  id: string;
+  hashtag: string;
+  url: string;
+  cover: string;
+  views: number;
+  sound: string | null;
+};
 export type ChatMessage = {
   role: "user" | "assistant";
   text: string;
   videos?: ChatVideo[];
   hashtags?: ChatHashtag[];
+  tiktokVideos?: ChatTikTokVideo[];
   sources?: ChatSource[];
 };
 
@@ -53,6 +63,7 @@ type StreamEvent =
   | { type: "status"; tool: string }
   | { type: "videos"; items: ChatVideo[] }
   | { type: "hashtags"; items: ChatHashtag[] }
+  | { type: "tiktokVideos"; items: ChatTikTokVideo[] }
   | { type: "sources"; items: ChatSource[] }
   | { type: "error" }
   | { type: "done" };
@@ -109,6 +120,7 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
     web_search: V.searching,
     web_fetch: V.reading,
     tiktok_trends: V.tiktok,
+    tiktok_trend_videos: V.tiktokVideos,
     youtube_trending: V.trending,
     my_accounts: V.accounts,
     my_videos: V.videos,
@@ -152,6 +164,8 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
             updateLast((m) => ({ ...m, videos: [...(m.videos ?? []), ...event.items] }));
           } else if (event.type === "hashtags") {
             updateLast((m) => ({ ...m, hashtags: [...(m.hashtags ?? []), ...event.items] }));
+          } else if (event.type === "tiktokVideos") {
+            updateLast((m) => ({ ...m, tiktokVideos: [...(m.tiktokVideos ?? []), ...event.items] }));
           } else if (event.type === "sources") {
             updateLast((m) => ({ ...m, sources: event.items }));
           } else if (event.type === "error") {
@@ -289,6 +303,42 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
                             </li>
                           ))}
                         </ol>
+                      </div>
+                    )}
+                    {m.tiktokVideos && m.tiktokVideos.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+                        {m.tiktokVideos.map((v) => (
+                          <a
+                            key={v.id}
+                            href={v.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group relative overflow-hidden rounded-xl border border-line bg-black bg-clip-padding"
+                          >
+                            {/* Couverture TikTok, servie par notre relais (voir api/trends/cover). */}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={coverSrc(v.cover)}
+                              alt=""
+                              loading="lazy"
+                              className="aspect-[9/16] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            <span className="absolute top-1.5 left-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-white tabular-nums">
+                              {fmt(V.views, { n: compact.format(v.views) })}
+                            </span>
+                            <span className="absolute inset-x-1.5 bottom-1.5 space-y-0.5">
+                              <span className="block truncate rounded-md bg-black/70 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-white">
+                                {v.hashtag}
+                              </span>
+                              {v.sound && (
+                                <span className="flex items-center gap-1 truncate rounded-md bg-black/70 px-1.5 py-0.5 text-[0.625rem] text-white/80">
+                                  <Music2 className="size-3 shrink-0" />
+                                  {v.sound}
+                                </span>
+                              )}
+                            </span>
+                          </a>
+                        ))}
                       </div>
                     )}
                     {m.videos && m.videos.length > 0 && (

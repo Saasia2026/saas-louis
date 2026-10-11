@@ -4,7 +4,14 @@ import { getLocale } from "@/i18n/server";
 import { missingSlots, userAccounts, userPlan, zernioProfileId } from "@/lib/social";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { tiktokTrends, tiktokTrendsEnabled, trendRegion, type TikTokHashtag } from "@/lib/tiktok-trends";
+import {
+  hashtagVideos,
+  tiktokTrends,
+  tiktokTrendsEnabled,
+  trendRegion,
+  type TikTokHashtag,
+  type TrendVideo,
+} from "@/lib/tiktok-trends";
 import { trendingVideos, youtubeEnabled, type TrendingVideo } from "@/lib/youtube";
 import { topPosts, zernioEnabled } from "@/lib/zernio";
 
@@ -22,7 +29,7 @@ const MAX_TURNS = 8;
 const SYSTEM = `You are TwinPost's virality analyst. TwinPost lets creators replace a person in a filmed clip with any character from a photo (Genjutsu engine): the moves, set, camera and sound stay; only the character changes. Your job is to help the creator decide which video to generate next and how to post it on TikTok, Instagram Reels and YouTube Shorts.
 
 How to work:
-- Trends move every day. For any question about what is viral or what to make, research before answering. For TikTok, call tiktok_trends first: the real trending hashtags of TikTok's Creative Center in the creator's country, with views and direction. Use youtube_trending to show real trending Shorts. Use web_search for news and trend reports from the last 7 to 14 days (formats, memes, sounds, characters, events), and to explain a hashtag you do not know. Prefer recent sources and say how recent they are.
+- Trends move every day. For any question about what is viral or what to make, research before answering. For TikTok, call tiktok_trends first: the real trending hashtags of TikTok's Creative Center in the creator's country, with views and direction. To show real examples, call tiktok_trend_videos with the 1 to 3 hashtags you recommend: the most viewed TikTok videos of each hashtag in the last 3 weeks, with their sound. Use youtube_trending only when the creator asks about YouTube. Use web_search for news and trend reports from the last 7 to 14 days (formats, memes, sounds, characters, events), and to explain a hashtag you do not know. Prefer recent sources and say how recent they are.
 - Many trending hashtags are characters (anime, games, films, series): that is exactly what TikTok creators put into a video with TwinPost. Say which trending characters fit a character swap and which kind of clip suits them.
 - When the creator asks about their own accounts or results, call my_accounts. To know what they already made and which slots of their posting schedule still need a video, call my_videos.
 - End with concrete ideas made for TwinPost, ranked by expected virality with the reason: the kind of source clip to film or pick (scene, action, 5 to 15 seconds), the character to swap in, the hook in the first second, a caption with 3 to 5 hashtags, and the best platform and time to post.
@@ -39,6 +46,9 @@ const TikTokInput = z.object({
   period: z.enum(["7", "30"]),
   only_new: z.boolean(),
   limit: z.number().int().min(1).max(30),
+});
+const TrendVideosInput = z.object({
+  hashtags: z.array(z.string().min(1).max(100)).min(1).max(3),
 });
 const EmptyInput = z.object({});
 
@@ -58,6 +68,25 @@ const TOOLS: Anthropic.Beta.BetaToolUnion[] = [
         limit: { type: "integer", description: "Number of hashtags to return, 1 to 30." },
       },
       required: ["country_code", "period", "only_new", "limit"],
+      additionalProperties: false,
+    },
+    strict: true,
+    eager_input_streaming: true,
+  },
+  {
+    name: "tiktok_trend_videos",
+    description:
+      "The most viewed TikTok videos of 1 to 3 hashtags over the last 3 weeks: link, views, likes, caption, sound and length. Use it to show what a trend looks like. The creator sees the videos under your answer.",
+    input_schema: {
+      type: "object",
+      properties: {
+        hashtags: {
+          type: "array",
+          items: { type: "string" },
+          description: "1 to 3 hashtags, e.g. [\"#mikey\", \"#animeedits\"].",
+        },
+      },
+      required: ["hashtags"],
       additionalProperties: false,
     },
     strict: true,
@@ -101,6 +130,25 @@ const TOOLS: Anthropic.Beta.BetaToolUnion[] = [
 type Send = (event: Record<string, unknown>) => void;
 
 async function runTool(name: string, input: unknown, userId: string, send: Send): Promise<string> {
+  if (name === "tiktok_trend_videos") {
+    const parsed = TrendVideosInput.safeParse(input);
+    if (!parsed.success) return JSON.stringify({ error: "invalid input" });
+    if (!tiktokTrendsEnabled()) return JSON.stringify({ error: "TikTok videos are not available right now." });
+    const videos: TrendVideo[] = await hashtagVideos(parsed.data.hashtags, 3);
+    send({ type: "tiktokVideos", items: videos });
+    return JSON.stringify(
+      videos.map(({ hashtag, url, views, likes, createdAt, caption, sound, seconds }) => ({
+        hashtag,
+        url,
+        views,
+        likes,
+        createdAt,
+        caption,
+        sound,
+        seconds,
+      })),
+    );
+  }
   if (name === "tiktok_trends") {
     const parsed = TikTokInput.safeParse(input);
     if (!parsed.success) return JSON.stringify({ error: "invalid input" });
@@ -248,9 +296,11 @@ export async function POST(request: Request) {
       const sources = new Map<string, string>();
       const videos: TrendingVideo[] = [];
       const hashtags: TikTokHashtag[] = [];
+      const tiktokVideos: TrendVideo[] = [];
       const sendTracked: Send = (event) => {
         if (event.type === "videos") videos.push(...(event.items as TrendingVideo[]));
         if (event.type === "hashtags") hashtags.push(...(event.items as TikTokHashtag[]));
+        if (event.type === "tiktokVideos") tiktokVideos.push(...(event.items as TrendVideo[]));
         send(event);
       };
       try {
@@ -320,7 +370,7 @@ export async function POST(request: Request) {
           await admin.from("viral_messages").insert({
             user_id: userId,
             role: "assistant",
-            content: JSON.stringify({ text, sources: sourceList, videos, hashtags }),
+            content: JSON.stringify({ text, sources: sourceList, videos, hashtags, tiktokVideos }),
           });
         }
         send({ type: "done" });

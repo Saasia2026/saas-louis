@@ -26,6 +26,11 @@ function seconds(duration: string) {
   return Number(m[1] ?? 0) * 3600 + Number(m[2] ?? 0) * 60 + Number(m[3] ?? 0);
 }
 
+// Catégories écartées : films, musique (clips), actualités, bandes-annonces ;
+// et les titres qui en ont l'air. Restent les vidéos de créateurs.
+const EXCLUDED_CATEGORIES = new Set(["1", "10", "25", "30", "44"]);
+const EXCLUDED_TITLE = /trailer|teaser|bande[- ]annonce|tráiler|clip officiel|official (music )?video|videoclip/i;
+
 // Shorts : 3 min au plus (limite YouTube depuis octobre 2024).
 export async function trendingVideos(input: { regionCode: string; shortsOnly: boolean; limit: number }) {
   const query = new URLSearchParams({
@@ -44,6 +49,7 @@ export async function trendingVideos(input: { regionCode: string; shortsOnly: bo
       id: string;
       snippet: {
         title: string;
+        categoryId?: string;
         channelTitle: string;
         publishedAt: string;
         thumbnails: Record<string, { url: string } | undefined>;
@@ -52,7 +58,9 @@ export async function trendingVideos(input: { regionCode: string; shortsOnly: bo
       contentDetails: { duration: string };
     }[];
   };
-  const videos: TrendingVideo[] = (data.items ?? []).map((v) => {
+  const videos: TrendingVideo[] = (data.items ?? [])
+    .filter((v) => !EXCLUDED_CATEGORIES.has(v.snippet.categoryId ?? "") && !EXCLUDED_TITLE.test(v.snippet.title))
+    .map((v) => {
     const length = seconds(v.contentDetails.duration);
     return {
       id: v.id,

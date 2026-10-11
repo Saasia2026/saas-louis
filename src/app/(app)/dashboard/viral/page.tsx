@@ -34,6 +34,7 @@ export default async function ViralPage() {
         text: saved.text ?? "",
         videos: saved.videos,
         hashtags: saved.hashtags,
+        tiktokVideos: saved.tiktokVideos,
         sources: saved.sources,
       };
     } catch {
