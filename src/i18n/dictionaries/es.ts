@@ -375,7 +375,6 @@ export const es: Dictionary = {
   videos: {
     eyebrow: "Biblioteca",
     title: "Mis vídeos",
-    intro: "Tus reemplazos terminados, del más reciente al más antiguo.",
     empty: "Todavía no hay vídeos. Sube un clip y un personaje en el estudio.",
     goStudio: "Ir al estudio",
     running: "En curso…",

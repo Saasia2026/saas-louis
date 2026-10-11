@@ -36,9 +36,7 @@ export default async function VideosPage() {
             {t.shell.newVideo}
           </Link>
         }
-      >
-        {V.intro}
-      </PageHeader>
+      />
 
       {shown.length === 0 ? (
         <div className="panel mt-8 flex animate-fade-up flex-col items-center gap-4 px-6 py-16 text-center">

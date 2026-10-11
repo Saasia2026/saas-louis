@@ -377,7 +377,6 @@ export const fr = {
   videos: {
     eyebrow: "Bibliothèque",
     title: "Mes vidéos",
-    intro: "Tes remplacements terminés, du plus récent au plus ancien.",
     empty: "Aucune vidéo pour l'instant. Dépose un clip et un personnage dans le studio.",
     goStudio: "Aller au studio",
     running: "En cours…",
