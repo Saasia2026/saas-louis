@@ -316,6 +316,45 @@ export type Database = {
           },
         ]
       }
+      posting_plans: {
+        Row: {
+          account_ids: string[]
+          alert_days: number
+          alert_email: boolean
+          last_alert_at: string | null
+          locale: string
+          times: string[]
+          timezone: string
+          updated_at: string
+          user_id: string
+          weekdays: number[]
+        }
+        Insert: {
+          account_ids?: string[]
+          alert_days?: number
+          alert_email?: boolean
+          last_alert_at?: string | null
+          locale?: string
+          times?: string[]
+          timezone?: string
+          updated_at?: string
+          user_id: string
+          weekdays?: number[]
+        }
+        Update: {
+          account_ids?: string[]
+          alert_days?: number
+          alert_email?: boolean
+          last_alert_at?: string | null
+          locale?: string
+          times?: string[]
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+          weekdays?: number[]
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -331,6 +370,7 @@ export type Database = {
           auto_recharge_threshold: number
           stripe_customer_id: string | null
           updated_at: string
+          zernio_profile_id: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -346,6 +386,7 @@ export type Database = {
           auto_recharge_threshold?: number
           stripe_customer_id?: string | null
           updated_at?: string
+          zernio_profile_id?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -361,8 +402,62 @@ export type Database = {
           auto_recharge_threshold?: number
           stripe_customer_id?: string | null
           updated_at?: string
+          zernio_profile_id?: string | null
         }
         Relationships: []
+      }
+      scheduled_posts: {
+        Row: {
+          account_ids: string[]
+          caption: string
+          created_at: string
+          error: string | null
+          generation_id: string | null
+          id: string
+          results: Json | null
+          scheduled_for: string
+          status: string
+          updated_at: string
+          user_id: string
+          zernio_post_id: string | null
+        }
+        Insert: {
+          account_ids?: string[]
+          caption?: string
+          created_at?: string
+          error?: string | null
+          generation_id?: string | null
+          id?: string
+          results?: Json | null
+          scheduled_for: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          zernio_post_id?: string | null
+        }
+        Update: {
+          account_ids?: string[]
+          caption?: string
+          created_at?: string
+          error?: string | null
+          generation_id?: string | null
+          id?: string
+          results?: Json | null
+          scheduled_for?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          zernio_post_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_posts_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "generations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       training_photos: {
         Row: {
@@ -473,6 +568,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      viral_messages: {
+        Row: {
+          content: string
+          created_at: string
+          hidden: boolean
+          id: number
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          hidden?: boolean
+          id?: number
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          hidden?: boolean
+          id?: number
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

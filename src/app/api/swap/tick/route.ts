@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import { timingSafeEqual } from "node:crypto";
+import { cronAuthorized } from "@/lib/cron-auth";
 import { errorMessage } from "@/lib/predictions";
 import { advanceSwap } from "@/lib/swap";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -17,17 +17,8 @@ const BATCH = 20;
 // Remboursé au-delà de deux fois la durée maximale d'un lancement.
 const STALE_PENDING_MS = 10 * 60_000;
 
-function authorized(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  const given = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
-  if (!secret || !given) return false;
-  const a = Buffer.from(secret);
-  const b = Buffer.from(given);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
 export async function POST(request: Request) {
-  if (!authorized(request)) return new Response("forbidden", { status: 403 });
+  if (!cronAuthorized(request)) return new Response("forbidden", { status: 403 });
   const admin = createAdminClient();
 
   const { data: stale } = await admin
