@@ -6,6 +6,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fmt, plural } from "@/i18n/config";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/i18n/provider";
+import { VisibleVideos } from "@/app/visible-videos";
 import {
   SWAP_ENGINES,
   SWAP_MAX_CHARACTERS,
@@ -469,7 +470,7 @@ export function Studio({
           <p className="text-xs text-faint">{t.studio.presets}</p>
           {/* Cartes verticales (les plans sont en 9:16) : la vidéo zoome
               doucement au survol, bordure d'accent une fois choisie. */}
-          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+          <VisibleVideos className="mt-2 flex gap-2 overflow-x-auto pb-1">
             {availablePresets.map((p) => (
               <button
                 key={p.id}
@@ -485,8 +486,8 @@ export function Studio({
                 <video
                   src={p.previewUrl}
                   muted
-                  autoPlay
                   loop
+                  preload="metadata"
                   playsInline
                   disablePictureInPicture
                   disableRemotePlayback
@@ -503,7 +504,7 @@ export function Studio({
                 </span>
               </button>
             ))}
-          </div>
+          </VisibleVideos>
         </div>
       )}
 

@@ -233,7 +233,6 @@ export function HistoryEmpty() {
             poster={`${DEMO.before}.jpg`}
             muted
             loop
-            autoPlay
             playsInline
             disablePictureInPicture
             disableRemotePlayback
@@ -289,7 +288,6 @@ export function HistoryEmpty() {
           poster={`${DEMO.after}.jpg`}
           muted
           loop
-          autoPlay
           playsInline
           disablePictureInPicture
           disableRemotePlayback

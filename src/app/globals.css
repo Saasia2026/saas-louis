@@ -408,6 +408,15 @@ body {
 :root[data-theme="light"] .particle-field {
   display: none;
 }
+
+/* Téléphone ou tablette : la couche, plus grande que l'écran d'une tuile de
+   1200 px, pèserait des dizaines de Mo de mémoire graphique à leur densité
+   d'écran et ralentirait chaque toucher. */
+@media (max-width: 767px), (pointer: coarse) {
+  .particle-field {
+    display: none;
+  }
+}
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) .particle-field {
     display: none;

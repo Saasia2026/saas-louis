@@ -73,7 +73,6 @@ export function ScrollWipe({
         ref={beforeRef}
         src={before}
         poster={posterBefore}
-        autoPlay
         muted
         playsInline
         disablePictureInPicture
@@ -86,7 +85,6 @@ export function ScrollWipe({
         ref={afterRef}
         src={after}
         poster={posterAfter}
-        autoPlay
         muted
         playsInline
         disablePictureInPicture

@@ -32,7 +32,6 @@ export function GenjutsuShowcase({ labels }: { labels: string[] }) {
               src={`${src}.mp4`}
               poster={`${src}.jpg`}
               aria-label={labels[i]}
-              autoPlay
               muted
               loop
               playsInline

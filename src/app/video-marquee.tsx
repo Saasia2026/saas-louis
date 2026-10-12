@@ -29,7 +29,6 @@ export function VideoMarquee({ items }: { items: { src: string; poster: string; 
               src={item.src}
               poster={item.poster}
               aria-label={item.label}
-              autoPlay
               muted
               loop
               playsInline

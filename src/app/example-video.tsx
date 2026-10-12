@@ -34,7 +34,6 @@ export function ExampleVideo({
           src={src}
           poster={poster}
           aria-label={label}
-          autoPlay
           muted
           loop
           playsInline
