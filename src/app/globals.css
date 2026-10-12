@@ -418,9 +418,17 @@ body {
   }
 }
 
+/* Un toucher agit tout de suite : sans ceci, Safari peut attendre de voir si
+   un second toucher suit (double toucher pour zoomer). Le zoom à deux doigts
+   reste possible. */
+html {
+  touch-action: manipulation;
+}
+
 /* Au doigt : un champ écrit en moins de 16 px fait zoomer Safari sur toute la
-   page dès qu'on le touche ; pas de flash gris au toucher. Hors couche, pour
-   passer devant text-sm et .field. */
+   page dès qu'on le touche ; pas de flash gris au toucher. Les halos flous et
+   les apparitions au défilement, les effets les plus coûteux pour un
+   téléphone, sont coupés. Hors couche, pour passer devant les utilitaires. */
 @media (pointer: coarse) {
   input,
   select,
@@ -429,6 +437,12 @@ body {
   }
   html {
     -webkit-tap-highlight-color: transparent;
+  }
+  .ambient {
+    display: none;
+  }
+  .reveal {
+    animation: none;
   }
 }
 @media (prefers-color-scheme: light) {

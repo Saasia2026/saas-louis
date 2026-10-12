@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarClock, Clapperboard, Coins, Film, TrendingUp, type LucideIcon } from "lucide-react";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef } from "react";
 import { useI18n } from "@/i18n/provider";
@@ -99,6 +99,21 @@ export function MainNav() {
   );
 }
 
+// Pastille d'un onglet du bas : allumée pour la page ouverte, et dès le
+// toucher pour celle qui se charge.
+function TabIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean }) {
+  const { pending } = useLinkStatus();
+  return (
+    <span
+      className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors duration-100 ${
+        active || pending ? "bg-accent/20 text-accent-light" : ""
+      }`}
+    >
+      <Icon className="size-[1.125rem]" />
+    </span>
+  );
+}
+
 // Barre d'onglets du bas (téléphone) : les cinq entrées toujours visibles,
 // à portée de pouce, au-dessus de la zone du geste d'accueil.
 export function BottomNav() {
@@ -117,13 +132,7 @@ export function BottomNav() {
               active ? "text-text" : "text-muted"
             }`}
           >
-            <span
-              className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${
-                active ? "bg-accent/20 text-accent-light" : ""
-              }`}
-            >
-              <Icon className="size-[1.125rem]" />
-            </span>
+            <TabIcon icon={Icon} active={active} />
             <span className="max-w-full truncate">{t.shell.nav[key]}</span>
           </Link>
         );
