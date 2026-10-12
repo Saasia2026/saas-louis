@@ -694,7 +694,7 @@ function Segmented<T extends string>({
             aria-checked={on}
             title={o.title}
             onClick={() => onChange(o.value)}
-            className={`relative flex min-w-0 items-baseline justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
+            className={`relative flex min-w-0 flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-left transition-colors sm:flex-row sm:items-baseline sm:justify-between sm:gap-2 ${
               on ? "text-text" : "text-muted hover:text-text"
             }`}
           >

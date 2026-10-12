@@ -10,7 +10,7 @@ import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { swapMethodRate } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
-import { MainNav, TopNav } from "./nav-links";
+import { BottomNav, MainNav } from "./nav-links";
 
 // Espace connecté. Le proxy redirige déjà, mais on revérifie ici :
 // le proxy n'est qu'une vérification optimiste.
@@ -72,7 +72,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <Link
                 href="/dashboard/credits"
                 title={t.shell.recharge}
-                className="btn btn-accent px-2.5 py-1.5 text-[0.8125rem]"
+                className="btn btn-accent px-2.5 py-2.5 text-[0.8125rem] sm:py-1.5"
               >
                 <Plus />
                 <span className="sr-only">{t.shell.recharge}</span>
@@ -98,12 +98,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </form>
           </div>
         </div>
-        <div className="border-t border-line px-4 py-2 md:hidden">
-          <TopNav />
-        </div>
       </header>
+      <BottomNav />
 
-      <main className="relative isolate min-w-0 flex-1 overflow-x-clip px-4 py-6 sm:px-8 sm:py-10">
+      {/* Sur téléphone, la fin de la page passe au-dessus de la barre du bas. */}
+      <main className="relative isolate min-w-0 flex-1 overflow-x-clip px-4 pt-6 pb-28 sm:px-8 sm:pt-10 md:pb-10">
         <div className="mx-auto max-w-7xl">{children}</div>
       </main>
     </div>

@@ -99,25 +99,35 @@ export function MainNav() {
   );
 }
 
-// Onglets horizontaux (mobile).
-export function TopNav() {
+// Barre d'onglets du bas (téléphone) : les cinq entrées toujours visibles,
+// à portée de pouce, au-dessus de la zone du geste d'accueil.
+export function BottomNav() {
   const isActive = useActive();
   const { t } = useI18n();
   return (
-    <nav className="flex gap-1 overflow-x-auto">
-      {NAV_LINKS.map(({ href, key, icon: Icon }) => (
-        <Link
-          key={href}
-          href={href}
-          aria-current={isActive(href) ? "page" : undefined}
-          className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-sm ${
-            isActive(href) ? "bg-surface-3 text-text" : "text-muted"
-          }`}
-        >
-          <Icon className={`size-4 ${isActive(href) ? "text-accent-light" : ""}`} />
-          {t.shell.nav[key]}
-        </Link>
-      ))}
+    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-bg pb-[env(safe-area-inset-bottom)] md:hidden">
+      {NAV_LINKS.map(({ href, key, icon: Icon }) => {
+        const active = isActive(href);
+        return (
+          <Link
+            key={href}
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className={`flex min-w-0 flex-col items-center gap-1 px-1 pt-2 pb-1.5 text-[0.6875rem] font-medium ${
+              active ? "text-text" : "text-muted"
+            }`}
+          >
+            <span
+              className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${
+                active ? "bg-accent/20 text-accent-light" : ""
+              }`}
+            >
+              <Icon className="size-[1.125rem]" />
+            </span>
+            <span className="max-w-full truncate">{t.shell.nav[key]}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }

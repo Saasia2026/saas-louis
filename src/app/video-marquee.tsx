@@ -15,8 +15,10 @@ export function VideoMarquee({ items }: { items: { src: string; poster: string; 
   return (
     <div
       ref={container}
-      className="relative overflow-hidden motion-reduce:overflow-x-auto [mask-image:linear-gradient(90deg,transparent,black_6%,black_94%,transparent)]"
+      className="relative overflow-hidden motion-reduce:overflow-x-auto"
     >
+      <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 z-10 w-[6%] bg-gradient-to-r from-bg to-transparent" />
+      <span aria-hidden className="pointer-events-none absolute inset-y-0 right-0 z-10 w-[6%] bg-gradient-to-l from-bg to-transparent" />
       <ul className="flex w-max animate-marquee gap-3 py-2 hover:[animation-play-state:paused] motion-reduce:animate-none sm:gap-4">
         {[...items, ...items].map((item, i) => (
           <li

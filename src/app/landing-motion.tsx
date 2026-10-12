@@ -12,7 +12,12 @@ import { useSyncedPair } from "@/app/synced-pair";
 
 export function SmoothScroll() {
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      !window.matchMedia("(pointer: fine)").matches
+    ) {
+      return;
+    }
     const lenis = new Lenis({ lerp: 0.11, anchors: true });
     let raf = requestAnimationFrame(function loop(time) {
       lenis.raf(time);
