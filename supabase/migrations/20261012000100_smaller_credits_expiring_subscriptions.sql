@@ -7,7 +7,8 @@
 --    dépensable ; subscription_credits en est la part qui expire, dépensée en
 --    premier.
 
-update public.profiles set credits_remaining = credits_remaining * 4;
+-- Un solde de test « illimité » (près d'un milliard) déborderait : gardé tel quel.
+update public.profiles set credits_remaining = credits_remaining * 4 where credits_remaining < 500000000;
 update public.generations set credits_cost = credits_cost * 4;
 update public.credit_purchases set credits = credits * 4;
 update public.viral_messages set credits_cost = credits_cost * 4 where credits_cost > 0;
