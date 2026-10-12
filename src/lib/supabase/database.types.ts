@@ -591,6 +591,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          credits_cost: number
           hidden: boolean
           id: number
           role: string
@@ -599,6 +600,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          credits_cost?: number
           hidden?: boolean
           id?: number
           role: string
@@ -607,6 +609,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          credits_cost?: number
           hidden?: boolean
           id?: number
           role?: string
@@ -668,6 +671,14 @@ export type Database = {
       refund_swap_redo: {
         Args: { p_credits: number; p_generation_id: string }
         Returns: undefined
+      }
+      refund_viral_question: {
+        Args: { p_message_id: number }
+        Returns: undefined
+      }
+      start_viral_question: {
+        Args: { p_content: string; p_credits: number; p_user_id: string }
+        Returns: number
       }
       use_director_message: { Args: never; Returns: number }
       video_model_credits_per_second: {

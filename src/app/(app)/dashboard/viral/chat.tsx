@@ -15,9 +15,12 @@ import {
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
+import { VIRAL_QUESTION_CREDITS } from "@/lib/credit-packs";
 import { coverSrc } from "@/lib/trend-cover";
 import { clearChat } from "./actions";
 import { ASK_EVENT } from "./ask-button";
@@ -113,6 +116,9 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Solde trop bas pour une question : l'erreur propose de recharger.
+  const [noCredits, setNoCredits] = useState(false);
+  const router = useRouter();
   const [clearing, startClear] = useTransition();
   const scroller = useRef<HTMLDivElement>(null);
   const sendRef = useRef<(text: string) => void>(() => {});
@@ -140,6 +146,7 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
     if (!message || busy) return;
     setInput("");
     setError(null);
+    setNoCredits(false);
     setBusy(true);
     setMessages((list) => [...list, { role: "user", text: message }, { role: "assistant", text: "" }]);
     try {
@@ -148,6 +155,10 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message }),
       });
+      if (response.status === 402) {
+        setNoCredits(true);
+        throw new Error(fmt(V.noCredits, { n: VIRAL_QUESTION_CREDITS }));
+      }
       if (!response.ok || !response.body) throw new Error(response.status === 429 ? V.limit : V.error);
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -186,6 +197,8 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
     } finally {
       setBusy(false);
       setStatus(null);
+      // Solde de la barre du haut.
+      router.refresh();
     }
   }
   sendRef.current = send;
@@ -395,7 +408,19 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
                 </div>
               ),
             )}
-            {error && <p className="text-sm text-danger">{error}</p>}
+            {error && (
+              <p className="text-sm text-danger">
+                {error}
+                {noCredits && (
+                  <>
+                    {" "}
+                    <Link href="/dashboard/credits" className="font-semibold underline underline-offset-2">
+                      {t.shell.recharge}
+                    </Link>
+                  </>
+                )}
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -431,6 +456,9 @@ export function ViralChat({ initial }: { initial: ChatMessage[] }) {
             {busy ? <LoaderCircle className="animate-spin" /> : <ArrowUp />}
           </button>
         </div>
+        <p className="mx-auto mt-1.5 max-w-3xl px-4 text-xs text-faint">
+          {fmt(V.cost, { n: VIRAL_QUESTION_CREDITS })}
+        </p>
       </form>
     </div>
   );

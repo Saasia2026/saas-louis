@@ -2,6 +2,7 @@ import { ArrowDownRight, ArrowUpRight, Music2, Play, WandSparkles } from "lucide
 import { Suspense } from "react";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
+import { VIRAL_QUESTION_CREDITS } from "@/lib/credit-packs";
 import {
   hashtagVideos,
   tiktokTrendsEnabled,
@@ -65,7 +66,7 @@ export async function TrendsAside() {
             </li>
           ))}
         </ol>
-        <p className="mt-2 px-1.5 text-xs text-faint">{V.askHint}</p>
+        <p className="mt-2 px-1.5 text-xs text-faint">{fmt(V.askHint, { n: VIRAL_QUESTION_CREDITS })}</p>
       </section>
 
       <Suspense fallback={<div aria-hidden className="panel h-80 animate-pulse" />}>

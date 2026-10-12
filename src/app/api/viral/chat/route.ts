@@ -1,7 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { after } from "next/server";
 import { z } from "zod";
 import { getLocale } from "@/i18n/server";
+import { VIRAL_QUESTION_CREDITS } from "@/lib/credit-packs";
 import { missingSlots, userAccounts, userPlan, zernioProfileId } from "@/lib/social";
+import { autoRecharge } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -17,8 +20,9 @@ import { topPosts, zernioEnabled } from "@/lib/zernio";
 
 // Chat « analyste viral » : Claude cherche les tendances du moment sur le web,
 // montre les Shorts en tendance (YouTube), lit les comptes connectés et les
-// vidéos du créateur, puis conseille la prochaine vidéo à générer. Réponse en
-// flux NDJSON : text, status, videos, sources, error, done.
+// vidéos du créateur, puis conseille la prochaine vidéo à générer. Chaque
+// question coûte VIRAL_QUESTION_CREDITS, remboursés si la réponse échoue.
+// Réponse en flux NDJSON : text, status, videos, sources, error, done.
 export const maxDuration = 300;
 
 const MODEL = "claude-opus-5-5";
@@ -273,7 +277,25 @@ export async function POST(request: Request) {
     .filter((m) => m.content);
   while (history[0]?.role === "assistant") history.shift();
 
-  await admin.from("viral_messages").insert({ user_id: userId, role: "user", content: message });
+  // Débit et enregistrement de la question en une fois. Solde trop bas et
+  // recharge automatique activée : la carte est débitée, puis on réessaie.
+  const ask = () =>
+    admin.rpc("start_viral_question", { p_user_id: userId, p_content: message, p_credits: VIRAL_QUESTION_CREDITS });
+  let { data: questionId, error: askError } = await ask();
+  if (askError?.message.includes("insufficient_credits") && (await autoRecharge(userId, VIRAL_QUESTION_CREDITS))) {
+    ({ data: questionId, error: askError } = await ask());
+  }
+  if (askError || questionId === null) {
+    if (askError?.message.includes("insufficient_credits")) return new Response("credits", { status: 402 });
+    console.error("start_viral_question", askError?.message);
+    return new Response("error", { status: 500 });
+  }
+  const messageId = questionId;
+  after(() => autoRecharge(userId).catch(() => {}));
+  const refund = () =>
+    admin.rpc("refund_viral_question", { p_message_id: messageId }).then(
+      ({ error }) => error && console.error("refund_viral_question", error.message),
+    );
 
   const locale = await getLocale();
   const messages: Anthropic.Beta.BetaMessageParam[] = [
@@ -312,6 +334,8 @@ export async function POST(request: Request) {
             betas: ["server-side-fallback-2026-07-01"],
             fallbacks: "default",
             output_config: { effort: "medium" },
+            // Chaque tour relit tout le fil : le préfixe déjà lu est servi par le cache.
+            cache_control: { type: "ephemeral" },
             system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
             tools: TOOLS,
             messages,
@@ -372,10 +396,14 @@ export async function POST(request: Request) {
             role: "assistant",
             content: JSON.stringify({ text, sources: sourceList, videos, hashtags, tiktokVideos }),
           });
+        } else {
+          await refund();
         }
         send({ type: "done" });
       } catch (e) {
         console.error("viral chat", e instanceof Error ? e.message : e);
+        // Remboursé avant de répondre : la page a pu être fermée entre-temps.
+        await refund();
         send({ type: "error" });
       } finally {
         controller.close();
