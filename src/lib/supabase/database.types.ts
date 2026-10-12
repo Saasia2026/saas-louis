@@ -369,6 +369,8 @@ export type Database = {
           auto_recharge_pack: string | null
           auto_recharge_threshold: number
           stripe_customer_id: string | null
+          subscription_credits: number
+          subscription_credits_expire_at: string | null
           updated_at: string
           zernio_profile_id: string | null
         }
@@ -385,6 +387,8 @@ export type Database = {
           auto_recharge_pack?: string | null
           auto_recharge_threshold?: number
           stripe_customer_id?: string | null
+          subscription_credits?: number
+          subscription_credits_expire_at?: string | null
           updated_at?: string
           zernio_profile_id?: string | null
         }
@@ -676,6 +680,20 @@ export type Database = {
         Args: { p_message_id: number }
         Returns: undefined
       }
+      apply_subscription_credits: {
+        Args: {
+          p_amount_total: number
+          p_credits: number
+          p_currency: string
+          p_expires_at: string
+          p_invoice_id: string
+          p_plan_id: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      expire_subscription_credits: { Args: { p_user_id?: string }; Returns: number }
+      spend_credits: { Args: { p_cost: number; p_user_id: string }; Returns: boolean }
       start_viral_question: {
         Args: { p_content: string; p_credits: number; p_user_id: string }
         Returns: number

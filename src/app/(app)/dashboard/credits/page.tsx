@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   AUTO_RECHARGE_THRESHOLDS,
+  DEFAULT_AUTO_RECHARGE_THRESHOLD,
   CREDIT_PACKS,
   SUBSCRIPTION_PLANS,
   findCreditPack,
@@ -52,8 +53,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const ERRORS = ["unavailable", "checkout", "card", "nocard", "portal", "subscribed"] as const;
 
+// Réduction réelle de l'annuel la plus forte, face aux mêmes crédits en packs
+// (comme sur chaque offre) : affichée sur le choix « Annuel ».
+const MAX_YEARLY_OFF = Math.max(...SUBSCRIPTION_PLANS.map((plan) => subscriptionOff(plan, "year")));
+
 // Les crédits d'une offre et ce qu'ils représentent en vidéo (720p, une
-// passe, fiche d'un personnage comprise ; 15 s ; haute fidélité).
+// passe, fiche d'un personnage comprise ; vidéos courtes ; haute fidélité).
 function CreditsBox({
   credits,
   color,
@@ -161,7 +166,9 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("credits_remaining, stripe_customer_id, auto_recharge_pack, auto_recharge_threshold, auto_recharge_failed")
+    .select(
+      "credits_remaining, subscription_credits, subscription_credits_expire_at, stripe_customer_id, auto_recharge_pack, auto_recharge_threshold, auto_recharge_failed",
+    )
     .eq("id", userId)
     .single();
   const customerId = profile?.stripe_customer_id;
@@ -178,6 +185,9 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
     new Intl.DateTimeFormat(intl, { dateStyle: "long" }).format(new Date(seconds * 1000));
   const brand = (b: string) => b.charAt(0).toUpperCase() + b.slice(1);
   const balance = profile?.credits_remaining ?? 0;
+  // Part du solde venue de l'abonnement, perdue à la fin de la période payée.
+  const expiring = Math.min(balance, profile?.subscription_credits ?? 0);
+  const expiresAt = profile?.subscription_credits_expire_at;
 
   return (
     <div>
@@ -207,6 +217,14 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
           <p className="mt-2 text-sm text-muted tabular-nums">
             {fmt(P.eqSeconds, { n: swapMethodSecondsFor(balance).toLocaleString(intl) })}
           </p>
+          {expiring > 0 && expiresAt && (
+            <p className="mt-1 text-sm text-muted tabular-nums">
+              {fmt(P.expiring, {
+                n: expiring.toLocaleString(intl),
+                date: dateOf(Date.parse(expiresAt) / 1000),
+              })}
+            </p>
+          )}
           <div className="mt-auto pt-6">
             <a href="#packs" className="btn btn-secondary">
               <Plus />
@@ -287,7 +305,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                     {fmt(A.on, {
                       pack: P.packs[autoPack.id],
                       price: price(autoPack.amount),
-                      threshold: profile?.auto_recharge_threshold ?? 20,
+                      threshold: profile?.auto_recharge_threshold ?? DEFAULT_AUTO_RECHARGE_THRESHOLD,
                     })}
                   </p>
                 ) : null}
@@ -306,7 +324,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                     <span className="label">{A.thresholdLabel}</span>
                     <select
                       name="threshold"
-                      defaultValue={String(profile?.auto_recharge_threshold ?? 20)}
+                      defaultValue={String(profile?.auto_recharge_threshold ?? DEFAULT_AUTO_RECHARGE_THRESHOLD)}
                       className="field mt-1"
                     >
                       {AUTO_RECHARGE_THRESHOLDS.map((n) => (
@@ -348,7 +366,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                   }`}
                 >
                   {interval === "year" ? S.yearly : S.monthly}
-                  {interval === "year" && <span className={OFF_BADGE}>{S.yearlyBadge}</span>}
+                  {interval === "year" && <span className={OFF_BADGE}>{fmt(P.off, { pct: MAX_YEARLY_OFF })}</span>}
                 </Link>
               ))}
             </div>

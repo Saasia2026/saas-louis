@@ -1,28 +1,31 @@
 // Packs de crédits vendus par Stripe Checkout, partagés client/serveur.
 // Prix en centimes, sans TVA (micro-entreprise en franchise, art. 293 B du
-// CGI). Grille de lancement (2026-10-12) : un crédit coûte ~0,088 € à
-// produire (Genjutsu 0,681 $/s à 7 cr/s, plus fiches et rendus remboursés) ;
-// Stripe prend ~2 % + 0,25 € par paiement. Marge ~20 % avant l'URSSAF
-// (~21,2 % du prix) : une offre dont tous les crédits sont utilisés est à
-// l'équilibre ou un peu en perte, la marge vient des crédits non utilisés.
-// Grille à ~20 % net, à reprendre avec du volume ou une remise Higgsfield :
-// packs 61 / 190 / 642, abonnements 165 / 535. Le prix par crédit baisse du
-// plus petit au plus grand pack.
+// CGI). Grille de lancement (2026-10-12), en crédits 4 fois plus petits
+// qu'au départ, comme sur le marché : un crédit coûte ~0,022 € à produire
+// (Genjutsu 0,681 $/s à 28 cr/s, plus fiches et rendus remboursés) ; Stripe
+// prend ~2 % + 0,25 € par paiement. Marge ~20 % avant l'URSSAF (~21,2 % du
+// prix) : une offre dont tous les crédits sont utilisés est à l'équilibre ou
+// un peu en perte, la marge vient des crédits non utilisés (ceux d'un
+// abonnement expirent à la fin de la période payée). Grille à ~20 % net, à
+// reprendre avec du volume ou une remise Higgsfield : packs 244 / 760 / 2568,
+// abonnements 660 / 2140. Le prix par crédit baisse du plus petit au plus
+// grand pack.
 export const CREDIT_CURRENCY = "eur";
 
 export const CREDIT_PACKS = [
-  { id: "starter", label: "Basic", credits: 85, amount: 999 },
-  { id: "creator", label: "Pro", credits: 265, amount: 2999, highlight: true },
-  { id: "studio", label: "Creator", credits: 900, amount: 9999 },
+  { id: "starter", label: "Basic", credits: 340, amount: 999 },
+  { id: "creator", label: "Pro", credits: 1060, amount: 2999, highlight: true },
+  { id: "studio", label: "Creator", credits: 3600, amount: 9999 },
 ] as const;
 
 // Abonnements (Pro et Creator ; pas de Basic) : ~4 % moins chers au crédit
 // que le pack de la même offre.
 // L'annuel livre les 12 mois de crédits d'un coup, ~10 % sous le prix des
-// mêmes crédits en packs.
+// mêmes crédits en packs. Les crédits d'une période (le mois, ou l'année)
+// expirent à sa fin ; ceux des packs jamais.
 export const SUBSCRIPTION_PLANS = [
-  { id: "creator", credits: 230, month: 2499, year: 27990, highlight: true },
-  { id: "studio", credits: 750, month: 7999, year: 89990 },
+  { id: "creator", credits: 920, month: 2499, year: 27990, highlight: true },
+  { id: "studio", credits: 3000, month: 7999, year: 89990 },
 ] as const;
 
 export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];
@@ -56,10 +59,12 @@ export function planCredits(plan: SubscriptionPlan, interval: BillingInterval) {
 // Prix d'une question au chat Viralité. Mesuré le 2026-10-12 : ~0,17 $ de
 // Claude et de recherche web pour une question type, davantage quand la
 // conversation s'allonge.
-export const VIRAL_QUESTION_CREDITS = 3;
+export const VIRAL_QUESTION_CREDITS = 12;
 
 // Seuils proposés pour la recharge automatique.
-export const AUTO_RECHARGE_THRESHOLDS = [10, 20, 50, 100] as const;
+export const AUTO_RECHARGE_THRESHOLDS = [40, 80, 200, 400] as const;
+// Seuil par défaut, aligné avec profiles.auto_recharge_threshold.
+export const DEFAULT_AUTO_RECHARGE_THRESHOLD = 80;
 
 export type CreditPack = (typeof CREDIT_PACKS)[number];
 export type CreditPackId = CreditPack["id"];

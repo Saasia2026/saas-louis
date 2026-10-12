@@ -13,18 +13,19 @@ export const SWAP_INPUTS_BUCKET = "swap-inputs";
 // - genjutsu (Higgsfield Genjutsu Object Swap) : 0,681 $ la seconde en 720p.
 //   Il suit les coupes tout seul ; le passage est rendu en séquences de
 //   quelques secondes, toutes en même temps (voir GENJUTSU_BLOCK_SECONDS),
-//   sans nouvel essai automatique : 7 crédits la seconde, 30 s au plus ;
+//   sans nouvel essai automatique : 28 crédits la seconde, 30 s au plus ;
 // - kling (Kling O3 Pro Edit) : 0,168 $ la seconde, plus l'image clé de
-//   chaque plan (~0,15 $) et les plans refaits après contrôle : 2,5 crédits
+//   chaque plan (~0,15 $) et les plans refaits après contrôle : 10 crédits
 //   la seconde, 15 s au plus ;
 // - magichour (Magic Hour Face Swap Video) : seul le visage change, le reste
 //   du clip est gardé. ~0,03 $ la seconde (1 crédit Magic Hour par image) :
-//   1 crédit la seconde, 90 s au plus, sans fiche personnage.
-// La fiche personnage (deux images Nano Banana Pro, ~0,30 $) : 3 crédits.
+//   4 crédits la seconde, 90 s au plus, sans fiche personnage.
+// La fiche personnage (deux images Nano Banana Pro, ~0,30 $) : 12 crédits.
+// Barèmes alignés avec public.start_swap_generation.
 export const SWAP_ENGINES = {
-  genjutsu: { creditsPerSecond: 7, maxSeconds: 30 },
-  kling: { creditsPerSecond: 2.5, maxSeconds: 15 },
-  magichour: { creditsPerSecond: 1, maxSeconds: 90 },
+  genjutsu: { creditsPerSecond: 28, maxSeconds: 30 },
+  kling: { creditsPerSecond: 10, maxSeconds: 15 },
+  magichour: { creditsPerSecond: 4, maxSeconds: 90 },
 } as const;
 
 export type SwapEngine = keyof typeof SWAP_ENGINES;
@@ -34,7 +35,7 @@ export function isSwapEngine(value: unknown): value is SwapEngine {
   return typeof value === "string" && value in SWAP_ENGINES;
 }
 
-export const SWAP_SHEET_CREDITS = 3;
+export const SWAP_SHEET_CREDITS = 12;
 // Fiche personnage d'un remplacement : Magic Hour lit la photo telle quelle.
 export function swapSheetCredits(engine: SwapEngine, characters = 1) {
   return engine === "magichour" ? 0 : SWAP_SHEET_CREDITS * characters;
@@ -47,8 +48,8 @@ export function facePassCredits(seconds: number) {
   return Math.max(1, Math.ceil(seconds * FACE_PASS_CREDITS_PER_SECOND));
 }
 // Genjutsu en 1080p : 1,632 $ la seconde chez Higgsfield (vérifié le
-// 2026-09-26), soit 17 crédits la seconde pour rester sous 0,10 $ par crédit.
-export const GENJUTSU_HD_CREDITS_PER_SECOND = 17;
+// 2026-09-26), soit 68 crédits la seconde (~0,024 $ par crédit).
+export const GENJUTSU_HD_CREDITS_PER_SECOND = 68;
 
 // Crédits par seconde d'un moteur, 1080p compris (genjutsu seulement).
 export function swapRate(engine: SwapEngine, hd = false) {

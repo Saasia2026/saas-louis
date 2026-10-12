@@ -168,9 +168,11 @@ export async function fulfillPaymentIntent(intent: Stripe.PaymentIntent) {
 }
 
 // Facture d'abonnement payée (premier paiement et renouvellements) : les
-// crédits du mois, ou des 12 mois pour l'annuel. Un changement de formule en
-// cours de période (facture au prorata) ne livre rien de plus : les crédits
-// de la nouvelle formule arrivent au renouvellement.
+// crédits du mois, ou des 12 mois pour l'annuel, valables jusqu'à la fin de
+// la période facturée ; ceux de la période précédente expirent. Un
+// changement de formule en cours de période (facture au prorata) ne livre
+// rien de plus : les crédits de la nouvelle formule arrivent au
+// renouvellement.
 export async function fulfillInvoice(invoice: Stripe.Invoice) {
   if (invoice.status !== "paid") return false;
   if (invoice.billing_reason !== "subscription_create" && invoice.billing_reason !== "subscription_cycle") {
@@ -191,14 +193,23 @@ export async function fulfillInvoice(invoice: Stripe.Invoice) {
     console.error("fulfillInvoice: métadonnées manquantes", invoice.id);
     return false;
   }
-  return applyPurchase({
-    id: invoice.id,
-    userId,
-    packId: `sub-${plan.id}-${interval}`,
-    credits: planCredits(plan, interval),
-    amount: invoice.amount_paid,
-    currency: invoice.currency,
+  // Fin de la période payée, lue sur les lignes de la facture.
+  const periodEnd = Math.max(0, ...invoice.lines.data.map((line) => line.period?.end ?? 0));
+  if (!periodEnd) {
+    console.error("fulfillInvoice: période introuvable", invoice.id);
+    return false;
+  }
+  const { data, error } = await createAdminClient().rpc("apply_subscription_credits", {
+    p_invoice_id: invoice.id,
+    p_user_id: userId,
+    p_plan_id: `sub-${plan.id}-${interval}`,
+    p_credits: planCredits(plan, interval),
+    p_amount_total: invoice.amount_paid,
+    p_currency: invoice.currency,
+    p_expires_at: new Date(periodEnd * 1000).toISOString(),
   });
+  if (error) throw error;
+  return data;
 }
 
 // Débite la carte enregistrée pour un pack. `returnUrl` : le client est là
