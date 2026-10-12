@@ -248,8 +248,7 @@ export const en: Dictionary = {
       "Moves, set, camera and sound come from your clip: only the character changes. Use a clip you have the right to reuse.",
     launch: "Generate",
     costFrom: "From {cost} {credits}",
-    notEnoughCredits: "Not enough credits",
-    pricingCta: "Pick a pack to generate",
+    notEnoughCredits: "You need {n} more credits: Generate takes you to checkout, your project is kept.",
     restoring: "Restoring your project…",
     longClipWarning: "Videos over 15s are split into segments — some may fail.",
     methodStandard: "Standard",
@@ -599,6 +598,7 @@ export const en: Dictionary = {
       removed: "Card removed. Auto top-up is off.",
       hasSubscription: "Your card pays for your subscription: change it or cancel from “Manage my subscription”.",
       paid: "Payment received, your credits have been added. Thank you!",
+      need: "You need {n} more credits to launch your video. Pick a pack: your project is waiting in the studio.",
       pending: "Payment being validated: your credits will arrive as soon as it's confirmed.",
       mismatch: "This payment doesn't match your account.",
       verifyFailed:

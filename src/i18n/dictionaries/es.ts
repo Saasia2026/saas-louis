@@ -248,8 +248,7 @@ export const es: Dictionary = {
       "Los gestos, el decorado, la cámara y el sonido vienen de tu clip: solo cambia el personaje. Usa un clip que tengas derecho a reutilizar.",
     launch: "Generar",
     costFrom: "Desde {cost} {credits}",
-    notEnoughCredits: "Créditos insuficientes",
-    pricingCta: "Elige un pack para generar",
+    notEnoughCredits: "Te faltan {n} créditos: «Generar» te lleva al pago y tu proyecto se guarda.",
     restoring: "Recuperando tu proyecto…",
     longClipWarning: "Los videos de más de 15 s se dividen en segmentos — algunos pueden fallar.",
     methodStandard: "Estándar",
@@ -600,6 +599,7 @@ export const es: Dictionary = {
       removed: "Tarjeta eliminada. La recarga automática está desactivada.",
       hasSubscription: "Tu tarjeta paga tu suscripción: cámbiala o cancela desde «Gestionar mi suscripción».",
       paid: "Pago recibido, tus créditos se han añadido. ¡Gracias!",
+      need: "Te faltan {n} créditos para lanzar tu vídeo. Elige un pack: tu proyecto te espera en el estudio.",
       pending: "Pago en validación: tus créditos llegarán en cuanto se confirme.",
       mismatch: "Este pago no corresponde a tu cuenta.",
       verifyFailed:

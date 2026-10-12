@@ -56,7 +56,8 @@ async function mapInBatches<T, R>(items: T[], size: number, fn: (item: T) => Pro
   return results;
 }
 
-type Result<T> = { data: T; error?: never } | { data?: never; error: string };
+// `needCredits` : refus faute de crédits, avec le prix de ce qui était demandé.
+type Result<T> = { data: T; error?: never } | { data?: never; error: string; needCredits?: number };
 
 const INPUT_URL_TTL_SECONDS = 60 * 60;
 
@@ -364,7 +365,10 @@ export async function startSwap(input: {
   }
   if (rpcError || !generationId) {
     if (rpcError?.message.includes("insufficient_credits")) {
-      return { error: errors.insufficientCredits };
+      return {
+        error: errors.insufficientCredits,
+        needCredits: swapCredits(durationSeconds, engine, billedSeconds, characters.length, hd, false, vessel),
+      };
     }
     console.error("start_swap_generation", errorMessage(rpcError));
     return { error: errors.startFailed };

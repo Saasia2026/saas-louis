@@ -140,19 +140,6 @@ export function Studio({
   const resultEnd = useRef<HTMLElement>(null);
   const busy = phase.kind === "generating";
   const started = phase.kind !== "idle";
-  // Ctrl/⌘ + Entrée lance le rendu.
-  const onShortcut = useEffectEvent(() => launch());
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        onShortcut();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   // Un clip plus long est découpé au passage choisi. Même arrondi que le
   // serveur (voir startSwap). Le prix final dépend du découpage du clip, fait
   // par le serveur : celui-ci est le plus bas possible.
@@ -172,9 +159,9 @@ export function Studio({
     ? cost
     : swapCredits(1, engine, undefined, characters.length, hd, false, fidelity);
   const ready = Boolean(video) && imagesReady && targetsReady && decorReady;
-  // Connecté mais à court de crédits : le bouton mène aux offres.
+  // Connecté mais à court de crédits : « Générer » mène aux packs.
   const short = !guest && ready && credits < gate && !autoRecharge;
-  const canSend = available && !busy && !restoring && ready && (guest || !short);
+  const canSend = available && !busy && !restoring && ready;
 
   // Lancement, fin ou erreur : le rendu suivi revient à l'écran (sur mobile,
   // il est sous le formulaire).
@@ -316,12 +303,23 @@ export function Studio({
     );
   }
 
+  // À court de crédits : le projet est gardé, direction les packs, avec ce
+  // qui manque.
+  async function goPay(missing: number) {
+    await keepDraft();
+    router.push(`/dashboard/credits?need=${Math.max(1, missing)}#packs`);
+  }
+
   async function launch() {
     if (!canSend || !video) return;
     // Visiteur : le projet est gardé, la connexion d'abord.
     if (guest) {
       await keepDraft();
       router.push(`/login?next=${encodeURIComponent("/dashboard/generate")}&from=studio`);
+      return;
+    }
+    if (short) {
+      await goPay(gate - credits);
       return;
     }
     setPhase({
@@ -346,6 +344,12 @@ export function Studio({
     });
     router.refresh();
     if (res.error !== undefined) {
+      // Le serveur mesure le clip : s'il coûte plus que le solde, même chemin.
+      if (res.needCredits !== undefined) {
+        setPhase({ kind: "idle" });
+        await goPay(res.needCredits - credits);
+        return;
+      }
       setPhase({ kind: "error", message: res.error });
       return;
     }
@@ -358,6 +362,19 @@ export function Studio({
     setPhase({ kind: "generating", job, id: res.data.generationId });
     setActive({ id: res.data.generationId, job });
   }
+
+  // Ctrl/⌘ + Entrée lance le rendu.
+  const onShortcut = useEffectEvent(() => launch());
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        onShortcut();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   async function cancel() {
     if (phase.kind !== "generating" || !phase.id || !window.confirm(t.studio.cancelConfirm)) return;
@@ -590,42 +607,28 @@ export function Studio({
         {restoring && <p className="mb-3 text-xs text-muted">{t.studio.restoring}</p>}
         {video && imagesReady && (!targetsReady || short) && (
           <p className={`mb-3 text-xs ${targetsReady ? "text-danger" : "text-warning"}`}>
-            {!targetsReady ? t.studio.targetsMissing : t.studio.notEnoughCredits}
+            {!targetsReady ? t.studio.targetsMissing : fmt(t.studio.notEnoughCredits, { n: gate - credits })}
           </p>
         )}
         {durationKnown && seconds > 15 && <p className="mb-3 text-xs text-warning">{t.studio.longClipWarning}</p>}
         {/* Le prix est dans le bouton : rien d'autre à lire avant de lancer. */}
-        {short ? (
-          <button
-            type="button"
-            onClick={async () => {
-              await keepDraft();
-              router.push("/dashboard/credits");
-            }}
-            className="btn btn-hot w-full py-3.5 text-base"
-          >
-            <Coins />
-            {t.studio.pricingCta}
-          </button>
-        ) : (
-          <button
-            type="submit"
-            disabled={!canSend}
-            title={
-              video ? fmt(t.studio.costFrom, { cost, credits: plural(cost, t.common.credit, t.common.credits) }) : undefined
-            }
-            className="btn btn-accent w-full py-3.5 text-base"
-          >
-            <WandSparkles />
-            {t.studio.launch}
-            {video && (
-              <span className="ml-1 inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-sm tabular-nums">
-                <Coins className="size-3.5" />
-                {costLabel}
-              </span>
-            )}
-          </button>
-        )}
+        <button
+          type="submit"
+          disabled={!canSend}
+          title={
+            video ? fmt(t.studio.costFrom, { cost, credits: plural(cost, t.common.credit, t.common.credits) }) : undefined
+          }
+          className="btn btn-accent w-full py-3.5 text-base"
+        >
+          <WandSparkles />
+          {t.studio.launch}
+          {video && (
+            <span className="ml-1 inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-sm tabular-nums">
+              <Coins className="size-3.5" />
+              {costLabel}
+            </span>
+          )}
+        </button>
       </div>
     </form>
   );

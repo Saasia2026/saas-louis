@@ -250,8 +250,7 @@ export const fr = {
       "Les gestes, le décor, la caméra et le son viennent de ton clip : seul le personnage change. Utilise un clip que tu as le droit de réutiliser.",
     launch: "Générer",
     costFrom: "Dès {cost} {credits}",
-    notEnoughCredits: "Crédits insuffisants",
-    pricingCta: "Choisir un pack pour générer",
+    notEnoughCredits: "Il te manque {n} crédits : « Générer » t'emmène au paiement, ton projet est gardé.",
     restoring: "Récupération de ton projet…",
     longClipWarning: "Les vidéos de plus de 15 s sont découpées en plusieurs segments — certains peuvent échouer.",
     methodStandard: "Standard",
@@ -601,6 +600,7 @@ export const fr = {
       removed: "Carte retirée. La recharge automatique est désactivée.",
       hasSubscription: "Ta carte paie ton abonnement : change-la ou résilie depuis « Gérer mon abonnement ».",
       paid: "Paiement reçu, tes crédits ont été ajoutés. Merci !",
+      need: "Il te manque {n} crédits pour lancer ta vidéo. Choisis un pack : ton projet t'attend dans le studio.",
       pending: "Paiement en cours de validation : tes crédits arriveront dès qu'il sera confirmé.",
       mismatch: "Ce paiement ne correspond pas à ton compte.",
       verifyFailed:

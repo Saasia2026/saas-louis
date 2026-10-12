@@ -35,6 +35,7 @@ import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { BADGE, OFF_BADGE, TIERS, tierCard } from "@/app/tier-style";
+import { ScrollHere } from "./scroll-here";
 import { PageHeader } from "../../page-header";
 import {
   addCard,
@@ -163,6 +164,10 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
       notice = { ok: false, text: error === "subscribed" ? P.notices.hasSubscription : P.notices[error] };
     }
   }
+
+  // Arrivée depuis le studio, à court de crédits pour une vidéo.
+  const need = Number(params.need);
+  const needNotice = Number.isInteger(need) && need > 0 ? fmt(P.notices.need, { n: need }) : null;
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -457,6 +462,16 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
 
       {/* Packs : le prix de référence, sans engagement. */}
       <section id="packs" className="mt-14 scroll-mt-24">
+        {/* Arrivée depuis le studio à court de crédits : ce qui manque, juste
+            au-dessus des packs, et l'écran y descend. */}
+        {needNotice && !notice && (
+          <>
+            <ScrollHere />
+            <p role="status" className="mb-8 rounded-xl border border-accent/40 bg-accent-soft px-4 py-3 text-sm">
+              {needNotice}
+            </p>
+          </>
+        )}
         <p className="eyebrow">{P.packsEyebrow}</p>
         <h2 className="mt-3 font-headline text-4xl leading-none sm:text-5xl">{P.packsTitle}</h2>
         <p className="mt-3 max-w-xl text-sm text-muted">{P.packsIntro}</p>
