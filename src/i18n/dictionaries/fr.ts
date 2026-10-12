@@ -544,7 +544,7 @@ export const fr = {
     billedYearly: "facturé {price} par an",
     yearlySave: "Tu économises {amount} par an",
     eqSeconds: "= {n} s de vidéo en 720p",
-    eqClips: "≈ {n} vidéos de 15 s",
+    eqClips: "≈ {n} vidéos de {s} s",
     eqFidelity: "= {n} s en haute fidélité",
     packTag: "Sans engagement",
     packsEyebrow: "Packs",

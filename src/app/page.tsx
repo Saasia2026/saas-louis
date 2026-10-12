@@ -15,7 +15,13 @@ import { VideoMarquee } from "@/app/video-marquee";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { CREDIT_PACKS, SUBSCRIPTION_PLANS, formatPrice, subscriptionOff } from "@/lib/credit-packs";
-import { SWAP_SHEET_CREDITS, swapMethodRate, swapMethodSecondsFor } from "@/lib/generation";
+import {
+  SHORT_CLIP_SECONDS,
+  SWAP_SHEET_CREDITS,
+  swapMethodRate,
+  swapMethodSecondsFor,
+  swapShortClipsFor,
+} from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
 
 // Vidéos d'exemple (public/examples), dans l'ordre des textes de
@@ -301,10 +307,10 @@ export default async function Home() {
                   <p className="mt-6 font-headline text-6xl leading-none">{price(pack.amount)}</p>
                   <p className="mt-3 flex items-center gap-2 text-sm font-semibold tabular-nums">
                     <Sparkles className="size-4 shrink-0" style={{ color: tier.color }} />
-                    {pack.credits} {t.common.credits}
+                    {fmt(P.eqClips, { n: swapShortClipsFor(pack.credits), s: SHORT_CLIP_SECONDS })}
                   </p>
                   <p className="mt-1 pl-6 text-sm text-muted tabular-nums">
-                    {fmt(P.eqSeconds, { n: swapMethodSecondsFor(pack.credits) })}
+                    {pack.credits} {t.common.credits} {fmt(P.eqSeconds, { n: swapMethodSecondsFor(pack.credits) })}
                   </p>
                   <Link
                     href={start}

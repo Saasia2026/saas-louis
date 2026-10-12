@@ -1,17 +1,19 @@
 // Packs de crédits vendus par Stripe Checkout, partagés client/serveur.
 // Prix en centimes, sans TVA (micro-entreprise en franchise, art. 293 B du
-// CGI). Grille du 2026-10-12 : un crédit coûte ~0,088 € à produire (Genjutsu
-// 0,681 $/s à 7 cr/s, plus fiches et rendus remboursés) ; Stripe prend ~2 %
-// + 0,25 € par paiement et l'URSSAF ~21,2 % du prix. Bénéfice net visé, tous
-// les crédits utilisés : ~20 % sur les packs, ~18 % sur les abonnements
-// mensuels, ~14-15 % sur l'annuel (payé d'avance). Le prix par crédit baisse
-// du plus petit au plus grand pack.
+// CGI). Grille de lancement (2026-10-12) : un crédit coûte ~0,088 € à
+// produire (Genjutsu 0,681 $/s à 7 cr/s, plus fiches et rendus remboursés) ;
+// Stripe prend ~2 % + 0,25 € par paiement. Marge ~20 % avant l'URSSAF
+// (~21,2 % du prix) : une offre dont tous les crédits sont utilisés est à
+// l'équilibre ou un peu en perte, la marge vient des crédits non utilisés.
+// Grille à ~20 % net, à reprendre avec du volume ou une remise Higgsfield :
+// packs 61 / 190 / 642, abonnements 165 / 535. Le prix par crédit baisse du
+// plus petit au plus grand pack.
 export const CREDIT_CURRENCY = "eur";
 
 export const CREDIT_PACKS = [
-  { id: "starter", label: "Basic", credits: 61, amount: 999 },
-  { id: "creator", label: "Pro", credits: 190, amount: 2999, highlight: true },
-  { id: "studio", label: "Creator", credits: 642, amount: 9999 },
+  { id: "starter", label: "Basic", credits: 85, amount: 999 },
+  { id: "creator", label: "Pro", credits: 265, amount: 2999, highlight: true },
+  { id: "studio", label: "Creator", credits: 900, amount: 9999 },
 ] as const;
 
 // Abonnements (Pro et Creator ; pas de Basic) : ~4 % moins chers au crédit
@@ -19,8 +21,8 @@ export const CREDIT_PACKS = [
 // L'annuel livre les 12 mois de crédits d'un coup, ~10 % sous le prix des
 // mêmes crédits en packs.
 export const SUBSCRIPTION_PLANS = [
-  { id: "creator", credits: 165, month: 2499, year: 27990, highlight: true },
-  { id: "studio", credits: 535, month: 7999, year: 89990 },
+  { id: "creator", credits: 230, month: 2499, year: 27990, highlight: true },
+  { id: "studio", credits: 750, month: 7999, year: 89990 },
 ] as const;
 
 export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];

@@ -193,6 +193,16 @@ export function swapCredits(
   );
 }
 
+// Durée des vidéos courtes données en repère sur les offres : un
+// remplacement pour TikTok tient souvent en quelques secondes.
+export const SHORT_CLIP_SECONDS = 5;
+
+// Vidéos de SHORT_CLIP_SECONDS (720p, un personnage, une passe) qu'un nombre
+// de crédits permet, une fiche par vidéo.
+export function swapShortClipsFor(credits: number) {
+  return Math.max(0, Math.floor(credits / (SHORT_CLIP_SECONDS * swapMethodRate() + SWAP_SHEET_CREDITS)));
+}
+
 // Secondes de remplacement (720p, un personnage, une passe) qu'un nombre de
 // crédits permet, fiche comprise.
 export function swapMethodSecondsFor(credits: number) {

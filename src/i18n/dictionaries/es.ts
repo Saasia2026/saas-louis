@@ -543,7 +543,7 @@ export const es: Dictionary = {
     billedYearly: "facturado {price} al año",
     yearlySave: "Ahorras {amount} al año",
     eqSeconds: "= {n} s de vídeo en 720p",
-    eqClips: "≈ {n} vídeos de 15 s",
+    eqClips: "≈ {n} vídeos de {s} s",
     eqFidelity: "= {n} s en alta fidelidad",
     packTag: "Sin compromiso",
     packsEyebrow: "Packs",

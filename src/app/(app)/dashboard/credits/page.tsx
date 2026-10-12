@@ -14,7 +14,13 @@ import {
   subscriptionOff,
   type BillingInterval,
 } from "@/lib/credit-packs";
-import { SWAP_SHEET_CREDITS, swapMethodRate, swapMethodSecondsFor } from "@/lib/generation";
+import {
+  SHORT_CLIP_SECONDS,
+  SWAP_SHEET_CREDITS,
+  swapMethodRate,
+  swapMethodSecondsFor,
+  swapShortClipsFor,
+} from "@/lib/generation";
 import {
   activeSubscription,
   createStripe,
@@ -59,17 +65,16 @@ function CreditsBox({
   title: string;
   P: Awaited<ReturnType<typeof getDictionary>>["creditsPage"];
 }) {
-  const clips = Math.floor(credits / (15 * swapMethodRate() + SWAP_SHEET_CREDITS));
   const fidelity = Math.max(0, Math.floor((credits - SWAP_SHEET_CREDITS) / swapMethodRate(false, true)));
   return (
     <div className="mt-5 rounded-xl border border-line bg-surface-2/60 p-4">
-      <p className="flex items-center gap-2 font-semibold">
+      <p className="flex items-center gap-2 font-semibold tabular-nums">
         <Sparkles className="size-4 shrink-0" style={{ color }} />
-        {title}
+        {fmt(P.eqClips, { n: swapShortClipsFor(credits), s: SHORT_CLIP_SECONDS })}
       </p>
       <ul className="mt-2 space-y-1 pl-6 text-sm text-muted tabular-nums">
+        <li>{title}</li>
         <li>{fmt(P.eqSeconds, { n: swapMethodSecondsFor(credits) })}</li>
-        {clips > 0 && <li>{fmt(P.eqClips, { n: clips })}</li>}
         <li>{fmt(P.eqFidelity, { n: fidelity })}</li>
       </ul>
     </div>
