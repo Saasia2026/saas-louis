@@ -1,4 +1,4 @@
-import { Check, CreditCard, Lock, Plus, Sparkles } from "lucide-react";
+import { Check, CreditCard, Lock, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -15,11 +15,9 @@ import {
   type BillingInterval,
 } from "@/lib/credit-packs";
 import {
-  SHORT_CLIP_SECONDS,
   SWAP_SHEET_CREDITS,
   swapMethodRate,
   swapMethodSecondsFor,
-  swapShortClipsFor,
 } from "@/lib/generation";
 import {
   activeSubscription,
@@ -60,23 +58,18 @@ const MAX_YEARLY_OFF = Math.max(...SUBSCRIPTION_PLANS.map((plan) => subscription
 // passe, fiche d'un personnage comprise ; vidéos courtes ; haute fidélité).
 function CreditsBox({
   credits,
-  color,
   title,
   P,
 }: {
   credits: number;
-  color: string;
+  color?: string;
   title: string;
   P: Awaited<ReturnType<typeof getDictionary>>["creditsPage"];
 }) {
   const fidelity = Math.max(0, Math.floor((credits - SWAP_SHEET_CREDITS) / swapMethodRate(false, true)));
   return (
     <div className="mt-5 rounded-xl border border-line bg-surface-2/60 p-4">
-      <p className="flex items-center gap-2 font-semibold tabular-nums">
-        <Sparkles className="size-4 shrink-0" style={{ color }} />
-        {fmt(P.eqClips, { n: swapShortClipsFor(credits), s: SHORT_CLIP_SECONDS })}
-      </p>
-      <ul className="mt-2 space-y-1 pl-6 text-sm text-muted tabular-nums">
+      <ul className="space-y-1 text-sm text-muted tabular-nums">
         <li>{title}</li>
         <li>{fmt(P.eqSeconds, { n: swapMethodSecondsFor(credits) })}</li>
         <li>{fmt(P.eqFidelity, { n: fidelity })}</li>
@@ -191,9 +184,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
   // Part du solde venue de l'abonnement, perdue à la fin de la période payée.
   const expiring = Math.min(balance, profile?.subscription_credits ?? 0);
   const expiresAt = profile?.subscription_credits_expire_at;
-  // Paiement à l'usage : prix des 100 crédits et d'une vidéo courte.
   const usagePer100 = price(usageCharge(100).amount);
-  const usageVideo = price(usageCharge(SHORT_CLIP_SECONDS * swapMethodRate() + SWAP_SHEET_CREDITS).amount);
 
   return (
     <div>
@@ -233,7 +224,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
           </div>
           <p className="mt-3 max-w-lg text-sm text-muted">{A.usagePitch}</p>
           <ul className="mt-5 space-y-2.5 text-sm">
-            {[A.benefitBlocked, fmt(A.benefitPrice, { price: usagePer100, video: usageVideo }), A.benefitFree].map((line) => (
+            {[A.benefitBlocked, fmt(A.benefitPrice, { price: usagePer100 }), A.benefitFree].map((line) => (
               <li key={line} className="flex items-start gap-2.5">
                 <Check className="mt-0.5 size-4 shrink-0 text-accent-light" />
                 {line}

@@ -16,11 +16,9 @@ import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { CREDIT_PACKS, SUBSCRIPTION_PLANS, formatPrice, subscriptionOff, usageCharge } from "@/lib/credit-packs";
 import {
-  SHORT_CLIP_SECONDS,
   SWAP_SHEET_CREDITS,
   swapMethodRate,
   swapMethodSecondsFor,
-  swapShortClipsFor,
 } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -60,10 +58,8 @@ export default async function Home() {
   const L = t.landing;
   const P = t.creditsPage;
   const price = (amount: number) => formatPrice(amount, INTL_LOCALES[locale]);
-  // Paiement à l'usage : prix des 100 crédits et d'une vidéo courte.
   const A = P.auto;
   const usagePer100 = price(usageCharge(100).amount);
-  const usageVideo = price(usageCharge(SHORT_CLIP_SECONDS * swapMethodRate() + SWAP_SHEET_CREDITS).amount);
   // La réduction s'affiche en badge au milieu de la phrase.
   const [subsBefore, subsAfter = ""] = L.pricingSubs.split("{off}");
 
@@ -309,11 +305,7 @@ export default async function Home() {
                   </div>
                   <p className="mt-2 text-sm text-muted">{P.taglines[pack.id]}</p>
                   <p className="mt-6 font-headline text-6xl leading-none">{price(pack.amount)}</p>
-                  <p className="mt-3 flex items-center gap-2 text-sm font-semibold tabular-nums">
-                    <Sparkles className="size-4 shrink-0" style={{ color: tier.color }} />
-                    {fmt(P.eqClips, { n: swapShortClipsFor(pack.credits), s: SHORT_CLIP_SECONDS })}
-                  </p>
-                  <p className="mt-1 pl-6 text-sm text-muted tabular-nums">
+                  <p className="mt-3 text-sm text-muted tabular-nums">
                     {pack.credits} {t.common.credits} {fmt(P.eqSeconds, { n: swapMethodSecondsFor(pack.credits) })}
                   </p>
                   <Link
@@ -338,7 +330,7 @@ export default async function Home() {
               </div>
               <p className="mt-2 max-w-lg text-sm text-muted">{A.usagePitch}</p>
               <ul className="mt-5 space-y-2.5 text-sm">
-                {[A.benefitBlocked, fmt(A.benefitPrice, { price: usagePer100, video: usageVideo }), A.benefitFree].map((line) => (
+                {[A.benefitBlocked, fmt(A.benefitPrice, { price: usagePer100 }), A.benefitFree].map((line) => (
                   <li key={line} className="flex items-start gap-2.5">
                     <Check className="mt-0.5 size-4 shrink-0 text-accent-light" />
                     {line}

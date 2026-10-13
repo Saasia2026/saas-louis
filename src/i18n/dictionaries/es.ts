@@ -584,7 +584,7 @@ export const es: Dictionary = {
       recommended: "Recomendado",
       usagePitch: "Guarda tu tarjeta una vez: cada vídeo se paga al lanzarlo, al crédito exacto.",
       benefitBlocked: "Nunca bloqueado: tu vídeo sale aunque tu saldo esté vacío",
-      benefitPrice: "Pagas lo que creas: {price} los 100 créditos, ≈ {video} el vídeo de 5 s",
+      benefitPrice: "Pagas lo que creas: {price} los 100 créditos",
       benefitFree: "Sin suscripción ni créditos perdidos, desactivable en cualquier momento",
       activateCta: "Activar con mi tarjeta",
       toggleLabel: "Cobrar en mi tarjeta cuando falten créditos",

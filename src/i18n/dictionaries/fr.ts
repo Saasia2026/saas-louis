@@ -585,7 +585,7 @@ export const fr = {
       recommended: "Recommandé",
       usagePitch: "Enregistre ta carte une fois : chaque vidéo se paie au lancement, au crédit près.",
       benefitBlocked: "Jamais bloqué : ta vidéo part même avec un solde vide",
-      benefitPrice: "Tu paies ce que tu crées : {price} les 100 crédits, ≈ {video} la vidéo de 5 s",
+      benefitPrice: "Tu paies ce que tu crées : {price} les 100 crédits",
       benefitFree: "Sans abonnement ni crédits perdus, désactivable à tout moment",
       activateCta: "Activer avec ma carte",
       toggleLabel: "Débiter ma carte quand il manque des crédits",

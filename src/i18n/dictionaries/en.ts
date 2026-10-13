@@ -583,7 +583,7 @@ export const en: Dictionary = {
       recommended: "Recommended",
       usagePitch: "Save your card once: each video is paid at launch, to the exact credit.",
       benefitBlocked: "Never blocked: your video starts even with an empty balance",
-      benefitPrice: "You pay for what you make: {price} per 100 credits, ≈ {video} for a 5 s video",
+      benefitPrice: "You pay for what you make: {price} per 100 credits",
       benefitFree: "No subscription, no wasted credits, turn it off anytime",
       activateCta: "Turn on with my card",
       toggleLabel: "Charge my card when credits run short",
