@@ -363,6 +363,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          pay_as_you_go: boolean
           plan: string
           auto_recharge_at: string | null
           auto_recharge_failed: boolean
@@ -381,6 +382,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          pay_as_you_go?: boolean
           plan?: string
           auto_recharge_at?: string | null
           auto_recharge_failed?: boolean
@@ -399,6 +401,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          pay_as_you_go?: boolean
           plan?: string
           auto_recharge_at?: string | null
           auto_recharge_failed?: boolean

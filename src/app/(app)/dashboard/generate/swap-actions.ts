@@ -1,6 +1,5 @@
 "use server";
 
-import { after } from "next/server";
 import { fmt } from "@/i18n/config";
 import { getDictionary } from "@/i18n/server";
 import { createFalCharacterPlanche, falEnabled } from "@/lib/fal";
@@ -30,7 +29,7 @@ import {
   isOutOfCredit,
   isRateLimited,
 } from "@/lib/predictions";
-import { autoRecharge } from "@/lib/stripe";
+import { payShortfall } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { planSwapCast, polishSwapInstructions, precheckSwapInputs, type SwapCast } from "@/lib/swap-check";
@@ -352,11 +351,11 @@ export async function startSwap(input: {
       p_vessel: vessel,
     });
   let { data: generationId, error: rpcError } = await debit();
-  // Solde trop bas et recharge automatique activée : la carte est débitée,
+  // Solde trop bas et paiement à l'usage accepté : la carte paie ce qui manque,
   // puis on réessaie une fois.
   if (
     rpcError?.message.includes("insufficient_credits") &&
-    (await autoRecharge(
+    (await payShortfall(
       userId,
       swapCredits(durationSeconds, engine, billedSeconds, characters.length, hd, false, vessel),
     ))
@@ -436,9 +435,6 @@ export async function startSwap(input: {
     }
     // Lance tout de suite les premiers rendus ; le suivi fait le reste.
     await advanceSwap(generationId);
-    // Solde passé sous le seuil : recharge automatique, une fois la réponse
-    // partie.
-    after(() => autoRecharge(userId).catch(() => {}));
   } catch (e) {
     console.error("startSwap", errorMessage(e));
     await admin.rpc("fail_generation", { p_generation_id: generationId });
@@ -499,7 +495,7 @@ export async function redoSwapShot(input: {
       p_credits: credits,
     });
   let { error: rpcError } = await debit();
-  if (rpcError?.message.includes("insufficient_credits") && (await autoRecharge(userId, credits))) {
+  if (rpcError?.message.includes("insufficient_credits") && (await payShortfall(userId, credits))) {
     ({ error: rpcError } = await debit());
   }
   if (rpcError) {

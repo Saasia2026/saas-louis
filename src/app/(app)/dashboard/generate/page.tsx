@@ -49,7 +49,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
   const [{ data: profile }, history] = await Promise.all([
     supabase
       .from("profiles")
-      .select("credits_remaining, auto_recharge_pack, auto_recharge_failed")
+      .select("credits_remaining, stripe_customer_id, pay_as_you_go, auto_recharge_failed")
       .eq("id", auth.claims.sub)
       .single(),
     listSwapHistory(),
@@ -98,7 +98,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
       userId={auth.claims.sub}
       resume={resume}
       credits={profile?.credits_remaining ?? 0}
-      autoRecharge={Boolean(profile?.auto_recharge_pack) && !profile?.auto_recharge_failed}
+      payAsYouGo={Boolean(profile?.pay_as_you_go && profile.stripe_customer_id) && !profile?.auto_recharge_failed}
       engines={[
         ...(higgsfieldEnabled() ? (["genjutsu"] as const) : []),
         "kling" as const,

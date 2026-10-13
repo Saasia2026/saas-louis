@@ -3,16 +3,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  AUTO_RECHARGE_THRESHOLDS,
-  DEFAULT_AUTO_RECHARGE_THRESHOLD,
   CREDIT_PACKS,
   SUBSCRIPTION_PLANS,
-  findCreditPack,
   formatPrice,
   packMonthlyEquivalent,
   planCredits,
   subscriptionMonthly,
   subscriptionOff,
+  usageCharge,
+  USAGE_MIN_CENTS,
   type BillingInterval,
 } from "@/lib/credit-packs";
 import {
@@ -35,7 +34,6 @@ import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { BADGE, OFF_BADGE, TIERS, tierCard } from "@/app/tier-style";
-import { ScrollHere } from "./scroll-here";
 import { PageHeader } from "../../page-header";
 import {
   addCard,
@@ -43,7 +41,7 @@ import {
   buyWithSavedCard,
   openBillingPortal,
   removeCard,
-  saveAutoRecharge,
+  savePayAsYouGo,
   subscribe,
 } from "./actions";
 
@@ -172,7 +170,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "credits_remaining, subscription_credits, subscription_credits_expire_at, stripe_customer_id, auto_recharge_pack, auto_recharge_threshold, auto_recharge_failed",
+      "credits_remaining, subscription_credits, subscription_credits_expire_at, stripe_customer_id, pay_as_you_go, auto_recharge_failed",
     )
     .eq("id", userId)
     .single();
@@ -183,7 +181,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
         activeSubscription(customerId).catch(() => null),
       ])
     : [null, null];
-  const autoPack = findCreditPack(profile?.auto_recharge_pack);
+  const payAsYouGo = Boolean(profile?.pay_as_you_go) && !profile?.auto_recharge_failed;
   // Clé à usage unique de l'achat en un clic (voir buyWithSavedCard).
   const nonce = crypto.randomUUID();
   const dateOf = (seconds: number) =>
@@ -193,6 +191,9 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
   // Part du solde venue de l'abonnement, perdue à la fin de la période payée.
   const expiring = Math.min(balance, profile?.subscription_credits ?? 0);
   const expiresAt = profile?.subscription_credits_expire_at;
+  // Paiement à l'usage : prix des 100 crédits et d'une vidéo courte.
+  const usagePer100 = price(usageCharge(100).amount);
+  const usageVideo = price(usageCharge(SHORT_CLIP_SECONDS * swapMethodRate() + SWAP_SHEET_CREDITS).amount);
 
   return (
     <div>
@@ -210,9 +211,98 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
           {notice.text}
         </p>
       )}
+      {/* Arrivée depuis le studio à court de crédits : ce qui manque, juste
+          au-dessus du paiement à l'usage. */}
+      {needNotice && !notice && (
+        <p role="status" className="mt-8 rounded-xl border border-accent/40 bg-accent-soft px-4 py-3 text-sm">
+          {needNotice}
+        </p>
+      )}
 
-      {/* Solde et moyen de paiement côte à côte. */}
+      {/* Paiement à l'usage en tête, mis en avant : la façon la plus simple de
+          créer sans jamais tomber à court. Le solde à côté. */}
       <div className="mt-8 grid animate-fade-up gap-5 lg:grid-cols-5 lg:items-start">
+        <section
+          id="auto"
+          className="scroll-mt-24 rounded-2xl border p-6 sm:p-8 lg:col-span-3"
+          style={tierCard("var(--accent)", 22)}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-headline text-4xl leading-none sm:text-5xl">{A.usageTitle}</h2>
+            <span className={`${BADGE} bg-accent text-white`}>{A.recommended}</span>
+          </div>
+          <p className="mt-3 max-w-lg text-sm text-muted">{A.usagePitch}</p>
+          <ul className="mt-5 space-y-2.5 text-sm">
+            {[A.benefitBlocked, fmt(A.benefitPrice, { price: usagePer100, video: usageVideo }), A.benefitFree].map((line) => (
+              <li key={line} className="flex items-start gap-2.5">
+                <Check className="mt-0.5 size-4 shrink-0 text-accent-light" />
+                {line}
+              </li>
+            ))}
+          </ul>
+
+          {!card ? (
+            <div className="mt-7">
+              <form action={addCard}>
+                <button type="submit" disabled={!enabled} className="btn btn-accent w-full py-3.5 text-base sm:w-auto sm:px-8">
+                  <CreditCard />
+                  {A.activateCta}
+                </button>
+              </form>
+              <p className="mt-3 flex items-center gap-1.5 text-xs text-faint">
+                <Lock className="size-3.5 shrink-0" />
+                {A.addCardHint}
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-faint">
+                {fmt(A.usageConsent, { price: usagePer100, min: price(USAGE_MIN_CENTS) })}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="mt-7 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface/70 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-success">
+                    <Check className="size-3.5" />
+                    {A.cardSaved}
+                  </p>
+                  <p className="mt-0.5 text-sm font-semibold tabular-nums">
+                    {fmt(A.cardValue, {
+                      brand: brand(card.brand),
+                      last4: card.last4,
+                      month: String(card.expMonth).padStart(2, "0"),
+                      year: String(card.expYear).slice(-2),
+                    })}
+                  </p>
+                </div>
+                <form action={removeCard}>
+                  <button type="submit" className="btn btn-ghost">
+                    {A.remove}
+                  </button>
+                </form>
+              </div>
+
+              <form action={savePayAsYouGo} className="mt-5 space-y-4">
+                <label className="flex cursor-pointer items-center justify-between gap-4">
+                  <span className="text-sm font-semibold">{A.toggleLabel}</span>
+                  <span className="relative inline-flex shrink-0">
+                    <input type="checkbox" name="enabled" defaultChecked={payAsYouGo} className="peer sr-only" />
+                    <span className="h-6 w-11 rounded-full border border-line-strong bg-surface-3 transition-colors peer-checked:border-transparent peer-checked:bg-accent peer-focus-visible:ring-2 peer-focus-visible:ring-accent/50" />
+                    <span className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
+                  </span>
+                </label>
+                {profile?.auto_recharge_failed ? (
+                  <p className="rounded-lg border border-danger/20 bg-danger/5 px-3 py-2 text-sm text-danger">{A.usageFailed}</p>
+                ) : payAsYouGo ? (
+                  <p className="rounded-lg border border-success/20 bg-success/5 px-3 py-2 text-sm text-success">{A.usageOn}</p>
+                ) : null}
+                <button type="submit" className="btn btn-accent">
+                  {A.save}
+                </button>
+              </form>
+            </>
+          )}
+        </section>
+
         <div className="panel flex flex-col p-6 lg:col-span-2">
           <p className="label">{P.balance}</p>
           <p className="mt-3 font-headline text-6xl leading-none tabular-nums">
@@ -237,117 +327,6 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
             </a>
           </div>
         </div>
-
-        <section id="auto" className="panel scroll-mt-24 p-6 lg:col-span-3">
-          <div className="flex items-start gap-4">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface-2 text-muted">
-              <CreditCard className="size-5" />
-            </span>
-            <div>
-              <h2 className="text-lg font-semibold">{A.title}</h2>
-              <p className="mt-1 text-sm text-muted">{A.subtitle}</p>
-            </div>
-          </div>
-
-          {!card ? (
-            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-              <form action={addCard}>
-                <button type="submit" disabled={!enabled} className="btn btn-accent">
-                  <Plus />
-                  {A.addCardCta}
-                </button>
-              </form>
-              <p className="flex items-center gap-1.5 text-xs text-faint">
-                <Lock className="size-3.5 shrink-0" />
-                {A.addCardHint}
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface-2/60 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="flex items-center gap-1.5 text-xs font-medium text-success">
-                    <Check className="size-3.5" />
-                    {A.cardSaved}
-                  </p>
-                  <p className="mt-0.5 text-sm font-semibold tabular-nums">
-                    {fmt(A.cardValue, {
-                      brand: brand(card.brand),
-                      last4: card.last4,
-                      month: String(card.expMonth).padStart(2, "0"),
-                      year: String(card.expYear).slice(-2),
-                    })}
-                  </p>
-                </div>
-                <form action={removeCard}>
-                  <button type="submit" className="btn btn-ghost">
-                    {A.remove}
-                  </button>
-                </form>
-              </div>
-
-              <form action={saveAutoRecharge} className="mt-6 space-y-4 border-t border-line pt-6">
-                <label className="flex cursor-pointer items-center justify-between gap-4">
-                  <span>
-                    <span className="block text-sm font-semibold">{A.rechargeTitle}</span>
-                    <span className="mt-0.5 block text-xs text-muted">{A.rechargeSubtitle}</span>
-                  </span>
-                  <span className="relative inline-flex shrink-0">
-                    <input
-                      type="checkbox"
-                      name="enabled"
-                      defaultChecked={Boolean(autoPack) && !profile?.auto_recharge_failed}
-                      className="peer sr-only"
-                    />
-                    <span className="h-6 w-11 rounded-full border border-line-strong bg-surface-3 transition-colors peer-checked:border-transparent peer-checked:bg-accent peer-focus-visible:ring-2 peer-focus-visible:ring-accent/50" />
-                    <span className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
-                  </span>
-                </label>
-                {profile?.auto_recharge_failed ? (
-                  <p className="rounded-lg border border-danger/20 bg-danger/5 px-3 py-2 text-sm text-danger">{A.failed}</p>
-                ) : autoPack ? (
-                  <p className="rounded-lg border border-success/20 bg-success/5 px-3 py-2 text-sm text-success">
-                    {fmt(A.on, {
-                      pack: P.packs[autoPack.id],
-                      price: price(autoPack.amount),
-                      threshold: profile?.auto_recharge_threshold ?? DEFAULT_AUTO_RECHARGE_THRESHOLD,
-                    })}
-                  </p>
-                ) : null}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="block text-sm">
-                    <span className="label">{A.packLabel}</span>
-                    <select name="pack" defaultValue={autoPack?.id ?? "creator"} className="field mt-1">
-                      {CREDIT_PACKS.map((pack) => (
-                        <option key={pack.id} value={pack.id}>
-                          {P.packs[pack.id]} · {pack.credits} {t.common.credits} · {price(pack.amount)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="block text-sm">
-                    <span className="label">{A.thresholdLabel}</span>
-                    <select
-                      name="threshold"
-                      defaultValue={String(profile?.auto_recharge_threshold ?? DEFAULT_AUTO_RECHARGE_THRESHOLD)}
-                      className="field mt-1"
-                    >
-                      {AUTO_RECHARGE_THRESHOLDS.map((n) => (
-                        <option key={n} value={n}>
-                          {fmt(A.thresholdOption, { credits: n })}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-                <p className="text-xs leading-relaxed text-faint">{A.consent}</p>
-                <button type="submit" className="btn btn-accent">
-                  {A.save}
-                </button>
-              </form>
-            </>
-          )}
-        </section>
       </div>
 
       {/* Abonnements : une teinte par offre, la réduction réelle face aux
@@ -462,16 +441,6 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
 
       {/* Packs : le prix de référence, sans engagement. */}
       <section id="packs" className="mt-14 scroll-mt-24">
-        {/* Arrivée depuis le studio à court de crédits : ce qui manque, juste
-            au-dessus des packs, et l'écran y descend. */}
-        {needNotice && !notice && (
-          <>
-            <ScrollHere />
-            <p role="status" className="mb-8 rounded-xl border border-accent/40 bg-accent-soft px-4 py-3 text-sm">
-              {needNotice}
-            </p>
-          </>
-        )}
         <p className="eyebrow">{P.packsEyebrow}</p>
         <h2 className="mt-3 font-headline text-4xl leading-none sm:text-5xl">{P.packsTitle}</h2>
         <p className="mt-3 max-w-xl text-sm text-muted">{P.packsIntro}</p>

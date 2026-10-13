@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { fmt } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import {
-  AUTO_RECHARGE_THRESHOLDS,
   CREDIT_CURRENCY,
   findCreditPack,
   findSubscriptionPlan,
@@ -42,7 +41,7 @@ async function origin() {
 }
 
 // Ouvre la page de paiement Stripe pour un pack de crédits. La carte est
-// enregistrée pour les achats suivants et la recharge automatique. Les
+// enregistrée pour les achats suivants et le paiement à l'usage. Les
 // crédits sont ajoutés au retour (voir page.tsx) et par le webhook.
 export async function buyCredits(formData: FormData) {
   const pack = findCreditPack(formData.get("pack"));
@@ -91,7 +90,9 @@ export async function buyCredits(formData: FormData) {
 }
 
 // Enregistre une carte sans rien débiter (Checkout en mode setup) : Stripe
-// l'attache au client, savedCard() la retrouve ensuite.
+// l'attache au client, savedCard() la retrouve ensuite. Le bouton dit
+// qu'enregistrer la carte, c'est accepter le paiement à l'usage : il est
+// activé ici (sans carte, il ne débite rien).
 export async function addCard() {
   if (!stripeEnabled()) redirect(`${PAGE}?error=unavailable`);
   const user = await currentUser();
@@ -111,6 +112,10 @@ export async function addCard() {
       cancel_url: `${base}${PAGE}`,
     });
     url = session.url;
+    await createAdminClient()
+      .from("profiles")
+      .update({ pay_as_you_go: true, auto_recharge_failed: false })
+      .eq("id", user.id);
   } catch (e) {
     console.error("addCard", e instanceof Error ? e.message : e);
     url = null;
@@ -233,17 +238,11 @@ export async function openBillingPortal() {
   redirect(url ?? `${PAGE}?error=portal`);
 }
 
-// Réglages de la recharge automatique. L'activer suppose une carte
-// enregistrée ; la réactiver après un refus efface le refus.
-export async function saveAutoRecharge(formData: FormData) {
+// Paiement à l'usage, activé ou coupé. L'activer suppose une carte
+// enregistrée ; le réactiver après un refus de la banque efface le refus.
+export async function savePayAsYouGo(formData: FormData) {
   const user = await currentUser();
   const enabled = formData.get("enabled") === "on";
-  const pack = findCreditPack(formData.get("pack"));
-  const threshold = Number(formData.get("threshold"));
-  if (!AUTO_RECHARGE_THRESHOLDS.includes(threshold as (typeof AUTO_RECHARGE_THRESHOLDS)[number])) {
-    redirect(`${PAGE}?error=unavailable`);
-  }
-
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("profiles")
@@ -253,24 +252,18 @@ export async function saveAutoRecharge(formData: FormData) {
   if (enabled && !(await savedCard(profile?.stripe_customer_id).catch(() => null))) {
     redirect(`${PAGE}?error=nocard`);
   }
-  if (enabled && !pack) redirect(`${PAGE}?error=unavailable`);
-
   const { error } = await admin
     .from("profiles")
-    .update({
-      auto_recharge_pack: enabled ? pack!.id : null,
-      auto_recharge_threshold: threshold,
-      auto_recharge_failed: false,
-    })
+    .update({ pay_as_you_go: enabled, auto_recharge_failed: false })
     .eq("id", user.id);
   if (error) {
-    console.error("saveAutoRecharge", error.message);
+    console.error("savePayAsYouGo", error.message);
     redirect(`${PAGE}?error=unavailable`);
   }
   redirect(`${PAGE}?saved=1#auto`);
 }
 
-// Retire la carte enregistrée (et donc la recharge automatique). Refusé
+// Retire la carte enregistrée (et donc le paiement à l'usage). Refusé
 // pendant un abonnement : il la débite à chaque renouvellement.
 export async function removeCard() {
   const user = await currentUser();
@@ -289,7 +282,7 @@ export async function removeCard() {
   await Promise.all(cards.map((c) => stripe.paymentMethods.detach(c.id)));
   await admin
     .from("profiles")
-    .update({ auto_recharge_pack: null, auto_recharge_failed: false })
+    .update({ pay_as_you_go: false, auto_recharge_pack: null, auto_recharge_failed: false })
     .eq("id", user.id);
   redirect(`${PAGE}?removed=1#auto`);
 }

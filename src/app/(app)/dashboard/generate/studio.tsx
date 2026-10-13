@@ -3,7 +3,8 @@
 import { Coins, Download, Move, RefreshCw, Replace, TriangleAlert, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { fmt, plural } from "@/i18n/config";
+import { fmt, INTL_LOCALES, plural } from "@/i18n/config";
+import { formatPrice, usageCharge } from "@/lib/credit-packs";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/i18n/provider";
 import { VisibleVideos } from "@/app/visible-videos";
@@ -64,7 +65,7 @@ type Active = { id: string; job: Job };
 export function Studio({
   userId,
   credits,
-  autoRecharge = false,
+  payAsYouGo = false,
   engines,
   presets = [],
   history = [],
@@ -74,9 +75,9 @@ export function Studio({
   // est gardé dans le navigateur et il passe par la connexion (voir draft.ts).
   userId: string | null;
   credits: number;
-  // Recharge automatique activée : un solde trop bas ne bloque pas le
-  // lancement, la carte est débitée au besoin (voir startSwap).
-  autoRecharge?: boolean;
+  // Paiement à l'usage : un solde trop bas ne bloque pas le lancement, la
+  // carte paie ce qui manque (voir payShortfall).
+  payAsYouGo?: boolean;
   // Moteurs disponibles, le meilleur en premier.
   engines: SwapEngine[];
   // Plans prêts (voir presets.ts), dont le clip est déjà signé.
@@ -160,7 +161,9 @@ export function Studio({
     : swapCredits(1, engine, undefined, characters.length, hd, false, fidelity);
   const ready = Boolean(video) && imagesReady && targetsReady && decorReady;
   // Connecté mais à court de crédits : « Générer » mène aux packs.
-  const short = !guest && ready && credits < gate && !autoRecharge;
+  const short = !guest && ready && credits < gate && !payAsYouGo;
+  // Paiement à l'usage : ce que la carte paiera, annoncé avant de lancer.
+  const byCard = !guest && ready && credits < gate && payAsYouGo;
   const canSend = available && !busy && !restoring && ready;
 
   // Lancement, fin ou erreur : le rendu suivi revient à l'écran (sur mobile,
@@ -608,6 +611,14 @@ export function Studio({
         {video && imagesReady && (!targetsReady || short) && (
           <p className={`mb-3 text-xs ${targetsReady ? "text-danger" : "text-warning"}`}>
             {!targetsReady ? t.studio.targetsMissing : fmt(t.studio.notEnoughCredits, { n: gate - credits })}
+          </p>
+        )}
+        {byCard && (
+          <p className="mb-3 text-xs text-muted">
+            {fmt(t.studio.payByCard, {
+              n: gate - credits,
+              price: formatPrice(usageCharge(gate - credits).amount, INTL_LOCALES[locale]),
+            })}
           </p>
         )}
         {durationKnown && seconds > 15 && <p className="mb-3 text-xs text-warning">{t.studio.longClipWarning}</p>}

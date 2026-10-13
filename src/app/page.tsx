@@ -14,7 +14,7 @@ import { GenjutsuShowcase } from "@/app/genjutsu-showcase";
 import { VideoMarquee } from "@/app/video-marquee";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
-import { CREDIT_PACKS, SUBSCRIPTION_PLANS, formatPrice, subscriptionOff } from "@/lib/credit-packs";
+import { CREDIT_PACKS, SUBSCRIPTION_PLANS, formatPrice, subscriptionOff, usageCharge } from "@/lib/credit-packs";
 import {
   SHORT_CLIP_SECONDS,
   SWAP_SHEET_CREDITS,
@@ -60,6 +60,10 @@ export default async function Home() {
   const L = t.landing;
   const P = t.creditsPage;
   const price = (amount: number) => formatPrice(amount, INTL_LOCALES[locale]);
+  // Paiement à l'usage : prix des 100 crédits et d'une vidéo courte.
+  const A = P.auto;
+  const usagePer100 = price(usageCharge(100).amount);
+  const usageVideo = price(usageCharge(SHORT_CLIP_SECONDS * swapMethodRate() + SWAP_SHEET_CREDITS).amount);
   // La réduction s'affiche en badge au milieu de la phrase.
   const [subsBefore, subsAfter = ""] = L.pricingSubs.split("{off}");
 
@@ -322,6 +326,30 @@ export default async function Home() {
               );
             })}
           </ul>
+          {/* Sans pack : la carte paie chaque vidéo au lancement. */}
+          <div
+            className="mt-5 flex animate-fade-up flex-col gap-6 rounded-2xl border p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between"
+            style={tierCard("var(--accent)", 20)}
+          >
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-headline text-4xl leading-none">{A.usageTitle}</h3>
+                <span className={`${BADGE} bg-accent text-white`}>{A.recommended}</span>
+              </div>
+              <p className="mt-2 max-w-lg text-sm text-muted">{A.usagePitch}</p>
+              <ul className="mt-5 space-y-2.5 text-sm">
+                {[A.benefitBlocked, fmt(A.benefitPrice, { price: usagePer100, video: usageVideo }), A.benefitFree].map((line) => (
+                  <li key={line} className="flex items-start gap-2.5">
+                    <Check className="mt-0.5 size-4 shrink-0 text-accent-light" />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <Link href={start} className="btn btn-accent shrink-0 py-3.5 text-base lg:px-10">
+              {L.start}
+            </Link>
+          </div>
           <Link
             href={loggedIn ? "/dashboard/credits" : "/login"}
             className="mt-6 inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted hover:text-text"

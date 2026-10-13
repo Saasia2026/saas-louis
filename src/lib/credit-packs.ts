@@ -61,10 +61,21 @@ export function planCredits(plan: SubscriptionPlan, interval: BillingInterval) {
 // conversation s'allonge.
 export const VIRAL_QUESTION_CREDITS = 12;
 
-// Seuils proposés pour la recharge automatique.
-export const AUTO_RECHARGE_THRESHOLDS = [40, 80, 200, 400] as const;
-// Seuil par défaut, aligné avec profiles.auto_recharge_threshold.
-export const DEFAULT_AUTO_RECHARGE_THRESHOLD = 80;
+// Paiement à l'usage (carte enregistrée) : les crédits qui manquent pour
+// lancer une vidéo ou poser une question sont débités sur la carte au
+// lancement, au prix du crédit du pack Basic. USAGE_MIN_CENTS au moins par
+// débit, pour que les frais fixes de Stripe (~0,25 €) ne mangent pas tout :
+// le surplus reste au solde. Garde-fous par 24 h.
+export const USAGE_MIN_CENTS = 200;
+export const USAGE_DAILY_MAX_CHARGES = 20;
+export const USAGE_DAILY_MAX_CENTS = 20000;
+
+export function usageCharge(missingCredits: number) {
+  const basic = CREDIT_PACKS[0];
+  const minCredits = Math.ceil((USAGE_MIN_CENTS * basic.credits) / basic.amount);
+  const credits = Math.max(Math.ceil(missingCredits), minCredits);
+  return { credits, amount: Math.ceil((credits * basic.amount) / basic.credits) };
+}
 
 export type CreditPack = (typeof CREDIT_PACKS)[number];
 export type CreditPackId = CreditPack["id"];

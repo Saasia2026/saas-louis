@@ -5,6 +5,9 @@ import {
   findCreditPack,
   findSubscriptionPlan,
   planCredits,
+  usageCharge,
+  USAGE_DAILY_MAX_CENTS,
+  USAGE_DAILY_MAX_CHARGES,
   type BillingInterval,
   type CreditPack,
 } from "@/lib/credit-packs";
@@ -153,6 +156,20 @@ export async function fulfillCheckoutSession(session: Stripe.Checkout.Session) {
 // des paiements Checkout, crédités par leur session.
 export async function fulfillPaymentIntent(intent: Stripe.PaymentIntent) {
   const kind = intent.metadata?.kind;
+  // Paiement à l'usage : le nombre de crédits est posé dans les métadonnées.
+  if (kind === "usage") {
+    const credits = Number(intent.metadata.credits);
+    const userId = intent.metadata.user_id;
+    if (intent.status !== "succeeded" || !userId || !Number.isInteger(credits) || credits <= 0) return false;
+    return applyPurchase({
+      id: intent.id,
+      userId,
+      packId: "usage",
+      credits,
+      amount: intent.amount_received,
+      currency: intent.currency,
+    });
+  }
   if ((kind !== "auto" && kind !== "oneclick") || intent.status !== "succeeded") return false;
   const userId = intent.metadata.user_id;
   const pack = findCreditPack(intent.metadata.pack_id);
@@ -258,44 +275,66 @@ export async function chargeSavedCard(input: {
   }
 }
 
-// Recharge automatique : si l'utilisateur l'a activée et que son solde est
-// sous son seuil (ou sous `needed`, les crédits d'une vidéo qu'il lance),
-// débite sa carte enregistrée pour le pack choisi. Renvoie true si des
-// crédits ont été ajoutés. Garde-fous dans claim_auto_recharge (2 min entre
-// deux débits, 5 par jour). Un refus de la banque la suspend.
-export async function autoRecharge(userId: string, needed = 0) {
-  if (!stripeEnabled()) return false;
+// Paiement à l'usage : il faut `needed` crédits pour lancer quelque chose et
+// le solde ne suffit pas. Si l'utilisateur l'a accepté (pay_as_you_go, posé
+// en enregistrant sa carte) et que sa carte est là, elle est débitée de ce
+// qui manque (voir usageCharge) et les crédits arrivent aussitôt au solde.
+// Hors session : une vérification demandée par la banque vaut refus, et un
+// refus suspend le paiement à l'usage (auto_recharge_failed). Garde-fous :
+// USAGE_DAILY_MAX_CHARGES débits et USAGE_DAILY_MAX_CENTS par 24 h. Renvoie
+// true si des crédits ont été ajoutés.
+export async function payShortfall(userId: string, needed: number) {
+  if (!stripeEnabled() || needed <= 0) return false;
   const admin = createAdminClient();
-  const { data: packId, error } = await admin.rpc("claim_auto_recharge", {
-    p_user_id: userId,
-    p_needed: needed,
-  });
-  const pack = findCreditPack(packId);
-  if (error || !pack) return false;
-
   const { data: profile } = await admin
     .from("profiles")
-    .select("stripe_customer_id")
+    .select("credits_remaining, stripe_customer_id, pay_as_you_go, auto_recharge_failed")
     .eq("id", userId)
     .single();
   const customerId = profile?.stripe_customer_id;
-  const card = customerId ? await savedCard(customerId).catch(() => null) : null;
-  const result =
-    customerId && card
-      ? await chargeSavedCard({
-          userId,
-          customerId,
-          card,
-          pack,
-          kind: "auto",
-          description: `TwinPost — recharge automatique (${pack.credits} crédits)`,
-          // Même clé pendant 2 minutes : un second appel ne débite pas deux fois.
-          idempotencyKey: `auto-${userId}-${Math.floor(Date.now() / 120_000)}`,
-        })
-      : ({ status: "failed", reason: "no_card" } as const);
+  if (!profile?.pay_as_you_go || profile.auto_recharge_failed || !customerId) return false;
+  const missing = needed - profile.credits_remaining;
+  if (missing <= 0) return false;
 
-  if (result.status === "paid") return true;
+  const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const { data: recent } = await admin
+    .from("credit_purchases")
+    .select("amount_total")
+    .eq("user_id", userId)
+    .eq("pack_id", "usage")
+    .gte("created_at", since);
+  const { credits, amount } = usageCharge(missing);
+  const spent = (recent ?? []).reduce((sum, r) => sum + (r.amount_total ?? 0), 0);
+  if ((recent?.length ?? 0) >= USAGE_DAILY_MAX_CHARGES || spent + amount > USAGE_DAILY_MAX_CENTS) {
+    console.error("payShortfall: plafond du jour atteint", userId);
+    return false;
+  }
+
+  const card = await savedCard(customerId).catch(() => null);
+  if (!card) return false;
+  const stripe = createStripe();
+  try {
+    const intent = await stripe.paymentIntents.create(
+      {
+        amount,
+        currency: CREDIT_CURRENCY,
+        customer: customerId,
+        payment_method: card.id,
+        confirm: true,
+        off_session: true,
+        description: `TwinPost — ${credits} crédits à l'usage`,
+        metadata: { user_id: userId, kind: "usage", credits: String(credits) },
+      },
+      { idempotencyKey: `usage-${userId}-${crypto.randomUUID()}` },
+    );
+    if (intent.status === "succeeded") {
+      await fulfillPaymentIntent(intent);
+      return true;
+    }
+    console.error("payShortfall", userId, intent.status);
+  } catch (e) {
+    console.error("payShortfall", userId, errorText(e));
+  }
   await admin.from("profiles").update({ auto_recharge_failed: true }).eq("id", userId);
-  console.error("autoRecharge suspendue", userId, result.status === "failed" ? result.reason : result.status);
   return false;
 }
