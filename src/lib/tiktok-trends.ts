@@ -20,6 +20,23 @@ const FETCHED = 30;
 // Vidéos gardées : publiées depuis moins de 3 semaines.
 const VIDEO_MAX_AGE_MS = 21 * 86_400_000;
 
+// Où chercher, dans l'ordre du bouton « autres tendances » : tous les sujets,
+// puis les secteurs du Creative Center les plus proches du remplacement de
+// personnage. Sans compte TikTok, chaque liste s'arrête à 20 hashtags, et la
+// période comme le filtre « nouveaux » n'y changent rien : seul le secteur
+// donne d'autres tendances.
+export const TREND_POOLS = [
+  "", // tous les sujets
+  "25000000000", // jeux vidéo
+  "23000000000", // actualité et divertissement
+  "22000000000", // mode et accessoires
+  "14000000000", // beauté
+  "19000000000", // animaux
+  "28000000000", // sport et plein air
+] as const;
+// Tendances retenues par secteur : une page de la colonne.
+const PAGE_SIZE = 8;
+
 // Pays des tendances par défaut, selon la langue du site.
 const REGION: Record<Locale, string> = { fr: "FR", en: "US", es: "ES" };
 export function trendRegion(locale: Locale) {
@@ -122,10 +139,16 @@ function normalizeHashtags(items: RawHashtag[]): TikTokHashtag[] {
     }));
 }
 
-export async function tiktokTrends(input: { countryCode: string; period: "7" | "30"; onlyNew: boolean }) {
+export async function tiktokTrends(input: {
+  countryCode: string;
+  period: "7" | "30";
+  onlyNew: boolean;
+  industryId?: string;
+}) {
   const country = input.countryCode.toUpperCase();
+  const industry = input.industryId ?? "";
   return cached(
-    `tiktok:${country}:${input.period}:${input.onlyNew ? "new" : "all"}`,
+    `tiktok:${country}:${input.period}:${input.onlyNew ? "new" : "all"}${industry ? `:${industry}` : ""}`,
     async () =>
       normalizeHashtags(
         await runActor<RawHashtag>(HASHTAG_ACTOR, {
@@ -133,6 +156,7 @@ export async function tiktokTrends(input: { countryCode: string; period: "7" | "
           period: input.period,
           sortBy: "popular",
           showOnlyNew: input.onlyNew,
+          industryId: industry,
           maxHashtags: FETCHED,
         }),
       ),
@@ -146,15 +170,18 @@ const PicksSchema = z.object({
 
 const LANGUAGE: Record<Locale, string> = { fr: "French", en: "English", es: "Spanish" };
 
-// Hashtags utiles à un créateur TwinPost (remplacement de personnage dans une
-// vidéo), avec une idée de vidéo par hashtag. Sans réponse de Claude : les
-// premiers hashtags, sans idée.
-export async function trendPicks(locale: Locale): Promise<TrendPick[]> {
+// Hashtags de la semaine d'un secteur (TREND_POOLS[pool]) utiles à un
+// créateur TwinPost (remplacement de personnage dans une vidéo), du plus utile
+// au moins utile, avec une idée de vidéo par hashtag. Sans réponse de Claude :
+// les premiers hashtags tous sujets, sans idée ; les secteurs restent vides.
+async function trendPicks(locale: Locale, pool: number): Promise<TrendPick[]> {
   const country = trendRegion(locale);
+  const industryId = TREND_POOLS[pool];
   return cached(
-    `picks:${country}:${locale}`,
+    `picks:${country}:${locale}:${industryId || "all"}`,
     async () => {
-      const hashtags = await tiktokTrends({ countryCode: country, period: "7", onlyNew: false });
+      const hashtags = await tiktokTrends({ countryCode: country, period: "7", onlyNew: false, industryId });
+      if (!hashtags.length) return [];
       try {
         const response = await new Anthropic().beta.messages.parse({
           model: "claude-opus-5-5",
@@ -167,7 +194,7 @@ export async function trendPicks(locale: Locale): Promise<TrendPick[]> {
 Keep: fictional characters (anime, games, films, series, cartoons), memes, sounds, dances, video formats, challenges, aesthetics.
 Exclude: news, real private people, crimes, accidents, politics, religion, anything about minors, brands, ads and shopping, sports results.
 
-Return at most 8 picks, most useful first, using the hashtags exactly as given. For each, "angle" is one short sentence in ${LANGUAGE[locale]} (under 80 characters) saying which video to make with TwinPost.`,
+Return at most ${PAGE_SIZE} picks, most useful first, using the hashtags exactly as given. Only keep a hashtag that clearly leads to a fun TwinPost video: fewer picks, or none, beat weak ones. For each, "angle" is one short sentence in ${LANGUAGE[locale]} (under 80 characters) saying which video to make with TwinPost.`,
           messages: [
             {
               role: "user",
@@ -184,14 +211,51 @@ Return at most 8 picks, most useful first, using the hashtags exactly as given. 
             return tag ? { ...tag, angle: p.angle.slice(0, 120) } : null;
           })
           .filter((p): p is TrendPick => p !== null);
-        if (chosen.length) return chosen.slice(0, 8);
+        if (chosen.length || pool > 0) return chosen.slice(0, PAGE_SIZE);
       } catch (e) {
         console.error("trendPicks", e instanceof Error ? e.message : e);
+        if (pool > 0) throw e;
       }
-      return hashtags.slice(0, 8).map((h) => ({ ...h, angle: "" }));
+      return hashtags.slice(0, PAGE_SIZE).map((h) => ({ ...h, angle: "" }));
     },
-    (list) => list.some((p) => p.angle),
+    // Une liste sans idées (Claude indisponible) n'est pas gardée.
+    (list) => list.every((p) => p.angle),
   );
+}
+
+export type TrendPage = { picks: TrendPick[]; pool: number; next: number };
+
+// Page `page` de la colonne des tendances : un secteur de TREND_POOLS par
+// page, sans revoir un hashtag déjà montré (un secteur sans rien de neuf est
+// sauté). Seuls les secteurs nécessaires sont chargés. Après le dernier, retour
+// au premier.
+export async function trendPage(locale: Locale, page: number): Promise<TrendPage> {
+  const seen = new Set<string>();
+  let index = 0;
+  let first: TrendPage | null = null;
+  for (let pool = 0; pool < TREND_POOLS.length; pool++) {
+    const picks = await trendPicks(locale, pool).catch((): TrendPick[] => []);
+    const fresh = picks.filter((p) => !seen.has(p.hashtag.toLowerCase())).slice(0, PAGE_SIZE);
+    if (!fresh.length) continue;
+    for (const p of fresh) seen.add(p.hashtag.toLowerCase());
+    const current = { picks: fresh, pool, next: index + 1 };
+    if (index === page) return current;
+    first ??= current;
+    index++;
+  }
+  return first ? { ...first, next: first.next % Math.max(index, 1) } : { picks: [], pool: 0, next: 0 };
+}
+
+// Prépare la page `page` (tendances et vidéos), pour que le bouton « autres
+// tendances » réponde tout de suite.
+export async function warmTrendPage(locale: Locale, page: number) {
+  const { picks } = await trendPage(locale, page);
+  await hashtagVideos(trendVideoTags(picks), 2);
+}
+
+// Hashtags dont les vidéos sont montrées sous les tendances d'une page.
+export function trendVideoTags(picks: TrendPick[]) {
+  return picks.slice(0, 3).map((p) => p.hashtag);
 }
 
 type RawVideo = {

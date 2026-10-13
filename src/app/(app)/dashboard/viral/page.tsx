@@ -12,7 +12,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: `${t.meta.viral} — TwinPost` };
 }
 
-export default async function ViralPage() {
+export default async function ViralPage(props: PageProps<"/dashboard/viral">) {
+  const { trends } = await props.searchParams;
+  // Page de la colonne des tendances (bouton « autres tendances »).
+  const page = Math.min(Math.max(Number.parseInt(typeof trends === "string" ? trends : "", 10) || 0, 0), 20);
   const t = await getDictionary();
   const V = t.viral;
   const supabase = await createClient();
@@ -48,9 +51,9 @@ export default async function ViralPage() {
       <div className="mt-8 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <ViralChat initial={initial} />
         {/* Tendances chargées à part : un appel lent aux fournisseurs ne
-            retarde pas le chat. */}
-        <Suspense fallback={<TrendsAsideSkeleton />}>
-          <TrendsAside />
+            retarde pas le chat. Nouvelle page, nouveau squelette. */}
+        <Suspense key={page} fallback={<TrendsAsideSkeleton />}>
+          <TrendsAside page={page} />
         </Suspense>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { ArrowDownRight, ArrowUpRight, Music2, Play, WandSparkles } from "lucide-react";
+import { after } from "next/server";
 import { Suspense } from "react";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
@@ -6,26 +7,34 @@ import { VIRAL_QUESTION_CREDITS } from "@/lib/credit-packs";
 import {
   hashtagVideos,
   tiktokTrendsEnabled,
-  trendPicks,
+  trendPage,
   trendRegion,
-  type TrendPick,
+  trendVideoTags,
+  warmTrendPage,
+  type TrendPage,
   type TrendVideo,
 } from "@/lib/tiktok-trends";
 import { coverSrc } from "@/lib/trend-cover";
 import { AskButton } from "./ask-button";
 import { HashtagLabel } from "./hashtag-label";
+import { MoreTrends } from "./more-trends";
 import { Sparkline } from "./sparkline";
 
 // Colonne « en ce moment » : les tendances TikTok du pays utiles à TwinPost
 // (triées par Claude, chacune avec une idée de vidéo), puis les vidéos qui
-// les portent. Un hashtag ou une vidéo cliqués partent au chat.
-export async function TrendsAside() {
+// les portent. Un hashtag ou une vidéo cliqués partent au chat. Le bouton
+// « autres tendances » passe à la page suivante (voir trendPage), préparée
+// pendant qu'on lit celle-ci.
+export async function TrendsAside({ page }: { page: number }) {
   if (!tiktokTrendsEnabled()) return null;
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   const V = t.viral;
   const intl = INTL_LOCALES[locale];
-  const picks = await trendPicks(locale).catch((): TrendPick[] => []);
+  const { picks, pool, next } = await trendPage(locale, page).catch(
+    (): TrendPage => ({ picks: [], pool: 0, next: 0 }),
+  );
   if (!picks.length) return null;
+  if (next !== page) after(() => warmTrendPage(locale, next).catch(() => {}));
 
   const country = new Intl.DisplayNames([intl], { type: "region" }).of(trendRegion(locale)) ?? trendRegion(locale);
   const compact = new Intl.NumberFormat(intl, { notation: "compact", maximumFractionDigits: 1 });
@@ -33,12 +42,15 @@ export async function TrendsAside() {
   return (
     <aside className="space-y-5 lg:sticky lg:top-24">
       <section className="panel animate-fade-up p-4">
-        <div className="flex items-baseline justify-between gap-3 px-1">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <Music2 className="size-4 text-accent-hot" />
-            {fmt(V.tiktokBoard, { country })}
+        <div className="flex items-center justify-between gap-2 px-1">
+          <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+            <Music2 className="size-4 shrink-0 text-accent-hot" />
+            <span className="truncate">{fmt(V.tiktokBoard, { country })}</span>
           </h2>
-          <span className="text-xs text-faint">{V.lastDays}</span>
+          <span className="flex shrink-0 items-center gap-1">
+            <span className="text-xs text-faint">{V.pools[pool]}</span>
+            {next !== page && <MoreTrends page={next} label={V.moreTrends} />}
+          </span>
         </div>
         <ol className="mt-3 space-y-0.5">
           {picks.map((p) => (
@@ -70,7 +82,7 @@ export async function TrendsAside() {
       </section>
 
       <Suspense fallback={<div aria-hidden className="panel h-80 animate-pulse" />}>
-        <TrendVideos hashtags={picks.slice(0, 3).map((p) => p.hashtag)} />
+        <TrendVideos hashtags={trendVideoTags(picks)} />
       </Suspense>
     </aside>
   );
