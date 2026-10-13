@@ -289,6 +289,37 @@
   }
 }
 
+/* Rideau avant/après qui balaie tout seul (CompareSlider), avec un temps
+   d'arrêt de chaque côté. */
+@property --compare {
+  syntax: "<percentage>";
+  initial-value: 50%;
+  inherits: true;
+}
+
+@keyframes compare-sweep {
+  0%,
+  10%,
+  90%,
+  100% {
+    --compare: 12%;
+  }
+  45%,
+  55% {
+    --compare: 88%;
+  }
+}
+
+.compare-sweep {
+  animation: compare-sweep 8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .compare-sweep {
+    animation: none;
+  }
+}
+
 /* Aucun décor ne doit élargir la page : sur iPhone, un débordement fait
    dézoomer tout le site, qui paraît alors décalé à gauche. */
 html,

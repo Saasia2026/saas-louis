@@ -81,7 +81,7 @@ export const es: Dictionary = {
     perks: ["Calidad Genjutsu, hasta 1080p", "Sin suscripción obligatoria", "Créditos devueltos si falla"],
     compareBefore: "Original",
     compareAfter: "Tu personaje",
-    compareHint: "Desliza la cortina: el mismo clip, la misma actuación — solo cambia el personaje.",
+    compareHint: "El mismo clip, la misma actuación — solo cambia el personaje.",
     mockWindow: "twinpost · Studio",
     mockRendering: "Reemplazo en curso",
     mockClip: "Clip grabado",
