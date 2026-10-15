@@ -11,6 +11,9 @@ import {
   subscriptionMonthly,
   subscriptionOff,
   usageCharge,
+  creditsPerEuro,
+  bonusCredits,
+  subscriptionCreditsPerEuro,
   USAGE_MIN_CENTS,
   type BillingInterval,
 } from "@/lib/credit-packs";
@@ -384,7 +387,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
               return (
                 <li
                   key={plan.id}
-                  className="flex flex-col rounded-2xl border p-6 transition-transform duration-200 hover:-translate-y-1"
+                  className={`flex flex-col rounded-2xl border p-6 transition-transform duration-200 hover:-translate-y-1 ${tier.badge === "popular" ? "ring-2 ring-accent/40" : ""}`}
                   style={tierCard(tier.color, tier.strength)}
                 >
                   <div className="flex flex-wrap items-center gap-2">
@@ -404,7 +407,8 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                     <span className="font-headline text-5xl leading-none">{price(monthly)}</span>
                     <span className="text-sm text-muted">/ {S.perMonth}</span>
                   </div>
-                  <p className="mt-1.5 text-xs text-muted">
+                  <p className="mt-1 text-sm font-semibold tabular-nums">{fmt(P.perEuro, { n: subscriptionCreditsPerEuro(plan, billing) })}</p>
+                  <p className="mt-1 text-xs text-muted">
                     {fmt(P.vsPacks, { price: price(reference) })}
                     {billing === "year" && <> · {fmt(P.billedYearly, { price: price(plan.year) })}</>}
                   </p>
@@ -438,21 +442,29 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
         <ul className="mt-8 grid gap-5 lg:grid-cols-3">
           {CREDIT_PACKS.map((pack, i) => {
             const tier = TIERS[pack.id];
+            const bonus = bonusCredits(pack);
+            const featured = tier.badge === "popular";
             return (
               <li
                 key={pack.id}
-                className="flex animate-fade-up flex-col rounded-2xl border p-6 transition-transform duration-200 hover:-translate-y-1"
+                className={`flex animate-fade-up flex-col rounded-2xl border p-6 transition-transform duration-200 hover:-translate-y-1 ${featured ? "ring-2 ring-accent/40" : ""}`}
                 style={{ ...tierCard(tier.color, Math.round(tier.strength / 2)), animationDelay: `${100 + i * 90}ms` }}
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-headline text-4xl leading-none">{P.packs[pack.id]}</h3>
-                  <span className="rounded-md border border-line px-2 py-0.5 text-xs font-medium text-muted">{P.packTag}</span>
+                  {featured && <span className={`${BADGE} bg-accent text-white`}>{P.popular}</span>}
+                  {tier.badge === "best" && <span className={`${BADGE} bg-amber-400 text-black`}>{P.bestValue}</span>}
+                  {!featured && tier.badge !== "best" && <span className="rounded-md border border-line px-2 py-0.5 text-xs font-medium text-muted">{P.packTag}</span>}
                 </div>
                 <p className="mt-2 text-sm text-muted">{P.taglines[pack.id]}</p>
 
                 <CreditsBox credits={pack.credits} color={tier.color} title={`${pack.credits} ${t.common.credits}`} P={P} />
 
                 <p className="mt-6 font-headline text-5xl leading-none">{price(pack.amount)}</p>
+                <p className="mt-1 text-sm font-semibold tabular-nums">{fmt(P.perEuro, { n: creditsPerEuro(pack) })}</p>
+                {bonus > 0 && (
+                  <p className="mt-1 text-sm font-bold text-success">{fmt(P.bonusFree, { n: bonus })}</p>
+                )}
                 {card ? (
                   <div className="mt-6 space-y-2">
                     {/* Carte enregistrée : un clic, sans ressaisir la carte. */}

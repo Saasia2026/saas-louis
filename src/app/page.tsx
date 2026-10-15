@@ -14,7 +14,7 @@ import { GenjutsuShowcase } from "@/app/genjutsu-showcase";
 import { VideoMarquee } from "@/app/video-marquee";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
-import { CREDIT_PACKS, SUBSCRIPTION_PLANS, formatPrice, subscriptionOff, usageCharge } from "@/lib/credit-packs";
+import { CREDIT_PACKS, SUBSCRIPTION_PLANS, formatPrice, subscriptionOff, usageCharge, creditsPerEuro, bonusCredits } from "@/lib/credit-packs";
 import {
   SWAP_SHEET_CREDITS,
   swapMethodRate,
@@ -293,24 +293,30 @@ export default async function Home() {
             {CREDIT_PACKS.map((pack, i) => {
               const tier = TIERS[pack.id];
               const featured = tier.badge === "popular";
+              const bonus = bonusCredits(pack);
               return (
                 <li
                   key={pack.id}
-                  className="flex animate-fade-up flex-col rounded-2xl border p-6 transition-transform duration-200 hover:-translate-y-1"
-                  style={{ ...tierCard(tier.color, tier.strength), animationDelay: `${i * 90}ms` }}
+                  className={`flex animate-fade-up flex-col rounded-2xl border p-6 transition-transform duration-200 hover:-translate-y-1 ${featured ? "ring-2 ring-accent/40 lg:scale-[1.03]" : ""}`}
+                  style={{ ...tierCard(tier.color, featured ? tier.strength + 6 : tier.strength), animationDelay: `${i * 90}ms` }}
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-headline text-4xl leading-none">{P.packs[pack.id]}</h3>
                     {featured && <span className={`${BADGE} bg-accent text-white`}>{L.popular}</span>}
+                    {tier.badge === "best" && <span className={`${BADGE} bg-amber-400 text-black`}>{L.bestValue}</span>}
                   </div>
                   <p className="mt-2 text-sm text-muted">{P.taglines[pack.id]}</p>
                   <p className="mt-6 font-headline text-6xl leading-none">{price(pack.amount)}</p>
-                  <p className="mt-3 text-sm text-muted tabular-nums">
+                  <p className="mt-2 text-sm font-semibold tabular-nums">{fmt(L.perEuro, { n: creditsPerEuro(pack) })}</p>
+                  <p className="mt-1 text-sm text-muted tabular-nums">
                     {pack.credits} {t.common.credits} {fmt(P.eqSeconds, { n: swapMethodSecondsFor(pack.credits) })}
                   </p>
+                  {bonus > 0 && (
+                    <p className="mt-2 text-sm font-bold text-success">{fmt(L.bonusFree, { n: bonus })}</p>
+                  )}
                   <Link
                     href={start}
-                    className={`btn mt-8 w-full py-3.5 text-base ${featured ? "btn-accent" : i === 2 ? "btn-hot" : "btn-primary"}`}
+                    className={`btn mt-auto w-full py-3.5 text-base ${featured ? "btn-accent" : i === 2 ? "btn-hot" : "btn-primary"}`}
                   >
                     {L.start}
                   </Link>

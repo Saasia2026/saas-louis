@@ -80,6 +80,21 @@ export function usageCharge(missingCredits: number) {
 export type CreditPack = (typeof CREDIT_PACKS)[number];
 export type CreditPackId = CreditPack["id"];
 
+export function creditsPerEuro(pack: CreditPack) {
+  return Math.round((pack.credits / pack.amount) * 100);
+}
+
+export function bonusCredits(pack: CreditPack) {
+  const basic = CREDIT_PACKS[0];
+  const atBasicRate = Math.round((pack.amount * basic.credits) / basic.amount);
+  return Math.max(0, pack.credits - atBasicRate);
+}
+
+export function subscriptionCreditsPerEuro(plan: SubscriptionPlan, interval: BillingInterval) {
+  const monthly = subscriptionMonthly(plan, interval);
+  return Math.round((plan.credits / monthly) * 100);
+}
+
 export function findCreditPack(id: unknown): CreditPack | undefined {
   return CREDIT_PACKS.find((p) => p.id === id);
 }
