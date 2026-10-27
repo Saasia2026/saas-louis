@@ -30,7 +30,7 @@ export function GenjutsuBanner() {
         disableRemotePlayback
         preload="metadata"
         aria-hidden
-        className="absolute inset-0 -z-10 size-full object-cover"
+        className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
       />
       <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/30 to-black/5" />
       <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">

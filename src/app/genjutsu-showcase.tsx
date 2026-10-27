@@ -39,7 +39,7 @@ export function GenjutsuShowcase({ labels }: { labels: string[] }) {
               disablePictureInPicture
               disableRemotePlayback
               preload="metadata"
-              className="size-full object-cover transition-transform duration-700 [transition-timing-function:var(--ease-out)] group-hover:scale-[1.03]"
+              className="pointer-events-none size-full object-cover transition-transform duration-700 [transition-timing-function:var(--ease-out)] group-hover:scale-[1.03]"
             />
           </li>
         ))}

@@ -240,7 +240,7 @@ export function HistoryEmpty() {
             disableRemotePlayback
             preload="metadata"
             aria-hidden
-            className={`absolute inset-0 size-full object-cover ${drop}`}
+            className={`pointer-events-none absolute inset-0 size-full object-cover ${drop}`}
           />
         </>
       );
@@ -296,7 +296,7 @@ export function HistoryEmpty() {
           disableRemotePlayback
           preload="metadata"
           aria-hidden
-          className={`absolute inset-0 size-full object-cover transition-opacity duration-700 ${
+          className={`pointer-events-none absolute inset-0 size-full object-cover transition-opacity duration-700 ${
             shown === 3 ? "opacity-100" : "opacity-0"
           }`}
         />

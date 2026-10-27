@@ -70,7 +70,7 @@ export function CompareSlider({
         disableRemotePlayback
         preload="metadata"
         aria-hidden
-        className="absolute inset-0 size-full object-cover"
+        className="pointer-events-none absolute inset-0 size-full object-cover"
       />
       <video
         ref={afterRef}
@@ -84,7 +84,7 @@ export function CompareSlider({
         disableRemotePlayback
         preload="metadata"
         aria-hidden
-        className="absolute inset-0 size-full object-cover"
+        className="pointer-events-none absolute inset-0 size-full object-cover"
         style={{ clipPath: "inset(0 0 0 var(--compare))" }}
       />
 

@@ -226,7 +226,7 @@ export function PlanningBoard({
                         webkit-playsinline=""
                         disablePictureInPicture
                         disableRemotePlayback
-                        className="absolute inset-0 size-full object-cover"
+                        className="pointer-events-none absolute inset-0 size-full object-cover"
                       />
                     ) : (
                       <p className="absolute inset-0 line-clamp-6 p-3 pt-9 text-xs text-muted">{post.caption}</p>

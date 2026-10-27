@@ -85,7 +85,7 @@ export function ScrollWipe({
         disableRemotePlayback
         preload="metadata"
         aria-hidden
-        className="absolute inset-0 size-full object-cover"
+        className="pointer-events-none absolute inset-0 size-full object-cover"
       />
       <motion.video
         ref={afterRef}
@@ -98,7 +98,7 @@ export function ScrollWipe({
         disableRemotePlayback
         preload="metadata"
         aria-hidden
-        className="absolute inset-0 size-full object-cover"
+        className="pointer-events-none absolute inset-0 size-full object-cover"
         style={{ clipPath }}
       />
       <motion.div aria-hidden className="absolute inset-y-0 z-10 w-px bg-white/80" style={{ left }} />

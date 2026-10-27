@@ -41,7 +41,7 @@ export function ExampleVideo({
           disablePictureInPicture
           disableRemotePlayback
           preload="metadata"
-          className="size-full object-cover"
+          className="pointer-events-none size-full object-cover"
         />
       </div>
     </div>

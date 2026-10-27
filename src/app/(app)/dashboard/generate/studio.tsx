@@ -512,7 +512,7 @@ export function Studio({
                   webkit-playsinline=""
                   disablePictureInPicture
                   disableRemotePlayback
-                  className="size-full scale-[1.01] object-cover transition-transform duration-500 [transition-timing-function:var(--ease-out)] group-hover:scale-[1.07]"
+                  className="pointer-events-none size-full scale-[1.01] object-cover transition-transform duration-500 [transition-timing-function:var(--ease-out)] group-hover:scale-[1.07]"
                 />
                 <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-2.5 pt-8 pb-2 text-[11px] leading-tight text-white">
                   <span className="block truncate font-medium">{p.title[locale]}</span>
@@ -793,7 +793,7 @@ function Result({
                     playsInline
                     webkit-playsinline=""
                     aria-hidden
-                    className="absolute inset-0 size-full object-cover opacity-30"
+                    className="pointer-events-none absolute inset-0 size-full object-cover opacity-30"
                   />
                 )}
                 <span className="pointer-events-none absolute inset-x-0 h-16 animate-scan bg-gradient-to-b from-transparent via-accent/25 to-transparent" />

@@ -80,7 +80,7 @@ export function FeatureShowcase({ items, refund }: { items: Feature[]; refund: R
                   disablePictureInPicture
                   disableRemotePlayback
                   preload="metadata"
-                  className="relative size-full object-contain"
+                  className="pointer-events-none relative size-full object-contain"
                 />
               </>
             ) : (
