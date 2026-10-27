@@ -65,6 +65,7 @@ export function CompareSlider({
         autoPlay
         muted
         playsInline
+        webkit-playsinline=""
         disablePictureInPicture
         disableRemotePlayback
         preload="metadata"
@@ -78,6 +79,7 @@ export function CompareSlider({
         autoPlay
         muted
         playsInline
+        webkit-playsinline=""
         disablePictureInPicture
         disableRemotePlayback
         preload="metadata"

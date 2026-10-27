@@ -66,6 +66,7 @@ export default async function VideosPage() {
                     controls
                     preload="metadata"
                     playsInline
+                    webkit-playsinline=""
                     className="size-full object-contain"
                   />
                 ) : (

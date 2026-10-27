@@ -79,6 +79,7 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
                 controls
                 preload="metadata"
                 playsInline
+                webkit-playsinline=""
                 className="size-full object-contain"
               />
             ) : (
@@ -234,6 +235,7 @@ export function HistoryEmpty() {
             muted
             loop
             playsInline
+            webkit-playsinline=""
             disablePictureInPicture
             disableRemotePlayback
             preload="metadata"
@@ -289,6 +291,7 @@ export function HistoryEmpty() {
           muted
           loop
           playsInline
+          webkit-playsinline=""
           disablePictureInPicture
           disableRemotePlayback
           preload="metadata"

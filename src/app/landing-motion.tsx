@@ -80,6 +80,7 @@ export function ScrollWipe({
         poster={posterBefore}
         muted
         playsInline
+        webkit-playsinline=""
         disablePictureInPicture
         disableRemotePlayback
         preload="metadata"
@@ -92,6 +93,7 @@ export function ScrollWipe({
         poster={posterAfter}
         muted
         playsInline
+        webkit-playsinline=""
         disablePictureInPicture
         disableRemotePlayback
         preload="metadata"

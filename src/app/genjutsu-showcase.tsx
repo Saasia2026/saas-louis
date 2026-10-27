@@ -35,6 +35,7 @@ export function GenjutsuShowcase({ labels }: { labels: string[] }) {
               muted
               loop
               playsInline
+              webkit-playsinline=""
               disablePictureInPicture
               disableRemotePlayback
               preload="metadata"

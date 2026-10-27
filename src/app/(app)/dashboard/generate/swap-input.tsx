@@ -484,6 +484,7 @@ function SegmentPreview({ file, maxSeconds }: { file: SwapFile; maxSeconds: numb
       muted
       autoPlay
       playsInline
+      webkit-playsinline=""
       onLoadedMetadata={(e) => (e.currentTarget.currentTime = start)}
       onTimeUpdate={(e) => {
         const el = e.currentTarget;

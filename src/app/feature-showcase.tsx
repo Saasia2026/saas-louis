@@ -76,6 +76,7 @@ export function FeatureShowcase({ items, refund }: { items: Feature[]; refund: R
                   muted
                   loop
                   playsInline
+                  webkit-playsinline=""
                   disablePictureInPicture
                   disableRemotePlayback
                   preload="metadata"

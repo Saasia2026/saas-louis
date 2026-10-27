@@ -25,6 +25,7 @@ export function GenjutsuBanner() {
         muted
         loop
         playsInline
+        webkit-playsinline=""
         disablePictureInPicture
         disableRemotePlayback
         preload="metadata"

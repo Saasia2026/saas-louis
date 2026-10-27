@@ -223,6 +223,7 @@ export function PlanningBoard({
                         preload="metadata"
                         muted
                         playsInline
+                        webkit-playsinline=""
                         disablePictureInPicture
                         disableRemotePlayback
                         className="absolute inset-0 size-full object-cover"
@@ -372,6 +373,7 @@ function SlotForm({
               preload="metadata"
               muted
               playsInline
+              webkit-playsinline=""
               disablePictureInPicture
               disableRemotePlayback
               className="aspect-[9/16] w-full rounded-xl border-2 border-transparent bg-black object-cover transition-colors peer-checked:border-accent"

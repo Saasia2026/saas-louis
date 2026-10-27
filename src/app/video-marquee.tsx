@@ -34,6 +34,7 @@ export function VideoMarquee({ items }: { items: { src: string; poster: string; 
               muted
               loop
               playsInline
+              webkit-playsinline=""
               disablePictureInPicture
               disableRemotePlayback
               preload="metadata"

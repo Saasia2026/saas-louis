@@ -509,6 +509,7 @@ export function Studio({
                   loop
                   preload="metadata"
                   playsInline
+                  webkit-playsinline=""
                   disablePictureInPicture
                   disableRemotePlayback
                   className="size-full scale-[1.01] object-cover transition-transform duration-500 [transition-timing-function:var(--ease-out)] group-hover:scale-[1.07]"
@@ -778,6 +779,7 @@ function Result({
                 loop
                 muted
                 playsInline
+                webkit-playsinline=""
                 className="size-full object-cover"
               />
             ) : (
@@ -789,6 +791,7 @@ function Result({
                     loop
                     autoPlay
                     playsInline
+                    webkit-playsinline=""
                     aria-hidden
                     className="absolute inset-0 size-full object-cover opacity-30"
                   />
