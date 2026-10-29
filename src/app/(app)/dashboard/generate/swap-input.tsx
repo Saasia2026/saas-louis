@@ -459,13 +459,11 @@ export function SwapInput({
       )}
       {error && <p className="mt-2 text-xs text-danger">{error}</p>}
       {showInstructions && (
-        <input
+        <PromptToggle
+          label={t.studio.instructions}
           value={instructions}
-          onChange={(e) => onInstructions?.(e.target.value)}
-          maxLength={500}
+          onChange={(text) => onInstructions?.(text)}
           placeholder={t.studio.instructionsPlaceholder}
-          aria-label={t.studio.instructions}
-          className="mt-3 w-full rounded-xl border border-line bg-surface-2/60 px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-faint focus:border-accent/60 focus:bg-surface"
         />
       )}
     </div>
@@ -618,6 +616,57 @@ function useFilmstrip(url: string, total: number) {
     };
   }, [url, total]);
   return frames;
+}
+
+function PromptToggle({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (text: string) => void;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(Boolean(value));
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => {
+          const next = !open;
+          setOpen(next);
+          if (!next) onChange("");
+        }}
+        className="flex w-full items-center justify-between gap-2 px-1 py-1"
+      >
+        <span className="text-sm font-medium text-muted">{label}</span>
+        <span
+          aria-hidden
+          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+            open ? "bg-accent" : "bg-surface-3"
+          }`}
+        >
+          <span
+            className={`inline-block size-3.5 rounded-full bg-white shadow-sm transition-transform ${
+              open ? "translate-x-[1.125rem]" : "translate-x-[0.1875rem]"
+            }`}
+          />
+        </span>
+      </button>
+      {open && (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          maxLength={500}
+          rows={2}
+          placeholder={placeholder}
+          className="mt-1.5 w-full resize-none rounded-xl border border-line bg-surface-2/60 px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-faint focus:border-accent/60 focus:bg-surface"
+        />
+      )}
+    </div>
+  );
 }
 
 function clock(seconds: number) {

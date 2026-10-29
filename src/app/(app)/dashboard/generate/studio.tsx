@@ -7,6 +7,7 @@ import { fmt, INTL_LOCALES, plural } from "@/i18n/config";
 import { formatPrice, usageCharge } from "@/lib/credit-packs";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/i18n/provider";
+import { VideoWall } from "@/app/video-wall";
 import { VisibleVideos } from "@/app/visible-videos";
 import {
   SWAP_ENGINES,
@@ -652,6 +653,8 @@ export function Studio({
   // Deux colonnes : la création à gauche (fixe au défilement), le rendu en
   // cours puis l'historique à droite. Sur mobile, l'une sous l'autre.
   return (
+    <>
+    <VideoWall />
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
       <aside className="relative z-20 animate-fade-up lg:sticky lg:top-24 lg:-mx-3 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:px-3 lg:pb-3">
         {composer}
@@ -673,6 +676,7 @@ export function Studio({
         {pastItems.length > 0 ? <HistoryList items={pastItems} /> : !started && <HistoryEmpty />}
       </section>
     </div>
+    </>
   );
 }
 
