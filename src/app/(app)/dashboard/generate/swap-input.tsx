@@ -181,112 +181,160 @@ export function SwapInput({
     const kind = slot === "video" ? "video" : "image";
     const file = slot === "video" ? video : characters[slot]?.image;
     const hint = kind === "video" ? fmt(t.studio.videoHint, { max: maxSeconds }) : t.studio.imageHint;
+    const charExtras = kind === "image" && typeof slot === "number" ? characters[slot] : null;
+    const showExtras = charExtras && file && maxPhotos > 1;
     return (
-      <label
-        key={slot}
-        title={hint}
-        className={`group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border text-center transition-colors ${
-          file
-            ? "border-line-strong bg-black bg-clip-padding"
-            : "border-dashed border-line bg-surface-2/40 px-4 hover:border-accent/50 hover:bg-surface-2"
-        } aspect-video`}
-      >
-        <input
-          type="file"
-          accept={(kind === "video" ? SWAP_VIDEO_TYPES : SWAP_IMAGE_TYPES).join(",")}
-          className="sr-only"
-          disabled={uploading !== null}
-          onChange={(e) => {
-            pick(slot, e.target.files?.[0]);
-            e.target.value = "";
-          }}
-        />
-        {file ? (
-          <>
-            {kind === "video" ? (
-              <SegmentPreview file={file} maxSeconds={maxSeconds} />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={file.previewUrl} alt="" className="absolute inset-0 size-full object-contain" />
-            )}
-            {kind === "video" && Number.isFinite(file.seconds) && (
-              <span className="absolute bottom-2 left-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[0.6875rem] font-medium text-white tabular-nums">
-                {clock(file.seconds!)}
+      <div key={slot} className="flex flex-col gap-2">
+        <label
+          title={hint}
+          className={`group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border text-center transition-colors ${
+            file
+              ? "border-line-strong bg-black bg-clip-padding"
+              : "border-dashed border-line bg-surface-2/40 px-4 hover:border-accent/50 hover:bg-surface-2"
+          } aspect-video`}
+        >
+          <input
+            type="file"
+            accept={(kind === "video" ? SWAP_VIDEO_TYPES : SWAP_IMAGE_TYPES).join(",")}
+            className="sr-only"
+            disabled={uploading !== null}
+            onChange={(e) => {
+              pick(slot, e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+          {file ? (
+            <>
+              {kind === "video" ? (
+                <SegmentPreview file={file} maxSeconds={maxSeconds} />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={file.previewUrl} alt="" className="absolute inset-0 size-full object-cover" />
+              )}
+              {kind === "video" && Number.isFinite(file.seconds) && (
+                <span className="absolute bottom-2 left-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[0.6875rem] font-medium text-white tabular-nums">
+                  {clock(file.seconds!)}
+                </span>
+              )}
+              <span className="absolute right-2 bottom-2 rounded-full bg-black/70 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                {t.studio.change}
               </span>
-            )}
-            <span className="absolute right-2 bottom-2 rounded-full bg-black/70 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-              {t.studio.change}
+              {(slot === "video" || !several) && (
+                <button
+                  type="button"
+                  aria-label={t.studio.removePhoto}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (slot === "video") {
+                      URL.revokeObjectURL(video!.previewUrl);
+                      onVideo(null);
+                    } else {
+                      const current = characters[slot]?.image;
+                      if (current) URL.revokeObjectURL(current.previewUrl);
+                      setCharacter(slot, { image: null });
+                    }
+                  }}
+                  className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity hover:bg-danger group-hover:opacity-100"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              {kind === "video" ? (
+                <Upload className="size-7 text-muted transition-transform duration-200 group-hover:-translate-y-0.5" />
+              ) : (
+                <UserRound className="size-7 text-muted transition-transform duration-200 group-hover:-translate-y-0.5" />
+              )}
+              <span className="mt-2 text-sm leading-snug font-medium">
+                {kind === "video" ? t.studio.videoDrop : t.studio.imageDrop}
+              </span>
+              <span className="mt-0.5 text-xs text-muted">
+                {kind === "video"
+                  ? fmt(t.studio.videoDropSub, {
+                      min: GENJUTSU_MIN_SECONDS.toLocaleString(INTL_LOCALES[locale]),
+                      max: maxSeconds,
+                    })
+                  : t.studio.imageDropSub}
+              </span>
+            </>
+          )}
+          {several && typeof slot === "number" && (
+            <>
+              <span className="absolute top-2 left-2 flex size-6 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white tabular-nums">
+                {slot + 1}
+              </span>
+              {!presetPeople && (
+                <button
+                  type="button"
+                  aria-label={t.studio.removeCharacter}
+                  title={t.studio.removeCharacter}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    removeCharacter(slot);
+                  }}
+                  className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </>
+          )}
+          {uploading === slot && (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm text-white">
+              {t.studio.uploading}
             </span>
-            {(slot === "video" || !several) && (
-              <button
-                type="button"
-                aria-label={t.studio.removePhoto}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (slot === "video") {
-                    URL.revokeObjectURL(video!.previewUrl);
-                    onVideo(null);
-                  } else {
-                    const current = characters[slot]?.image;
-                    if (current) URL.revokeObjectURL(current.previewUrl);
-                    setCharacter(slot, { image: null });
-                  }
-                }}
-                className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity hover:bg-danger group-hover:opacity-100"
+          )}
+        </label>
+        {showExtras && (
+          <div className="flex flex-wrap gap-2">
+            {1 + charExtras.extras.length < maxPhotos && (
+              <label
+                title={t.studio.addPhoto}
+                className="relative flex size-12 cursor-pointer items-center justify-center rounded-xl bg-surface-3 text-muted transition-colors hover:bg-surface-2 hover:text-text"
               >
-                <X className="size-4" />
-              </button>
+                <input
+                  type="file"
+                  accept={SWAP_IMAGE_TYPES.join(",")}
+                  className="sr-only"
+                  aria-label={t.studio.addPhoto}
+                  disabled={uploading !== null}
+                  onChange={(e) => {
+                    pickExtra(slot, e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+                {uploading === `extra-${slot}` ? (
+                  <span className="size-4 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
+                ) : (
+                  <Plus className="size-5" />
+                )}
+              </label>
             )}
-          </>
-        ) : (
-          <>
-            {kind === "video" ? (
-              <Upload className="size-7 text-muted transition-transform duration-200 group-hover:-translate-y-0.5" />
-            ) : (
-              <UserRound className="size-7 text-muted transition-transform duration-200 group-hover:-translate-y-0.5" />
-            )}
-            <span className="mt-2 text-sm leading-snug font-medium">
-              {kind === "video" ? t.studio.videoDrop : t.studio.imageDrop}
-            </span>
-            <span className="mt-0.5 text-xs text-muted">
-              {kind === "video"
-                ? fmt(t.studio.videoDropSub, {
-                    min: GENJUTSU_MIN_SECONDS.toLocaleString(INTL_LOCALES[locale]),
-                    max: maxSeconds,
-                  })
-                : t.studio.imageDropSub}
-            </span>
-          </>
-        )}
-        {several && typeof slot === "number" && (
-          <>
-            <span className="absolute top-2 left-2 flex size-6 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white tabular-nums">
-              {slot + 1}
-            </span>
-            {!presetPeople && (
-              <button
-                type="button"
-                aria-label={t.studio.removeCharacter}
-                title={t.studio.removeCharacter}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  removeCharacter(slot);
-                }}
-                className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black"
+            {charExtras.extras.map((f) => (
+              <span
+                key={f.path}
+                className="group/thumb relative size-12 overflow-hidden rounded-xl border border-line bg-black bg-clip-padding"
               >
-                <X className="size-4" />
-              </button>
-            )}
-          </>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={f.previewUrl} alt="" className="size-full object-cover" />
+                <button
+                  type="button"
+                  aria-label={t.studio.removePhoto}
+                  title={t.studio.removePhoto}
+                  onClick={() => removeExtra(slot, f)}
+                  className="absolute top-0.5 right-0.5 flex size-5 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity hover:bg-danger group-hover/thumb:opacity-100"
+                >
+                  <X className="size-3" />
+                </button>
+              </span>
+            ))}
+          </div>
         )}
-        {uploading === slot && (
-          <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm text-white">
-            {t.studio.uploading}
-          </span>
-        )}
-      </label>
+      </div>
     );
   };
 
@@ -309,62 +357,6 @@ export function SwapInput({
           {t.studio.addCharacter}
         </button>
       )}
-      {maxPhotos > 1 &&
-        characters.map((c, i) =>
-          c.image ? (
-            <div key={`photos-${i}`} className="mt-3">
-              <p className="text-xs text-faint">
-                {several
-                  ? fmt(t.studio.morePhotos, { n: i + 1, max: maxPhotos })
-                  : fmt(t.studio.morePhotosSingle, { max: maxPhotos })}
-              </p>
-              <div className="mt-1.5 flex flex-wrap gap-2">
-                {c.extras.map((f) => (
-                  <span
-                    key={f.path}
-                    className="relative size-12 overflow-hidden rounded-lg border border-line bg-black bg-clip-padding"
-                  >
-                    {/* Aperçu local (blob:) : pas d'optimisation Next. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={f.previewUrl} alt="" className="size-full object-cover" />
-                    <button
-                      type="button"
-                      aria-label={t.studio.removePhoto}
-                      title={t.studio.removePhoto}
-                      onClick={() => removeExtra(i, f)}
-                      className="absolute top-0.5 right-0.5 flex size-5 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black"
-                    >
-                      <X className="size-3" />
-                    </button>
-                  </span>
-                ))}
-                {1 + c.extras.length < maxPhotos && (
-                  <label
-                    title={t.studio.addPhoto}
-                    className="relative flex size-12 cursor-pointer items-center justify-center rounded-lg border border-line-strong text-muted transition-colors hover:border-accent/60 hover:text-text"
-                  >
-                    <input
-                      type="file"
-                      accept={SWAP_IMAGE_TYPES.join(",")}
-                      className="sr-only"
-                      aria-label={t.studio.addPhoto}
-                      disabled={uploading !== null}
-                      onChange={(e) => {
-                        pickExtra(i, e.target.files?.[0]);
-                        e.target.value = "";
-                      }}
-                    />
-                    {uploading === `extra-${i}` ? (
-                      <span className="size-4 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
-                    ) : (
-                      <Plus className="size-4" />
-                    )}
-                  </label>
-                )}
-              </div>
-            </div>
-          ) : null,
-        )}
       {presetPeople ? (
         <ul className="mt-3 space-y-1 text-sm text-muted">
           {presetPeople.map((label, i) => (
@@ -494,7 +486,7 @@ function SegmentPreview({ file, maxSeconds }: { file: SwapFile; maxSeconds: numb
         e.currentTarget.currentTime = start;
         e.currentTarget.play().catch(() => {});
       }}
-      className="absolute inset-0 size-full object-contain"
+      className="absolute inset-0 size-full object-cover"
     />
   );
 }
