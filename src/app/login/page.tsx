@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { LogoMark } from "@/app/logo-mark";
@@ -58,20 +57,6 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       </div>
       </div>
 
-      {/* Œuvre générée (voir public/login-art.webp) : le côté galerie de la
-          page, masqué sur petit écran. */}
-      <aside aria-hidden className="relative hidden w-[42%] p-4 lg:block">
-        <div className="relative size-full overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding">
-          <Image
-            src="/login-art.webp"
-            alt=""
-            fill
-            sizes="42vw"
-            priority
-            className="object-cover"
-          />
-        </div>
-      </aside>
     </main>
   );
 }
