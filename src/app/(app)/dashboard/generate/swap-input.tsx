@@ -395,16 +395,7 @@ export function SwapInput({
             </label>
           ))}
         </div>
-      ) : (
-        <input
-          value={characters[0]?.target ?? ""}
-          onChange={(e) => setCharacter(0, { target: e.target.value })}
-          maxLength={200}
-          placeholder={t.studio.targetPlaceholder}
-          aria-label={t.studio.target}
-          className={`mt-3 ${targetField}`}
-        />
-      )}
+      ) : null}
       {showDecor && (
         <div className="mt-3">
           <p className="text-xs text-faint">{decorTitle ?? t.studio.decorTitle}</p>
