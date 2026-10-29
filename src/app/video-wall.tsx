@@ -1,13 +1,15 @@
 "use client";
 
 const COLS: number[][] = [
-  [1, 5, 9, 13, 17, 21],
-  [2, 6, 10, 14, 18, 22],
-  [3, 7, 11, 15, 19, 23],
-  [4, 8, 12, 16, 20, 3],
+  [1, 9, 17],
+  [2, 10, 18],
+  [3, 11, 19],
+  [4, 12, 20],
 ];
 
 const DURATIONS = [58, 44, 52, 40];
+
+const pad = (n: number) => `/demos/demo-${String(n).padStart(2, "0")}`;
 
 export function VideoWall() {
   return (
@@ -20,13 +22,18 @@ export function VideoWall() {
           style={{ animationDuration: `${DURATIONS[ci]}s` }}
         >
           {[...col, ...col].map((n, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <video
               key={`${n}-${i}`}
-              src={`/demos/demo-${String(n).padStart(2, "0")}.jpg`}
-              alt=""
-              loading="lazy"
-              className="video-wall-thumb"
+              src={`${pad(n)}.mp4`}
+              poster={`${pad(n)}.jpg`}
+              muted
+              loop
+              autoPlay
+              playsInline
+              webkit-playsinline=""
+              disablePictureInPicture
+              disableRemotePlayback
+              className="video-wall-thumb pointer-events-none"
             />
           ))}
         </div>

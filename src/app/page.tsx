@@ -182,18 +182,6 @@ export default async function Home() {
           </ul>
         </section>
 
-        {/* Logos Genjutsu : typographies stylisées en grille. */}
-        <section aria-hidden className="overflow-hidden border-y border-line bg-black py-10 sm:py-14">
-          <div className="mx-auto max-w-4xl px-4 sm:px-6">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/genjutsu-logos/genjutsu-grid.webp"
-              alt="Genjutsu"
-              className="reveal mx-auto w-full rounded-2xl"
-            />
-          </div>
-        </section>
-
         {/* Bande cinéma : le remplacement se rejoue tout seul au rythme du
             défilement. */}
         <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
@@ -225,14 +213,6 @@ export default async function Home() {
             </h2>
           </div>
           <GenjutsuShowcase labels={L.genjutsuList} />
-          <div className="mx-auto mt-12 max-w-3xl px-4 sm:px-6">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/genjutsu-logos/genjutsu-brush.webp"
-              alt="Genjutsu"
-              className="reveal mx-auto w-full rounded-2xl"
-            />
-          </div>
         </section>
 
         {/* Fonctionnalités */}
@@ -363,18 +343,6 @@ export default async function Home() {
             {subsAfter}
             <ArrowRight className="size-3.5" />
           </Link>
-        </section>
-
-        {/* Logos Genjutsu : typographies verticales avant l'appel final. */}
-        <section aria-hidden className="overflow-hidden border-t border-line bg-black py-10 sm:py-14">
-          <div className="mx-auto max-w-xs sm:max-w-sm px-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/genjutsu-logos/genjutsu-vertical.webp"
-              alt="Genjutsu"
-              className="mx-auto w-full"
-            />
-          </div>
         </section>
 
         {/* Appel final */}
