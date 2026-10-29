@@ -303,7 +303,7 @@ export function SwapInput({
                   aria-label={t.studio.addPhoto}
                   disabled={uploading !== null}
                   onChange={(e) => {
-                    pickExtra(slot, e.target.files?.[0]);
+                    pickExtra(slot as number, e.target.files?.[0]);
                     e.target.value = "";
                   }}
                 />
@@ -325,7 +325,7 @@ export function SwapInput({
                   type="button"
                   aria-label={t.studio.removePhoto}
                   title={t.studio.removePhoto}
-                  onClick={() => removeExtra(slot, f)}
+                  onClick={() => removeExtra(slot as number, f)}
                   className="absolute top-0.5 right-0.5 flex size-5 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity hover:bg-danger group-hover/thumb:opacity-100"
                 >
                   <X className="size-3" />
