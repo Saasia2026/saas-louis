@@ -16,7 +16,7 @@ export function GenjutsuBanner() {
   return (
     <div
       ref={box}
-      className="relative isolate h-72 animate-fade-up overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding sm:h-[24rem]"
+      className="relative isolate h-52 animate-fade-up overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding sm:h-64"
     >
       <video
         src="/examples/genjutsu-salle.mp4"
@@ -33,14 +33,9 @@ export function GenjutsuBanner() {
         className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
       />
       <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/30 to-black/5" />
-      <div className="absolute inset-x-0 bottom-0 p-5 pb-[2rem] sm:p-7 sm:pb-[2.5rem]">
+      <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
         <p className="text-xs font-semibold text-white/75 sm:text-sm">{t.studio.poweredByLabel}</p>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/genjutsu-logos/genjutsu-chrome.png"
-          alt="Genjutsu"
-          className="mt-1 h-24 w-auto drop-shadow-[0_2px_12px_rgba(200,50,200,0.4)] sm:h-[9rem]"
-        />
+        <p className="font-headline text-[clamp(3.75rem,10vw,8.5rem)] leading-[0.8] text-white">Genjutsu</p>
       </div>
     </div>
   );
