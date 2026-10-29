@@ -217,6 +217,27 @@ export function SwapInput({
             <span className="absolute right-2 bottom-2 rounded-full bg-black/70 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
               {t.studio.change}
             </span>
+            {(slot === "video" || !several) && (
+              <button
+                type="button"
+                aria-label={t.studio.removePhoto}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (slot === "video") {
+                    URL.revokeObjectURL(video!.previewUrl);
+                    onVideo(null);
+                  } else {
+                    const current = characters[slot]?.image;
+                    if (current) URL.revokeObjectURL(current.previewUrl);
+                    setCharacter(slot, { image: null });
+                  }
+                }}
+                className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity hover:bg-danger group-hover:opacity-100"
+              >
+                <X className="size-4" />
+              </button>
+            )}
           </>
         ) : (
           <>
