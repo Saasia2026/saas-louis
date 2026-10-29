@@ -3,17 +3,15 @@
 import { useRef } from "react";
 import { usePauseWhenHidden } from "@/app/pause-hidden";
 
-// 4 colonnes × 3 rangées = 12 cellules. Le bloc « military » prend 2×2 (4),
-// « courtyard » 1×2 (2), les 6 autres 1×1. Aucune case vide.
 const TILES = [
-  { src: "/showcase/military", span: "lg:col-span-2 lg:row-span-2" },
-  { src: "/showcase/courtyard", span: "lg:row-span-2" },
-  { src: "/showcase/army", span: "" },
-  { src: "/showcase/cats", span: "" },
-  { src: "/showcase/fight", span: "" },
-  { src: "/showcase/henry", span: "" },
-  { src: "/showcase/gasmask", span: "" },
-  { src: "/showcase/dog", span: "" },
+  { src: "/demos/demo-01", span: "lg:col-span-2 lg:row-span-2" },
+  { src: "/demos/demo-03", span: "lg:row-span-2" },
+  { src: "/demos/demo-07", span: "" },
+  { src: "/demos/demo-09", span: "" },
+  { src: "/demos/demo-12", span: "" },
+  { src: "/demos/demo-14", span: "" },
+  { src: "/demos/demo-16", span: "" },
+  { src: "/demos/demo-20", span: "" },
 ];
 
 export function GenjutsuShowcase({ labels }: { labels: string[] }) {

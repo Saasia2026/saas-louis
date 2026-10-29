@@ -5,7 +5,7 @@ import { LanguageSwitcher } from "@/app/language-switcher";
 import { CompareSlider } from "@/app/compare-slider";
 import { ExampleVideo } from "@/app/example-video";
 import { Magnetic, ScrollWipe, SmoothScroll } from "@/app/landing-motion";
-import { ParticleField } from "@/app/particle-field";
+import { VideoWall } from "@/app/video-wall";
 import { PhoneFrame } from "@/app/phone-frame";
 import { Logo } from "@/app/logo";
 import { ThemeToggle } from "@/app/theme-toggle";
@@ -22,27 +22,18 @@ import {
 } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
 
-// Vidéos d'exemple (public/examples), dans l'ordre des textes de
-// landing.exampleList : de vrais rendus du site.
-const EXAMPLES = ["ours", "chien"];
+const demo = (n: number) => `/demos/demo-${String(n).padStart(2, "0")}`;
 
-// Rendus verticaux du bandeau : les 3 du départ + les 6 anciens de la
-// mosaïque Genjutsu (remplacée par les clips showcase).
-const REEL = [
-  "genjutsu-diable",
-  "genjutsu-lincoln",
-  "genjutsu-cage",
-  "genjutsu-salle",
-  "genjutsu-danse",
-  "genjutsu-dunk",
-  "genjutsu-panier",
-  "genjutsu-bras-de-fer",
-  "genjutsu-camion",
-];
+// Vidéos d'exemple (public/demos), dans l'ordre des textes de
+// landing.exampleList.
+const EXAMPLES = [4, 9];
 
-// Rendu montré pour chaque fonctionnalité, dans l'ordre des textes de
-// landing.featureList ; null : la carte « crédits rendus » à la place.
-const FEATURE_MEDIA: (string | null)[] = ["genjutsu-cage", "ours", "genjutsu-diable", "mma-apres", null];
+// Rendus du bandeau : verticaux d'abord (9:16, idéaux pour les cartes),
+// puis paysages (rognés par object-cover).
+const REEL = [3, 5, 7, 10, 12, 13, 2, 6, 11, 14, 17];
+
+// Rendu par fonctionnalité ; null : la carte « crédits rendus ».
+const FEATURE_MEDIA: (number | null)[] = [2, 6, 11, 18, null];
 
 // Meilleure réduction réelle d'un abonnement (annuel) sur le pack aux mêmes
 // crédits — le même calcul que la page Crédits.
@@ -63,20 +54,16 @@ export default async function Home() {
   // La réduction s'affiche en badge au milieu de la phrase.
   const [subsBefore, subsAfter = ""] = L.pricingSubs.split("{off}");
 
-  const reel = [
-    ...REEL.map((file, i) => ({
-      src: `/examples/${file}.mp4`,
-      poster: `/examples/${file}.jpg`,
-      label: L.showcaseList[i]?.title ?? "Genjutsu",
-    })),
-    { src: "/examples/micro-apres.mp4", poster: "/examples/micro-apres.jpg", label: L.compareAfter },
-    { src: "/examples/mma-apres.mp4", poster: "/examples/mma-apres.jpg", label: L.compareAfter },
-  ];
+  const reel = REEL.map((n, i) => ({
+    src: `${demo(n)}.mp4`,
+    poster: `${demo(n)}.jpg`,
+    label: L.showcaseList[i]?.title ?? "Genjutsu",
+  }));
 
   return (
     <div className="flex flex-1 flex-col overflow-x-clip">
       <SmoothScroll />
-      <ParticleField />
+      <VideoWall />
       <header className="glass sticky top-0 z-30 border-b border-line">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
           <Logo className="min-w-0 shrink" />
@@ -186,8 +173,8 @@ export default async function Home() {
             {L.exampleList.map(({ title }, i) => (
               <li key={title} className="reveal">
                 <ExampleVideo
-                  src={`/examples/${EXAMPLES[i]}.mp4`}
-                  poster={`/examples/${EXAMPLES[i]}.jpg`}
+                  src={`${demo(EXAMPLES[i])}.mp4`}
+                  poster={`${demo(EXAMPLES[i])}.jpg`}
                   label={title}
                 />
               </li>
@@ -195,9 +182,20 @@ export default async function Home() {
           </ul>
         </section>
 
+        {/* Logos Genjutsu : typographies stylisées en grille. */}
+        <section aria-hidden className="overflow-hidden border-y border-line bg-black py-10 sm:py-14">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/genjutsu-logos/genjutsu-grid.webp"
+              alt="Genjutsu"
+              className="reveal mx-auto w-full rounded-2xl"
+            />
+          </div>
+        </section>
+
         {/* Bande cinéma : le remplacement se rejoue tout seul au rythme du
-            défilement. Un combat, rendu par le site avec la méthode du
-            mannequin ; le texte à côté sur ordinateur, au-dessus sur mobile. */}
+            défilement. */}
         <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
           <div className="text-center lg:text-left">
             <p className="eyebrow">{L.wipeEyebrow}</p>
@@ -227,6 +225,14 @@ export default async function Home() {
             </h2>
           </div>
           <GenjutsuShowcase labels={L.genjutsuList} />
+          <div className="mx-auto mt-12 max-w-3xl px-4 sm:px-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/genjutsu-logos/genjutsu-brush.webp"
+              alt="Genjutsu"
+              className="reveal mx-auto w-full rounded-2xl"
+            />
+          </div>
         </section>
 
         {/* Fonctionnalités */}
@@ -237,12 +243,12 @@ export default async function Home() {
           </h2>
           <FeatureShowcase
             items={L.featureList.map(({ title, text }, i) => {
-              const file = FEATURE_MEDIA[i];
+              const n = FEATURE_MEDIA[i];
               return {
                 title,
                 text,
-                media: file
-                  ? { kind: "video" as const, src: `/examples/${file}.mp4`, poster: `/examples/${file}.jpg` }
+                media: n != null
+                  ? { kind: "video" as const, src: `${demo(n)}.mp4`, poster: `${demo(n)}.jpg` }
                   : { kind: "refund" as const },
               };
             })}
@@ -359,9 +365,19 @@ export default async function Home() {
           </Link>
         </section>
 
-        {/* Appel final : une déclaration pleine page, pas une carte. Pas de
-            reveal : en bout de page, la timeline de défilement peut ne jamais
-            se dérouler assez et laisser la section invisible. */}
+        {/* Logos Genjutsu : typographies verticales avant l'appel final. */}
+        <section aria-hidden className="overflow-hidden border-t border-line bg-black py-10 sm:py-14">
+          <div className="mx-auto max-w-xs sm:max-w-sm px-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/genjutsu-logos/genjutsu-vertical.webp"
+              alt="Genjutsu"
+              className="mx-auto w-full"
+            />
+          </div>
+        </section>
+
+        {/* Appel final */}
         <section className="relative isolate overflow-hidden border-t border-line px-4 py-20 sm:px-6 sm:py-40">
           <div className="mx-auto max-w-6xl text-center">
             <h2 className="mx-auto font-headline text-[2.8rem] leading-[0.92] sm:text-7xl lg:text-8xl">
