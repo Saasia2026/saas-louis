@@ -476,7 +476,6 @@ export function Studio({
         maxPhotos={maxPhotos}
         presetPeople={preset?.people.map((p) => p.label[locale])}
         maxSeconds={preset ? preset.seconds : maxSeconds}
-        compact={false}
         decorPhoto={decorPhoto}
         onDecorPhoto={setDecorPhoto}
         showDecor={mode === "transfer"}

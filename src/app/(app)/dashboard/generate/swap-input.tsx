@@ -1,6 +1,6 @@
 "use client";
 
-import { Ghost, Mountain, PawPrint, Plus, UserRound, Video, X, type LucideIcon } from "lucide-react";
+import { Mountain, Plus, Upload, UserRound, Video, X } from "lucide-react";
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
@@ -65,7 +65,6 @@ export function SwapInput({
   maxCharacters,
   maxPhotos,
   maxSeconds,
-  compact,
   decorPhoto = null,
   onDecorPhoto,
   showDecor = false,
@@ -103,7 +102,6 @@ export function SwapInput({
   maxPhotos: number;
   // Durée gardée au plus, selon le moteur choisi.
   maxSeconds: number;
-  compact: boolean;
 }) {
   const [supabase] = useState(createClient);
   const { t, locale } = useI18n();
@@ -182,19 +180,16 @@ export function SwapInput({
   const tile = (slot: "video" | number) => {
     const kind = slot === "video" ? "video" : "image";
     const file = slot === "video" ? video : characters[slot]?.image;
-    // Petites icônes rondes : la caméra pour le clip ; humain, animal et
-    // créature pour le personnage. Le détail (formats, cadrage…) en infobulle.
-    const icons: LucideIcon[] = kind === "video" ? [Video] : [UserRound, PawPrint, Ghost];
     const hint = kind === "video" ? fmt(t.studio.videoHint, { max: maxSeconds }) : t.studio.imageHint;
     return (
       <label
         key={slot}
         title={hint}
-        className={`group relative flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border text-center transition-colors ${
+        className={`group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border text-center transition-colors ${
           file
             ? "border-line-strong bg-black bg-clip-padding"
-            : "border-line bg-surface-2/40 px-4 hover:border-accent/50 hover:bg-surface-2"
-        } ${compact ? "h-24" : "h-44"}`}
+            : "border-dashed border-line bg-surface-2/40 px-4 hover:border-accent/50 hover:bg-surface-2"
+        } aspect-video`}
       >
         <input
           type="file"
@@ -211,7 +206,6 @@ export function SwapInput({
             {kind === "video" ? (
               <SegmentPreview file={file} maxSeconds={maxSeconds} />
             ) : (
-              // Aperçu local (blob:) : pas d'optimisation Next.
               // eslint-disable-next-line @next/next/no-img-element
               <img src={file.previewUrl} alt="" className="absolute inset-0 size-full object-contain" />
             )}
@@ -226,20 +220,15 @@ export function SwapInput({
           </>
         ) : (
           <>
-            <span className="flex -space-x-2.5 transition-transform duration-200 group-hover:-translate-y-0.5">
-              {icons.map((Icon, i) => (
-                <span
-                  key={i}
-                  className="flex size-11 items-center justify-center rounded-full border border-line-strong bg-gradient-to-b from-surface-3 to-surface-2 text-text shadow-[inset_0_1px_0_var(--highlight)] ring-2 ring-surface"
-                >
-                  <Icon className="size-[1.125rem]" />
-                </span>
-              ))}
-            </span>
-            <span className="mt-2 text-sm leading-snug font-semibold text-balance">
+            {kind === "video" ? (
+              <Upload className="size-7 text-muted transition-transform duration-200 group-hover:-translate-y-0.5" />
+            ) : (
+              <UserRound className="size-7 text-muted transition-transform duration-200 group-hover:-translate-y-0.5" />
+            )}
+            <span className="mt-2 text-sm leading-snug font-medium">
               {kind === "video" ? t.studio.videoDrop : t.studio.imageDrop}
             </span>
-            <span className="text-xs text-muted">
+            <span className="mt-0.5 text-xs text-muted">
               {kind === "video"
                 ? fmt(t.studio.videoDropSub, {
                     min: GENJUTSU_MIN_SECONDS.toLocaleString(INTL_LOCALES[locale]),
@@ -293,7 +282,7 @@ export function SwapInput({
         <button
           type="button"
           onClick={() => onCharacters((list) => [...list, { image: null, extras: [], target: "" }])}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-line-strong px-3 py-1.5 text-sm text-muted transition-colors hover:border-accent/60 hover:text-text"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-dashed border-line px-4 py-2.5 text-sm text-muted transition-colors hover:border-accent/50 hover:text-text"
         >
           <Plus className="size-4" />
           {t.studio.addCharacter}
@@ -386,16 +375,14 @@ export function SwapInput({
           ))}
         </div>
       ) : (
-        video && (
-          <input
-            value={characters[0]?.target ?? ""}
-            onChange={(e) => setCharacter(0, { target: e.target.value })}
-            maxLength={200}
-            placeholder={t.studio.targetPlaceholder}
-            aria-label={t.studio.target}
-            className={`mt-3 ${targetField}`}
-          />
-        )
+        <input
+          value={characters[0]?.target ?? ""}
+          onChange={(e) => setCharacter(0, { target: e.target.value })}
+          maxLength={200}
+          placeholder={t.studio.targetPlaceholder}
+          aria-label={t.studio.target}
+          className={`mt-3 ${targetField}`}
+        />
       )}
       {showDecor && (
         <div className="mt-3">
