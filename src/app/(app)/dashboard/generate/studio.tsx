@@ -293,6 +293,10 @@ export function Studio({
     };
   }, [userId, resume, supabase]);
 
+  useEffect(() => {
+    if (!video) clearDraft();
+  }, [video]);
+
   function choosePreset(p: StudioPreset) {
     setPreset(p);
     setVideo({ path: p.path, previewUrl: p.previewUrl, seconds: p.seconds, start: 0 });
