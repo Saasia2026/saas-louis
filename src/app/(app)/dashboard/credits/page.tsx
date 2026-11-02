@@ -69,11 +69,12 @@ function CreditsBox({
   title: string;
   P: Awaited<ReturnType<typeof getDictionary>>["creditsPage"];
 }) {
-  const fidelity = Math.max(0, Math.floor((credits - SWAP_SHEET_CREDITS) / swapMethodRate(false, true)));
+  const fidelity = Math.max(0, Math.floor((credits - SWAP_SHEET_CREDITS) / swapMethodRate({}, true)));
   return (
     <div className="mt-5 rounded-xl border border-line bg-surface-2/60 p-4">
       <ul className="space-y-1 text-sm text-muted tabular-nums">
         <li>{title}</li>
+        <li>{fmt(P.eqStandard, { n: swapMethodSecondsFor(credits, { model: "standard" }) })}</li>
         <li>{fmt(P.eqSeconds, { n: swapMethodSecondsFor(credits) })}</li>
         <li>{fmt(P.eqFidelity, { n: fidelity })}</li>
       </ul>

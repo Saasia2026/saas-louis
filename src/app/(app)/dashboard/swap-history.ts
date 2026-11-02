@@ -4,7 +4,9 @@ import { getDictionary, getLocale } from "@/i18n/server";
 import {
   GENERATIONS_BUCKET,
   SWAP_INPUTS_BUCKET,
+  genjutsuSettingsOf,
   isAspectRatio,
+  type GenjutsuSettings,
   type AspectRatio,
 } from "@/lib/generation";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -22,7 +24,8 @@ export type SwapHistoryItem = {
   incomplete?: string;
   aspectRatio: AspectRatio;
   date: string;
-  hd: boolean;
+  // Modèle Genjutsu et qualité du rendu.
+  settings: Required<GenjutsuSettings>;
   fidelity: boolean;
   // Mouvement transféré dans un nouveau lieu (Motion Transfer).
   transfer: boolean;
@@ -33,6 +36,8 @@ export type SwapHistoryItem = {
 type HistoryMetadata = {
   aspect_ratio?: unknown;
   hd?: boolean;
+  model?: unknown;
+  quality?: unknown;
   vessel?: boolean;
   decor_image_path?: string;
   swap_parts?: { original?: boolean }[];
@@ -96,7 +101,7 @@ export async function listSwapHistory(limit = 24): Promise<SwapHistoryItem[]> {
             : undefined,
         aspectRatio: isAspectRatio(g.meta.aspect_ratio) ? g.meta.aspect_ratio : "9:16",
         date: dateFormat.format(new Date(g.created_at)),
-        hd: g.meta.hd === true,
+        settings: genjutsuSettingsOf(g.meta),
         fidelity: g.meta.vessel === true,
         transfer: Boolean(g.meta.decor_image_path),
         thumbs: photoPaths[i].flatMap((p) => photoUrl.get(p) ?? []),

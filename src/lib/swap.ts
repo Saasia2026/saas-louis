@@ -17,6 +17,9 @@ import {
   KLING_MIN_PART_SECONDS,
   facePassCredits,
   genjutsuFrames,
+  genjutsuSettingsOf,
+  type GenjutsuModel,
+  type SwapQuality,
   swapShotCredits,
   SWAP_INPUTS_BUCKET,
   type AspectRatio,
@@ -197,8 +200,12 @@ export type SwapPart = {
 export type SwapMetadata = {
   // Absent : remplacement lancé avant le choix du moteur (kling).
   engine?: SwapEngine;
-  // Genjutsu en 1080p.
+  // Genjutsu en 1080p (remplacements d'avant `quality`).
   hd?: boolean;
+  // Genjutsu (Light chez Higgsfield) ou Genjutsu Max, et qualité du rendu.
+  // Absents : Max, qualité tirée de `hd` (voir genjutsuSettingsOf).
+  model?: GenjutsuModel;
+  quality?: SwapQuality;
   // Option « + visage exact » : passe Magic Hour sur chaque morceau rendu,
   // avec la photo du visage si elle est donnée, sinon celle du personnage.
   face?: boolean;
@@ -289,6 +296,8 @@ export async function splitIntoParts(
   start: number,
   seconds: number,
   engine: SwapEngine = "kling",
+  // Genjutsu : séquences d'au plus cette durée (Genjutsu Light : 15 s).
+  maxBlockSeconds = GENJUTSU_BLOCK_MAX_SECONDS,
 ) {
   // Magic Hour suit les coupes tout seul et prend le passage entier.
   if (engine === "magichour") return [{ start: 0, seconds }] satisfies SwapPart[];
@@ -324,7 +333,7 @@ export async function splitIntoParts(
     .map((c) => c.time);
 
   const bounds = [0, ...cuts, seconds];
-  if (engine === "genjutsu") return groupIntoBlocks(bounds);
+  if (engine === "genjutsu") return groupIntoBlocks(bounds, maxBlockSeconds);
   return bounds.slice(1).flatMap((end, i): SwapPart[] => {
     const length = end - bounds[i];
     const count = Math.ceil(length / PART_MAX_SECONDS);
@@ -342,17 +351,17 @@ export async function splitIntoParts(
 // GENJUTSU_BLOCK_WHOLE_SECONDS, au-delà il est coupé en parts égales (la
 // jonction peut alors se voir). Une séquence de
 // moins de GENJUTSU_MIN_SECONDS rejoint sa voisine la plus courte, dans la
-// limite de GENJUTSU_BLOCK_MAX_SECONDS. Une coupe manquée par la détection ne
+// limite de `maxSeconds` (GENJUTSU_BLOCK_MAX_SECONDS, ou 15 s pour Genjutsu
+// Light, qui ne lit pas plus loin). Une coupe manquée par la détection ne
 // gêne pas : Genjutsu la suit ; une coupe imaginée ne fait que finir une
 // séquence plus tôt.
-export function groupIntoBlocks(bounds: number[]): SwapPart[] {
+export function groupIntoBlocks(bounds: number[], maxSeconds = GENJUTSU_BLOCK_MAX_SECONDS): SwapPart[] {
+  const whole = Math.min(GENJUTSU_BLOCK_WHOLE_SECONDS, maxSeconds);
+  const longPart = Math.min(GENJUTSU_LONG_SHOT_PART_SECONDS, maxSeconds);
   // Plans, les plus longs coupés en parts égales.
   const pieces = bounds.slice(1).flatMap((end, i) => {
     const length = end - bounds[i];
-    const count =
-      length <= GENJUTSU_BLOCK_WHOLE_SECONDS
-        ? 1
-        : Math.ceil(length / GENJUTSU_LONG_SHOT_PART_SECONDS - 1e-9);
+    const count = length <= whole ? 1 : Math.ceil(length / longPart - 1e-9);
     return Array.from({ length: count }, (_, k) => ({
       start: bounds[i] + (k * length) / count,
       seconds: length / count,
@@ -372,7 +381,7 @@ export function groupIntoBlocks(bounds: number[]): SwapPart[] {
   for (let i = 0; i < blocks.length; ) {
     const block = blocks[i];
     const fits = (b?: SwapPart) =>
-      b !== undefined && b.seconds + block.seconds <= GENJUTSU_BLOCK_MAX_SECONDS + 1e-9;
+      b !== undefined && b.seconds + block.seconds <= maxSeconds + 1e-9;
     const before = fits(blocks[i - 1]) ? blocks[i - 1] : undefined;
     const after = fits(blocks[i + 1]) ? blocks[i + 1] : undefined;
     if (block.seconds >= GENJUTSU_MIN_SECONDS || (!before && !after)) {
@@ -813,7 +822,7 @@ async function advanceParts(
                   videoUrl: part.videoUrl!,
                   characters: mannequins!.map((m, k) => ({ imageUrls: [m.sheet_url], target: people[k]?.target })),
                   mannequins: mannequins!.map(({ figure, color }) => ({ figure, color })),
-                  hd: metadata.hd,
+                  ...genjutsuSettingsOf(metadata),
                   webhookUrl,
                 })
               : await createGenjutsuSwap({
@@ -824,7 +833,7 @@ async function advanceParts(
                   })),
                   decorUrl: metadata.decor_url,
                   instructions: metadata.instructions,
-                  hd: metadata.hd,
+                  ...genjutsuSettingsOf(metadata),
                   webhookUrl,
                 });
           } catch (e) {
@@ -1264,7 +1273,8 @@ export async function cancelSwap(generationId: string, userId: string) {
     .filter((p) => p.stage === "done" && !p.original)
     .reduce(
       (sum, p) =>
-        sum + swapShotCredits(p.seconds, engine, metadata.hd, Boolean(metadata.face && p.face?.done)),
+        sum +
+        swapShotCredits(p.seconds, engine, genjutsuSettingsOf(metadata), Boolean(metadata.face && p.face?.done)),
       0,
     );
   if (!kept) {

@@ -8,6 +8,14 @@ import {
   SWAP_INPUTS_BUCKET,
   SWAP_MAX_CHARACTERS,
   GENJUTSU_MIN_SECONDS,
+  DEFAULT_GENJUTSU_MODEL,
+  DEFAULT_SWAP_QUALITY,
+  GENJUTSU_LIGHT_MAX_SECONDS,
+  genjutsuSettingsOf,
+  isGenjutsuModel,
+  isSwapQuality,
+  type GenjutsuModel,
+  type SwapQuality,
   genjutsuBilledSeconds,
   photosPerCharacter,
   swapCredits,
@@ -118,8 +126,11 @@ export async function startSwap(input: {
   // Plan prêt (voir presets.ts) : son clip tient lieu de videoPath, et qui
   // chaque personnage remplace vient de lui.
   presetId?: string;
-  // Rendu en 1080p.
+  // Rendu en 1080p (ancien réglage, remplacé par `quality`).
   hd?: boolean;
+  // Genjutsu (Light chez Higgsfield) ou Genjutsu Max, et qualité du rendu.
+  model?: GenjutsuModel;
+  quality?: SwapQuality;
   // Haute fidélité : méthode du mannequin, deux passes, au double du prix.
   vessel?: boolean;
   // Changement de décor : photo du lieu déposée par le créateur. La scène est
@@ -144,7 +155,14 @@ export async function startSwap(input: {
   if (!userId) return { error: t.common.sessionExpired };
   if (!higgsfieldEnabled()) return { error: errors.startFailed };
   const engine: SwapEngine = "genjutsu";
-  const hd = input.hd === true;
+  const model = isGenjutsuModel(input.model) ? input.model : DEFAULT_GENJUTSU_MODEL;
+  const quality = isSwapQuality(input.quality)
+    ? input.quality
+    : input.hd === true
+      ? "1080p"
+      : DEFAULT_SWAP_QUALITY;
+  const hd = quality === "1080p";
+  const settings = { model, quality };
   const vessel = input.vessel === true;
 
   // Chemins sous le dossier de l'utilisateur uniquement.
@@ -224,7 +242,13 @@ export async function startSwap(input: {
   // Avant de faire payer, en même temps : le découpage en séquences, qui
   // fixe le prix, et quelques images du clip pour les contrôles.
   const [shots, frames] = await Promise.all([
-    splitIntoParts(sourceUrl, start, clipSeconds, engine).catch((e) => {
+    splitIntoParts(
+      sourceUrl,
+      start,
+      clipSeconds,
+      engine,
+      model === "standard" ? GENJUTSU_LIGHT_MAX_SECONDS : undefined,
+    ).catch((e) => {
       console.error("startSwap: découpage", errorMessage(e));
       return null;
     }),
@@ -321,6 +345,8 @@ export async function startSwap(input: {
   const metadata = {
     engine,
     ...(hd && { hd: true }),
+    model,
+    quality,
     ...(decorImagePath && { decor_image_path: decorImagePath }),
     ...(instructions && { instructions }),
     ...(vessel && { vessel: true }),
@@ -349,6 +375,10 @@ export async function startSwap(input: {
       p_hd: hd,
       // Haute fidélité : la passe mannequin, au tarif de celle des personnages.
       p_vessel: vessel,
+      // Absents pour Genjutsu Max en 720p ou 1080p : la fonction reste
+      // appelable tant que la migration swap_genjutsu_models n'est pas passée.
+      ...(model === "standard" && { p_light: true }),
+      ...(quality === "480p" && { p_quality: quality }),
     });
   let { data: generationId, error: rpcError } = await debit();
   // Solde trop bas et paiement à l'usage accepté : la carte paie ce qui manque,
@@ -357,7 +387,7 @@ export async function startSwap(input: {
     rpcError?.message.includes("insufficient_credits") &&
     (await payShortfall(
       userId,
-      swapCredits(durationSeconds, engine, billedSeconds, characters.length, hd, false, vessel),
+      swapCredits(durationSeconds, engine, billedSeconds, characters.length, settings, false, vessel),
     ))
   ) {
     ({ data: generationId, error: rpcError } = await debit());
@@ -366,7 +396,7 @@ export async function startSwap(input: {
     if (rpcError?.message.includes("insufficient_credits")) {
       return {
         error: errors.insufficientCredits,
-        needCredits: swapCredits(durationSeconds, engine, billedSeconds, characters.length, hd, false, vessel),
+        needCredits: swapCredits(durationSeconds, engine, billedSeconds, characters.length, settings, false, vessel),
       };
     }
     console.error("start_swap_generation", errorMessage(rpcError));
@@ -485,7 +515,7 @@ export async function redoSwapShot(input: {
   const credits = swapShotCredits(
     part.seconds,
     genjutsu ? "genjutsu" : "kling",
-    metadata.hd,
+    genjutsuSettingsOf(metadata),
     Boolean(metadata.face),
   );
   const debit = () =>

@@ -271,7 +271,8 @@ export default async function Home() {
           <p className="mt-4 max-w-xl text-[0.9375rem] leading-relaxed text-muted">
             {fmt(L.pricingText, {
               max: swapMethodRate().toLocaleString(INTL_LOCALES[locale]),
-              hd: swapMethodRate(true).toLocaleString(INTL_LOCALES[locale]),
+              hd: swapMethodRate({ quality: "1080p" }).toLocaleString(INTL_LOCALES[locale]),
+              std: swapMethodRate({ model: "standard" }).toLocaleString(INTL_LOCALES[locale]),
               sheet: SWAP_SHEET_CREDITS,
             })}
           </p>

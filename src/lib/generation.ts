@@ -35,6 +35,51 @@ export function isSwapEngine(value: unknown): value is SwapEngine {
   return typeof value === "string" && value in SWAP_ENGINES;
 }
 
+// Deux modèles Genjutsu chez Higgsfield, nommés autrement sur le site :
+// - standard : « Genjutsu Light » chez Higgsfield (sorti le 2026-10-20),
+//   affiché « Genjutsu ». 0,05 / 0,10 / 0,20 $ la seconde en 480p / 720p /
+//   1080p, 15 s au plus par requête ;
+// - max : « Genjutsu » chez Higgsfield, affiché « Genjutsu Max ». 0,318 /
+//   0,681 / 1,632 $ la seconde.
+// Crédits la seconde au même coût par crédit que le barème d'origine
+// (0,681 $ = 28 crédits, soit ~0,0243 $ le crédit), arrondis au-dessus.
+// Alignés avec public.start_swap_generation.
+export const GENJUTSU_MODELS = ["standard", "max"] as const;
+export type GenjutsuModel = (typeof GENJUTSU_MODELS)[number];
+export const SWAP_QUALITIES = ["480p", "720p", "1080p"] as const;
+export type SwapQuality = (typeof SWAP_QUALITIES)[number];
+export const GENJUTSU_RATES: Record<GenjutsuModel, Record<SwapQuality, number>> = {
+  standard: { "480p": 3, "720p": 5, "1080p": 9 },
+  max: { "480p": 14, "720p": 28, "1080p": 68 },
+};
+export const DEFAULT_GENJUTSU_MODEL: GenjutsuModel = "max";
+export const DEFAULT_SWAP_QUALITY: SwapQuality = "720p";
+// Genjutsu Light ne lit que les 15 premières secondes de la vidéo reçue.
+export const GENJUTSU_LIGHT_MAX_SECONDS = 15;
+
+export type GenjutsuSettings = { model?: GenjutsuModel; quality?: SwapQuality };
+
+export function isGenjutsuModel(value: unknown): value is GenjutsuModel {
+  return typeof value === "string" && (GENJUTSU_MODELS as readonly string[]).includes(value);
+}
+
+export function isSwapQuality(value: unknown): value is SwapQuality {
+  return typeof value === "string" && (SWAP_QUALITIES as readonly string[]).includes(value);
+}
+
+// Modèle et qualité d'un remplacement enregistré. Avant le 2026-11-02, seul
+// Genjutsu Max existait et la qualité tenait dans `hd` (1080p ou 720p).
+export function genjutsuSettingsOf(metadata: {
+  hd?: boolean;
+  quality?: unknown;
+  model?: unknown;
+}): Required<GenjutsuSettings> {
+  return {
+    model: isGenjutsuModel(metadata.model) ? metadata.model : "max",
+    quality: isSwapQuality(metadata.quality) ? metadata.quality : metadata.hd ? "1080p" : "720p",
+  };
+}
+
 export const SWAP_SHEET_CREDITS = 12;
 // Fiche personnage d'un remplacement : Magic Hour lit la photo telle quelle.
 export function swapSheetCredits(engine: SwapEngine, characters = 1) {
@@ -47,22 +92,18 @@ export const FACE_PASS_CREDITS_PER_SECOND = SWAP_ENGINES.magichour.creditsPerSec
 export function facePassCredits(seconds: number) {
   return Math.max(1, Math.ceil(seconds * FACE_PASS_CREDITS_PER_SECOND));
 }
-// Genjutsu en 1080p : 1,632 $ la seconde chez Higgsfield (vérifié le
-// 2026-09-26), soit 68 crédits la seconde (~0,024 $ par crédit).
-export const GENJUTSU_HD_CREDITS_PER_SECOND = 68;
-
-// Crédits par seconde d'un moteur, 1080p compris (genjutsu seulement).
-export function swapRate(engine: SwapEngine, hd = false) {
-  return engine === "genjutsu" && hd
-    ? GENJUTSU_HD_CREDITS_PER_SECOND
+// Crédits par seconde d'un moteur ; genjutsu selon son modèle et sa qualité.
+export function swapRate(engine: SwapEngine, settings: GenjutsuSettings = {}) {
+  return engine === "genjutsu"
+    ? GENJUTSU_RATES[settings.model ?? DEFAULT_GENJUTSU_MODEL][settings.quality ?? DEFAULT_SWAP_QUALITY]
     : SWAP_ENGINES[engine].creditsPerSecond;
 }
 
 // Crédits par seconde d'un remplacement : une passe Genjutsu par défaut ; en
 // haute fidélité (méthode du mannequin), deux passes, celle des mannequins
 // puis celle des personnages.
-export function swapMethodRate(hd = false, fidelity = false) {
-  return swapRate("genjutsu", hd) * (fidelity ? 2 : 1);
+export function swapMethodRate(settings: GenjutsuSettings = {}, fidelity = false) {
+  return swapRate("genjutsu", settings) * (fidelity ? 2 : 1);
 }
 
 // Photos d'un personnage envoyées à Genjutsu (en pied, visage, profil…) :
@@ -146,7 +187,8 @@ export type GenerationStatus = "pending" | "processing" | "completed" | "failed"
 export function swapShotCredits(
   seconds: number,
   engine: SwapEngine = DEFAULT_SWAP_ENGINE,
-  hd = false,
+  // Genjutsu : modèle et qualité.
+  settings: GenjutsuSettings = {},
   // Option « + visage exact ».
   face = false,
   // Base neutre : la séquence passe deux fois par Genjutsu (voir swapCredits).
@@ -160,7 +202,7 @@ export function swapShotCredits(
         : klingBilledSeconds([seconds]);
   const pass = face ? facePassCredits(billed) : 0;
   const passes = vessel && engine === "genjutsu" ? 2 : 1;
-  return Math.max(1, Math.ceil(billed * swapRate(engine, hd))) * passes + pass;
+  return Math.max(1, Math.ceil(billed * swapRate(engine, settings))) * passes + pass;
 }
 
 // Prix d'un remplacement. Aligné avec public.start_swap_generation.
@@ -173,8 +215,8 @@ export function swapCredits(
   billedSeconds?: number,
   // Une fiche par personnage.
   characters = 1,
-  // Genjutsu en 1080p.
-  hd = false,
+  // Genjutsu : modèle et qualité.
+  settings: GenjutsuSettings = {},
   // Option « + visage exact ».
   face = false,
   // Base neutre (méthode du mannequin, Genjutsu seulement) : une première
@@ -188,7 +230,7 @@ export function swapCredits(
       : Math.ceil(durationSeconds);
   const passes = vessel && engine === "genjutsu" ? 2 : 1;
   return (
-    Math.ceil(seconds * swapRate(engine, hd)) * passes +
+    Math.ceil(seconds * swapRate(engine, settings)) * passes +
     swapSheetCredits(engine, characters) +
     (face ? facePassCredits(seconds) : 0)
   );
@@ -199,13 +241,16 @@ export function swapCredits(
 export const SHORT_CLIP_SECONDS = 5;
 
 // Vidéos de SHORT_CLIP_SECONDS (720p, un personnage, une passe) qu'un nombre
-// de crédits permet, une fiche par vidéo.
-export function swapShortClipsFor(credits: number) {
-  return Math.max(0, Math.floor(credits / (SHORT_CLIP_SECONDS * swapMethodRate() + SWAP_SHEET_CREDITS)));
+// de crédits permet, une fiche par vidéo. Genjutsu Max par défaut.
+export function swapShortClipsFor(credits: number, settings: GenjutsuSettings = {}) {
+  return Math.max(
+    0,
+    Math.floor(credits / (SHORT_CLIP_SECONDS * swapMethodRate(settings) + SWAP_SHEET_CREDITS)),
+  );
 }
 
 // Secondes de remplacement (720p, un personnage, une passe) qu'un nombre de
-// crédits permet, fiche comprise.
-export function swapMethodSecondsFor(credits: number) {
-  return Math.max(0, Math.floor((credits - SWAP_SHEET_CREDITS) / swapMethodRate()));
+// crédits permet, fiche comprise. Genjutsu Max par défaut.
+export function swapMethodSecondsFor(credits: number, settings: GenjutsuSettings = {}) {
+  return Math.max(0, Math.floor((credits - SWAP_SHEET_CREDITS) / swapMethodRate(settings)));
 }

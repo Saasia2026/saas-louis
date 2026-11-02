@@ -665,7 +665,9 @@ export type Database = {
           p_face?: boolean
           p_frames_per_second: number
           p_hd?: boolean
+          p_light?: boolean
           p_metadata?: Json
+          p_quality?: string
           p_user_id: string
           p_vessel?: boolean
         }

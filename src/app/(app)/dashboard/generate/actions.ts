@@ -5,6 +5,8 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import { getDictionary } from "@/i18n/server";
 import {
   GENERATIONS_BUCKET,
+  genjutsuSettingsOf,
+  type GenjutsuSettings,
   type GenerationStatus,
   type SwapEngine,
 } from "@/lib/generation";
@@ -46,8 +48,8 @@ export type GenerationView = {
   stage: "image" | "assembling";
   // Moteur du remplacement : genjutsu rend le passage d'un bloc, sans étapes.
   engine: SwapEngine;
-  // Genjutsu en 1080p (prix d'une séquence refaite).
-  hd: boolean;
+  // Modèle et qualité Genjutsu (prix d'une séquence refaite).
+  settings: Required<GenjutsuSettings>;
   // Option « + visage exact » (prix d'un plan refait).
   face: boolean;
   // Séquences livrées avec leurs images d'origine, faute de rendu : la vidéo
@@ -104,7 +106,7 @@ export async function getGeneration(generationId: string): Promise<Result<Genera
     status: generation.status as GenerationStatus,
     stage: generation.stage === "assembling" ? "assembling" : "image",
     engine: metadata.engine ?? "kling",
-    hd: Boolean(metadata.hd),
+    settings: genjutsuSettingsOf(metadata),
     face: Boolean(metadata.face),
     unreplaced: parts.filter((p) => p.original).length,
     shotsTotal: parts.length,

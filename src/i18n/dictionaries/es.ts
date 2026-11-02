@@ -144,7 +144,7 @@ export const es: Dictionary = {
       },
     ],
     pricingTitle: "Créditos, a tu ritmo",
-    pricingText: "{max} créditos por segundo en 720p, {hd} en 1080p, el doble en alta fidelidad. Más {sheet} créditos por personaje para su ficha.",
+    pricingText: "Genjutsu: {std} créditos por segundo en 720p. Genjutsu Max: {max} en 720p, {hd} en 1080p, el doble en alta fidelidad. Más {sheet} créditos por personaje para su ficha.",
     popular: "Popular",
     bestValue: "Mejor oferta",
     perCredit: "el crédito",
@@ -213,6 +213,26 @@ export const es: Dictionary = {
   studio: {
     createTitle: "Crear un vídeo",
     poweredByLabel: "Con la tecnología de",
+    modelLabel: "Modelo",
+    qualityLabel: "Calidad",
+    methodLabel: "Método",
+    changeModel: "Cambiar",
+    modelStandard: "Genjutsu",
+    modelMax: "Genjutsu Max",
+    modelStandardTagline: "Rápido y económico",
+    modelMaxTagline: "La calidad máxima",
+    modelNew: "Nuevo",
+    upTo: "hasta {res}",
+    clipRange: "{min}–{max} s",
+    perSecond: "{rate} cr/s",
+    tabHistory: "Historial",
+    tabExamples: "Ejemplos",
+    tabHow: "Cómo funciona",
+    historyNone: "Tus vídeos aparecerán aquí.",
+    examples: {
+      title: "Un vídeo, mil versiones",
+      text: "Conserva los gestos, la cámara y el sonido de tu clip, y cambia quién lo interpreta: tus personajes, tus productos, tus looks.",
+    },
     demo: {
       title: "Cómo funciona",
       steps: [
@@ -364,16 +384,6 @@ export const es: Dictionary = {
     ],
   },
 
-  swapEngines: {
-    genjutsu: {
-      label: "720p",
-      hint: "{rate} créditos/s · hasta {max} s, cortes incluidos, secuencias rehacibles",
-    },
-    genjutsuHd: {
-      label: "1080p",
-      hint: "Full HD · {rate} créditos/s · hasta {max} s",
-    },
-  },
 
   videos: {
     eyebrow: "Biblioteca",
@@ -547,7 +557,8 @@ export const es: Dictionary = {
     billedYearly: "facturado {price} al año",
     yearlySave: "Ahorras {amount} al año",
     expiring: "De ellos, {n} créditos de suscripción para usar antes del {date}",
-    eqSeconds: "= {n} s de vídeo en 720p",
+    eqSeconds: "= {n} s con Genjutsu Max en 720p",
+    eqStandard: "= {n} s con Genjutsu en 720p",
     eqClips: "≈ {n} vídeos de {s} s",
     eqFidelity: "= {n} s en alta fidelidad",
     packTag: "Sin compromiso",

@@ -13,6 +13,7 @@ import {
   PawPrint,
   RectangleHorizontal,
   RectangleVertical,
+  Sparkles,
   Square,
   TriangleAlert,
   UserRound,
@@ -112,7 +113,8 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
               </div>
             )}
             <div className="flex flex-wrap gap-1.5">
-              <Chip icon={MonitorPlay}>{item.hd ? "1080p" : "720p"}</Chip>
+              <Chip icon={Sparkles}>{item.settings.model === "max" ? t.studio.modelMax : t.studio.modelStandard}</Chip>
+              <Chip icon={MonitorPlay}>{item.settings.quality}</Chip>
               {item.seconds ? <Chip icon={Clock}>{fmt(V.seconds, { seconds: item.seconds })}</Chip> : null}
               <Chip icon={FORMAT_ICON[item.aspectRatio]}>{item.aspectRatio}</Chip>
               {item.transfer && (

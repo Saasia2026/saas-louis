@@ -1,6 +1,6 @@
 "use client";
 
-import { Coins, Download, Move, RefreshCw, Replace, TriangleAlert, WandSparkles, X } from "lucide-react";
+import { CirclePlay, Clock, Coins, Download, Film, History, Layers, MonitorPlay, RefreshCw, Scissors, TriangleAlert, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fmt, INTL_LOCALES, plural } from "@/i18n/config";
@@ -10,22 +10,30 @@ import { useI18n } from "@/i18n/provider";
 import { VideoWall } from "@/app/video-wall";
 import { VisibleVideos } from "@/app/visible-videos";
 import {
+  DEFAULT_GENJUTSU_MODEL,
+  DEFAULT_SWAP_QUALITY,
+  GENJUTSU_MIN_SECONDS,
+  GENJUTSU_MODELS,
   SWAP_ENGINES,
   SWAP_MAX_CHARACTERS,
+  SWAP_QUALITIES,
   photosPerCharacter,
   swapCredits,
   swapMethodRate,
   swapShotCredits,
   type AspectRatio,
+  type GenjutsuModel,
   type SwapEngine,
+  type SwapQuality,
 } from "@/lib/generation";
 import type { SwapPreset } from "@/lib/presets";
 import type { SwapHistoryItem } from "../swap-history";
 import { getGeneration, type GenerationView } from "./actions";
 import { clearDraft, loadDraft, saveDraft, type DraftFile } from "./draft";
-import { GenjutsuBanner } from "./genjutsu-banner";
+import { ExamplesPanel } from "./examples-panel";
 import { HistoryEmpty, HistoryList } from "./history-list";
 import { cancelSwap, redoSwapShot, startSwap } from "./swap-actions";
+import { MODEL_ICON, ModelBadge, ModelCard, ModeTabs, Option, PanelTabs, SettingRow, Tag } from "./studio-controls";
 import { SwapInput, clampedStart, uploadSwapFile, type SwapCharacter, type SwapFile } from "./swap-input";
 
 const POLL_INTERVAL_MS = 5_000;
@@ -100,8 +108,10 @@ export function Studio({
   const [characters, setCharacters] = useState<SwapCharacter[]>([
     { image: null, extras: [], target: "" },
   ]);
-  // Rendu en 1080p.
-  const [hd, setHd] = useState(false);
+  // Genjutsu ou Genjutsu Max, et qualité du rendu.
+  const [model, setModel] = useState<GenjutsuModel>(DEFAULT_GENJUTSU_MODEL);
+  const [quality, setQuality] = useState<SwapQuality>(DEFAULT_SWAP_QUALITY);
+  const settings = { model, quality };
   // Haute fidélité : méthode du mannequin, deux passes, au double du prix.
   const [fidelity, setFidelity] = useState(false);
   // Remplacer (Object Swap, la scène est gardée) ou transférer le mouvement
@@ -138,6 +148,8 @@ export function Studio({
     resume ? { kind: "generating", job: resume.job, id: resume.id } : { kind: "idle" },
   );
   const [active, setActive] = useState<Active | null>(resume ?? null);
+  // Onglet de droite : l'historique s'il y a déjà des vidéos, sinon les exemples.
+  const [tab, setTab] = useState<"history" | "examples" | "how">(history.length ? "history" : "examples");
 
   const resultEnd = useRef<HTMLElement>(null);
   const busy = phase.kind === "generating";
@@ -154,12 +166,12 @@ export function Studio({
   const seconds = durationKnown
     ? Math.max(1, Math.round(clipSeconds))
     : maxSeconds;
-  const cost = swapCredits(seconds, engine, undefined, characters.length, hd, false, fidelity);
+  const cost = swapCredits(seconds, engine, undefined, characters.length, settings, false, fidelity);
   // Durée illisible dans le navigateur : le serveur mesure le clip et refuse
   // lui-même faute de crédits ; on ne bloque ici que sous le prix le plus bas.
   const gate = durationKnown
     ? cost
-    : swapCredits(1, engine, undefined, characters.length, hd, false, fidelity);
+    : swapCredits(1, engine, undefined, characters.length, settings, false, fidelity);
   const ready = Boolean(video) && imagesReady && targetsReady && decorReady;
   // Connecté mais à court de crédits : « Générer » mène aux packs.
   const short = !guest && ready && credits < gate && !payAsYouGo;
@@ -232,7 +244,8 @@ export function Studio({
       })),
       decor: decorPhoto?.file ? draftFile(decorPhoto) : null,
       mode,
-      hd,
+      model,
+      quality,
       fidelity,
       instructions,
       length,
@@ -268,7 +281,8 @@ export function Studio({
         setCharacters(chars);
         setDecorPhoto(decor);
         setMode(draft.mode);
-        setHd(draft.hd);
+        setModel(draft.model ?? "max");
+        setQuality(draft.quality ?? (draft.hd ? "1080p" : DEFAULT_SWAP_QUALITY));
         setFidelity(draft.fidelity);
         setInstructions(draft.instructions);
         setLength(draft.length);
@@ -345,7 +359,8 @@ export function Studio({
       })),
       start: clampedStart(video, maxSeconds),
       seconds: maxSeconds,
-      hd,
+      model,
+      quality,
       vessel: fidelity,
       decorImagePath: mode === "transfer" ? decorPhoto?.path : undefined,
       instructions: instructions.trim() || undefined,
@@ -421,6 +436,52 @@ export function Studio({
   // découpé (voir swapCredits) ; borne haute si la durée est illisible.
   const costLabel = durationKnown ? String(cost) : `≤ ${cost}`;
 
+  const modelName = (m: GenjutsuModel) => (m === "max" ? t.studio.modelMax : t.studio.modelStandard);
+  const modelTagline = (m: GenjutsuModel) => (m === "max" ? t.studio.modelMaxTagline : t.studio.modelStandardTagline);
+  const rate = (r: number) => fmt(t.studio.perSecond, { rate: r.toLocaleString(locale) });
+  const modelOptions = (close: () => void) =>
+    GENJUTSU_MODELS.map((m) => (
+      <Option
+        key={m}
+        selected={model === m}
+        onSelect={() => {
+          setModel(m);
+          close();
+        }}
+        icon={MODEL_ICON[m]}
+        title={modelName(m)}
+        badge={m === "standard" ? t.studio.modelNew : undefined}
+        detail={
+          <>
+            <Tag>{fmt(t.studio.upTo, { res: "1080p" })}</Tag>
+            <Tag>
+              {fmt(t.studio.clipRange, {
+                min: Math.ceil(GENJUTSU_MIN_SECONDS),
+                max: SWAP_ENGINES.genjutsu.maxSeconds,
+              })}
+            </Tag>
+            <span className="basis-full">{modelTagline(m)}</span>
+          </>
+        }
+        aside={rate(swapMethodRate({ model: m, quality }, fidelity))}
+      />
+    ));
+
+  // Durées proposées : quelques passages courts, ou tout le clip.
+  const lengthOptions = video
+    ? [
+        ...lengths.map((l) => ({ value: l as number | null, label: `${l} s` })),
+        {
+          value: null,
+          // Clip plus long que le maximum : c'est un passage, pas le clip entier.
+          label:
+            durationKnown && video.seconds! > engineMax
+              ? `${engineMax} s`
+              : fmt(t.studio.lengthAll, { seconds: wholeSeconds }),
+        },
+      ].map((o) => ({ ...o, on: o.value === null ? !length || length >= engineMax : length === o.value }))
+    : [];
+
   const composer = (
     <form
       onSubmit={(e) => {
@@ -429,35 +490,19 @@ export function Studio({
       }}
       className="composer overflow-hidden"
     >
-      <div className="px-4 pt-4">
-        <h1 className="mb-3 px-1 text-base font-semibold">{t.studio.createTitle}</h1>
-        <div role="tablist" className="relative grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface-2/60 p-1">
-          {/* Fond de l'onglet actif : il glisse d'un onglet à l'autre. */}
-          <span
-            aria-hidden
-            className="absolute inset-y-1 left-1 w-[calc(50%-0.375rem)] rounded-lg border border-line-strong thumb transition-transform duration-300 [transition-timing-function:var(--ease-out)]"
-            style={{ transform: mode === "transfer" ? "translateX(calc(100% + 0.25rem))" : undefined }}
-          />
-          {(["replace", "transfer"] as const).map((m) => {
-            const Icon = m === "replace" ? Replace : Move;
-            return (
-              <button
-                key={m}
-                type="button"
-                role="tab"
-                aria-selected={mode === m}
-                title={m === "replace" ? t.studio.modeReplaceHint : t.studio.modeTransferHint}
-                onClick={() => setMode(m)}
-                className={`relative flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${
-                  mode === m ? "text-text" : "text-muted hover:text-text"
-                }`}
-              >
-                <Icon className={`size-4 shrink-0 transition-colors ${mode === m ? "text-accent-light" : ""}`} />
-                <span className="truncate">{m === "replace" ? t.studio.modeReplace : t.studio.modeTransfer}</span>
-              </button>
-            );
-          })}
-        </div>
+      <div className="space-y-3 px-4 pt-4">
+        <h1 className="sr-only">{t.studio.createTitle}</h1>
+        <ModelCard name={modelName(model)} tagline={modelTagline(model)} changeLabel={t.studio.changeModel}>
+          {modelOptions}
+        </ModelCard>
+        <ModeTabs
+          value={mode}
+          onChange={setMode}
+          labels={{
+            replace: { title: t.studio.modeReplace, hint: t.studio.modeReplaceHint },
+            transfer: { title: t.studio.modeTransfer, hint: t.studio.modeTransferHint },
+          }}
+        />
       </div>
       <SwapInput
         userId={userId}
@@ -533,81 +578,74 @@ export function Studio({
         </div>
       )}
 
-      {/* Réglages : chaque choix affiche son tarif, qui suit l'autre réglage. */}
+      {/* Réglages : une ligne par choix, son menu s'ouvre à côté du panneau ;
+          chaque option affiche son tarif, qui suit les autres réglages. */}
       <div className="space-y-2 px-4 pt-2 pb-4">
-        <Segmented
-          value={fidelity ? "fidelity" : "standard"}
-          onChange={(v) => setFidelity(v === "fidelity")}
-          options={[
-            {
-              value: "standard",
-              label: t.studio.methodStandard,
-              detail: `${swapMethodRate(hd).toLocaleString(locale)} cr/s`,
-              title: fmt(t.studio.methodStandardHint, { rate: swapMethodRate(hd).toLocaleString(locale) }),
-            },
-            {
-              value: "fidelity",
-              label: t.studio.methodFidelity,
-              detail: `${swapMethodRate(hd, true).toLocaleString(locale)} cr/s`,
-              title: fmt(t.studio.methodFidelityHint, { rate: swapMethodRate(hd, true).toLocaleString(locale) }),
-            },
-          ]}
-        />
-        <Segmented
-          value={hd ? "hd" : "sd"}
-          onChange={(v) => setHd(v === "hd")}
-          options={[
-            {
-              value: "sd",
-              label: t.swapEngines.genjutsu.label,
-              detail: `${swapMethodRate(false, fidelity).toLocaleString(locale)} cr/s`,
-              title: fmt(t.swapEngines.genjutsu.hint, {
-                max: SWAP_ENGINES.genjutsu.maxSeconds,
-                rate: swapMethodRate(false, fidelity).toLocaleString(locale),
-              }),
-            },
-            {
-              value: "hd",
-              label: t.swapEngines.genjutsuHd.label,
-              detail: `${swapMethodRate(true, fidelity).toLocaleString(locale)} cr/s`,
-              title: fmt(t.swapEngines.genjutsuHd.hint, {
-                max: SWAP_ENGINES.genjutsu.maxSeconds,
-                rate: swapMethodRate(true, fidelity).toLocaleString(locale),
-              }),
-            },
-          ]}
-        />
+        <SettingRow
+          label={t.studio.modelLabel}
+          value={
+            <>
+              {modelName(model)}
+              {model === "standard" && <ModelBadge>{t.studio.modelNew}</ModelBadge>}
+            </>
+          }
+        >
+          {modelOptions}
+        </SettingRow>
+        <SettingRow label={t.studio.qualityLabel} value={quality}>
+          {(close) =>
+            SWAP_QUALITIES.map((q) => (
+              <Option
+                key={q}
+                selected={quality === q}
+                onSelect={() => {
+                  setQuality(q);
+                  close();
+                }}
+                icon={MonitorPlay}
+                title={q}
+                aside={rate(swapMethodRate({ model, quality: q }, fidelity))}
+              />
+            ))
+          }
+        </SettingRow>
+        <SettingRow label={t.studio.methodLabel} value={fidelity ? t.studio.methodFidelity : t.studio.methodStandard}>
+          {(close) =>
+            ([false, true] as const).map((f) => (
+              <Option
+                key={String(f)}
+                selected={fidelity === f}
+                onSelect={() => {
+                  setFidelity(f);
+                  close();
+                }}
+                icon={f ? Layers : WandSparkles}
+                title={f ? t.studio.methodFidelity : t.studio.methodStandard}
+                detail={fmt(f ? t.studio.methodFidelityHint : t.studio.methodStandardHint, {
+                  rate: swapMethodRate(settings, f).toLocaleString(locale),
+                })}
+                aside={rate(swapMethodRate(settings, f))}
+              />
+            ))
+          }
+        </SettingRow>
         {video && lengths.length > 0 && (
-          <div className="flex flex-wrap gap-1 pt-1">
-            {[
-              ...lengths.map((l) => ({ value: l as number | null, label: `${l} s` })),
-              {
-                value: null,
-                // Clip plus long que le maximum : c'est un passage, pas le clip entier.
-                label:
-                  durationKnown && video.seconds! > engineMax
-                    ? `${engineMax} s`
-                    : fmt(t.studio.lengthAll, { seconds: wholeSeconds }),
-              },
-            ].map((o) => {
-              const on = o.value === null ? !length || length >= engineMax : length === o.value;
-              return (
-                <button
+          <SettingRow label={t.studio.length} value={lengthOptions.find((o) => o.on)?.label}>
+            {(close) =>
+              lengthOptions.map((o) => (
+                <Option
                   key={o.label}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setLength(o.value)}
-                  className={`rounded-lg border px-2.5 py-1 text-xs font-medium tabular-nums transition-colors ${
-                    on
-                      ? "border-accent bg-accent-soft text-text"
-                      : "border-line bg-surface-2/60 text-muted hover:border-line-strong hover:text-text"
-                  }`}
-                >
-                  {o.label}
-                </button>
-              );
-            })}
-          </div>
+                  selected={o.on}
+                  onSelect={() => {
+                    setLength(o.value);
+                    close();
+                  }}
+                  icon={o.value === null ? Scissors : Clock}
+                  title={o.label}
+                />
+              ))
+            }
+          </SettingRow>
         )}
       </div>
 
@@ -654,7 +692,8 @@ export function Studio({
   const pastItems = history.filter((item) => item.id !== shownId);
 
   // Deux colonnes : la création à gauche (fixe au défilement), le rendu en
-  // cours puis l'historique à droite. Sur mobile, l'une sous l'autre.
+  // cours puis les onglets à droite (historique, exemples, démo). Sur
+  // mobile, l'une sous l'autre.
   return (
     <>
     <VideoWall />
@@ -664,7 +703,6 @@ export function Studio({
       </aside>
 
       <section ref={resultEnd} className="min-w-0 scroll-mt-24 space-y-3">
-        <GenjutsuBanner />
         {started && (
           <Result
             phase={phase}
@@ -676,58 +714,30 @@ export function Studio({
             onCancel={cancel}
           />
         )}
-        {pastItems.length > 0 ? <HistoryList items={pastItems} /> : !started && <HistoryEmpty />}
+        <div className="panel animate-fade-up p-3 sm:p-4">
+          <PanelTabs
+            value={tab}
+            onChange={setTab}
+            tabs={[
+              { value: "history", label: t.studio.tabHistory, icon: History },
+              { value: "examples", label: t.studio.tabExamples, icon: Film },
+              { value: "how", label: t.studio.tabHow, icon: CirclePlay },
+            ]}
+          />
+          <div className="mt-4">
+            {tab === "history" &&
+              (pastItems.length > 0 ? (
+                <HistoryList items={pastItems} />
+              ) : (
+                <p className="py-16 text-center text-sm text-muted">{t.studio.historyNone}</p>
+              ))}
+            {tab === "examples" && <ExamplesPanel />}
+            {tab === "how" && <HistoryEmpty />}
+          </div>
+        </div>
       </section>
     </div>
     </>
-  );
-}
-
-// Choix entre quelques options, chacune avec son tarif ; le fond de l'option
-// choisie glisse de l'une à l'autre.
-function Segmented<T extends string>({
-  value,
-  onChange,
-  options,
-}: {
-  value: T;
-  onChange: (value: T) => void;
-  options: { value: T; label: string; detail: string; title?: string }[];
-}) {
-  const index = Math.max(0, options.findIndex((o) => o.value === value));
-  return (
-    <div
-      role="radiogroup"
-      className="relative grid rounded-xl border border-line bg-surface-2/60 p-1"
-      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
-    >
-      <span
-        aria-hidden
-        className="absolute inset-y-1 left-1 rounded-lg border border-line-strong thumb transition-transform duration-300 [transition-timing-function:var(--ease-out)]"
-        style={{ width: `calc((100% - 0.5rem) / ${options.length})`, transform: `translateX(${index * 100}%)` }}
-      />
-      {options.map((o) => {
-        const on = o.value === value;
-        return (
-          <button
-            key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            title={o.title}
-            onClick={() => onChange(o.value)}
-            className={`relative flex min-w-0 flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-left transition-colors sm:flex-row sm:items-baseline sm:justify-between sm:gap-2 ${
-              on ? "text-text" : "text-muted hover:text-text"
-            }`}
-          >
-            <span className="truncate text-sm font-semibold">{o.label}</span>
-            <span className={`shrink-0 text-xs tabular-nums transition-colors ${on ? "text-accent-light" : "text-faint"}`}>
-              {o.detail}
-            </span>
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
@@ -848,7 +858,7 @@ function Result({
               const cost = swapShotCredits(
                 part.seconds,
                 phase.view.engine,
-                phase.view.hd,
+                phase.view.settings,
                 phase.view.face,
               );
               return (

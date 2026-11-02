@@ -2,6 +2,8 @@
 // un visiteur prépare sa vidéo sans compte, se connecte au moment de
 // générer, et la retrouve telle quelle ; idem au retour de la page Crédits.
 
+import type { GenjutsuModel, SwapQuality } from "@/lib/generation";
+
 export type DraftFile = { file: File; path?: string; seconds?: number; start?: number };
 
 export type StudioDraft = {
@@ -9,7 +11,10 @@ export type StudioDraft = {
   characters: { image: DraftFile; extras: DraftFile[]; target: string }[];
   decor: DraftFile | null;
   mode: "replace" | "transfer";
-  hd: boolean;
+  // Anciens brouillons : `hd` seul (1080p ou 720p, Genjutsu Max).
+  hd?: boolean;
+  model?: GenjutsuModel;
+  quality?: SwapQuality;
   fidelity: boolean;
   instructions: string;
   length: number | null;

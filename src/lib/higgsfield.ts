@@ -1,4 +1,5 @@
 import "server-only";
+import type { GenjutsuModel, SwapQuality } from "@/lib/generation";
 import type { PredictionState } from "@/lib/predictions";
 
 // Higgsfield : Genjutsu, le moteur « qualité maximale » du remplacement de
@@ -18,6 +19,16 @@ const GENJUTSU_SWAP_ENDPOINT = "higgsfiled/genjutsu/object-swap/v1.0";
 // seulement quand un décor est demandé : sans décor, Object Swap préserve
 // mieux le clip d'origine. Testé le 2026-09-28.
 const GENJUTSU_TRANSFER_ENDPOINT = "higgsfiled/genjutsu/motion-transfer/v1.0";
+// Genjutsu Light (affiché « Genjutsu » sur le site, voir GENJUTSU_RATES) :
+// mêmes paramètres, environ 7 fois moins cher, 15 s au plus par requête.
+// Identifiant documenté avec l'orthographe correcte, cette fois.
+const GENJUTSU_LIGHT_SWAP_ENDPOINT = "higgsfield/genjutsu-light/object-swap/v1.0";
+const GENJUTSU_LIGHT_TRANSFER_ENDPOINT = "higgsfield/genjutsu-light/motion-transfer/v1.0";
+
+function genjutsuEndpoint(model: GenjutsuModel, transfer: boolean) {
+  if (model === "standard") return transfer ? GENJUTSU_LIGHT_TRANSFER_ENDPOINT : GENJUTSU_LIGHT_SWAP_ENDPOINT;
+  return transfer ? GENJUTSU_TRANSFER_ENDPOINT : GENJUTSU_SWAP_ENDPOINT;
+}
 
 // HF_CREDENTIALS : "identifiant:secret" de la clé (console.higgsfield.ai).
 export function higgsfieldEnabled() {
@@ -208,12 +219,16 @@ export async function createGenjutsuSwap(input: {
   // planche est dans `characters` (même ordre) ; décor et consignes
   // attendent la passe des personnages.
   mannequins?: { figure: MannequinFigure; color: MannequinColor }[];
-  hd?: boolean;
+  // Genjutsu (Light chez Higgsfield) ou Genjutsu Max ; Max par défaut.
+  model?: GenjutsuModel;
+  quality?: SwapQuality;
   webhookUrl?: string;
 }) {
   const hook = input.webhookUrl ? `?hf_webhook=${encodeURIComponent(input.webhookUrl)}` : "";
+  const model = input.model ?? "max";
+  const resolution = input.quality ?? "720p";
   if (input.mannequins) {
-    const response = await fetch(`${BASE_URL}/${GENJUTSU_SWAP_ENDPOINT}${hook}`, {
+    const response = await fetch(`${BASE_URL}/${genjutsuEndpoint(model, false)}${hook}`, {
       method: "POST",
       headers: headers(),
       signal: AbortSignal.timeout(60_000),
@@ -224,7 +239,7 @@ export async function createGenjutsuSwap(input: {
         // Une planche par mannequin, dans l'ordre des personnes.
         image_urls: input.characters.map((c) => c.imageUrls[0]).filter(Boolean),
         video_url: input.videoUrl,
-        resolution: input.hd ? "1080p" : "720p",
+        resolution,
       }),
     });
     if (!response.ok) throw await failure("création", response);
@@ -232,7 +247,7 @@ export async function createGenjutsuSwap(input: {
     if (!request_id) throw new Error("Higgsfield création : réponse sans identifiant");
     return `hf:swap:${request_id}`;
   }
-  const endpoint = input.decorUrl ? GENJUTSU_TRANSFER_ENDPOINT : GENJUTSU_SWAP_ENDPOINT;
+  const endpoint = genjutsuEndpoint(model, Boolean(input.decorUrl));
   // 8 images au plus ; le décor prend la dernière place (le prompt le désigne
   // comme la dernière image).
   const characterUrls = input.characters
@@ -246,7 +261,7 @@ export async function createGenjutsuSwap(input: {
       prompt: genjutsuPrompt(input.characters, Boolean(input.decorUrl), input.instructions),
       video_url: input.videoUrl,
       image_urls: input.decorUrl ? [...characterUrls, input.decorUrl] : characterUrls,
-      resolution: input.hd ? "1080p" : "720p",
+      resolution,
     }),
   });
   if (!response.ok) throw await failure("création", response);

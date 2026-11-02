@@ -146,7 +146,7 @@ export const fr = {
       },
     ],
     pricingTitle: "Des crédits, à ton rythme",
-    pricingText: "{max} crédits la seconde en 720p, {hd} en 1080p, le double en haute fidélité. Plus {sheet} crédits par personnage pour sa fiche.",
+    pricingText: "Genjutsu : {std} crédits la seconde en 720p. Genjutsu Max : {max} en 720p, {hd} en 1080p, le double en haute fidélité. Plus {sheet} crédits par personnage pour sa fiche.",
     popular: "Populaire",
     bestValue: "Meilleure offre",
     perCredit: "le crédit",
@@ -215,6 +215,26 @@ export const fr = {
   studio: {
     createTitle: "Créer une vidéo",
     poweredByLabel: "Propulsé par",
+    modelLabel: "Modèle",
+    qualityLabel: "Qualité",
+    methodLabel: "Méthode",
+    changeModel: "Changer",
+    modelStandard: "Genjutsu",
+    modelMax: "Genjutsu Max",
+    modelStandardTagline: "Rapide et économique",
+    modelMaxTagline: "La qualité maximale",
+    modelNew: "Nouveau",
+    upTo: "jusqu'à {res}",
+    clipRange: "{min}–{max} s",
+    perSecond: "{rate} cr/s",
+    tabHistory: "Historique",
+    tabExamples: "Exemples",
+    tabHow: "Comment ça marche",
+    historyNone: "Tes vidéos apparaîtront ici.",
+    examples: {
+      title: "Une vidéo, mille versions",
+      text: "Garde les gestes, la caméra et le son de ton clip, et change qui le joue : tes personnages, tes produits, tes tenues.",
+    },
     demo: {
       title: "Comment ça marche",
       steps: [
@@ -366,16 +386,6 @@ export const fr = {
     ],
   },
 
-  swapEngines: {
-    genjutsu: {
-      label: "720p",
-      hint: "{rate} crédits/s · jusqu'à {max} s, coupes comprises, séquences refaisables",
-    },
-    genjutsuHd: {
-      label: "1080p",
-      hint: "Full HD · {rate} crédits/s · jusqu'à {max} s",
-    },
-  },
 
   videos: {
     eyebrow: "Bibliothèque",
@@ -548,7 +558,8 @@ export const fr = {
     billedYearly: "facturé {price} par an",
     yearlySave: "Tu économises {amount} par an",
     expiring: "Dont {n} crédits d'abonnement, à utiliser avant le {date}",
-    eqSeconds: "= {n} s de vidéo en 720p",
+    eqSeconds: "= {n} s avec Genjutsu Max en 720p",
+    eqStandard: "= {n} s avec Genjutsu en 720p",
     eqClips: "≈ {n} vidéos de {s} s",
     eqFidelity: "= {n} s en haute fidélité",
     packTag: "Sans engagement",
