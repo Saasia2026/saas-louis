@@ -23,14 +23,13 @@ function Clip({ name, className = "" }: { name: string; className?: string }) {
     <video
       src={`/examples/${name}.mp4`}
       poster={`/examples/${name}.jpg`}
-      autoPlay
       muted
       loop
       playsInline
       webkit-playsinline=""
       disablePictureInPicture
       disableRemotePlayback
-      preload="metadata"
+      preload="none"
       aria-hidden
       className={`pointer-events-none size-full object-cover ${className}`}
     />

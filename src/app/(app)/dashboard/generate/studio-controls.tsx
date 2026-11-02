@@ -213,14 +213,13 @@ export function ModelCard({
       <video
         src="/examples/genjutsu-salle.mp4"
         poster="/examples/genjutsu-salle.jpg"
-        autoPlay
         muted
         loop
         playsInline
         webkit-playsinline=""
         disablePictureInPicture
         disableRemotePlayback
-        preload="metadata"
+        preload="none"
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
       />
