@@ -4,18 +4,40 @@ import { useRef } from "react";
 import { usePauseWhenHidden } from "@/app/pause-hidden";
 import { useI18n } from "@/i18n/provider";
 
-// Rendus Genjutsu montrés dans l'onglet Exemples (public/examples).
-const EXAMPLES = [
-  "genjutsu-cage",
-  "genjutsu-danse",
-  "genjutsu-dunk",
-  "genjutsu-bras-de-fer",
-  "genjutsu-diable",
-  "genjutsu-camion",
-  "genjutsu-lincoln",
-  "genjutsu-panier",
-  "mma-apres",
-  "micro-apres",
+// Rendus montrés dans l'onglet Exemples (public/examples), avec leur format :
+// d'abord la galerie (540 px, sans son), puis les premiers rendus Genjutsu.
+const EXAMPLES: { name: string; ratio: string }[] = [
+  { name: "gallery/g-01", ratio: "9/16" },
+  { name: "gallery/g-02", ratio: "3/4" },
+  { name: "gallery/g-03", ratio: "9/16" },
+  { name: "gallery/g-04", ratio: "9/16" },
+  { name: "gallery/g-05", ratio: "9/16" },
+  { name: "gallery/g-06", ratio: "9/16" },
+  { name: "gallery/g-07", ratio: "9/16" },
+  { name: "gallery/g-08", ratio: "9/16" },
+  { name: "gallery/g-09", ratio: "9/16" },
+  { name: "gallery/g-10", ratio: "9/16" },
+  { name: "gallery/g-11", ratio: "9/16" },
+  { name: "gallery/g-12", ratio: "9/16" },
+  { name: "gallery/g-13", ratio: "9/16" },
+  { name: "gallery/g-14", ratio: "9/16" },
+  { name: "gallery/g-15", ratio: "9/16" },
+  { name: "gallery/g-16", ratio: "9/16" },
+  { name: "gallery/g-17", ratio: "9/16" },
+  { name: "gallery/g-18", ratio: "3/4" },
+  { name: "gallery/g-19", ratio: "9/16" },
+  { name: "gallery/g-20", ratio: "9/16" },
+  { name: "gallery/g-21", ratio: "9/16" },
+  { name: "genjutsu-cage", ratio: "9/16" },
+  { name: "genjutsu-danse", ratio: "9/16" },
+  { name: "genjutsu-dunk", ratio: "9/16" },
+  { name: "genjutsu-bras-de-fer", ratio: "1/1" },
+  { name: "genjutsu-diable", ratio: "9/16" },
+  { name: "genjutsu-camion", ratio: "4/3" },
+  { name: "genjutsu-lincoln", ratio: "9/16" },
+  { name: "genjutsu-panier", ratio: "3/4" },
+  { name: "mma-apres", ratio: "9/16" },
+  { name: "micro-apres", ratio: "9/16" },
 ];
 
 function Clip({ name, className = "" }: { name: string; className?: string }) {
@@ -56,12 +78,11 @@ export function ExamplesPanel() {
         </div>
       </div>
       <div className="columns-2 gap-3 sm:columns-3 [&>*]:mb-3">
-        {EXAMPLES.map((name, i) => (
+        {EXAMPLES.map(({ name, ratio }) => (
           <div
             key={name}
-            className={`group overflow-hidden rounded-xl border border-line bg-black bg-clip-padding ${
-              i % 3 === 0 ? "aspect-[3/4]" : "aspect-[9/16]"
-            } break-inside-avoid`}
+            style={{ aspectRatio: ratio }}
+            className="group break-inside-avoid overflow-hidden rounded-xl border border-line bg-black bg-clip-padding"
           >
             <Clip name={name} className="transition-transform duration-500 group-hover:scale-[1.04]" />
           </div>
