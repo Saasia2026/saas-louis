@@ -15,9 +15,9 @@ import {
   GENJUTSU_MIN_SECONDS,
   GENJUTSU_MODELS,
   SWAP_ENGINES,
+  GENJUTSU_MAX_IMAGES,
   SWAP_MAX_CHARACTERS,
   SWAP_QUALITIES,
-  photosPerCharacter,
   swapCredits,
   swapMethodRate,
   swapShotCredits,
@@ -34,7 +34,7 @@ import { ExamplesPanel } from "./examples-panel";
 import { HistoryEmpty, HistoryList } from "./history-list";
 import { cancelSwap, redoSwapShot, startSwap } from "./swap-actions";
 import { MODEL_ICON, ModelBadge, ModelCard, ModeTabs, Option, PanelTabs, SettingRow, Tag } from "./studio-controls";
-import { SwapInput, clampedStart, uploadSwapFile, type SwapCharacter, type SwapFile } from "./swap-input";
+import { SwapInput, clampedStart, uploadSwapFile, type SwapFile } from "./swap-input";
 
 const POLL_INTERVAL_MS = 5_000;
 // Durée annoncée d'un rendu. Les séquences se rendent en même temps (quelques
@@ -103,11 +103,11 @@ export function Studio({
   // Projet repris après connexion : ses fichiers partent dans le stockage.
   const [restoring, setRestoring] = useState(false);
 
-  // Clip filmé et image de chaque personnage, déjà déposés.
+  // Clip filmé et images (personnages, visage, profil…), déjà déposés, en
+  // vrac : le prompt les cite (@image1…) et le serveur en tire qui remplace
+  // qui (voir planSwapCast).
   const [video, setVideo] = useState<SwapFile | null>(null);
-  const [characters, setCharacters] = useState<SwapCharacter[]>([
-    { image: null, extras: [], target: "" },
-  ]);
+  const [images, setImages] = useState<SwapFile[]>([]);
   // Genjutsu ou Genjutsu Max, et qualité du rendu.
   const [model, setModel] = useState<GenjutsuModel>(DEFAULT_GENJUTSU_MODEL);
   const [quality, setQuality] = useState<SwapQuality>(DEFAULT_SWAP_QUALITY);
@@ -120,9 +120,9 @@ export function Studio({
   // Changement de décor : photo du lieu, facultative. Sans photo, seuls les
   // personnages et les cases remplies comptent, le décor du clip est gardé.
   const [decorPhoto, setDecorPhoto] = useState<SwapFile | null>(null);
-  // Consignes libres à l'IA, facultatives : demandes en plus du
-  // remplacement, reformulées côté serveur (voir polishSwapInstructions).
-  const [instructions, setInstructions] = useState("");
+  // Le prompt unique : qui remplace qui et toute autre demande, reformulé
+  // côté serveur (voir planSwapCast).
+  const [prompt, setPrompt] = useState("");
   // Plan prêt choisi : son clip tient lieu de vidéo, ses personnes fixent
   // qui chaque personnage remplace.
   const [preset, setPreset] = useState<StudioPreset | null>(null);
@@ -130,15 +130,15 @@ export function Studio({
   // personnages.
   const engine: SwapEngine = "genjutsu";
   const available = engines.includes(engine);
-  const several = characters.length > 1;
-  const maxCharacters = SWAP_MAX_CHARACTERS;
-  const availablePresets = presets.filter((p) => p.people.length <= maxCharacters);
-  // Photos par personnage : 8 au plus en tout.
-  const maxPhotos = photosPerCharacter(characters.length);
-  const imagesReady = characters.every((c) => c.image);
-  // Seul, le personnage remplace la personne principale ; à plusieurs, il
-  // faut dire qui chacun remplace.
-  const targetsReady = !several || characters.every((c) => c.target.trim());
+  const availablePresets = presets.filter((p) => p.people.length <= SWAP_MAX_CHARACTERS);
+  // 8 images au plus (limite de Higgsfield) ; plan prêt : une par personne.
+  const maxImages = preset ? preset.people.length : GENJUTSU_MAX_IMAGES;
+  const imagesReady = preset ? images.length >= preset.people.length : images.length > 0;
+  // Personnages facturés (une fiche chacun) : connus d'avance pour un plan
+  // prêt ; sinon au plus un par image, trois au plus. Le serveur débite la
+  // distribution retenue, jamais plus que ce prix affiché.
+  const castCount = preset ? preset.people.length : Math.min(SWAP_MAX_CHARACTERS, Math.max(1, images.length));
+  const castKnown = Boolean(preset) || images.length <= 1;
   // Transfert : la photo du nouveau lieu est ce qui le distingue.
   const decorReady = mode === "replace" || Boolean(decorPhoto);
   // Durée du passage choisie ; rien = tout le clip, dans la limite du moteur.
@@ -166,13 +166,13 @@ export function Studio({
   const seconds = durationKnown
     ? Math.max(1, Math.round(clipSeconds))
     : maxSeconds;
-  const cost = swapCredits(seconds, engine, undefined, characters.length, settings, false, fidelity);
+  const cost = swapCredits(seconds, engine, undefined, castCount, settings, false, fidelity);
   // Durée illisible dans le navigateur : le serveur mesure le clip et refuse
   // lui-même faute de crédits ; on ne bloque ici que sous le prix le plus bas.
   const gate = durationKnown
     ? cost
-    : swapCredits(1, engine, undefined, characters.length, settings, false, fidelity);
-  const ready = Boolean(video) && imagesReady && targetsReady && decorReady;
+    : swapCredits(1, engine, undefined, castCount, settings, false, fidelity);
+  const ready = Boolean(video) && imagesReady && decorReady;
   // Connecté mais à court de crédits : « Générer » mène aux packs.
   const short = !guest && ready && credits < gate && !payAsYouGo;
   // Paiement à l'usage : ce que la carte paiera, annoncé avant de lancer.
@@ -234,20 +234,16 @@ export function Studio({
       seconds: f.seconds,
       start: f.start,
     });
-    if (!video?.file || characters.some((c) => !c.image?.file)) return;
+    if (!video?.file || images.some((f) => !f.file)) return;
     await saveDraft({
       video: draftFile(video),
-      characters: characters.map((c) => ({
-        image: draftFile(c.image!),
-        extras: c.extras.filter((f) => f.file).map(draftFile),
-        target: c.target,
-      })),
+      images: images.map(draftFile),
       decor: decorPhoto?.file ? draftFile(decorPhoto) : null,
       mode,
       model,
       quality,
       fidelity,
-      instructions,
+      instructions: prompt,
       length,
     });
   }
@@ -268,34 +264,31 @@ export function Studio({
           return { path, previewUrl: URL.createObjectURL(d.file), seconds: d.seconds, start: d.start, file: d.file };
         };
         const restored = await restore(draft.video);
-        const chars = await Promise.all(
-          draft.characters.map(async (c) => ({
-            image: await restore(c.image),
-            extras: (await Promise.all(c.extras.map(restore))).filter((f): f is SwapFile => Boolean(f)),
-            target: c.target,
-          })),
-        );
+        // Anciens brouillons : images rangées personnage par personnage.
+        const draftImages =
+          draft.images ?? draft.characters?.flatMap((c) => [c.image, ...c.extras]) ?? [];
+        const imgs = await Promise.all(draftImages.slice(0, GENJUTSU_MAX_IMAGES).map(restore));
         const decor = draft.decor ? await restore(draft.decor) : null;
-        if (cancelled || !restored || chars.some((c) => !c.image)) return;
+        if (cancelled || !restored || imgs.some((f) => !f)) return;
+        const restoredImages = imgs as SwapFile[];
         setVideo(restored);
-        setCharacters(chars);
+        setImages(restoredImages);
         setDecorPhoto(decor);
         setMode(draft.mode);
         setModel(draft.model ?? "max");
         setQuality(draft.quality ?? (draft.hd ? "1080p" : DEFAULT_SWAP_QUALITY));
         setFidelity(draft.fidelity);
-        setInstructions(draft.instructions);
+        setPrompt(draft.instructions);
         setLength(draft.length);
         // Fichiers désormais dans le stockage : un prochain retour ne les
         // renvoie pas.
         await saveDraft({
           ...draft,
           video: { ...draft.video, path: restored.path },
-          characters: draft.characters.map((c, i) => ({
-            ...c,
-            image: { ...c.image, path: chars[i].image!.path },
-            extras: c.extras.map((e, j) => ({ ...e, path: chars[i].extras[j]?.path })),
-          })),
+          characters: undefined,
+          images: draftImages
+            .slice(0, GENJUTSU_MAX_IMAGES)
+            .map((d, i) => ({ ...d, path: restoredImages[i].path })),
           decor: draft.decor && decor ? { ...draft.decor, path: decor.path } : null,
         });
       } finally {
@@ -315,14 +308,8 @@ export function Studio({
     setPreset(p);
     setVideo({ path: p.path, previewUrl: p.previewUrl, seconds: p.seconds, start: 0 });
     setLength(null);
-    // Les photos déjà déposées restent, case par case.
-    setCharacters((list) =>
-      p.people.map((person, i) => ({
-        image: list[i]?.image ?? null,
-        extras: list[i]?.extras ?? [],
-        target: person.target,
-      })),
-    );
+    // Les images déjà déposées restent, une par personne du plan.
+    setImages((list) => list.slice(0, p.people.length));
   }
 
   // À court de crédits : le projet est gardé, direction les packs, avec ce
@@ -352,18 +339,17 @@ export function Studio({
     const res = await startSwap({
       videoPath: video.path,
       presetId: preset?.id,
-      characters: characters.map((c) => ({
-        imagePath: c.image!.path,
-        extraPaths: c.extras.slice(0, maxPhotos - 1).map((f) => f.path),
-        target: c.target.trim() || undefined,
-      })),
+      // Plan prêt : image N pour sa personne N. Sinon les images en vrac.
+      ...(preset
+        ? { characters: images.slice(0, preset.people.length).map((f) => ({ imagePath: f.path })) }
+        : { characters: [], photos: images.map((f) => f.path) }),
       start: clampedStart(video, maxSeconds),
       seconds: maxSeconds,
       model,
       quality,
       vessel: fidelity,
       decorImagePath: mode === "transfer" ? decorPhoto?.path : undefined,
-      instructions: instructions.trim() || undefined,
+      instructions: prompt.trim() || undefined,
     });
     router.refresh();
     if (res.error !== undefined) {
@@ -434,7 +420,7 @@ export function Studio({
 
   // Prix affiché dans le bouton : le plus bas possible, connu une fois le clip
   // découpé (voir swapCredits) ; borne haute si la durée est illisible.
-  const costLabel = durationKnown ? String(cost) : `≤ ${cost}`;
+  const costLabel = durationKnown && castKnown ? String(cost) : `≤ ${cost}`;
 
   const modelName = (m: GenjutsuModel) => (m === "max" ? t.studio.modelMax : t.studio.modelStandard);
   const modelTagline = (m: GenjutsuModel) => (m === "max" ? t.studio.modelMaxTagline : t.studio.modelStandardTagline);
@@ -513,25 +499,20 @@ export function Studio({
           // un plan prêt laisse la place au clip déposé, avec ses cibles.
           if (file?.path !== video?.path) {
             setLength(null);
-            if (preset) {
-              setPreset(null);
-              setCharacters((list) => list.map((c) => ({ ...c, target: "" })));
-            }
+            if (preset) setPreset(null);
           }
         }}
-        characters={characters}
-        onCharacters={setCharacters}
-        maxCharacters={preset ? preset.people.length : maxCharacters}
-        maxPhotos={maxPhotos}
+        images={images}
+        onImages={setImages}
+        maxImages={maxImages}
         presetPeople={preset?.people.map((p) => p.label[locale])}
         maxSeconds={preset ? preset.seconds : maxSeconds}
         decorPhoto={decorPhoto}
         onDecorPhoto={setDecorPhoto}
         showDecor={mode === "transfer"}
         decorTitle={t.studio.decorRequiredTitle}
-        instructions={instructions}
-        onInstructions={setInstructions}
-        showInstructions
+        prompt={prompt}
+        onPrompt={setPrompt}
       />
 
       {availablePresets.length > 0 && (
@@ -651,10 +632,8 @@ export function Studio({
 
       <div className="border-t border-line px-4 pt-3 pb-4">
         {restoring && <p className="mb-3 text-xs text-muted">{t.studio.restoring}</p>}
-        {video && imagesReady && (!targetsReady || short) && (
-          <p className={`mb-3 text-xs ${targetsReady ? "text-danger" : "text-warning"}`}>
-            {!targetsReady ? t.studio.targetsMissing : fmt(t.studio.notEnoughCredits, { n: gate - credits })}
-          </p>
+        {video && imagesReady && short && (
+          <p className="mb-3 text-xs text-danger">{fmt(t.studio.notEnoughCredits, { n: gate - credits })}</p>
         )}
         {byCard && (
           <p className="mb-3 text-xs text-muted">
@@ -708,7 +687,7 @@ export function Studio({
             phase={phase}
             credits={credits}
             sourcePreview={video?.previewUrl}
-            characterPreview={characters[0]?.image?.previewUrl}
+            characterPreview={images[0]?.previewUrl}
             onReset={() => setPhase({ kind: "idle" })}
             onRedo={redo}
             onCancel={cancel}

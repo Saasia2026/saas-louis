@@ -263,9 +263,9 @@ export const fr = {
     decorImage: "Photo du lieu",
     decorHint:
       "Dépose une photo du lieu : la scène est reconstruite dans ce décor. Sans photo, le décor du clip est gardé.",
-    instructions: "Consigne à l'IA",
+    instructions: "Prompt",
     instructionsPlaceholder:
-      "« Transforme la chaise en voiture de sport »…",
+      "Dis ce que tu veux, ex. : « @image1 remplace l'homme en noir » ou « @image1 remplace la danseuse, @image2 le batteur, la chaise devient une voiture de sport ». Cite tes images avec @image1, @image2…",
     targetsMissing: "Dis qui chaque personnage remplace",
     uploading: "Envoi…",
     change: "Changer",
@@ -313,6 +313,10 @@ export const fr = {
     presetPeople: "{n} personnes",
     presetTarget: "Remplace : {who}",
     addPhoto: "Ajouter une photo",
+    addImages: "Ajouter des images",
+    removeVideo: "Retirer la vidéo",
+    expandVideo: "Agrandir la vidéo",
+    imagesLimit: "{max} images au plus",
     removePhoto: "Retirer cette photo",
     incomplete:
       "Vidéo incomplète : {done} séquences remplacées sur {total}. Les autres gardent les images d'origine et leur prix t'a été rendu. Refais-les ci-dessous, ou choisis un autre passage.",

@@ -261,9 +261,9 @@ export const es: Dictionary = {
     decorImage: "Foto del lugar",
     decorHint:
       "Sube una foto del lugar: la escena se reconstruye en ese decorado. Sin foto, se conserva el decorado del clip.",
-    instructions: "Instrucción a la IA",
+    instructions: "Prompt",
     instructionsPlaceholder:
-      "«Convierte la silla en un coche deportivo»…",
+      "Di lo que quieres, p. ej.: «@image1 reemplaza al hombre de negro» o «@image1 reemplaza a la bailarina, @image2 al baterista, la silla se convierte en un deportivo». Menciona tus imágenes con @image1, @image2…",
     targetsMissing: "Indica a quién reemplaza cada personaje",
     uploading: "Subiendo…",
     change: "Cambiar",
@@ -311,6 +311,10 @@ export const es: Dictionary = {
     presetPeople: "{n} personas",
     presetTarget: "Reemplaza a: {who}",
     addPhoto: "Añadir una foto",
+    addImages: "Añadir imágenes",
+    removeVideo: "Quitar el vídeo",
+    expandVideo: "Ampliar el vídeo",
+    imagesLimit: "{max} imágenes como máximo",
     removePhoto: "Quitar esta foto",
     incomplete:
       "Vídeo incompleto: {done} de {total} secuencias reemplazadas. Las demás conservan las imágenes originales y te hemos devuelto su precio. Rehazlas abajo o elige otro fragmento.",

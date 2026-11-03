@@ -8,7 +8,9 @@ export type DraftFile = { file: File; path?: string; seconds?: number; start?: n
 
 export type StudioDraft = {
   video: DraftFile;
-  characters: { image: DraftFile; extras: DraftFile[]; target: string }[];
+  images?: DraftFile[];
+  // Anciens brouillons : images rangées personnage par personnage.
+  characters?: { image: DraftFile; extras: DraftFile[]; target: string }[];
   decor: DraftFile | null;
   mode: "replace" | "transfer";
   // Anciens brouillons : `hd` seul (1080p ou 720p, Genjutsu Max).

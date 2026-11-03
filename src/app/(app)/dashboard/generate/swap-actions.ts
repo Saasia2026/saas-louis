@@ -7,6 +7,7 @@ import {
   SWAP_ENGINES,
   SWAP_INPUTS_BUCKET,
   SWAP_MAX_CHARACTERS,
+  GENJUTSU_MAX_IMAGES,
   GENJUTSU_MIN_SECONDS,
   DEFAULT_GENJUTSU_MODEL,
   DEFAULT_SWAP_QUALITY,
@@ -123,6 +124,9 @@ export async function startSwap(input: {
   // Chaque personnage, ses autres photos (visage, profil…) et qui il
   // remplace (facultatif s'il est seul).
   characters: { imagePath: string; extraPaths?: string[]; target?: string }[];
+  // Images en vrac du prompt unique (@image1 = la première…), à la place de
+  // `characters` : la distribution vient du prompt (voir planSwapCast).
+  photos?: string[];
   // Plan prêt (voir presets.ts) : son clip tient lieu de videoPath, et qui
   // chaque personnage remplace vient de lui.
   presetId?: string;
@@ -184,11 +188,19 @@ export async function startSwap(input: {
         ? c.target.trim().slice(0, 200)
         : "",
   }));
+  // Images en vrac : un seul groupe, que planSwapCast répartit d'après le
+  // prompt (8 images au plus, la limite de Higgsfield).
+  const flatPhotos =
+    !preset && Array.isArray(input.photos)
+      ? input.photos.filter((p): p is string => typeof p === "string").slice(0, GENJUTSU_MAX_IMAGES)
+      : [];
+  const flat = flatPhotos.length > 0;
+  if (flat) characters = [{ imagePath: flatPhotos[0], extraPaths: flatPhotos.slice(1), target: "" }];
   if (!characters.length || characters.length > SWAP_MAX_CHARACTERS) return { error: errors.swapFiles };
   if (preset && characters.length > preset.people.length) return { error: errors.swapFiles };
   const decorImagePath = typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
   const rawInstructions =
-    typeof input.instructions === "string" ? input.instructions.trim().slice(0, 500) : "";
+    typeof input.instructions === "string" ? input.instructions.trim().slice(0, 1000) : "";
   if (
     (!preset && !own(input.videoPath)) ||
     !characters.every((c) => own(c.imagePath) && c.extraPaths.every(own)) ||
@@ -273,12 +285,14 @@ export async function startSwap(input: {
       ? await planSwapCast({
           frames,
           photoUrls: allPhotoUrls,
-          groups: characters.map((c) => {
-            const count = 1 + c.extraPaths.length;
-            const photos = Array.from({ length: count }, (_, k) => groupStart + k);
-            groupStart += count;
-            return { photos, target: c.target };
-          }),
+          groups: flat
+            ? []
+            : characters.map((c) => {
+                const count = 1 + c.extraPaths.length;
+                const photos = Array.from({ length: count }, (_, k) => groupStart + k);
+                groupStart += count;
+                return { photos, target: c.target };
+              }),
           instructions: rawInstructions,
         }).catch((e) => {
           console.error("planSwapCast", errorMessage(e));
@@ -294,13 +308,20 @@ export async function startSwap(input: {
       target: c.target.trim().slice(0, 200),
     }));
     instructions = plan.instructions.trim().slice(0, 1000) || undefined;
-  } else if (rawInstructions) {
+  } else {
+    // Sans distribution exploitable, des images en vrac font un seul
+    // personnage, avec les photos qu'un personnage peut avoir.
+    if (flat) {
+      characters = [{ ...characters[0], extraPaths: characters[0].extraPaths.slice(0, photosPerCharacter(1) - 1) }];
+    }
     // Consignes libres reformulées en anglais ; en panne, le texte brut sert.
-    instructions =
-      (await polishSwapInstructions(rawInstructions).catch((e) => {
-        console.error("polishSwapInstructions", errorMessage(e));
-        return null;
-      })) ?? rawInstructions;
+    if (rawInstructions) {
+      instructions =
+        (await polishSwapInstructions(rawInstructions).catch((e) => {
+          console.error("polishSwapInstructions", errorMessage(e));
+          return null;
+        })) ?? rawInstructions;
+    }
   }
   const several = characters.length > 1;
   // Plusieurs personnages : il faut savoir qui chacun remplace.

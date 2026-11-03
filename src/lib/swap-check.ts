@@ -83,9 +83,10 @@ export async function planSwapCast(input: {
   // Toutes les photos déposées, personnage par personnage, dans l'ordre.
   photoUrls: string[];
   // Regroupement fait par le créateur : numéros de photo et texte « qui il
-  // remplace » de chaque personnage.
+  // remplace » de chaque personnage. Vide : photos en vrac, regroupées par
+  // Claude d'après le prompt.
   groups: { photos: number[]; target: string }[];
-  // Consignes libres, dans la langue du créateur.
+  // Prompt du créateur, dans sa langue (photos citées @image1…).
   instructions: string;
 }): Promise<SwapCast | null> {
   const response = await new Anthropic().beta.messages.parse({
@@ -98,7 +99,9 @@ export async function planSwapCast(input: {
 
 - "cast": one entry per distinct character to put into the clip, 1 to 3 entries. "photos": the numbers of every photo showing that same character, the best full-body photo first. A photo that shows a different person or character than the rest of its group is a separate entry, even if the creator put it in the same group. "target": a short English visual description of the ONE person in the clip this character replaces, as they appear in the frames (hair, clothing, position), e.g. "the bald fighter in green shorts". Use the creator's texts to decide who replaces whom; if the creator did not say, pick the most prominent person. Two entries never replace the same person.
 - "instructions": the creator's other requested changes that are not about who replaces whom (objects, props, setting…), as short English imperative sentences; "" if none. A replacement that has a photo belongs in "cast", never here; a transformation with no photo (e.g. "turn the referee into a robot") belongs here.
-- Every photo number appears in at most one entry. Do not name real people; describe them visually.`,
+- Every photo number appears in at most one entry. Do not name real people; describe them visually.
+- The creator's text may cite photos as @image1, @image2… (also @img1, @photo1 or "image 1", in any language): @imageN is Photo N. @video or @clip is the clip itself. In "instructions", never cite photo numbers or @tags: describe things visually.
+- When the creator did not group the photos, group them yourself: photos showing the same character go in one entry. Without text, put each distinct character on the most prominent people of the clip, the most prominent first.`,
     messages: [
       {
         role: "user",
@@ -115,12 +118,16 @@ export async function planSwapCast(input: {
           {
             type: "text",
             text: [
-              "Creator's grouping:",
-              ...input.groups.map(
-                (g, i) =>
-                  `- Character ${i + 1}: photos ${g.photos.join(", ")}; who they replace: ${g.target ? JSON.stringify(g.target) : "(not given)"}`,
-              ),
-              `Free instructions: ${input.instructions ? JSON.stringify(input.instructions) : "(none)"}`,
+              ...(input.groups.length
+                ? [
+                    "Creator's grouping:",
+                    ...input.groups.map(
+                      (g, i) =>
+                        `- Character ${i + 1}: photos ${g.photos.join(", ")}; who they replace: ${g.target ? JSON.stringify(g.target) : "(not given)"}`,
+                    ),
+                  ]
+                : ["Creator's grouping: none, the photos were uploaded without grouping."]),
+              `Creator's text: ${input.instructions ? JSON.stringify(input.instructions) : "(none)"}`,
             ].join("\n"),
           },
         ],
@@ -143,7 +150,7 @@ export async function polishSwapInstructions(text: string): Promise<string | nul
     output_config: { effort: "low", format: betaZodOutputFormat(InstructionsSchema) },
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
-    system: `A creator asks an AI video editing model for extra changes to a filmed clip, in their own words and language. Rewrite the request as short, precise English imperative instructions for the video model (for example: "Turn the wooden chair into a black sports car. Keep the green box he holds identical."). Keep every requested change, add nothing, no preamble. Drop anything that is not a video edit (questions, greetings).`,
+    system: `A creator asks an AI video editing model for extra changes to a filmed clip, in their own words and language. Rewrite the request as short, precise English imperative instructions for the video model (for example: "Turn the wooden chair into a black sports car. Keep the green box he holds identical."). Keep every requested change, add nothing, no preamble. Drop anything that is not a video edit (questions, greetings). Tags like @image1 or @video stand for the creator's uploaded photos and clip: write "the character" or "the clip" instead of the tag.`,
     messages: [{ role: "user", content: text }],
   });
   return response.parsed_output?.instructions.trim() || null;

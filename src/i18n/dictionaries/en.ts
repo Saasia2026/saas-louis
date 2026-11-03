@@ -261,9 +261,9 @@ export const en: Dictionary = {
     decorImage: "Photo of the place",
     decorHint:
       "Drop a photo of a place: the scene is rebuilt in that setting. Without a photo, the clip's own setting is kept.",
-    instructions: "AI instruction",
+    instructions: "Prompt",
     instructionsPlaceholder:
-      "“Turn the chair into a sports car”…",
+      "Say what you want, e.g. '@image1 replaces the man in black' or '@image1 replaces the dancer, @image2 the drummer, the chair becomes a sports car'. Mention your images with @image1, @image2…",
     targetsMissing: "Say who each character replaces",
     uploading: "Uploading…",
     change: "Change",
@@ -311,6 +311,10 @@ export const en: Dictionary = {
     presetPeople: "{n} people",
     presetTarget: "Replaces: {who}",
     addPhoto: "Add a photo",
+    addImages: "Add images",
+    removeVideo: "Remove the video",
+    expandVideo: "Expand the video",
+    imagesLimit: "{max} images at most",
     removePhoto: "Remove this photo",
     incomplete:
       "Incomplete video: {done} of {total} sequences replaced. The others keep the original footage and their price was refunded. Redo them below, or pick another part of the clip.",

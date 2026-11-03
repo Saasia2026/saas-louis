@@ -1,7 +1,7 @@
 "use client";
 
-import { Mountain, Plus, Upload, UserRound, Video, X } from "lucide-react";
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { Maximize2, Mountain, Plus, Upload, X } from "lucide-react";
+import { useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -41,10 +41,6 @@ export function readDuration(url: string) {
   });
 }
 
-// Un personnage, ses autres photos (Qualité max : visage, profil…) et qui il
-// remplace dans le clip (facultatif s'il est seul).
-export type SwapCharacter = { image: SwapFile | null; extras: SwapFile[]; target: string };
-
 // Début du passage gardé, ramené dans le clip : la durée gardée change avec
 // le moteur, le début choisi reste tel quel dans l'état.
 export function clampedStart(file: SwapFile, maxSeconds: number) {
@@ -54,90 +50,65 @@ export function clampedStart(file: SwapFile, maxSeconds: number) {
     : start;
 }
 
-// Zone de saisie du studio : le clip filmé à reprendre et l'image de chaque
-// personnage qui prendra la place d'une personne du clip.
+// Nom d'une image dans le prompt : @image1, @image2…
+export const imageTag = (index: number) => `@image${index + 1}`;
+
+// Zone de saisie du studio : le clip filmé à reprendre, les images (en vrac,
+// citées dans le prompt par @image1, @image2…) et un seul prompt qui dit ce
+// que le créateur veut. Le serveur en tire qui remplace qui (planSwapCast).
 export function SwapInput({
   userId,
   video,
   onVideo,
-  characters,
-  onCharacters,
-  maxCharacters,
-  maxPhotos,
+  images,
+  onImages,
+  maxImages,
   maxSeconds,
   decorPhoto = null,
   onDecorPhoto,
   showDecor = false,
   decorTitle,
-  instructions = "",
-  onInstructions,
-  showInstructions = false,
+  prompt,
+  onPrompt,
   presetPeople,
 }: {
   // null : visiteur sans compte, rien n'est envoyé avant sa connexion.
   userId: string | null;
   video: SwapFile | null;
   onVideo: (file: SwapFile | null) => void;
-  // Changement de décor : photo du lieu, facultative.
-  // Sans photo, le décor du clip est gardé.
+  images: SwapFile[];
+  onImages: Dispatch<SetStateAction<SwapFile[]>>;
+  maxImages: number;
+  // Durée gardée au plus, selon le moteur choisi.
+  maxSeconds: number;
+  // Changement de décor : photo du lieu. Sans photo, le décor du clip est gardé.
   decorPhoto?: SwapFile | null;
   onDecorPhoto?: (file: SwapFile | null) => void;
   showDecor?: boolean;
-  // Titre du bloc décor (par défaut : facultatif).
   decorTitle?: string;
-  // Consignes libres à l'IA (moteur Qualité max), facultatives : demandes en
-  // plus du remplacement (« transforme la chaise en voiture de sport »).
-  // Vides : seuls les références et les champs remplis comptent.
-  instructions?: string;
-  onInstructions?: (text: string) => void;
-  showInstructions?: boolean;
-  // Plan prêt : qui chaque personnage remplace, déjà fixé (un libellé par
-  // personnage, dans la langue du site) ; les personnages ne se retirent pas.
+  prompt: string;
+  onPrompt: (text: string) => void;
+  // Plan prêt : qui chaque image remplace, déjà fixé (un libellé par image,
+  // dans la langue du site).
   presetPeople?: string[];
-  // Au moins un personnage ; plusieurs si le moteur Qualité max est là.
-  characters: SwapCharacter[];
-  onCharacters: Dispatch<SetStateAction<SwapCharacter[]>>;
-  maxCharacters: number;
-  // Photos par personnage, la principale comprise (1 : pas d'autres photos).
-  maxPhotos: number;
-  // Durée gardée au plus, selon le moteur choisi.
-  maxSeconds: number;
 }) {
   const [supabase] = useState(createClient);
   const { t, locale } = useI18n();
-  // Case en cours d'envoi : le clip, le numéro du personnage, ou « extra-N »
-  // pour une autre photo du personnage N.
-  const [uploading, setUploading] = useState<string | number | null>(null);
+  const [uploading, setUploading] = useState<"video" | "images" | "decor" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const several = characters.length > 1;
-
-  const setCharacter = (index: number, change: Partial<SwapCharacter>) =>
-    onCharacters((list) => list.map((c, i) => (i === index ? { ...c, ...change } : c)));
-
-  function removeCharacter(index: number) {
-    const character = characters[index];
-    for (const f of [character?.image, ...(character?.extras ?? [])]) {
-      if (f) URL.revokeObjectURL(f.previewUrl);
-    }
-    onCharacters((list) => list.filter((_, i) => i !== index));
-  }
+  const canAdd = images.length < maxImages;
 
   // Dépose un fichier dans swap-inputs (ou le garde dans le navigateur pour
   // un visiteur) ; null si refusé ou raté (erreur affichée).
-  async function upload(slot: string | number, kind: "video" | "image", file: File | undefined) {
-    if (!file) return null;
-    setError(null);
+  async function upload(kind: "video" | "image", file: File) {
     const types = kind === "video" ? SWAP_VIDEO_TYPES : SWAP_IMAGE_TYPES;
     if (!types.includes(file.type)) return (setError(t.generateErrors.swapFormat), null);
     if (file.size > SWAP_MAX_BYTES) return (setError(t.generateErrors.swapTooBig), null);
-
-    setUploading(slot);
     const previewUrl = URL.createObjectURL(file);
     const [seconds, stored] = await Promise.all([
       kind === "video" ? readDuration(previewUrl) : undefined,
       userId ? uploadSwapFile(supabase, userId, file) : "",
     ]);
-    setUploading(null);
     if (stored === null) {
       URL.revokeObjectURL(previewUrl);
       setError(t.generateErrors.swapUpload);
@@ -146,258 +117,184 @@ export function SwapInput({
     return { path: stored, previewUrl, seconds, start: 0, file } satisfies SwapFile;
   }
 
-  async function pickExtra(index: number, file: File | undefined) {
-    const next = await upload(`extra-${index}`, "image", file);
+  async function pickVideo(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    setUploading("video");
+    const next = await upload("video", file);
+    setUploading(null);
     if (!next) return;
-    onCharacters((list) =>
-      list.map((c, i) => (i === index ? { ...c, extras: [...c.extras, next].slice(0, maxPhotos - 1) } : c)),
-    );
+    if (video) URL.revokeObjectURL(video.previewUrl);
+    onVideo(next);
   }
 
-  function removeExtra(index: number, file: SwapFile) {
-    URL.revokeObjectURL(file.previewUrl);
-    onCharacters((list) =>
-      list.map((c, i) => (i === index ? { ...c, extras: c.extras.filter((f) => f !== file) } : c)),
-    );
+  async function pickDecor(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    setUploading("decor");
+    const next = await upload("image", file);
+    setUploading(null);
+    if (!next) return;
+    if (decorPhoto) URL.revokeObjectURL(decorPhoto.previewUrl);
+    onDecorPhoto?.(next);
   }
 
-  async function pick(slot: "video" | "decor" | number, file: File | undefined) {
-    const next = await upload(slot, slot === "video" ? "video" : "image", file);
-    if (!next) return;
-    if (slot === "video") {
-      if (video) URL.revokeObjectURL(video.previewUrl);
-      onVideo(next);
-    } else if (slot === "decor") {
-      if (decorPhoto) URL.revokeObjectURL(decorPhoto.previewUrl);
-      onDecorPhoto?.(next);
-    } else {
-      const current = characters[slot]?.image;
-      if (current) URL.revokeObjectURL(current.previewUrl);
-      setCharacter(slot, { image: next });
+  // Plusieurs images d'un coup, dans la limite des places restantes.
+  async function addImages(files: FileList | null) {
+    const list = Array.from(files ?? []).slice(0, maxImages - images.length);
+    if (!list.length) return;
+    setError(null);
+    setUploading("images");
+    for (const file of list) {
+      const next = await upload("image", file);
+      if (next) onImages((current) => (current.length < maxImages ? [...current, next] : current));
     }
+    setUploading(null);
   }
 
-  const tile = (slot: "video" | number) => {
-    const kind = slot === "video" ? "video" : "image";
-    const file = slot === "video" ? video : characters[slot]?.image;
-    const hint = kind === "video" ? fmt(t.studio.videoHint, { max: maxSeconds }) : t.studio.imageHint;
-    const charExtras = kind === "image" && typeof slot === "number" ? characters[slot] : null;
-    const showExtras = charExtras && file && maxPhotos > 1;
-    return (
-      <div key={slot} className="flex flex-col gap-2">
-        <label
-          title={hint}
-          className={`group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border text-center transition-colors ${
-            file
-              ? "border-line-strong bg-black bg-clip-padding"
-              : "border-dashed border-line bg-surface-2/40 px-4 hover:border-accent/50 hover:bg-surface-2"
-          } aspect-video`}
-        >
-          <input
-            type="file"
-            accept={(kind === "video" ? SWAP_VIDEO_TYPES : SWAP_IMAGE_TYPES).join(",")}
-            className="sr-only"
-            disabled={uploading !== null}
-            onChange={(e) => {
-              pick(slot, e.target.files?.[0]);
-              e.target.value = "";
+  // Les images suivantes prennent un numéro de moins : le prompt suit, et la
+  // mention de l'image retirée disparaît.
+  function removeImage(index: number) {
+    URL.revokeObjectURL(images[index].previewUrl);
+    onImages((current) => current.filter((_, i) => i !== index));
+    const removed = index + 1;
+    onPrompt(
+      prompt.replace(/@image(\d+)\b/gi, (tag, n) => {
+        const k = Number(n);
+        return k === removed ? "" : k > removed ? imageTag(k - 2) : tag;
+      }),
+    );
+  }
+
+  return (
+    <div className="space-y-3 px-4 pt-4 pb-2">
+      {/* Le clip : carte penchée une fois déposé. */}
+      <div className="rounded-2xl bg-surface-2/60">
+        {video ? (
+          <VideoCard
+            file={video}
+            maxSeconds={maxSeconds}
+            removeLabel={t.studio.removeVideo}
+            expandLabel={t.studio.expandVideo}
+            onRemove={() => {
+              URL.revokeObjectURL(video.previewUrl);
+              onVideo(null);
             }}
           />
-          {file ? (
-            <>
-              {kind === "video" ? (
-                <SegmentPreview file={file} maxSeconds={maxSeconds} />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={file.previewUrl} alt="" className="absolute inset-0 size-full object-cover" />
-              )}
-              {kind === "video" && Number.isFinite(file.seconds) && (
-                <span className="absolute bottom-2 left-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[0.6875rem] font-medium text-white tabular-nums">
-                  {clock(file.seconds!)}
-                </span>
-              )}
-              <span className="absolute right-2 bottom-2 rounded-full bg-black/70 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-                {t.studio.change}
-              </span>
-              {(slot === "video" || !several) && (
-                <button
-                  type="button"
-                  aria-label={t.studio.removePhoto}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (slot === "video") {
-                      URL.revokeObjectURL(video!.previewUrl);
-                      onVideo(null);
-                    } else {
-                      const current = characters[slot]?.image;
-                      if (current) URL.revokeObjectURL(current.previewUrl);
-                      setCharacter(slot, { image: null });
-                    }
-                  }}
-                  className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity hover:bg-danger group-hover:opacity-100"
-                >
-                  <X className="size-4" />
-                </button>
-              )}
-            </>
-          ) : (
-            <>
-              {kind === "video" ? (
-                <Upload className="size-7 text-muted transition-transform duration-200 group-hover:-translate-y-0.5" />
-              ) : (
-                <UserRound className="size-7 text-muted transition-transform duration-200 group-hover:-translate-y-0.5" />
-              )}
-              <span className="mt-2 text-sm leading-snug font-medium">
-                {kind === "video" ? t.studio.videoDrop : t.studio.imageDrop}
-              </span>
-              <span className="mt-0.5 text-xs text-muted">
-                {kind === "video"
-                  ? fmt(t.studio.videoDropSub, {
-                      min: GENJUTSU_MIN_SECONDS.toLocaleString(INTL_LOCALES[locale]),
-                      max: maxSeconds,
-                    })
-                  : t.studio.imageDropSub}
-              </span>
-            </>
-          )}
-          {several && typeof slot === "number" && (
-            <>
-              <span className="absolute top-2 left-2 flex size-6 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white tabular-nums">
-                {slot + 1}
-              </span>
-              {!presetPeople && (
-                <button
-                  type="button"
-                  aria-label={t.studio.removeCharacter}
-                  title={t.studio.removeCharacter}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    removeCharacter(slot);
-                  }}
-                  className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white hover:bg-black"
-                >
-                  <X className="size-4" />
-                </button>
-              )}
-            </>
-          )}
-          {uploading === slot && (
-            <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm text-white">
-              {t.studio.uploading}
+        ) : (
+          <label
+            title={fmt(t.studio.videoHint, { max: maxSeconds })}
+            className="group relative flex aspect-video cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-line px-4 text-center transition-colors hover:border-accent/50 hover:bg-surface-2"
+          >
+            <input
+              type="file"
+              accept={SWAP_VIDEO_TYPES.join(",")}
+              className="sr-only"
+              disabled={uploading !== null}
+              onChange={(e) => {
+                pickVideo(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+            <Upload className="size-7 text-muted transition-transform duration-200 group-hover:-translate-y-0.5" />
+            <span className="mt-2 text-sm leading-snug font-medium">{t.studio.videoDrop}</span>
+            <span className="mt-0.5 text-xs text-muted">
+              {fmt(t.studio.videoDropSub, {
+                min: GENJUTSU_MIN_SECONDS.toLocaleString(INTL_LOCALES[locale]),
+                max: maxSeconds,
+              })}
             </span>
-          )}
-        </label>
-        {showExtras && (
-          <div className="flex flex-wrap gap-2">
-            {1 + charExtras.extras.length < maxPhotos && (
-              <label
-                title={t.studio.addPhoto}
-                className="relative flex size-12 cursor-pointer items-center justify-center rounded-xl bg-surface-3 text-muted transition-colors hover:bg-surface-2 hover:text-text"
-              >
-                <input
-                  type="file"
-                  accept={SWAP_IMAGE_TYPES.join(",")}
-                  className="sr-only"
-                  aria-label={t.studio.addPhoto}
-                  disabled={uploading !== null}
-                  onChange={(e) => {
-                    pickExtra(slot as number, e.target.files?.[0]);
-                    e.target.value = "";
-                  }}
-                />
-                {uploading === `extra-${slot}` ? (
-                  <span className="size-4 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
-                ) : (
-                  <Plus className="size-5" />
-                )}
-              </label>
-            )}
-            {charExtras.extras.map((f) => (
-              <span
-                key={f.path}
-                className="group/thumb relative size-12 overflow-hidden rounded-xl border border-line bg-black bg-clip-padding"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={f.previewUrl} alt="" className="size-full object-cover" />
-                <button
-                  type="button"
-                  aria-label={t.studio.removePhoto}
-                  title={t.studio.removePhoto}
-                  onClick={() => removeExtra(slot as number, f)}
-                  className="absolute top-0.5 right-0.5 flex size-5 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity hover:bg-danger group-hover/thumb:opacity-100"
-                >
-                  <X className="size-3" />
-                </button>
+            {uploading === "video" && (
+              <span className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/60 text-sm text-white">
+                {t.studio.uploading}
               </span>
-            ))}
+            )}
+          </label>
+        )}
+        {video && (video.seconds ?? 0) > maxSeconds + 0.5 && (
+          <div className="px-4 pb-4">
+            <SegmentPicker video={video} maxSeconds={maxSeconds} onChange={(start) => onVideo({ ...video, start })} />
           </div>
         )}
       </div>
-    );
-  };
 
-  const targetField =
-    "w-full rounded-lg border border-line bg-surface-2/60 px-3 py-2 text-sm outline-none placeholder:text-faint focus:border-accent/60";
-
-  return (
-    <div className="px-4 pt-4 pb-2">
-      <div className="grid gap-3">
-        {tile("video")}
-        {characters.map((_, i) => tile(i))}
-      </div>
-      {characters.length < maxCharacters && characters[0]?.image && (
-        <button
-          type="button"
-          onClick={() => onCharacters((list) => [...list, { image: null, extras: [], target: "" }])}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-dashed border-line px-4 py-2.5 text-sm text-muted transition-colors hover:border-accent/50 hover:text-text"
-        >
-          <Plus className="size-4" />
-          {t.studio.addCharacter}
-        </button>
-      )}
-      {presetPeople ? (
-        <ul className="mt-3 space-y-1 text-sm text-muted">
-          {presetPeople.map((label, i) => (
-            <li key={i} className="flex items-center gap-2">
-              {several && (
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white tabular-nums">
-                  {i + 1}
+      {/* Les images : une tuile « + », puis chaque image, citée @image1… */}
+      <div className="rounded-2xl bg-surface-2/60 px-4 py-8">
+        <div className="flex flex-wrap items-center justify-center gap-2.5">
+          {canAdd && (
+            <label
+              title={`${t.studio.addImages} · ${fmt(t.studio.imagesLimit, { max: maxImages })}`}
+              className="group relative flex size-24 cursor-pointer items-center justify-center rounded-[1.25rem] bg-surface-3 transition-colors hover:bg-surface-3/70"
+            >
+              <input
+                type="file"
+                multiple
+                accept={SWAP_IMAGE_TYPES.join(",")}
+                className="sr-only"
+                aria-label={t.studio.addImages}
+                disabled={uploading !== null}
+                onChange={(e) => {
+                  addImages(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              {uploading === "images" ? (
+                <span className="size-5 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
+              ) : (
+                <span className="flex size-8 items-center justify-center rounded-full border border-white/15 bg-white/10 text-text shadow-[inset_0_1px_0_rgb(255_255_255/0.12)] transition-transform group-hover:scale-105">
+                  <Plus className="size-4" />
                 </span>
               )}
-              {several ? label : fmt(t.studio.presetTarget, { who: label })}
-            </li>
-          ))}
-        </ul>
-      ) : several ? (
-        <div className="mt-3 space-y-2">
-          {characters.map((c, i) => (
-            <label key={i} className="flex items-center gap-2">
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white tabular-nums">
-                {i + 1}
-              </span>
-              <input
-                value={c.target}
-                onChange={(e) => setCharacter(i, { target: e.target.value })}
-                maxLength={200}
-                placeholder={fmt(t.studio.characterTarget, { n: i + 1 })}
-                className={targetField}
-              />
             </label>
+          )}
+          {images.map((f, i) => (
+            <div
+              key={f.previewUrl}
+              title={imageTag(i)}
+              className="group relative size-24 overflow-hidden rounded-[1.25rem] border border-white/10 bg-black bg-clip-padding"
+            >
+              {/* Aperçu local (blob:) : pas d'optimisation Next. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={f.previewUrl} alt={imageTag(i)} className="size-full object-cover" />
+              <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/65 px-1.5 py-0.5 text-[0.625rem] font-medium text-white">
+                {imageTag(i)}
+              </span>
+              <button
+                type="button"
+                aria-label={t.studio.removePhoto}
+                title={t.studio.removePhoto}
+                onClick={() => removeImage(i)}
+                className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-danger focus-visible:opacity-100"
+              >
+                <X className="size-3.5" />
+              </button>
+            </div>
           ))}
         </div>
-      ) : null}
+        {!images.length && (
+          <p className="mt-3 text-center text-xs text-muted">
+            {t.studio.imageDrop} · {t.studio.imageDropSub}
+          </p>
+        )}
+        {presetPeople && (
+          <ul className="mt-4 space-y-1 text-center text-xs text-muted">
+            {presetPeople.map((label, i) => (
+              <li key={i}>
+                <span className="font-medium text-text">{imageTag(i)}</span> · {fmt(t.studio.presetTarget, { who: label })}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {showDecor && (
-        <div className="mt-3">
+        <div className="rounded-2xl bg-surface-2/60 px-4 py-4">
           <p className="text-xs text-faint">{decorTitle ?? t.studio.decorTitle}</p>
-          <div className="mt-1.5 flex items-center gap-3">
+          <div className="mt-2 flex items-center gap-3">
             <label
               title={t.studio.decorHint}
-              className={`group relative flex h-20 w-32 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border transition-colors ${
-                decorPhoto
-                  ? "border-line bg-black bg-clip-padding"
-                  : "border-line-strong bg-surface-2/60 hover:border-accent/60"
+              className={`group relative flex size-24 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-[1.25rem] transition-colors ${
+                decorPhoto ? "border border-white/10 bg-black bg-clip-padding" : "bg-surface-3 hover:bg-surface-3/70"
               }`}
             >
               <input
@@ -407,12 +304,11 @@ export function SwapInput({
                 aria-label={t.studio.decorImage}
                 disabled={uploading !== null}
                 onChange={(e) => {
-                  pick("decor", e.target.files?.[0]);
+                  pickDecor(e.target.files?.[0]);
                   e.target.value = "";
                 }}
               />
               {decorPhoto ? (
-                // Aperçu local (blob:) : pas d'optimisation Next.
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={decorPhoto.previewUrl} alt="" className="size-full object-cover" />
               ) : (
@@ -441,40 +337,109 @@ export function SwapInput({
           </div>
         </div>
       )}
-      {video && (video.seconds ?? 0) > maxSeconds + 0.5 && (
-        <SegmentPicker
-          video={video}
-          maxSeconds={maxSeconds}
-          onChange={(start) => onVideo({ ...video, start })}
-        />
-      )}
-      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
-      {showInstructions && (
-        <PromptToggle
-          label={t.studio.instructions}
-          value={instructions}
-          onChange={(text) => onInstructions?.(text)}
-          placeholder={t.studio.instructionsPlaceholder}
-        />
-      )}
+
+      {error && <p className="text-xs text-danger">{error}</p>}
+
+      <PromptBox
+        label={t.studio.instructions}
+        value={prompt}
+        onChange={onPrompt}
+        placeholder={t.studio.instructionsPlaceholder}
+        images={images}
+        hasVideo={Boolean(video)}
+      />
     </div>
   );
 }
 
+// Le clip déposé : carte légèrement penchée, à la proportion du clip, en
+// boucle sur le passage gardé. Bouton d'agrandissement au centre, « × » au coin.
+function VideoCard({
+  file,
+  maxSeconds,
+  onRemove,
+  removeLabel,
+  expandLabel,
+}: {
+  file: SwapFile;
+  maxSeconds: number;
+  onRemove: () => void;
+  removeLabel: string;
+  expandLabel: string;
+}) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [ratio, setRatio] = useState(16 / 9);
+
+  function expand() {
+    const el = ref.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
+    if (!el) return;
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => el.webkitEnterFullscreen?.());
+    else el.webkitEnterFullscreen?.();
+  }
+
+  return (
+    <div className="flex justify-center px-6 pt-7 pb-6">
+      <div
+        className="relative max-w-full -rotate-3"
+        style={{ width: `min(100%, ${17 * ratio}rem)`, aspectRatio: String(ratio) }}
+      >
+        <div className="size-full overflow-hidden rounded-2xl border-2 border-white/85 bg-black shadow-[0_18px_40px_-12px_rgb(0_0_0/0.6)]">
+          <SegmentPreview file={file} maxSeconds={maxSeconds} videoRef={ref} onRatio={setRatio} />
+        </div>
+        <button
+          type="button"
+          aria-label={expandLabel}
+          title={expandLabel}
+          onClick={expand}
+          className="absolute inset-0 m-auto flex size-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/65"
+        >
+          <Maximize2 className="size-4" />
+        </button>
+        {Number.isFinite(file.seconds) && (
+          <span className="absolute bottom-2.5 left-2.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[0.6875rem] font-medium text-white tabular-nums">
+            {clock(file.seconds!)}
+          </span>
+        )}
+        <button
+          type="button"
+          aria-label={removeLabel}
+          title={removeLabel}
+          onClick={onRemove}
+          className="absolute -top-3 -right-3 flex size-8 items-center justify-center rounded-full border border-line-strong bg-surface-3 text-text shadow-md transition-colors hover:bg-danger hover:text-white"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // Aperçu du clip, en boucle sur le passage gardé.
-function SegmentPreview({ file, maxSeconds }: { file: SwapFile; maxSeconds: number }) {
-  const ref = useRef<HTMLVideoElement>(null);
+function SegmentPreview({
+  file,
+  maxSeconds,
+  videoRef,
+  onRatio,
+}: {
+  file: SwapFile;
+  maxSeconds: number;
+  videoRef: RefObject<HTMLVideoElement | null>;
+  onRatio: (ratio: number) => void;
+}) {
   const start = clampedStart(file, maxSeconds);
   return (
     <video
-      ref={ref}
+      ref={videoRef}
       src={file.previewUrl}
       muted
       autoPlay
       playsInline
       webkit-playsinline=""
-      onLoadedMetadata={(e) => (e.currentTarget.currentTime = start)}
+      onLoadedMetadata={(e) => {
+        const el = e.currentTarget;
+        el.currentTime = start;
+        if (el.videoWidth && el.videoHeight) onRatio(el.videoWidth / el.videoHeight);
+      }}
       onTimeUpdate={(e) => {
         const el = e.currentTarget;
         if (el.currentTime < start - 0.3 || el.currentTime >= start + maxSeconds) {
@@ -486,7 +451,7 @@ function SegmentPreview({ file, maxSeconds }: { file: SwapFile; maxSeconds: numb
         e.currentTarget.currentTime = start;
         e.currentTarget.play().catch(() => {});
       }}
-      className="absolute inset-0 size-full object-cover"
+      className="size-full object-cover"
     />
   );
 }
@@ -520,7 +485,7 @@ function SegmentPicker({
   };
 
   return (
-    <div className="mt-3">
+    <div>
       <p className="flex items-baseline justify-between gap-3 text-xs">
         <span className="font-medium text-muted">{fmt(t.studio.segment, { max: maxSeconds })}</span>
         <span className="text-faint tabular-nums">
@@ -609,20 +574,58 @@ function useFilmstrip(url: string, total: number) {
   return frames;
 }
 
-function PromptToggle({
+// Le prompt unique. Taper « @ » propose les images déposées (et le clip) :
+// un clic ou Entrée insère @image1, @image2… Désactivé, le prompt est vidé
+// et l'IA décide seule qui remplacer.
+function PromptBox({
   label,
   value,
   onChange,
   placeholder,
+  images,
+  hasVideo,
 }: {
   label: string;
   value: string;
   onChange: (text: string) => void;
   placeholder: string;
+  images: SwapFile[];
+  hasVideo: boolean;
 }) {
-  const [open, setOpen] = useState(Boolean(value));
+  const [open, setOpen] = useState(true);
+  const area = useRef<HTMLTextAreaElement>(null);
+  // Mot « @… » en cours de frappe juste avant le curseur, et sa position.
+  const [mention, setMention] = useState<{ query: string; at: number } | null>(null);
+  const [active, setActive] = useState(0);
+
+  const options = [
+    ...images.map((f, i) => ({ tag: imageTag(i), preview: f.previewUrl })),
+    ...(hasVideo ? [{ tag: "@video", preview: null }] : []),
+  ].filter((o) => mention && o.tag.slice(1).toLowerCase().startsWith(mention.query.toLowerCase()));
+
+  function track(el: HTMLTextAreaElement) {
+    const before = el.value.slice(0, el.selectionStart);
+    const match = /(^|\s)@(\w*)$/.exec(before);
+    setMention(match ? { query: match[2], at: before.length - match[2].length - 1 } : null);
+    setActive(0);
+  }
+
+  function insert(tag: string) {
+    const el = area.current;
+    if (!el || !mention) return;
+    const end = mention.at + 1 + mention.query.length;
+    const next = `${value.slice(0, mention.at)}${tag} ${value.slice(end)}`;
+    onChange(next);
+    setMention(null);
+    const caret = mention.at + tag.length + 1;
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(caret, caret);
+    });
+  }
+
   return (
-    <div className="mt-3">
+    <div className="overflow-visible rounded-2xl bg-surface-2/60">
       <button
         type="button"
         onClick={() => {
@@ -630,31 +633,84 @@ function PromptToggle({
           setOpen(next);
           if (!next) onChange("");
         }}
-        className="flex w-full items-center justify-between gap-2 px-1 py-1"
+        aria-pressed={open}
+        className={`flex w-full items-center justify-between gap-2 px-4 py-3.5 ${open ? "border-b border-line" : ""}`}
       >
-        <span className="text-sm font-medium text-muted">{label}</span>
+        <span className="text-base font-semibold">{label}</span>
         <span
           aria-hidden
-          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
             open ? "bg-accent" : "bg-surface-3"
           }`}
         >
           <span
-            className={`inline-block size-3.5 rounded-full bg-white shadow-sm transition-transform ${
-              open ? "translate-x-[1.125rem]" : "translate-x-[0.1875rem]"
+            className={`inline-block size-4.5 rounded-full bg-white shadow-sm transition-transform ${
+              open ? "translate-x-[1.375rem]" : "translate-x-[0.1875rem]"
             }`}
           />
         </span>
       </button>
       {open && (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          maxLength={500}
-          rows={2}
-          placeholder={placeholder}
-          className="mt-1.5 w-full resize-none rounded-xl border border-line bg-surface-2/60 px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-faint focus:border-accent/60 focus:bg-surface"
-        />
+        <div className="relative">
+          <textarea
+            ref={area}
+            value={value}
+            onChange={(e) => {
+              onChange(e.target.value);
+              track(e.target);
+            }}
+            onClick={(e) => track(e.currentTarget)}
+            onKeyUp={(e) => {
+              if (e.key === "ArrowLeft" || e.key === "ArrowRight") track(e.currentTarget);
+            }}
+            onBlur={() => setTimeout(() => setMention(null), 150)}
+            onKeyDown={(e) => {
+              if (!mention || !options.length) return;
+              if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                e.preventDefault();
+                setActive((a) => (a + (e.key === "ArrowDown" ? 1 : options.length - 1)) % options.length);
+              } else if (e.key === "Enter" || e.key === "Tab") {
+                e.preventDefault();
+                insert(options[Math.min(active, options.length - 1)].tag);
+              } else if (e.key === "Escape") {
+                setMention(null);
+              }
+            }}
+            maxLength={1000}
+            rows={4}
+            placeholder={placeholder}
+            className="block w-full resize-none bg-transparent px-4 py-3 text-[0.9375rem] leading-relaxed outline-none placeholder:text-faint"
+          />
+          {mention && options.length > 0 && (
+            <ul
+              role="listbox"
+              className="absolute bottom-full left-3 z-20 mb-1 max-h-60 w-52 overflow-auto rounded-xl border border-line bg-surface p-1 shadow-lg"
+            >
+              {options.map((o, i) => (
+                <li key={o.tag} role="option" aria-selected={i === active}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => insert(o.tag)}
+                    className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm ${
+                      i === active ? "bg-surface-2" : "hover:bg-surface-2"
+                    }`}
+                  >
+                    {o.preview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={o.preview} alt="" className="size-7 rounded-md object-cover" />
+                    ) : (
+                      <span className="flex size-7 items-center justify-center rounded-md bg-surface-3">
+                        <Upload className="size-3.5 text-muted" />
+                      </span>
+                    )}
+                    {o.tag}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );
