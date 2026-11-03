@@ -77,7 +77,6 @@ export const en: Dictionary = {
     titleTop: "Your character.",
     titleBottom: "In the video.",
     ctaFirst: "Create my first video",
-    ctaPricing: "See pricing",
     perks: ["Genjutsu quality, up to 1080p", "No subscription required", "Credits refunded if it fails"],
     compareBefore: "Original",
     compareAfter: "Your character",

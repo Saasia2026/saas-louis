@@ -79,7 +79,6 @@ export const fr = {
     titleTop: "Ton personnage.",
     titleBottom: "Dans la vidéo.",
     ctaFirst: "Créer ma première vidéo",
-    ctaPricing: "Voir les tarifs",
     perks: ["Qualité Genjutsu, jusqu'en 1080p", "Sans abonnement obligatoire", "Crédits rendus en cas d'échec"],
     compareBefore: "Original",
     compareAfter: "Ton personnage",

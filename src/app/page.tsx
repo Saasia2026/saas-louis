@@ -112,9 +112,6 @@ export default async function Home() {
                   <WandSparkles />
                   {L.ctaFirst}
                 </Link>
-                <a href="#tarifs" className="btn btn-hot w-full px-7 py-4 text-base sm:w-auto sm:text-lg">
-                  {L.ctaPricing}
-                </a>
               </div>
               <p className="mt-5 flex animate-fade-up flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted [animation-delay:300ms] lg:justify-start">
                 {L.perks.map((perk) => (
