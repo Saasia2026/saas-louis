@@ -72,6 +72,48 @@
   }
 }
 
+/* Bulles de verre du studio (dépôt du clip et des images) : verre sombre et
+   icônes argentées ; en clair, verre blanc et icônes graphite. */
+:root {
+  --bubble-bg: radial-gradient(circle at 50% 28%, rgb(255 255 255 / 0.13), rgb(255 255 255 / 0.04) 58%, rgb(0 0 0 / 0.18));
+  --bubble-ring: rgb(255 255 255 / 0.2);
+  --bubble-highlight: rgb(255 255 255 / 0.18);
+  --bubble-shadow: rgb(0 0 0 / 0.55);
+  --bubble-icon-from: #ffffff;
+  --bubble-icon-to: #8e8d96;
+}
+:root[data-theme="light"] {
+  --bubble-bg: radial-gradient(circle at 50% 28%, #ffffff, #f1f1f4 60%, #e2e2e7);
+  --bubble-ring: rgb(12 12 20 / 0.1);
+  --bubble-highlight: rgb(255 255 255 / 0.9);
+  --bubble-shadow: rgb(12 12 20 / 0.18);
+  --bubble-icon-from: #6e6e78;
+  --bubble-icon-to: #24242c;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bubble-bg: radial-gradient(circle at 50% 28%, #ffffff, #f1f1f4 60%, #e2e2e7);
+    --bubble-ring: rgb(12 12 20 / 0.1);
+    --bubble-highlight: rgb(255 255 255 / 0.9);
+    --bubble-shadow: rgb(12 12 20 / 0.18);
+    --bubble-icon-from: #6e6e78;
+    --bubble-icon-to: #24242c;
+  }
+}
+.glass-bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--bubble-bg);
+  box-shadow:
+    inset 0 0 0 1px var(--bubble-ring),
+    inset 0 1px 0 var(--bubble-highlight),
+    0 8px 20px -10px var(--bubble-shadow);
+  backdrop-filter: blur(6px);
+  transition: transform 0.2s var(--ease-out);
+}
+
 :root[data-theme="light"] {
   --bg: #f6f6f7;
   --surface: #ffffff;

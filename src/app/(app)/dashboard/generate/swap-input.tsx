@@ -1,6 +1,6 @@
 "use client";
 
-import { Maximize2, Mountain, Plus, Upload, X } from "lucide-react";
+import { Maximize2, Mountain, X } from "lucide-react";
 import { useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
@@ -12,6 +12,7 @@ import {
   SWAP_VIDEO_TYPES,
 } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/client";
+import { CameraGlyph, CubeGlyph, GlassBubble, HeadGlyph, PlusGlyph, ShirtGlyph } from "./bubble-icons";
 
 type Supabase = ReturnType<typeof createClient>;
 
@@ -196,8 +197,10 @@ export function SwapInput({
                 e.target.value = "";
               }}
             />
-            <Upload className="size-7 text-muted transition-transform duration-200 group-hover:-translate-y-0.5" />
-            <span className="mt-2 text-sm leading-snug font-medium">{t.studio.videoDrop}</span>
+            <GlassBubble className="size-16 group-hover:scale-105">
+              <CameraGlyph className="size-7" />
+            </GlassBubble>
+            <span className="mt-3 text-sm leading-snug font-medium">{t.studio.videoDrop}</span>
             <span className="mt-0.5 text-xs text-muted">
               {fmt(t.studio.videoDropSub, {
                 min: GENJUTSU_MIN_SECONDS.toLocaleString(INTL_LOCALES[locale]),
@@ -220,6 +223,47 @@ export function SwapInput({
 
       {/* Les images : une tuile « + », puis chaque image, citée @image1… */}
       <div className="rounded-2xl bg-surface-2/60 px-4 py-8">
+        {/* Aucune image : le trio personnage · tenue · objet invite à en
+            ajouter ; ensuite, une tuile « + » en tête de la rangée. */}
+        {!images.length ? (
+          <label
+            title={`${t.studio.addImages} · ${fmt(t.studio.imagesLimit, { max: maxImages })}`}
+            className="group flex cursor-pointer flex-col items-center text-center"
+          >
+            <input
+              type="file"
+              multiple
+              accept={SWAP_IMAGE_TYPES.join(",")}
+              className="sr-only"
+              aria-label={t.studio.addImages}
+              disabled={uploading !== null}
+              onChange={(e) => {
+                addImages(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            {uploading === "images" ? (
+              <span className="flex h-16 items-center">
+                <span className="size-6 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
+              </span>
+            ) : (
+              <span className="flex -space-x-2 transition-transform duration-200 group-hover:scale-[1.03]">
+                <GlassBubble className="size-16">
+                  <HeadGlyph className="size-7" />
+                </GlassBubble>
+                <GlassBubble className="size-16">
+                  <ShirtGlyph className="size-7" />
+                </GlassBubble>
+                <GlassBubble className="size-16">
+                  <CubeGlyph className="size-7" />
+                </GlassBubble>
+              </span>
+            )}
+            <span className="mt-3 text-xs text-muted">
+              {t.studio.imageDrop} · {t.studio.imageDropSub}
+            </span>
+          </label>
+        ) : (
         <div className="flex flex-wrap items-center justify-center gap-2.5">
           {canAdd && (
             <label
@@ -241,9 +285,9 @@ export function SwapInput({
               {uploading === "images" ? (
                 <span className="size-5 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
               ) : (
-                <span className="flex size-8 items-center justify-center rounded-full border border-white/15 bg-white/10 text-text shadow-[inset_0_1px_0_rgb(255_255_255/0.12)] transition-transform group-hover:scale-105">
-                  <Plus className="size-4" />
-                </span>
+                <GlassBubble className="size-10 group-hover:scale-105">
+                  <PlusGlyph className="size-4.5" />
+                </GlassBubble>
               )}
             </label>
           )}
@@ -271,10 +315,6 @@ export function SwapInput({
             </div>
           ))}
         </div>
-        {!images.length && (
-          <p className="mt-3 text-center text-xs text-muted">
-            {t.studio.imageDrop} · {t.studio.imageDropSub}
-          </p>
         )}
         {presetPeople && (
           <ul className="mt-4 space-y-1 text-center text-xs text-muted">
@@ -700,9 +740,9 @@ function PromptBox({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={o.preview} alt="" className="size-7 rounded-md object-cover" />
                     ) : (
-                      <span className="flex size-7 items-center justify-center rounded-md bg-surface-3">
-                        <Upload className="size-3.5 text-muted" />
-                      </span>
+                      <GlassBubble className="size-7">
+                        <CameraGlyph className="size-3.5" />
+                      </GlassBubble>
                     )}
                     {o.tag}
                   </button>
