@@ -82,7 +82,6 @@ export const fr = {
     perks: ["Qualité Genjutsu, jusqu'en 1080p", "Sans abonnement obligatoire", "Crédits rendus en cas d'échec"],
     compareBefore: "Original",
     compareAfter: "Ton personnage",
-    compareHint: "Le même clip, la même performance — seul le personnage change.",
     mockWindow: "twinpost · Studio",
     mockRendering: "Remplacement en cours",
     mockClip: "Clip filmé",

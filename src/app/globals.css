@@ -499,9 +499,30 @@ body {
   opacity: 0.05;
 }
 
-@media (max-width: 767px), (pointer: coarse) {
-  .video-wall { display: none; }
+/* Le même mur, en clair, comme écran du téléphone de l'accroche. Un léger
+   voile en haut garde la barre d'état lisible. */
+.phone-wall {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 0.25rem;
+  overflow: hidden;
+  pointer-events: none;
 }
+.phone-wall::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 12%;
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0.45), transparent);
+}
+.phone-wall .video-wall-col {
+  gap: 0.25rem;
+}
+.phone-wall .video-wall-thumb {
+  border-radius: 0.5rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .video-wall-col { animation-play-state: paused; }
 }

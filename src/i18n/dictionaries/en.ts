@@ -80,7 +80,6 @@ export const en: Dictionary = {
     perks: ["Genjutsu quality, up to 1080p", "No subscription required", "Credits refunded if it fails"],
     compareBefore: "Original",
     compareAfter: "Your character",
-    compareHint: "Same clip, same performance — only the character changes.",
     mockWindow: "twinpost · Studio",
     mockRendering: "Replacing",
     mockClip: "Filmed clip",

@@ -2,7 +2,6 @@ import { ArrowRight, Check, Sparkles, WandSparkles } from "lucide-react";
 import Link from "next/link";
 import { FeatureShowcase } from "@/app/feature-showcase";
 import { LanguageSwitcher } from "@/app/language-switcher";
-import { CompareSlider } from "@/app/compare-slider";
 import { ExampleVideo } from "@/app/example-video";
 import { Magnetic, ScrollWipe, SmoothScroll } from "@/app/landing-motion";
 import { VideoWall } from "@/app/video-wall";
@@ -123,22 +122,11 @@ export default async function Home() {
               </p>
             </div>
 
-            {/* Démo : le rideau avant/après sur un vrai plan fourni, en vidéo. */}
+            {/* Téléphone décoratif : les démos du fond, en clair, qui défilent. */}
             <div className="animate-fade-up [animation-delay:380ms]">
-              <PhoneFrame ambient="/examples/micro-apres.jpg" className="mx-auto w-full max-w-[17rem] sm:max-w-[19rem]">
-                <CompareSlider
-                  before="/examples/micro-avant.mp4"
-                  after="/examples/micro-apres.mp4"
-                  posterBefore="/examples/micro-avant.jpg"
-                  posterAfter="/examples/micro-apres.jpg"
-                  labelBefore={L.compareBefore}
-                  labelAfter={L.compareAfter}
-                  bare
-                />
+              <PhoneFrame ambient="/demos/wall/demo-10.jpg" className="mx-auto w-full max-w-[17rem] sm:max-w-[19rem]">
+                <VideoWall phone />
               </PhoneFrame>
-              <p className="mx-auto mt-5 max-w-[17rem] text-center text-xs leading-relaxed text-faint sm:max-w-[19rem]">
-                {L.compareHint}
-              </p>
             </div>
           </div>
         </section>

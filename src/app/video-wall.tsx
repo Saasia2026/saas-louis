@@ -12,17 +12,28 @@ const COLS: number[][] = [
 
 const DURATIONS = [58, 44, 52, 40];
 
+// Les mêmes démos dans le téléphone de l'accroche : trois colonnes, en clair.
+const PHONE_COLS: number[][] = [
+  [1, 9, 17, 4],
+  [2, 10, 18, 12],
+  [3, 11, 19, 20],
+];
+
+const PHONE_DURATIONS = [34, 26, 30];
+
 // Versions « fond » des démos (public/demos/wall) : 320 px de large, 8 s,
 // sans son, ~150 ko chacune. Le mur est affiché à 8 % d'opacité : les
 // originaux (12 à 37 Mo) faisaient télécharger ~190 Mo à chaque visite.
 const pad = (n: number) => `/demos/wall/demo-${String(n).padStart(2, "0")}`;
 
-// Le mur ne joue que sur grand écran, à la souris, sans mouvement réduit
-// (ailleurs il est masqué en CSS) ; sans autoPlay ni préchargement, rien
-// n'est téléchargé quand il ne joue pas. Onglet caché : tout s'arrête.
-const PLAYS = "(min-width: 768px) and (pointer: fine) and (prefers-reduced-motion: no-preference)";
+// Le mur joue partout, téléphone compris, sauf en mouvement réduit ; sans
+// autoPlay ni préchargement, rien n'est téléchargé quand il ne joue pas.
+// Onglet caché : tout s'arrête.
+const PLAYS = "(prefers-reduced-motion: no-preference)";
 
-export function VideoWall() {
+// En fond de page (très pâle, fixe) ou, avec `phone`, comme écran du
+// téléphone décoratif de l'accroche.
+export function VideoWall({ phone = false }: { phone?: boolean }) {
   const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,14 +67,17 @@ export function VideoWall() {
     };
   }, []);
 
+  const cols = phone ? PHONE_COLS : COLS;
+  const durations = phone ? PHONE_DURATIONS : DURATIONS;
+
   return (
-    <div ref={root} className="video-wall" aria-hidden>
-      <div className="video-wall-fade" />
-      {COLS.map((col, ci) => (
+    <div ref={root} className={phone ? "phone-wall" : "video-wall"} aria-hidden>
+      {!phone && <div className="video-wall-fade" />}
+      {cols.map((col, ci) => (
         <div
           key={ci}
           className="video-wall-col"
-          style={{ animationDuration: `${DURATIONS[ci]}s` }}
+          style={{ animationDuration: `${durations[ci]}s` }}
         >
           {[...col, ...col].map((n, i) => (
             <video
