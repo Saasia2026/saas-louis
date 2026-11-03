@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowUpRight, Music2, Play, WandSparkles } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Eye, Music2, Play, WandSparkles } from "lucide-react";
 import { after } from "next/server";
 import { Suspense } from "react";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
@@ -104,39 +104,55 @@ async function TrendVideos({ hashtags }: { hashtags: string[] }) {
       </h2>
       <div className="mt-3 grid grid-cols-2 gap-2.5">
         {videos.map((v) => (
-          <div key={v.id} className="overflow-hidden rounded-xl border border-line bg-surface">
-            <a href={v.url} target="_blank" rel="noreferrer" className="group relative block bg-black">
-              {/* Couverture TikTok, servie par notre relais (voir api/trends/cover). */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={coverSrc(v.cover)}
-                alt=""
-                loading="lazy"
-                className="aspect-[9/16] w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <span className="absolute top-1.5 left-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-white tabular-nums">
-                {fmt(V.views, { n: compact.format(v.views) })}
+          <article
+            key={v.id}
+            className="flex flex-col gap-2 rounded-2xl border border-line bg-surface-2/50 p-1.5 transition-colors hover:border-line-strong"
+          >
+            <a
+              href={v.url}
+              target="_blank"
+              rel="noreferrer"
+              className="group relative isolate block aspect-[9/16] overflow-hidden rounded-xl bg-gradient-to-b from-neutral-800 to-black"
+            >
+              {/* Sans couverture, il reste ce fond et le bouton lecture. */}
+              <span className="absolute inset-0 -z-10 flex items-center justify-center">
+                <span className="flex size-10 items-center justify-center rounded-full border border-white/15 text-white/60">
+                  <Play className="ml-0.5 size-4" />
+                </span>
               </span>
-              <span className="absolute inset-x-1.5 bottom-1.5 truncate rounded-md bg-black/70 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-white">
+              {/* Couverture TikTok, servie par notre relais (voir api/trends/cover).
+                  En fond plutôt qu'en <img> : un lien mort ne laisse pas d'icône cassée. */}
+              <span
+                aria-hidden
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                style={{ backgroundImage: `url("${coverSrc(v.cover)}")` }}
+              />
+              <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+              <span className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[0.6875rem] font-semibold text-white tabular-nums backdrop-blur-sm">
+                <Eye className="size-3" />
+                {compact.format(v.views)}
+              </span>
+              <span className="absolute inset-x-2.5 bottom-2.5 truncate font-headline text-base leading-none text-white uppercase">
                 {v.hashtag}
               </span>
             </a>
-            <div className="space-y-1.5 p-2">
-              {v.sound && (
-                <p className="flex items-center gap-1 truncate text-[0.6875rem] text-faint" title={v.sound}>
-                  <Music2 className="size-3 shrink-0" />
-                  {v.sound}
-                </p>
-              )}
-              <AskButton
-                question={fmt(V.askVideo, { hashtag: v.hashtag, caption: v.caption || v.hashtag, url: v.url })}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-line py-1 text-xs font-medium text-muted transition-colors hover:border-accent/50 hover:text-text"
+            {v.sound && (
+              <p
+                className="mx-0.5 flex min-w-0 items-center gap-1.5 rounded-lg bg-surface-3/60 px-2 py-1 text-[0.6875rem] text-muted"
+                title={v.sound}
               >
-                <WandSparkles className="size-3.5" />
-                {V.remake}
-              </AskButton>
-            </div>
-          </div>
+                <Music2 className="size-3 shrink-0 text-accent-hot" />
+                <span className="truncate">{v.sound}</span>
+              </p>
+            )}
+            <AskButton
+              question={fmt(V.askVideo, { hashtag: v.hashtag, caption: v.caption || v.hashtag, url: v.url })}
+              className="mt-auto flex w-full items-center justify-center gap-1.5 rounded-xl bg-surface-3 px-2 py-2 text-center text-[0.6875rem] leading-tight font-semibold text-balance text-text transition-colors hover:bg-accent hover:text-white"
+            >
+              <WandSparkles className="size-3.5 shrink-0" />
+              {V.remake}
+            </AskButton>
+          </article>
         ))}
       </div>
     </section>
