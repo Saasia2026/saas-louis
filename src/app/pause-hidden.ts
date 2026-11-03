@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from "react";
+import { playInline } from "./inline-video";
 
 // Ne fait jouer que les <video> d'un bloc qui sont à l'écran (ou presque),
 // une par une : un bandeau de vingt vidéos n'en décode que trois ou quatre,
@@ -13,7 +14,7 @@ export function usePauseWhenHidden(container: RefObject<HTMLElement | null>) {
       (entries) => {
         for (const { target, isIntersecting } of entries) {
           const video = target as HTMLVideoElement;
-          if (isIntersecting) video.play().catch(() => {});
+          if (isIntersecting) playInline(video);
           else video.pause();
         }
       },

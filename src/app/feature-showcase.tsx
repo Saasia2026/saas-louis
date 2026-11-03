@@ -2,6 +2,7 @@
 
 import { RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { playInline } from "./inline-video";
 
 type Media = { kind: "video"; src: string; poster: string } | { kind: "refund" };
 
@@ -38,7 +39,7 @@ export function FeatureShowcase({ items, refund }: { items: Feature[]; refund: R
   useEffect(() => {
     videos.current.forEach((video, i) => {
       if (!video) return;
-      if (i === active && inView) video.play().catch(() => {});
+      if (i === active && inView) playInline(video);
       else video.pause();
     });
   }, [active, inView]);

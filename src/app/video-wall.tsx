@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { playInline } from "./inline-video";
 
 const COLS: number[][] = [
   [1, 9, 17],
@@ -34,7 +35,7 @@ export function VideoWall() {
     const sync = () => {
       const on = query.matches && document.visibilityState === "visible";
       for (const video of videos) {
-        if (on && inView.has(video)) video.play().catch(() => {});
+        if (on && inView.has(video)) playInline(video);
         else video.pause();
       }
     };

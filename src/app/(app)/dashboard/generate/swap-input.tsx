@@ -2,6 +2,7 @@
 
 import { Maximize2, Mountain, X } from "lucide-react";
 import { useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
+import { playInline } from "@/app/inline-video";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -484,12 +485,12 @@ function SegmentPreview({
         const el = e.currentTarget;
         if (el.currentTime < start - 0.3 || el.currentTime >= start + maxSeconds) {
           el.currentTime = start;
-          el.play().catch(() => {});
+          playInline(el);
         }
       }}
       onEnded={(e) => {
         e.currentTarget.currentTime = start;
-        e.currentTarget.play().catch(() => {});
+        playInline(e.currentTarget);
       }}
       className="size-full object-cover"
     />

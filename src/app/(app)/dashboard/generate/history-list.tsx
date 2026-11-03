@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { playInline } from "@/app/inline-video";
 import { usePauseWhenHidden } from "@/app/pause-hidden";
 import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
@@ -220,7 +221,7 @@ export function HistoryEmpty() {
     const video = result.current;
     if (shown !== 3 || !video) return;
     video.currentTime = clip.current?.currentTime ?? 0;
-    video.play().catch(() => {});
+    playInline(video);
   }, [shown, cycle]);
 
   const drop = reduced ? "" : "animate-demo-drop";

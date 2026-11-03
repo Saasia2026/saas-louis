@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from "react";
+import { playInline } from "./inline-video";
 
 // Deux vidéos du même clip lues ensemble (avant/après), avec le même nombre
 // d'images. La première mène, la seconde suit : elle démarre, s'arrête et
@@ -23,7 +24,7 @@ export function useSyncedPair(
     };
     const follow = () => {
       align();
-      if (b.paused) b.play().catch(() => {});
+      if (b.paused) playInline(b);
     };
 
     const onMasterPlaying = () => follow();
@@ -34,7 +35,7 @@ export function useSyncedPair(
     const onMasterEnded = () => {
       a.currentTime = 0;
       b.currentTime = 0;
-      a.play().catch(() => {});
+      playInline(a);
     };
     const onFollowerWaiting = () => {
       if (a.paused) return;
@@ -45,7 +46,7 @@ export function useSyncedPair(
       if (!heldForFollower) return;
       heldForFollower = false;
       align();
-      a.play().catch(() => {});
+      playInline(a);
     };
     // La suiveuse lancée seule (retour à l'écran) se recale sur la meneuse.
     const onFollowerPlay = () => {
