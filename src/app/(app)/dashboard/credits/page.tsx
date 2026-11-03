@@ -34,7 +34,7 @@ import {
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
-import { BADGE, OFF_BADGE, TIERS, tierCard } from "@/app/tier-style";
+import { BADGE, OFF_BADGE, OFF_BADGE_SM, TIERS, tierCard } from "@/app/tier-style";
 import { PageHeader } from "../../page-header";
 import {
   addCard,
@@ -86,7 +86,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
   const params = await props.searchParams;
   const sessionId = params.session_id;
   const intentId = params.payment_intent;
-  const billing: BillingInterval = params.billing === "year" ? "year" : "month";
+  const billing: BillingInterval = params.billing === "month" ? "month" : "year";
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   const P = t.creditsPage;
   const S = P.subscriptions;
@@ -334,18 +334,18 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
             <p className="mt-3 max-w-xl text-sm text-muted">{S.intro}</p>
           </div>
           {!subscription && (
-            <div className="flex rounded-xl border border-line bg-surface-2 p-1 text-sm">
+            <div className="flex rounded-lg border border-line bg-surface-2 p-0.5 text-xs">
               {(["month", "year"] as const).map((interval) => (
                 <Link
                   key={interval}
                   href={`?billing=${interval}`}
                   scroll={false}
-                  className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 font-semibold transition-colors ${
+                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 font-semibold transition-colors ${
                     billing === interval ? "bg-accent text-white" : "text-muted hover:text-text"
                   }`}
                 >
                   {interval === "year" ? S.yearly : S.monthly}
-                  {interval === "year" && <span className={OFF_BADGE}>{fmt(P.off, { pct: MAX_YEARLY_OFF })}</span>}
+                  {interval === "year" && <span className={OFF_BADGE_SM}>{fmt(P.off, { pct: MAX_YEARLY_OFF })}</span>}
                 </Link>
               ))}
             </div>

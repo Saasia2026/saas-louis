@@ -18,3 +18,4 @@ export function tierCard(color: string, strength: number): CSSProperties {
 // Badges penchés : réduction en rose, mention d'offre à côté.
 export const BADGE = "inline-flex -skew-x-6 items-center rounded-md px-2 py-0.5 text-xs font-extrabold italic";
 export const OFF_BADGE = `${BADGE} bg-rose-600 text-white`;
+export const OFF_BADGE_SM = "inline-flex -skew-x-6 items-center rounded px-1.5 py-px text-[0.625rem] font-extrabold italic bg-rose-600 text-white";
