@@ -10,7 +10,6 @@ import { useI18n } from "@/i18n/provider";
 import { VideoWall } from "@/app/video-wall";
 import { VisibleVideos } from "@/app/visible-videos";
 import {
-  DEFAULT_GENJUTSU_MODEL,
   DEFAULT_SWAP_QUALITY,
   GENJUTSU_MIN_SECONDS,
   GENJUTSU_MODELS,
@@ -108,8 +107,8 @@ export function Studio({
   // qui (voir planSwapCast).
   const [video, setVideo] = useState<SwapFile | null>(null);
   const [images, setImages] = useState<SwapFile[]>([]);
-  // Genjutsu ou Genjutsu Max, et qualité du rendu.
-  const [model, setModel] = useState<GenjutsuModel>(DEFAULT_GENJUTSU_MODEL);
+  // Genjutsu (par défaut) ou Genjutsu Max, et qualité du rendu.
+  const [model, setModel] = useState<GenjutsuModel>("standard");
   const [quality, setQuality] = useState<SwapQuality>(DEFAULT_SWAP_QUALITY);
   const settings = { model, quality };
   // Haute fidélité : méthode du mannequin, deux passes, au double du prix.
