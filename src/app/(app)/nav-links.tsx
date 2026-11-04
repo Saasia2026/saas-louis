@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, Clapperboard, Coins, Film, TrendingUp, type LucideIcon } from "lucide-react";
+import { CalendarClock, Clapperboard, Coins, Film, type LucideIcon } from "lucide-react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef } from "react";
@@ -8,13 +8,12 @@ import { useI18n } from "@/i18n/provider";
 
 const NAV_LINKS: {
   href: string;
-  key: "studio" | "videos" | "planning" | "viral" | "credits";
+  key: "studio" | "videos" | "planning" | "credits";
   icon: LucideIcon;
 }[] = [
   { href: "/dashboard/generate", key: "studio", icon: Clapperboard },
   { href: "/dashboard/videos", key: "videos", icon: Film },
   { href: "/dashboard/planning", key: "planning", icon: CalendarClock },
-  { href: "/dashboard/viral", key: "viral", icon: TrendingUp },
   { href: "/dashboard/credits", key: "credits", icon: Coins },
 ];
 

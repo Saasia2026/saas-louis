@@ -56,11 +56,6 @@ export function planCredits(plan: SubscriptionPlan, interval: BillingInterval) {
   return interval === "year" ? plan.credits * 12 : plan.credits;
 }
 
-// Prix d'une question au chat Viralité. Mesuré le 2026-10-12 : ~0,17 $ de
-// Claude et de recherche web pour une question type, davantage quand la
-// conversation s'allonge.
-export const VIRAL_QUESTION_CREDITS = 12;
-
 // Paiement à l'usage (carte enregistrée) : les crédits qui manquent pour
 // lancer une vidéo ou poser une question sont débités sur la carte au
 // lancement, au prix du crédit du pack Basic. USAGE_MIN_CENTS au moins par

@@ -11,7 +11,6 @@ export const es: Dictionary = {
     videos: "Mis vídeos",
     credits: "Créditos",
     planning: "Planificación",
-    viral: "Viralidad",
   },
 
   common: {
@@ -28,8 +27,8 @@ export const es: Dictionary = {
   shell: {
     newVideo: "Nuevo vídeo",
     recharge: "Recargar",
-    nav: { studio: "Studio", videos: "Mis vídeos", planning: "Planificación", viral: "Viralidad", credits: "Créditos" },
-    navHint: { studio: "Crear un vídeo", videos: "Tus creaciones", planning: "Publicar en redes", viral: "Tendencias e ideas de vídeos", credits: "Saldo y recarga" },
+    nav: { studio: "Studio", videos: "Mis vídeos", planning: "Planificación", credits: "Créditos" },
+    navHint: { studio: "Crear un vídeo", videos: "Tus creaciones", planning: "Publicar en redes", credits: "Saldo y recarga" },
     creditsSeconds: "≈ {n} s de vídeo en 720p",
     creditsMinutes: "≈ {n} min de vídeo en 720p",
   },
@@ -474,44 +473,6 @@ export const es: Dictionary = {
     alertEmailPlanning: "Abrir la planificación",
   },
 
-  viral: {
-    eyebrow: "Viralidad",
-    title: "Analista viral",
-    emptyTitle: "¿Qué está pegando",
-    emptyTitleShine: "hoy?",
-    tiktokBoard: "TikTok · {country}",
-    pools: ["Últimos 7 días", "Videojuegos", "Entretenimiento", "Moda", "Belleza", "Mascotas", "Deporte"],
-    moreTrends: "Otras tendencias",
-    askHashtag: "¿Qué vídeo genero con la tendencia {hashtag}?",
-    askHint: "Haz clic en un hashtag para sacar un vídeo ({n} créditos).",
-    videosBoard: "Vídeos que marcan tendencia",
-    remake: "Rehacerlo con TwinPost",
-    askVideo: "¿Cómo rehago este vídeo en tendencia ({hashtag}) con TwinPost? «{caption}» {url}",
-    newChat: "Nueva conversación",
-    empty: "Haz tu pregunta, o empieza por:",
-    suggestions: [
-      "¿Qué vídeo genero hoy?",
-      "¿Qué tendencias suben esta semana?",
-      "Muéstrame los vídeos de TikTok que marcan tendencia",
-      "Analiza mis cuentas",
-    ],
-    searching: "Buscando en la web…",
-    reading: "Leyendo una página…",
-    trending: "Vídeos en tendencia…",
-    tiktok: "Tendencias de TikTok…",
-    tiktokVideos: "Vídeos de TikTok en tendencia…",
-    tiktokTitle: "Hashtags en tendencia en TikTok",
-    accounts: "Leyendo tus cuentas…",
-    videos: "Leyendo tus vídeos…",
-    thinking: "Analizando…",
-    views: "{n} visualizaciones",
-    limit: "Has alcanzado el límite de 40 mensajes de hoy. Vuelve mañana.",
-    cost: "{n} créditos por pregunta, reembolsados si la respuesta falla.",
-    noCredits: "Necesitas {n} créditos para hacer una pregunta.",
-    error: "La respuesta se interrumpió. Inténtalo de nuevo.",
-    placeholder: "¿Qué vídeo genero para TikTok esta semana?",
-    send: "Enviar",
-  },
 
   generateErrors: {
     precheckMinor:

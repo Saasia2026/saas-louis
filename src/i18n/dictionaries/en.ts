@@ -11,7 +11,6 @@ export const en: Dictionary = {
     videos: "My videos",
     credits: "Credits",
     planning: "Schedule",
-    viral: "Virality",
   },
 
   common: {
@@ -28,8 +27,8 @@ export const en: Dictionary = {
   shell: {
     newVideo: "New video",
     recharge: "Top up",
-    nav: { studio: "Studio", videos: "My videos", planning: "Schedule", viral: "Virality", credits: "Credits" },
-    navHint: { studio: "Create a video", videos: "Your creations", planning: "Post to your socials", viral: "Trends and video ideas", credits: "Balance and top-up" },
+    nav: { studio: "Studio", videos: "My videos", planning: "Schedule", credits: "Credits" },
+    navHint: { studio: "Create a video", videos: "Your creations", planning: "Post to your socials", credits: "Balance and top-up" },
     creditsSeconds: "≈ {n} s of 720p video",
     creditsMinutes: "≈ {n} min of 720p video",
   },
@@ -474,44 +473,6 @@ export const en: Dictionary = {
     alertEmailPlanning: "Open the schedule",
   },
 
-  viral: {
-    eyebrow: "Virality",
-    title: "Viral analyst",
-    emptyTitle: "What's blowing up",
-    emptyTitleShine: "today?",
-    tiktokBoard: "TikTok · {country}",
-    pools: ["Last 7 days", "Gaming", "Entertainment", "Fashion", "Beauty", "Pets", "Sports"],
-    moreTrends: "More trends",
-    askHashtag: "Which video should I generate with the {hashtag} trend?",
-    askHint: "Click a hashtag to turn it into a video ({n} credits).",
-    videosBoard: "Videos driving the trends",
-    remake: "Remake it with TwinPost",
-    askVideo: "How do I remake this trending video ({hashtag}) with TwinPost? “{caption}” {url}",
-    newChat: "New conversation",
-    empty: "Ask a question, or start with:",
-    suggestions: [
-      "Which video should I generate today?",
-      "Which trends are rising this week?",
-      "Show me the TikTok videos driving the trends",
-      "Analyze my accounts",
-    ],
-    searching: "Searching the web…",
-    reading: "Reading a page…",
-    trending: "Trending videos…",
-    tiktok: "TikTok trends…",
-    tiktokVideos: "Trending TikTok videos…",
-    tiktokTitle: "Trending on TikTok",
-    accounts: "Reading your accounts…",
-    videos: "Reading your videos…",
-    thinking: "Analyzing…",
-    views: "{n} views",
-    limit: "You've reached today's 40-message limit. Come back tomorrow.",
-    cost: "{n} credits per question, refunded if the answer fails.",
-    noCredits: "You need {n} credits to ask a question.",
-    error: "The answer was interrupted. Try again.",
-    placeholder: "Which video should I generate for TikTok this week?",
-    send: "Send",
-  },
 
   generateErrors: {
     precheckMinor:
