@@ -20,7 +20,8 @@ export const SWAP_INPUTS_BUCKET = "swap-inputs";
 // - magichour (Magic Hour Face Swap Video) : seul le visage change, le reste
 //   du clip est gardé. ~0,03 $ la seconde (1 crédit Magic Hour par image) :
 //   4 crédits la seconde, 90 s au plus, sans fiche personnage.
-// La fiche personnage (deux images Nano Banana Pro, ~0,30 $) : 12 crédits.
+// Plus de fiche personnage facturée depuis le 2026-11-05 : les images du
+// créateur partent telles quelles chez Higgsfield.
 // Barèmes alignés avec public.start_swap_generation.
 export const SWAP_ENGINES = {
   genjutsu: { creditsPerSecond: 28, maxSeconds: 30 },
@@ -80,7 +81,7 @@ export function genjutsuSettingsOf(metadata: {
   };
 }
 
-export const SWAP_SHEET_CREDITS = 12;
+export const SWAP_SHEET_CREDITS = 0;
 // Fiche personnage d'un remplacement : Magic Hour lit la photo telle quelle.
 export function swapSheetCredits(engine: SwapEngine, characters = 1) {
   return engine === "magichour" ? 0 : SWAP_SHEET_CREDITS * characters;
@@ -109,12 +110,9 @@ export function swapMethodRate(settings: GenjutsuSettings = {}, fidelity = false
 // Photos d'un personnage envoyées à Genjutsu (en pied, visage, profil…) :
 // Higgsfield accepte 8 images de référence par envoi, tous personnages confondus.
 export const GENJUTSU_MAX_IMAGES = 8;
-export const SWAP_MAX_PHOTOS_PER_CHARACTER = 4;
-export function photosPerCharacter(characters: number) {
-  return Math.min(
-    SWAP_MAX_PHOTOS_PER_CHARACTER,
-    Math.floor(GENJUTSU_MAX_IMAGES / Math.max(1, characters)),
-  );
+// Images par élément remplacé ; `reserved` : places déjà prises (le lieu).
+export function photosPerCharacter(characters: number, reserved = 0) {
+  return Math.max(1, Math.floor((GENJUTSU_MAX_IMAGES - reserved) / Math.max(1, characters)));
 }
 // Personnages remplacés dans un même clip, au plus (moteur genjutsu ; kling
 // n'en remplace qu'un). Aligné avec public.start_swap_generation.

@@ -258,7 +258,6 @@ export default async function Home() {
               max: swapMethodRate().toLocaleString(INTL_LOCALES[locale]),
               hd: swapMethodRate({ quality: "1080p" }).toLocaleString(INTL_LOCALES[locale]),
               std: swapMethodRate({ model: "standard" }).toLocaleString(INTL_LOCALES[locale]),
-              sheet: SWAP_SHEET_CREDITS,
             })}
           </p>
           <ul className="mt-10 grid gap-5 lg:grid-cols-3">

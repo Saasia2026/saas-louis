@@ -57,6 +57,22 @@ export function ShirtGlyph({ className }: { className?: string }) {
   );
 }
 
+export function MountainGlyph({ className }: { className?: string }) {
+  return (
+    <Glyph className={className}>
+      {(fill) => (
+        <>
+          <circle fill={fill} cx="17.5" cy="6.5" r="2.25" />
+          <path
+            fill={fill}
+            d="M2.6 18.4 8.9 7.6c.4-.7 1.4-.7 1.8 0l2.5 4.3 1.3-2.2c.4-.7 1.4-.7 1.8 0l5.1 8.7c.4.7-.1 1.6-.9 1.6H3.5c-.8 0-1.3-.9-.9-1.6z"
+          />
+        </>
+      )}
+    </Glyph>
+  );
+}
+
 // Cube en perspective : le dessus plein, les côtés de plus en plus sombres.
 export function CubeGlyph({ className }: { className?: string }) {
   return (

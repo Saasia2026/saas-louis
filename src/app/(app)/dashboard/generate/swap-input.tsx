@@ -1,6 +1,6 @@
 "use client";
 
-import { Maximize2, Mountain, X } from "lucide-react";
+import { Maximize2, X } from "lucide-react";
 import { useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
 import { playInline } from "@/app/inline-video";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
@@ -13,7 +13,7 @@ import {
   SWAP_VIDEO_TYPES,
 } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/client";
-import { CameraGlyph, CubeGlyph, GlassBubble, HeadGlyph, PlusGlyph, ShirtGlyph } from "./bubble-icons";
+import { CameraGlyph, CubeGlyph, GlassBubble, HeadGlyph, MountainGlyph, PlusGlyph, ShirtGlyph } from "./bubble-icons";
 
 type Supabase = ReturnType<typeof createClient>;
 
@@ -69,7 +69,6 @@ export function SwapInput({
   decorPhoto = null,
   onDecorPhoto,
   showDecor = false,
-  decorTitle,
   prompt,
   onPrompt,
   presetPeople,
@@ -87,7 +86,6 @@ export function SwapInput({
   decorPhoto?: SwapFile | null;
   onDecorPhoto?: (file: SwapFile | null) => void;
   showDecor?: boolean;
-  decorTitle?: string;
   prompt: string;
   onPrompt: (text: string) => void;
   // Plan prêt : qui chaque image remplace, déjà fixé (un libellé par image,
@@ -225,7 +223,8 @@ export function SwapInput({
       {/* Les images : une tuile « + », puis chaque image, citée @image1… */}
       <div className="rounded-2xl bg-surface-2/60 px-4 py-8">
         {/* Aucune image : le trio personnage · tenue · objet invite à en
-            ajouter ; ensuite, une tuile « + » en tête de la rangée. */}
+            ajouter ; ensuite, une tuile « + » en tête de la rangée. Le prompt
+            dit ce que chaque image remplace. */}
         {!images.length ? (
           <label
             title={`${t.studio.addImages} · ${fmt(t.studio.imagesLimit, { max: maxImages })}`}
@@ -328,16 +327,32 @@ export function SwapInput({
         )}
       </div>
 
+      {/* Le nouveau lieu : même dépôt que le clip, puis la photo en grand. */}
       {showDecor && (
-        <div className="rounded-2xl bg-surface-2/60 px-4 py-4">
-          <p className="text-xs text-faint">{decorTitle ?? t.studio.decorTitle}</p>
-          <div className="mt-2 flex items-center gap-3">
-            <label
-              title={t.studio.decorHint}
-              className={`group relative flex size-24 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-[1.25rem] transition-colors ${
-                decorPhoto ? "border border-white/10 bg-black bg-clip-padding" : "bg-surface-3 hover:bg-surface-3/70"
-              }`}
-            >
+        <div className="rounded-2xl bg-surface-2/60">
+          {decorPhoto ? (
+            <div className="relative aspect-video overflow-hidden rounded-2xl border border-white/10 bg-black bg-clip-padding">
+              {/* Aperçu local (blob:) : pas d'optimisation Next. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={decorPhoto.previewUrl} alt={t.studio.decorImage} className="size-full object-cover" />
+              <span className="absolute bottom-2 left-2 rounded-md bg-black/65 px-2 py-1 text-xs font-medium text-white">
+                {t.studio.decorRequiredTitle}
+              </span>
+              <button
+                type="button"
+                aria-label={t.studio.removePhoto}
+                title={t.studio.removePhoto}
+                onClick={() => {
+                  URL.revokeObjectURL(decorPhoto.previewUrl);
+                  onDecorPhoto?.(null);
+                }}
+                className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-danger"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+          ) : (
+            <label className="group relative flex aspect-[16/7] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-line px-4 text-center transition-colors hover:border-accent/50 hover:bg-surface-2">
               <input
                 type="file"
                 accept={SWAP_IMAGE_TYPES.join(",")}
@@ -349,33 +364,18 @@ export function SwapInput({
                   e.target.value = "";
                 }}
               />
-              {decorPhoto ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={decorPhoto.previewUrl} alt="" className="size-full object-cover" />
-              ) : (
-                <Mountain className="size-5 text-muted" />
-              )}
+              <GlassBubble className="size-14 group-hover:scale-105">
+                <MountainGlyph className="size-6" />
+              </GlassBubble>
+              <span className="mt-2.5 text-sm leading-snug font-medium">{t.studio.decorDrop}</span>
+              <span className="mt-0.5 text-xs text-muted">{t.studio.decorDropSub}</span>
               {uploading === "decor" && (
-                <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs text-white">
+                <span className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/60 text-sm text-white">
                   {t.studio.uploading}
                 </span>
               )}
             </label>
-            {decorPhoto && (
-              <button
-                type="button"
-                aria-label={t.studio.removePhoto}
-                title={t.studio.removePhoto}
-                onClick={() => {
-                  URL.revokeObjectURL(decorPhoto.previewUrl);
-                  onDecorPhoto?.(null);
-                }}
-                className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-3 text-muted hover:text-text"
-              >
-                <X className="size-4" />
-              </button>
-            )}
-          </div>
+          )}
         </div>
       )}
 
@@ -389,6 +389,7 @@ export function SwapInput({
         images={images}
         hasVideo={Boolean(video)}
       />
+      <p className="px-1 text-xs text-muted">{t.studio.promptHint}</p>
     </div>
   );
 }

@@ -237,10 +237,11 @@ export type SwapMetadata = {
   sheet?: { frontUrl: string; sideUrl?: string };
   // Images de la fiche déposées chez Higgsfield (moteur genjutsu).
   character_urls?: string[];
-  // Plusieurs personnages (moteur genjutsu seulement) : chacun avec qui il
-  // remplace et sa fiche. Le premier est aussi dans target, sheet et
-  // character_urls.
-  characters?: { target: string; image_path: string; front_url: string; urls: string[] }[];
+  // Plusieurs éléments, ou des objets (moteur genjutsu seulement) : chacun avec
+  // ce qu'il remplace et ses images. Le premier est aussi dans target, sheet
+  // et character_urls.
+  // `object` : objet ou tenue, pas un personnage.
+  characters?: { target: string; image_path: string; front_url: string; urls: string[]; object?: boolean }[];
   // Image clé du premier plan, modèle des suivantes.
   anchor_url?: string;
   // Début du remplacement, ou du dernier plan refait (échéance, voir advanceSwap).
@@ -514,20 +515,21 @@ export async function sampleFrames(url: string, start: number, seconds: number, 
 // le stockage parce que les URLs signées expirent.
 async function checkReferences(metadata: SwapMetadata) {
   const target = metadata.target;
+  const people = metadata.characters?.filter((c) => !c.object);
   if (metadata.photos) {
-    const paths = metadata.characters?.map((c) => c.image_path) ?? [metadata.character_image_path];
+    const paths = people?.map((c) => c.image_path) ?? [metadata.character_image_path];
     const { data } = await createAdminClient()
       .storage.from(SWAP_INPUTS_BUCKET)
       .createSignedUrls(paths.filter((p): p is string => Boolean(p)), 60 * 60);
     const urls = (data ?? []).map((d) => d.signedUrl);
     if (urls.length === paths.length && urls.every(Boolean)) {
-      return metadata.characters
-        ? metadata.characters.map((c, i) => ({ url: urls[i]!, target: c.target }))
+      return people
+        ? people.map((c, i) => ({ url: urls[i]!, target: c.target }))
         : [{ url: urls[0]!, target }];
     }
   }
   return (
-    metadata.characters?.map((c) => ({ url: c.front_url, target: c.target })) ?? [
+    people?.map((c) => ({ url: c.front_url, target: c.target })) ?? [
       { url: metadata.sheet!.frontUrl, target },
     ]
   );
@@ -813,8 +815,8 @@ async function advanceParts(
             // son mannequin, puis chaque mannequin (repéré par sa couleur, et
             // non plus la personne) devient son personnage.
             const mannequins = metadata.vessel_mannequins;
-            const people = metadata.characters?.map((c) => ({ urls: c.urls, target: c.target })) ?? [
-              { urls: metadata.character_urls ?? [sheet.frontUrl], target },
+            const people = metadata.characters?.map((c) => ({ urls: c.urls, target: c.target, object: c.object })) ?? [
+              { urls: metadata.character_urls ?? [sheet.frontUrl], target, object: false },
             ];
             const mannequinPass = Boolean(metadata.vessel && mannequins?.length && !part.vesselUrl);
             part.predictionId = mannequinPass
@@ -830,6 +832,7 @@ async function advanceParts(
                   characters: people.map((c, k) => ({
                     imageUrls: c.urls,
                     target: part.vesselUrl && mannequins?.[k] ? mannequinTarget(mannequins[k].color) : c.target,
+                    object: c.object,
                   })),
                   decorUrl: metadata.decor_url,
                   instructions: metadata.instructions,
@@ -1094,7 +1097,9 @@ async function advanceParts(
 
   // Contrôles menés de front : des séquences lancées ensemble finissent
   // ensemble. Genjutsu : toutes d'un coup, un contrôle raté ne fait que signaler.
-  const references = parts.some((p) => p.stage === "check")
+  // Sans personnage (objet ou lieu seuls), il n'y a rien à contrôler.
+  const checkable = !metadata.characters || metadata.characters.some((c) => !c.object);
+  const references = checkable && parts.some((p) => p.stage === "check")
     ? await checkReferences(metadata).catch(() => null)
     : null;
   await Promise.all(
@@ -1102,17 +1107,19 @@ async function advanceParts(
       .filter((p) => p.stage === "check")
       .slice(0, genjutsu ? GENJUTSU_IN_FLIGHT : CHECKS_PER_CALL)
       .map(async (part) => {
-        const result = await checkFrames(part.clipPath!)
-          .then((frames) =>
-            checkSwapShot({
-              frames,
-              characters: references ?? [{ url: sheet.frontUrl, target }],
-            }),
-          )
-          .catch((e) => {
-            console.error("checkSwapShot", errorMessage(e));
-            return null;
-          });
+        const result = !checkable
+          ? null
+          : await checkFrames(part.clipPath!)
+              .then((frames) =>
+                checkSwapShot({
+                  frames,
+                  characters: references ?? [{ url: sheet.frontUrl, target }],
+                }),
+              )
+              .catch((e) => {
+                console.error("checkSwapShot", errorMessage(e));
+                return null;
+              });
         const ok = !result || (result.replaced && result.sameCharacter);
         // Kling : nouvel essai de la vidéo, à partir de la même image clé.
         // Genjutsu : une séquence rendue est payée, elle est seulement signalée.

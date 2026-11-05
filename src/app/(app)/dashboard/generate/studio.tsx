@@ -133,7 +133,10 @@ export function Studio({
   const availablePresets = presets.filter((p) => p.people.length <= SWAP_MAX_CHARACTERS);
   // 8 images au plus (limite de Higgsfield) ; plan prêt : une par personne.
   const maxImages = preset ? preset.people.length : GENJUTSU_MAX_IMAGES;
-  const imagesReady = preset ? images.length >= preset.people.length : images.length > 0;
+  // Sans image, seule la photo du lieu peut suffire (Motion transfer).
+  const imagesReady = preset
+    ? images.length >= preset.people.length
+    : images.length > 0 || (mode === "transfer" && Boolean(decorPhoto));
   // Personnages facturés (une fiche chacun) : connus d'avance pour un plan
   // prêt ; sinon au plus un par image, trois au plus. Le serveur débite la
   // distribution retenue, jamais plus que ce prix affiché.
@@ -173,6 +176,14 @@ export function Studio({
     ? cost
     : swapCredits(1, engine, undefined, castCount, settings, false, fidelity);
   const ready = Boolean(video) && imagesReady && decorReady;
+  // Ce qu'il manque pour lancer, affiché au-dessus du bouton.
+  const missing = !video
+    ? t.studio.missingVideo
+    : !imagesReady
+      ? t.studio.missingCharacter
+      : !decorReady
+        ? t.studio.missingDecor
+        : null;
   // Connecté mais à court de crédits : « Générer » mène aux packs.
   const short = !guest && ready && credits < gate && !payAsYouGo;
   // Paiement à l'usage : ce que la carte paiera, annoncé avant de lancer.
@@ -534,7 +545,6 @@ export function Studio({
         decorPhoto={decorPhoto}
         onDecorPhoto={setDecorPhoto}
         showDecor={mode === "transfer"}
-        decorTitle={t.studio.decorRequiredTitle}
         prompt={prompt}
         onPrompt={setPrompt}
       />
@@ -668,6 +678,7 @@ export function Studio({
           </p>
         )}
         {durationKnown && seconds > 15 && <p className="mb-3 text-xs text-warning">{t.studio.longClipWarning}</p>}
+        {missing && !restoring && <p className="mb-3 text-xs text-muted">{missing}</p>}
         {/* Le prix est dans le bouton : rien d'autre à lire avant de lancer. */}
         <button
           type="submit"

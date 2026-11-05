@@ -141,6 +141,50 @@ function mannequinPrompt(people: { figure: MannequinFigure; color: MannequinColo
   ].join("\n\n");
 }
 
+// Consigne quand les images ne montrent pas que des personnages : un objet,
+// une tenue, ou seulement un nouveau lieu. Les personnages gardent leur bloc.
+function referencePrompt(
+  items: { imageUrls: string[]; target?: string; object?: boolean }[],
+  decor: boolean,
+  instructions?: string,
+) {
+  const several = items.length > 1;
+  const hasPeople = items.some((c) => !c.object);
+  let next = 1;
+  const blocks = items.map((c, i) => {
+    const first = next;
+    next += c.imageUrls.length;
+    const images = several
+      ? c.imageUrls.length > 1
+        ? `reference images ${first} to ${next - 1}`
+        : `reference image ${first}`
+      : "the reference images";
+    return c.object
+      ? `ELEMENT ${i + 1} — Replace ${c.target} with what is shown in ${images}. ` +
+          `Match its shape, proportions, colours, materials and details exactly as shown in ${images}. ` +
+          "Keep the position, scale, movement and timing of what it replaces, and keep every interaction with it: hands, contact points and reactions stay as in the source video."
+      : `ELEMENT ${i + 1} — Replace ${describeTarget(c.target)} with the character shown in ${images}. ` +
+          `Match that character's face, age, skin or fur, hairstyle and hair colour, body proportions, clothing and accessories exactly as shown in ${images}. ` +
+          "Preserve this original person's exact actions, rhythm, posture, head movements, hand gestures, gaze, facial expressions and lip-sync throughout the entire video; do not add a smile or extra mouth movement.";
+  });
+  return [
+    `STRICT REPLACEMENT. Edit the uploaded source video: change only what is listed here.${decor ? " The setting is replaced by the location shown in the FINAL reference image." : ""} Several reference images of one element are different views of that same element.`,
+    `SOURCE PRIORITY — The source video controls all movement, performance, lip-sync, facial expressions, gaze, gestures, interactions, body positions, camera movement, framing, editing and timing. The reference images control only the appearance of what they replace.${decor ? " The final reference image controls only the environment." : ""}`,
+    ...blocks,
+    ...(instructions
+      ? [`REQUESTED CHANGES — Also apply these changes asked by the creator: ${instructions} Apply them faithfully; everything they do not cover follows the other rules.`]
+      : []),
+    ...(hasPeople
+      ? ["PERMANENT IDENTITY ASSIGNMENT — Bind each replacement to what it replaces for the full clip, even through turns, overlap, different framing, motion blur and temporary occlusion. Never blend faces, exchange outfits or transfer one person's gestures to another."]
+      : []),
+    "EXACT SOURCE PERFORMANCE — Reproduce the existing performance moment by moment. Keep every gesture, pause, mouth movement, head turn, body sway and interaction at its original time and speed. Preserve every camera movement and every cut exactly where they occur. Keep the original duration, aspect ratio and playback speed. Do not introduce new choreography, poses, reactions, camera angles, cuts, slow motion or additional people.",
+    decor
+      ? `ENVIRONMENT AND INTEGRATION — Rebuild the whole scene inside the location shown in the FINAL reference image. Keep the original framing, camera distance, camera movement and cuts, but the walls, ground, furniture and depth of the shot now belong to that location.${items.length ? "" : " Keep every person's appearance and clothing as in the source video."} Light everyone consistently with that location, with accurate contact shadows. Do not copy borders, labels or captions from the reference images into the output.`
+      : `ENVIRONMENT AND INTEGRATION — Apart from what is listed here, keep the original background, set, objects, every other person, lighting, shadows, perspective and composition from the source video. Adapt each replacement to the scene's lighting and movement, with accurate contact shadows and consistent positioning. Do not copy backgrounds, borders, labels or captions from the reference images into the output.`,
+    `FINAL RESULT — The same ${decor ? "performances and camera work as the source video, played inside the location from the final reference image" : "source video and the same performances"}, with only the listed elements changed according to their reference images.`,
+  ].join("\n\n");
+}
+
 // Consigne Genjutsu, en blocs titrés : la vidéo source commande tout le jeu,
 // les références commandent l'identité ; chaque personne remplacée est liée à
 // son personnage pour tout le clip ; la scène reste intacte ; la planche de
@@ -148,12 +192,15 @@ function mannequinPrompt(people: { figure: MannequinFigure; color: MannequinColo
 // Plusieurs personnages : les images de référence sont envoyées à la suite,
 // personnage par personnage ; la consigne dit lesquelles montrent qui.
 function genjutsuPrompt(
-  characters: { imageUrls: string[]; target?: string }[],
+  characters: { imageUrls: string[]; target?: string; object?: boolean }[],
   decor = false,
   // Consignes libres du créateur, déjà en anglais impératif (voir
   // polishSwapInstructions) : changements en plus du remplacement.
   instructions?: string,
 ) {
+  if (!characters.length || characters.some((c) => c.object)) {
+    return referencePrompt(characters, decor, instructions);
+  }
   const several = characters.length > 1;
   let next = 1;
   const blocks = characters.map((c, i) => {
@@ -208,8 +255,9 @@ function genjutsuPrompt(
 // dans le verrou au lieu d'être doublé par le suivi suivant.
 export async function createGenjutsuSwap(input: {
   videoUrl: string;
-  // Un personnage, ou plusieurs (chacun avec qui il remplace).
-  characters: { imageUrls: string[]; target?: string }[];
+  // Ce qui change : personnages et objets, chacun avec ce qu'il remplace.
+  // Vide : seul le lieu change.
+  characters: { imageUrls: string[]; target?: string; object?: boolean }[];
   // Photo du lieu (déjà chez Higgsfield) : la scène est reconstruite dans ce
   // décor, via Motion Transfer. Absente : Object Swap, décor du clip gardé.
   decorUrl?: string;

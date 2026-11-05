@@ -2,7 +2,6 @@
 
 import { fmt } from "@/i18n/config";
 import { getDictionary } from "@/i18n/server";
-import { createFalCharacterPlanche, falEnabled } from "@/lib/fal";
 import {
   SWAP_ENGINES,
   SWAP_INPUTS_BUCKET,
@@ -72,20 +71,26 @@ const INPUT_URL_TTL_SECONDS = 60 * 60;
 // Images du passage montrées au contrôle d'avant paiement.
 const PRECHECK_FRAMES = 6;
 
-// Distribution rendue par Claude utilisable : 1 à 3 personnages, chacun avec
-// au moins une photo existante, aucune photo prise deux fois, et qui il
-// remplace dès qu'ils sont plusieurs.
-function validCast(cast: SwapCast["cast"], photoCount: number) {
-  if (cast.length < 1 || cast.length > SWAP_MAX_CHARACTERS) return false;
+// Distribution rendue par Claude utilisable : au plus 3 personnages et
+// 3 objets, chacun avec au moins une photo existante et ce qu'il remplace
+// (facultatif pour un personnage seul), aucune photo prise deux fois.
+function validCast(plan: SwapCast, photoCount: number) {
+  const { cast, objects, location } = plan;
+  if (cast.length > SWAP_MAX_CHARACTERS || objects.length > SWAP_MAX_CHARACTERS) return false;
   const seen = new Set<number>();
+  const free = (n: number) => {
+    if (!Number.isInteger(n) || n < 1 || n > photoCount || seen.has(n)) return false;
+    seen.add(n);
+    return true;
+  };
+  const alone = cast.length === 1 && !objects.length;
   for (const c of cast) {
-    if (!c.photos.length || (cast.length > 1 && !c.target.trim())) return false;
-    for (const n of c.photos) {
-      if (!Number.isInteger(n) || n < 1 || n > photoCount || seen.has(n)) return false;
-      seen.add(n);
-    }
+    if (!c.photos.length || (!alone && !c.target.trim()) || !c.photos.every(free)) return false;
   }
-  return true;
+  for (const o of objects) {
+    if (!o.photos.length || !o.target.trim() || !o.photos.every(free)) return false;
+  }
+  return location === 0 || free(location);
 }
 
 // Photos déposées par le créateur (URL signées), envoyées chez Higgsfield
@@ -167,7 +172,7 @@ export async function startSwap(input: {
       : DEFAULT_SWAP_QUALITY;
   const hd = quality === "1080p";
   const settings = { model, quality };
-  const vessel = input.vessel === true;
+  let vessel = input.vessel === true;
 
   // Chemins sous le dossier de l'utilisateur uniquement.
   const own = (p: unknown) =>
@@ -176,11 +181,12 @@ export async function startSwap(input: {
   if (input.presetId !== undefined && !preset) return { error: errors.swapFiles };
   const videoPath = preset ? preset.path : input.videoPath;
   const list = Array.isArray(input.characters) ? input.characters : [];
-  // Photos par personnage : 8 au plus en tout chez Higgsfield.
+  // Images par personnage : 8 au plus en tout chez Higgsfield.
   const perCharacter = photosPerCharacter(list.length);
   let characters = list.map((c, i) => ({
     imagePath: c?.imagePath,
     extraPaths: (Array.isArray(c?.extraPaths) ? c.extraPaths : []).slice(0, perCharacter - 1),
+    object: false,
     // Plan prêt : qui remplacer est fixé par le plan, personne par personne.
     target: preset
       ? (preset.people[i]?.target ?? "")
@@ -195,10 +201,15 @@ export async function startSwap(input: {
       ? input.photos.filter((p): p is string => typeof p === "string").slice(0, GENJUTSU_MAX_IMAGES)
       : [];
   const flat = flatPhotos.length > 0;
-  if (flat) characters = [{ imagePath: flatPhotos[0], extraPaths: flatPhotos.slice(1), target: "" }];
-  if (!characters.length || characters.length > SWAP_MAX_CHARACTERS) return { error: errors.swapFiles };
+  if (flat) {
+    characters = [{ imagePath: flatPhotos[0], extraPaths: flatPhotos.slice(1), target: "", object: false }];
+  }
+  let decorImagePath = typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
+  // Sans image dans la case principale, seul le lieu change.
+  if ((!characters.length && !decorImagePath) || characters.length > SWAP_MAX_CHARACTERS) {
+    return { error: errors.swapFiles };
+  }
   if (preset && characters.length > preset.people.length) return { error: errors.swapFiles };
-  const decorImagePath = typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
   const rawInstructions =
     typeof input.instructions === "string" ? input.instructions.trim().slice(0, 1000) : "";
   if (
@@ -219,7 +230,7 @@ export async function startSwap(input: {
   const [sourceUrl, ...rest] = (signed ?? []).map((s) => s.signedUrl);
   // Toutes non nulles, vérifié juste après.
   const allPhotoUrls = rest.slice(0, allPhotoPaths.length) as string[];
-  const decorSignedUrl = decorImagePath ? rest[allPhotoPaths.length] : undefined;
+  let decorSignedUrl = decorImagePath ? rest[allPhotoPaths.length] : undefined;
   if (!sourceUrl || rest.length !== allPhotoPaths.length + extraPaths.length || rest.some((u) => !u)) {
     return { error: errors.swapFiles };
   }
@@ -271,14 +282,12 @@ export async function startSwap(input: {
   ]);
   if (!shots?.length) return { error: errors.swapUnreadable };
 
-  // Distribution des rôles (voir planSwapCast) : dès qu'il y a du texte ou
-  // plusieurs photos, Claude relit tout et corrige la répartition — deux
-  // remplacements écrits dans un seul champ deviennent deux personnages, la
-  // photo d'une autre personne rangée parmi celles du premier devient la
-  // sienne. Plan prêt : sa distribution est fixée. Claude indisponible : la
-  // répartition du créateur, consignes reformulées à part.
-  const needsPlan =
-    !preset && (Boolean(rawInstructions) || characters.some((c) => c.target || c.extraPaths.length));
+  // Distribution des images (voir planSwapCast) : Claude relit tout et dit ce
+  // que chaque image remplace — deux remplacements écrits dans un seul champ
+  // font deux personnages, une photo de voiture devient un objet, une photo
+  // d'endroit le lieu. Plan prêt : sa distribution est fixée. Claude
+  // indisponible : tout est un personnage, consignes reformulées à part.
+  const needsPlan = !preset;
   let groupStart = 1;
   const plan =
     needsPlan && frames
@@ -300,19 +309,31 @@ export async function startSwap(input: {
         })
       : null;
   let instructions: string | undefined;
-  if (plan && validCast(plan.cast, allPhotoPaths.length)) {
-    const perCast = photosPerCharacter(plan.cast.length);
-    characters = plan.cast.map((c) => ({
-      imagePath: allPhotoPaths[c.photos[0] - 1],
-      extraPaths: c.photos.slice(1, perCast).map((n) => allPhotoPaths[n - 1]),
-      target: c.target.trim().slice(0, 200),
-    }));
+  if (plan && validCast(plan, allPhotoPaths.length)) {
+    if (plan.location && !decorImagePath) {
+      decorImagePath = allPhotoPaths[plan.location - 1];
+      decorSignedUrl = allPhotoUrls[plan.location - 1];
+    }
+    const perItem = photosPerCharacter(plan.cast.length + plan.objects.length, decorImagePath ? 1 : 0);
+    const items = (list: SwapCast["cast"], object: boolean) =>
+      list.map((c) => ({
+        imagePath: allPhotoPaths[c.photos[0] - 1],
+        extraPaths: c.photos.slice(1, perItem).map((n) => allPhotoPaths[n - 1]),
+        target: c.target.trim().slice(0, 200),
+        object,
+      }));
+    // Les personnages d'abord : les mannequins les suivent dans cet ordre.
+    characters = [...items(plan.cast, false), ...items(plan.objects, true)];
     instructions = plan.instructions.trim().slice(0, 1000) || undefined;
+    // Rien à remplacer avec ces images : rien n'est débité.
+    if (!characters.length && !decorImagePath) return { error: errors.swapNoTarget };
   } else {
     // Sans distribution exploitable, des images en vrac font un seul
     // personnage, avec les photos qu'un personnage peut avoir.
     if (flat) {
-      characters = [{ ...characters[0], extraPaths: characters[0].extraPaths.slice(0, photosPerCharacter(1) - 1) }];
+      characters = [
+        { ...characters[0], extraPaths: characters[0].extraPaths.slice(0, photosPerCharacter(1, decorImagePath ? 1 : 0) - 1) },
+      ];
     }
     // Consignes libres reformulées en anglais ; en panne, le texte brut sert.
     if (rawInstructions) {
@@ -324,13 +345,18 @@ export async function startSwap(input: {
     }
   }
   const several = characters.length > 1;
-  // Plusieurs personnages : il faut savoir qui chacun remplace.
+  const people = characters.filter((c) => !c.object);
+  // La haute fidélité passe par des mannequins de personnes.
+  if (!people.length) vessel = false;
+  // Toutes les images comptent comme personnages seulement si c'est le cas.
+  const listed = several || people.length !== characters.length;
+  // Plusieurs éléments : il faut savoir ce que chacun remplace.
   if (several && characters.some((c) => !c.target)) return { error: errors.swapTargets };
   // Photos de chaque personnage, dans la distribution retenue.
   const urlOfPath = new Map(allPhotoPaths.map((p, i) => [p, allPhotoUrls[i]!]));
   const photoUrls = characters.map((c) => [c.imagePath as string, ...c.extraPaths].map((p) => urlOfPath.get(p)!));
   const imageUrls = photoUrls.map((urls) => urls[0]);
-  const target = characters[0].target || undefined;
+  const target = characters[0]?.target || undefined;
 
   // Contrôle du clip et des photos, sur la distribution retenue. Le filtre du
   // moteur refuse les enfants et la nudité : le créateur le sait tout de
@@ -339,7 +365,7 @@ export async function startSwap(input: {
     ? await precheckSwapInputs({
         frames,
         photoUrls: [...imageUrls, ...(decorSignedUrl ? [decorSignedUrl] : [])],
-        characterCount: characters.length,
+        characterCount: people.length,
       }).catch((e) => {
         console.error("startSwap: contrôle", errorMessage(e));
         return null;
@@ -357,7 +383,7 @@ export async function startSwap(input: {
   // passe.
   const feminine = precheck && !precheck.blocked ? precheck.feminine : undefined;
   const mannequins = vessel
-    ? characters.map((_, i) => ({
+    ? people.map((_, i) => ({
         figure: (feminine?.[i] ? "femme" : "homme") as MannequinFigure,
         color: MANNEQUIN_COLORS[i],
       }))
@@ -376,7 +402,7 @@ export async function startSwap(input: {
     source_video_path: videoPath,
     ...(preset && { preset: preset.id }),
     source_start: start,
-    character_image_path: characters[0].imagePath,
+    character_image_path: characters[0]?.imagePath,
     started_at: new Date().toISOString(),
     ...(target && { target }),
   };
@@ -391,8 +417,8 @@ export async function startSwap(input: {
       p_metadata: metadata,
       p_engine: engine,
       p_billed_seconds: billedSeconds,
-      // Une fiche par personnage.
-      p_characters: characters.length,
+      // Fiche gratuite désormais : le nombre reste seulement borné à 1-3.
+      p_characters: Math.min(SWAP_MAX_CHARACTERS, Math.max(1, people.length)),
       p_hd: hd,
       // Haute fidélité : la passe mannequin, au tarif de celle des personnages.
       p_vessel: vessel,
@@ -426,28 +452,18 @@ export async function startSwap(input: {
 
   try {
     // En même temps, pour ne pas faire attendre : les séquences du clip, les
-    // références de chaque personnage (planche IA et photos), la photo du
-    // lieu s'il y en a une et la planche de chaque mannequin.
+    // images de chaque élément, telles que déposées, la photo du lieu s'il y
+    // en a une et la planche de chaque mannequin.
     const [parts, prepared, decorUrl, sheetUrls] = await Promise.all([
       mapInBatches(shots, PREPARE_BATCH, async (shot): Promise<SwapPart> => {
         const clip = await preparePart(sourceUrl, start + shot.start, shot.seconds, "genjutsu", hd);
         return { ...shot, videoUrl: await uploadToHiggsfield(clip, "video/mp4"), stage: "video" };
       }),
       Promise.all(
-        photoUrls.map(async (urls) => {
-          const planche = falEnabled()
-            ? await createFalCharacterPlanche(urls[0]).catch((e) => {
-                if (isOutOfCredit(e)) throw e;
-                console.error("createFalCharacterPlanche", errorMessage(e));
-                return null;
-              })
-            : null;
-          const toUpload = planche ? [planche, ...urls] : urls;
-          return {
-            sheet: { frontUrl: planche ?? urls[0] },
-            urls: await uploadPhotos(toUpload),
-          };
-        }),
+        photoUrls.map(async (urls) => ({
+          sheet: { frontUrl: urls[0] },
+          urls: await uploadPhotos(urls),
+        })),
       ),
       decorSignedUrl ? uploadPhotos([decorSignedUrl]).then((urls) => urls[0]) : undefined,
       Promise.all(mannequins.map((m) => uploadMannequinSheet(admin, mannequinSheetPath(m.figure, m.color)))),
@@ -460,18 +476,20 @@ export async function startSwap(input: {
         status: "processing",
         metadata: {
           ...metadata,
-          sheet: prepared[0].sheet,
-          character_urls: prepared[0].urls,
+          // Lieu seul : sa photo sert de repère au suivi.
+          sheet: prepared[0]?.sheet ?? { frontUrl: decorSignedUrl },
+          character_urls: prepared[0]?.urls ?? [],
           ...(decorUrl && { decor_url: decorUrl }),
           ...(vessel && {
             vessel_mannequins: mannequins.map((m, i) => ({ ...m, sheet_url: sheetUrls[i] })),
           }),
-          ...(several && {
+          ...((listed || !characters.length) && {
             characters: characters.map((c, i) => ({
               target: c.target,
               image_path: c.imagePath,
               front_url: prepared[i].sheet.frontUrl,
               urls: prepared[i].urls,
+              ...(c.object && { object: true }),
             })),
           }),
           swap_parts: parts,

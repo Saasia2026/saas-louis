@@ -64,19 +64,24 @@ Ignore image quality, the background, other people and small glitches.`,
 
 const CastSchema = z.object({
   cast: z.array(z.object({ photos: z.array(z.number().int()), target: z.string() })),
+  objects: z.array(z.object({ photos: z.array(z.number().int()), target: z.string() })),
+  location: z.number().int(),
   instructions: z.string(),
 });
 
 export type SwapCast = z.infer<typeof CastSchema>;
 
-// Distribution des rôles avant le lancement : le créateur écrit souvent tout
+// Distribution des images avant le lancement : comme sur Higgsfield, une image
+// peut montrer un personnage, un objet, une tenue ou un lieu, et le prompt dit
+// ce qu'elle remplace. Le créateur écrit souvent tout
 // dans un seul champ (« remplace le chauve par le blond et le barbu par
 // l'homme en costume ») et range la photo d'un second personnage parmi les
 // autres photos du premier. Claude relit ses textes, ses photos et quelques
 // images du clip, et rend la vraie distribution : un personnage par
 // personne remplacée, ses photos, et qui il remplace (description visuelle
-// en anglais). Les autres demandes (objets, décor…) ressortent en consignes
-// anglaises. Numéros de photo à partir de 1, dans l'ordre reçu.
+// en anglais), de même pour chaque objet, et la photo du lieu s'il y en a une.
+// Les demandes sans image ressortent en consignes anglaises. Numéros de photo
+// à partir de 1, dans l'ordre reçu.
 export async function planSwapCast(input: {
   // Images JPEG (base64) réparties sur le passage choisi.
   frames: string[];
@@ -95,13 +100,16 @@ export async function planSwapCast(input: {
     output_config: { effort: "medium", format: betaZodOutputFormat(CastSchema) },
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
-    system: `You set up an AI video edit that replaces people in a filmed clip with characters shown in photos. You receive frames from the clip, the photos the creator uploaded (numbered), how the creator grouped those photos into characters, the creator's text for each character ("who they replace" — often French, sometimes a whole sentence describing several replacements) and optional free instructions. Work out the real casting.
+    system: `You set up an AI video edit that replaces people, objects, outfits or the setting in a filmed clip, using reference photos. You receive frames from the clip, the photos the creator uploaded (numbered), how the creator grouped those photos, the creator's text for each group and optional free instructions. Work out what each photo is for.
 
-- "cast": one entry per distinct character to put into the clip, 1 to 3 entries. "photos": the numbers of every photo showing that same character, the best full-body photo first. A photo that shows a different person or character than the rest of its group is a separate entry, even if the creator put it in the same group. "target": a short English visual description of the ONE person in the clip this character replaces, as they appear in the frames (hair, clothing, position), e.g. "the bald fighter in green shorts". Use the creator's texts to decide who replaces whom; if the creator did not say, pick the most prominent person. Two entries never replace the same person.
-- "instructions": the creator's other requested changes that are not about who replaces whom (objects, props, setting…), as short English imperative sentences; "" if none. A replacement that has a photo belongs in "cast", never here; a transformation with no photo (e.g. "turn the referee into a robot") belongs here.
+- "cast": one entry per distinct character to put into the clip, 0 to 3 entries. People, animals, creatures and mascots are characters. "photos": the numbers of every photo showing that same character, the best full-body photo first. A photo that shows a different person or character than the rest of its group is a separate entry, even if the creator put it in the same group. "target": a short English visual description of the ONE person in the clip this character replaces, as they appear in the frames (hair, clothing, position), e.g. "the bald fighter in green shorts". Use the creator's texts to decide who replaces whom; if the creator did not say, pick the most prominent person. Two entries never replace the same person.
+- "objects": one entry per distinct object, product, vehicle, prop or outfit shown in the photos to put into the clip, 0 to 3 entries. "photos": the numbers of every photo showing that same thing. "target": a short English visual description of what it replaces in the clip, as it appears in the frames, e.g. "the wooden chair" or "the black suit the man wears". If the creator says an object replaces a person, the target is that person.
+- "location": the number of the photo of a place the scene should move to, 0 if there is none. Use it only when the creator asks for that place, or when a photo clearly shows a place and nothing else in it can be used.
+- "instructions": the creator's other requested changes that no photo covers, as short English imperative sentences; "" if none. A transformation with no photo (e.g. "turn the referee into a robot", "the chair becomes a sports car") belongs here.
 - Every photo number appears in at most one entry. Do not name real people; describe them visually.
 - The creator's text may cite photos as @image1, @image2… (also @img1, @photo1 or "image 1", in any language): @imageN is Photo N. @video or @clip is the clip itself. In "instructions", never cite photo numbers or @tags: describe things visually.
-- When the creator did not group the photos, group them yourself: photos showing the same character go in one entry. Without text, put each distinct character on the most prominent people of the clip, the most prominent first.`,
+- When the creator did not group the photos, group them yourself: photos showing the same character or object go in one entry. Without text, put each distinct character on the most prominent people of the clip, the most prominent first, and each object on the most similar thing visible in the frames.
+- Leave a photo out when you cannot tell what it should replace: an object photo with no text and nothing similar in the frames goes nowhere.`,
     messages: [
       {
         role: "user",
