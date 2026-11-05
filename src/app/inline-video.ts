@@ -9,7 +9,7 @@ const IN_APP = /musical_ly|BytedanceWebview|TikTok/i;
 let blocked: boolean | null = null;
 const starting = new WeakSet<HTMLVideoElement>();
 
-function isBlocked() {
+export function inlinePlaybackBlocked() {
   if (blocked === null) {
     const ua = navigator.userAgent;
     blocked = /iPhone|iPad|iPod/.test(ua) && IN_APP.test(ua);
@@ -30,7 +30,7 @@ function isBlocked() {
 
 // play() pour les vidéos que la page lance seule (aperçus, démos, boucles).
 export function playInline(video: HTMLVideoElement) {
-  if (isBlocked()) return;
+  if (inlinePlaybackBlocked()) return;
   starting.add(video);
   video
     .play()

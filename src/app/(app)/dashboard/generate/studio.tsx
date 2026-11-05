@@ -28,12 +28,13 @@ import {
 import type { SwapPreset } from "@/lib/presets";
 import type { SwapHistoryItem } from "../swap-history";
 import { getGeneration, type GenerationView } from "./actions";
+import type { DemoClip } from "./demo-clips";
 import { clearDraft, loadDraft, saveDraft, type DraftFile } from "./draft";
 import { ExamplesPanel } from "./examples-panel";
 import { HistoryEmpty, HistoryList } from "./history-list";
 import { cancelSwap, redoSwapShot, startSwap } from "./swap-actions";
 import { MODEL_ICON, ModelBadge, ModelCard, ModeTabs, Option, PanelTabs, SettingRow, Tag } from "./studio-controls";
-import { SwapInput, clampedStart, uploadSwapFile, type SwapFile } from "./swap-input";
+import { SwapInput, clampedStart, readDuration, uploadSwapFile, type SwapFile } from "./swap-input";
 
 const POLL_INTERVAL_MS = 5_000;
 // Durée annoncée d'un rendu. Les séquences se rendent en même temps (quelques
@@ -309,6 +310,30 @@ export function Studio({
     setLength(null);
     // Les images déjà déposées restent, une par personne du plan.
     setImages((list) => list.slice(0, p.people.length));
+  }
+
+  // Reprendre une démo : son clip entre dans le studio comme s'il venait
+  // d'être déposé, il ne reste qu'à ajouter son personnage.
+  async function recreateDemo(clip: DemoClip) {
+    const res = await fetch(`${clip.base}.mp4`).catch(() => null);
+    if (!res?.ok) return false;
+    const file = new File([await res.blob()], `${clip.base.split("/").pop()}.mp4`, { type: "video/mp4" });
+    const previewUrl = URL.createObjectURL(file);
+    const [seconds, path] = await Promise.all([
+      readDuration(previewUrl),
+      userId ? uploadSwapFile(supabase, userId, file) : "",
+    ]);
+    if (path === null) {
+      URL.revokeObjectURL(previewUrl);
+      return false;
+    }
+    if (video) URL.revokeObjectURL(video.previewUrl);
+    setVideo({ path, previewUrl, seconds, start: 0, file });
+    setPreset(null);
+    setLength(null);
+    setMode("replace");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return true;
   }
 
   // À court de crédits : le projet est gardé, direction les packs, avec ce
@@ -709,7 +734,7 @@ export function Studio({
               ) : (
                 <p className="py-16 text-center text-sm text-muted">{t.studio.historyNone}</p>
               ))}
-            {tab === "examples" && <ExamplesPanel />}
+            {tab === "examples" && <ExamplesPanel onRecreate={recreateDemo} />}
             {tab === "how" && <HistoryEmpty />}
           </div>
         </div>

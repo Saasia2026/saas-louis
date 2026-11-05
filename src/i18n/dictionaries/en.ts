@@ -229,6 +229,15 @@ export const en: Dictionary = {
     examples: {
       title: "One video, endless versions",
       text: "Keep the gestures, camera and sound of your clip, and change who plays it: your characters, your products, your outfits.",
+      watch: "Watch as reels",
+      open: "Open this demo",
+      recreate: "Recreate this video",
+      recreating: "Preparing the clip…",
+      recreateError: "This video couldn't be loaded. Try again.",
+      soundOn: "Turn sound on",
+      soundOff: "Turn sound off",
+      previous: "Previous video",
+      next: "Next video",
     },
     demo: {
       title: "How it works",

@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { playInline } from "./inline-video";
 
 // Ne fait jouer que les <video> d'un bloc qui sont à l'écran (ou presque),
@@ -6,7 +6,16 @@ import { playInline } from "./inline-video";
 // et un téléphone reste fluide. Les vidéos ajoutées plus tard au bloc sont
 // suivies aussi. Les vidéos ainsi pilotées n'ont pas besoin d'autoPlay : sans
 // lui, celles qui ne sont pas encore à l'écran ne se téléchargent pas.
-export function usePauseWhenHidden(container: RefObject<HTMLElement | null>) {
+// `paused` : tout s'arrête, le temps qu'autre chose occupe l'écran.
+export function usePauseWhenHidden(container: RefObject<HTMLElement | null>, paused = false) {
+  const onScreen = useRef(new Set<HTMLVideoElement>());
+  const held = useRef(paused);
+
+  useEffect(() => {
+    held.current = paused;
+    onScreen.current.forEach((video) => (paused ? video.pause() : playInline(video)));
+  }, [paused]);
+
   useEffect(() => {
     const el = container.current;
     if (!el) return;
@@ -14,7 +23,9 @@ export function usePauseWhenHidden(container: RefObject<HTMLElement | null>) {
       (entries) => {
         for (const { target, isIntersecting } of entries) {
           const video = target as HTMLVideoElement;
-          if (isIntersecting) playInline(video);
+          if (isIntersecting) onScreen.current.add(video);
+          else onScreen.current.delete(video);
+          if (isIntersecting && !held.current) playInline(video);
           else video.pause();
         }
       },

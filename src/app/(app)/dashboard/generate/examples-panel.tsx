@@ -1,70 +1,44 @@
 "use client";
 
-import { useRef } from "react";
+import { Play } from "lucide-react";
+import { useRef, useState } from "react";
 import { usePauseWhenHidden } from "@/app/pause-hidden";
 import { useI18n } from "@/i18n/provider";
+import { DEMO_CLIPS, type DemoClip } from "./demo-clips";
+import { DemoReels } from "./demo-reels";
 
-// Rendus montrés dans l'onglet Exemples (public/examples), avec leur format :
-// d'abord la galerie (540 px, sans son), puis les premiers rendus Genjutsu.
-const EXAMPLES: { name: string; ratio: string }[] = [
-  { name: "gallery/g-01", ratio: "9/16" },
-  { name: "gallery/g-02", ratio: "3/4" },
-  { name: "gallery/g-03", ratio: "9/16" },
-  { name: "gallery/g-04", ratio: "9/16" },
-  { name: "gallery/g-05", ratio: "9/16" },
-  { name: "gallery/g-06", ratio: "9/16" },
-  { name: "gallery/g-07", ratio: "9/16" },
-  { name: "gallery/g-08", ratio: "9/16" },
-  { name: "gallery/g-09", ratio: "9/16" },
-  { name: "gallery/g-10", ratio: "9/16" },
-  { name: "gallery/g-11", ratio: "9/16" },
-  { name: "gallery/g-12", ratio: "9/16" },
-  { name: "gallery/g-13", ratio: "9/16" },
-  { name: "gallery/g-14", ratio: "9/16" },
-  { name: "gallery/g-15", ratio: "9/16" },
-  { name: "gallery/g-16", ratio: "9/16" },
-  { name: "gallery/g-17", ratio: "9/16" },
-  { name: "gallery/g-18", ratio: "3/4" },
-  { name: "gallery/g-19", ratio: "9/16" },
-  { name: "gallery/g-20", ratio: "9/16" },
-  { name: "gallery/g-21", ratio: "9/16" },
-  { name: "genjutsu-cage", ratio: "9/16" },
-  { name: "genjutsu-danse", ratio: "9/16" },
-  { name: "genjutsu-dunk", ratio: "9/16" },
-  { name: "genjutsu-bras-de-fer", ratio: "1/1" },
-  { name: "genjutsu-diable", ratio: "9/16" },
-  { name: "genjutsu-camion", ratio: "4/3" },
-  { name: "genjutsu-lincoln", ratio: "9/16" },
-  { name: "genjutsu-panier", ratio: "3/4" },
-  { name: "mma-apres", ratio: "9/16" },
-  { name: "micro-apres", ratio: "9/16" },
-];
-
-function Clip({ name, className = "" }: { name: string; className?: string }) {
+function Clip({ clip, label, onOpen, className = "" }: { clip: DemoClip; label: string; onOpen: () => void; className?: string }) {
   return (
-    <video
-      src={`/examples/${name}.mp4`}
-      poster={`/examples/${name}.jpg`}
-      muted
-      loop
-      playsInline
-      webkit-playsinline=""
-      disablePictureInPicture
-      disableRemotePlayback
-      preload="none"
-      aria-hidden
-      className={`pointer-events-none size-full object-cover ${className}`}
-    />
+    <button type="button" onClick={onOpen} aria-label={label} className="block size-full cursor-pointer">
+      <video
+        src={`${clip.base}.mp4`}
+        poster={`${clip.base}.jpg`}
+        muted
+        loop
+        playsInline
+        webkit-playsinline=""
+        disablePictureInPicture
+        disableRemotePlayback
+        preload="none"
+        aria-hidden
+        className={`pointer-events-none size-full object-cover ${className}`}
+      />
+    </button>
   );
 }
 
+const [HERO, ...MOSAIC] = DEMO_CLIPS;
+
 // Onglet Exemples : l'idée en une phrase à côté d'un rendu, puis une
-// mosaïque de rendus qui ne jouent qu'à l'écran.
-export function ExamplesPanel() {
+// mosaïque de rendus qui ne jouent qu'à l'écran. Une démo touchée ouvre le
+// fil façon reels, d'où elle peut être reprise dans le studio.
+export function ExamplesPanel({ onRecreate }: { onRecreate: (clip: DemoClip) => Promise<boolean> }) {
   const { t } = useI18n();
   const E = t.studio.examples;
   const root = useRef<HTMLDivElement>(null);
-  usePauseWhenHidden(root);
+  // Démo ouverte dans le fil ; la mosaïque s'arrête pendant ce temps.
+  const [opened, setOpened] = useState<number | null>(null);
+  usePauseWhenHidden(root, opened !== null);
 
   return (
     <div ref={root} className="space-y-5">
@@ -72,22 +46,34 @@ export function ExamplesPanel() {
         <div>
           <h2 className="font-headline text-4xl leading-[0.92] uppercase sm:text-5xl">{E.title}</h2>
           <p className="mt-3 max-w-md text-sm leading-relaxed text-muted">{E.text}</p>
+          <button type="button" onClick={() => setOpened(0)} className="btn btn-secondary mt-4 px-4 py-2 text-sm">
+            <Play />
+            {E.watch}
+          </button>
         </div>
         <div className="aspect-video overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding">
-          <Clip name="genjutsu-salle" />
+          <Clip clip={HERO} label={E.open} onOpen={() => setOpened(0)} />
         </div>
       </div>
       <div className="columns-2 gap-3 sm:columns-3 [&>*]:mb-3">
-        {EXAMPLES.map(({ name, ratio }) => (
+        {MOSAIC.map((clip, i) => (
           <div
-            key={name}
-            style={{ aspectRatio: ratio }}
+            key={clip.base}
+            style={{ aspectRatio: clip.ratio }}
             className="group break-inside-avoid overflow-hidden rounded-xl border border-line bg-black bg-clip-padding"
           >
-            <Clip name={name} className="transition-transform duration-500 group-hover:scale-[1.04]" />
+            <Clip
+              clip={clip}
+              label={E.open}
+              onOpen={() => setOpened(i + 1)}
+              className="transition-transform duration-500 group-hover:scale-[1.04]"
+            />
           </div>
         ))}
       </div>
+      {opened !== null && (
+        <DemoReels clips={DEMO_CLIPS} start={opened} onClose={() => setOpened(null)} onRecreate={onRecreate} />
+      )}
     </div>
   );
 }

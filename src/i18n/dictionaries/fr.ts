@@ -231,6 +231,15 @@ export const fr = {
     examples: {
       title: "Une vidéo, mille versions",
       text: "Garde les gestes, la caméra et le son de ton clip, et change qui le joue : tes personnages, tes produits, tes tenues.",
+      watch: "Regarder en reels",
+      open: "Ouvrir cette démo",
+      recreate: "Reprendre cette vidéo",
+      recreating: "Préparation du clip…",
+      recreateError: "Impossible de reprendre cette vidéo. Réessaie.",
+      soundOn: "Activer le son",
+      soundOff: "Couper le son",
+      previous: "Vidéo précédente",
+      next: "Vidéo suivante",
     },
     demo: {
       title: "Comment ça marche",
