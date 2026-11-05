@@ -286,7 +286,9 @@ export async function startSwap(input: {
   // que chaque image remplace — deux remplacements écrits dans un seul champ
   // font deux personnages, une photo de voiture devient un objet, une photo
   // d'endroit le lieu. Plan prêt : sa distribution est fixée. Claude
-  // indisponible : tout est un personnage, consignes reformulées à part.
+  // indisponible et plusieurs images ou un prompt : rien n'est lancé ni débité,
+  // un rendu sans distribution ne ferait pas ce qui est demandé. Une seule
+  // image sans texte reste un personnage.
   const needsPlan = !preset;
   let groupStart = 1;
   const plan =
@@ -308,13 +310,17 @@ export async function startSwap(input: {
           return null;
         })
       : null;
+  const planned = plan && validCast(plan, allPhotoPaths.length) ? plan : null;
+  if (needsPlan && !planned && (rawInstructions || allPhotoPaths.length > 1)) {
+    return { error: errors.swapPlanUnavailable };
+  }
   let instructions: string | undefined;
-  if (plan && validCast(plan, allPhotoPaths.length)) {
-    if (plan.location && !decorImagePath) {
-      decorImagePath = allPhotoPaths[plan.location - 1];
-      decorSignedUrl = allPhotoUrls[plan.location - 1];
+  if (planned) {
+    if (planned.location && !decorImagePath) {
+      decorImagePath = allPhotoPaths[planned.location - 1];
+      decorSignedUrl = allPhotoUrls[planned.location - 1];
     }
-    const perItem = photosPerCharacter(plan.cast.length + plan.objects.length, decorImagePath ? 1 : 0);
+    const perItem = photosPerCharacter(planned.cast.length + planned.objects.length, decorImagePath ? 1 : 0);
     const items = (list: SwapCast["cast"], object: boolean) =>
       list.map((c) => ({
         imagePath: allPhotoPaths[c.photos[0] - 1],
@@ -323,8 +329,8 @@ export async function startSwap(input: {
         object,
       }));
     // Les personnages d'abord : les mannequins les suivent dans cet ordre.
-    characters = [...items(plan.cast, false), ...items(plan.objects, true)];
-    instructions = plan.instructions.trim().slice(0, 1000) || undefined;
+    characters = [...items(planned.cast, false), ...items(planned.objects, true)];
+    instructions = planned.instructions.trim().slice(0, 1000) || undefined;
     // Rien à remplacer avec ces images : rien n'est débité.
     if (!characters.length && !decorImagePath) return { error: errors.swapNoTarget };
   } else {

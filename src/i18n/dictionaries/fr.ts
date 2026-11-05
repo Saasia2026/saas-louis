@@ -504,6 +504,7 @@ export const fr = {
     swapTargets: "Dis qui chaque personnage remplace (ex. : l'homme en t-shirt rouge).",
     swapFiles: "Ajoute un clip et au moins une image.",
     swapNoTarget: "Dis dans le prompt ce que remplace chaque image.",
+    swapPlanUnavailable: "L'analyse de ta demande est indisponible pour le moment. Rien n'a été débité : réessaie dans quelques minutes.",
     swapUnreadable: "Impossible de lire ce clip. Essaie un MP4.",
     swapFormat: "Format non pris en charge.",
     swapTooBig: "Fichier trop lourd (50 Mo max).",

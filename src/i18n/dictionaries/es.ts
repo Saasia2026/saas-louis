@@ -503,6 +503,7 @@ export const es: Dictionary = {
     swapTargets: "Indica a quién reemplaza cada personaje (ej.: el hombre de camiseta roja).",
     swapFiles: "Añade un clip y al menos una imagen.",
     swapNoTarget: "Indica en el prompt qué reemplaza cada imagen.",
+    swapPlanUnavailable: "No podemos analizar tu petición ahora mismo. No se ha cobrado nada: inténtalo de nuevo en unos minutos.",
     swapUnreadable: "No se puede leer este clip. Prueba con un MP4.",
     swapFormat: "Formato no compatible.",
     swapTooBig: "Archivo demasiado pesado (50 MB máx.).",
