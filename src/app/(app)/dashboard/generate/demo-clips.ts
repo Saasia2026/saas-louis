@@ -1,6 +1,7 @@
-// Démos du studio (public/examples et public/demos), avec leur format. La
-// première ouvre l'onglet Exemples, les autres font la mosaïque, et toutes se
-// retrouvent dans le fil façon reels. `sound` : seules certaines ont du son.
+// Démos du studio (public/examples, public/demos et public/showcase), avec leur
+// format. La première ouvre l'onglet Exemples, les autres font la mosaïque, et
+// toutes se retrouvent dans le fil façon reels. `sound` : seules certaines ont
+// du son.
 export type DemoClip = { base: string; ratio: string; sound?: boolean };
 
 const example = (name: string, ratio: string, sound = false): DemoClip => ({
@@ -11,7 +12,9 @@ const example = (name: string, ratio: string, sound = false): DemoClip => ({
 
 const gallery = (n: number, ratio = "9/16", sound = false) => example(`gallery/g-${String(n).padStart(2, "0")}`, ratio, sound);
 
-const wall = (n: number, ratio = "16/9"): DemoClip => ({ base: `/demos/demo-${String(n).padStart(2, "0")}`, ratio });
+const demo = (n: number, ratio = "16/9"): DemoClip => ({ base: `/demos/demo-${String(n).padStart(2, "0")}`, ratio });
+
+const showcase = (name: string): DemoClip => ({ base: `/showcase/${name}`, ratio: "9/16" });
 
 export const DEMO_CLIPS: DemoClip[] = [
   example("genjutsu-salle", "16/9"),
@@ -52,16 +55,37 @@ export const DEMO_CLIPS: DemoClip[] = [
   example("genjutsu-panier", "3/4"),
   example("mma-apres", "9/16"),
   example("micro-apres", "9/16"),
-  wall(3, "9/16"),
-  wall(10, "9/16"),
-  wall(12, "9/16"),
-  wall(1),
-  wall(2),
-  wall(4),
-  wall(9),
-  wall(11),
-  wall(17),
-  wall(18),
-  wall(19),
-  wall(20),
+  showcase("military"),
+  showcase("courtyard"),
+  showcase("army"),
+  showcase("cats"),
+  showcase("fight"),
+  showcase("henry"),
+  showcase("gasmask"),
+  showcase("dog"),
+  demo(3, "9/16"),
+  demo(5, "9/16"),
+  demo(7, "9/16"),
+  demo(10, "9/16"),
+  demo(12, "9/16"),
+  demo(13, "9/16"),
+  demo(8, "5/4"),
+  demo(15, "5/4"),
+  demo(1),
+  demo(2),
+  demo(4),
+  demo(6),
+  demo(9),
+  demo(11),
+  demo(14),
+  demo(16),
+  demo(17),
+  demo(18),
+  demo(19),
+  demo(20),
+  demo(21),
+  demo(22),
+  demo(23),
+  example("chien", "16/9", true),
+  example("ours", "16/9", true),
 ];
