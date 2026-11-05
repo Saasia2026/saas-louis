@@ -240,6 +240,7 @@ export const fr = {
       soundOff: "Couper le son",
       previous: "Vidéo précédente",
       next: "Vidéo suivante",
+      showMore: "Voir plus",
     },
     demo: {
       title: "Comment ça marche",

@@ -29,6 +29,10 @@ function Clip({ clip, label, onOpen, className = "" }: { clip: DemoClip; label: 
 
 const [HERO, ...MOSAIC] = DEMO_CLIPS;
 
+// Vignettes affichées d'un coup : le fil, lui, montre toutes les démos, et
+// charger toutes les couvertures à l'ouverture pèserait sur un téléphone.
+const MOSAIC_STEP = 48;
+
 // Onglet Exemples : l'idée en une phrase à côté d'un rendu, puis une
 // mosaïque de rendus qui ne jouent qu'à l'écran. Une démo touchée ouvre le
 // fil façon reels, d'où elle peut être reprise dans le studio.
@@ -38,6 +42,7 @@ export function ExamplesPanel({ onRecreate }: { onRecreate: (clip: DemoClip) => 
   const root = useRef<HTMLDivElement>(null);
   // Démo ouverte dans le fil ; la mosaïque s'arrête pendant ce temps.
   const [opened, setOpened] = useState<number | null>(null);
+  const [shown, setShown] = useState(MOSAIC_STEP);
   usePauseWhenHidden(root, opened !== null);
 
   return (
@@ -56,7 +61,7 @@ export function ExamplesPanel({ onRecreate }: { onRecreate: (clip: DemoClip) => 
         </div>
       </div>
       <div className="columns-2 gap-3 sm:columns-3 [&>*]:mb-3">
-        {MOSAIC.map((clip, i) => (
+        {MOSAIC.slice(0, shown).map((clip, i) => (
           <div
             key={clip.base}
             style={{ aspectRatio: clip.ratio }}
@@ -71,6 +76,15 @@ export function ExamplesPanel({ onRecreate }: { onRecreate: (clip: DemoClip) => 
           </div>
         ))}
       </div>
+      {shown < MOSAIC.length && (
+        <button
+          type="button"
+          onClick={() => setShown((n) => n + MOSAIC_STEP)}
+          className="btn btn-secondary mx-auto flex px-5 py-2 text-sm"
+        >
+          {E.showMore}
+        </button>
+      )}
       {opened !== null && (
         <DemoReels clips={DEMO_CLIPS} start={opened} onClose={() => setOpened(null)} onRecreate={onRecreate} />
       )}

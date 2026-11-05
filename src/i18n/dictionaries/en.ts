@@ -238,6 +238,7 @@ export const en: Dictionary = {
       soundOff: "Turn sound off",
       previous: "Previous video",
       next: "Next video",
+      showMore: "Show more",
     },
     demo: {
       title: "How it works",

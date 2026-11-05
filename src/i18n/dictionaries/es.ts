@@ -238,6 +238,7 @@ export const es: Dictionary = {
       soundOff: "Quitar el sonido",
       previous: "Vídeo anterior",
       next: "Vídeo siguiente",
+      showMore: "Ver más",
     },
     demo: {
       title: "Cómo funciona",
