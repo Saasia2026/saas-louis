@@ -56,7 +56,7 @@ export default async function Home() {
   const reel = REEL.map((n, i) => ({
     src: `${demo(n)}.mp4`,
     poster: `${demo(n)}.jpg`,
-    label: L.showcaseList[i]?.title ?? "Genjutsu",
+    label: L.showcaseList[i]?.title ?? "Shinka",
   }));
 
   return (
@@ -70,8 +70,8 @@ export default async function Home() {
             <a href="#exemples" className="btn btn-ghost hidden px-3 sm:inline-flex">
               {L.examples}
             </a>
-            <a href="#genjutsu" className="btn btn-ghost hidden px-3 lg:inline-flex">
-              Genjutsu
+            <a href="#shinka" className="btn btn-ghost hidden px-3 lg:inline-flex">
+              Shinka
             </a>
             <a href="#fonctionnalites" className="btn btn-ghost hidden px-3 sm:inline-flex">
               {L.features}
@@ -190,8 +190,8 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Vitrine Genjutsu : des rendus seuls, en mosaïque. */}
-        <section id="genjutsu" className="scroll-mt-20 border-y border-line bg-surface/40 py-16 sm:py-24">
+        {/* Vitrine Shinka : des rendus seuls, en mosaïque. */}
+        <section id="shinka" className="scroll-mt-20 border-y border-line bg-surface/40 py-16 sm:py-24">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <h2 className="reveal font-headline text-5xl leading-[0.92] sm:text-7xl">
               <span className="text-shine">{L.genjutsuTitle}</span>

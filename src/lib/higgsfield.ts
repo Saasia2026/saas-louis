@@ -19,7 +19,7 @@ const GENJUTSU_SWAP_ENDPOINT = "higgsfiled/genjutsu/object-swap/v1.0";
 // seulement quand un décor est demandé : sans décor, Object Swap préserve
 // mieux le clip d'origine. Testé le 2026-09-28.
 const GENJUTSU_TRANSFER_ENDPOINT = "higgsfiled/genjutsu/motion-transfer/v1.0";
-// Genjutsu Light (affiché « Genjutsu » sur le site, voir GENJUTSU_RATES) :
+// Genjutsu Light (affiché « Shinka » sur le site, voir GENJUTSU_RATES) :
 // mêmes paramètres, environ 7 fois moins cher, 15 s au plus par requête.
 // Identifiant documenté avec l'orthographe correcte, cette fois.
 const GENJUTSU_LIGHT_SWAP_ENDPOINT = "higgsfield/genjutsu-light/object-swap/v1.0";

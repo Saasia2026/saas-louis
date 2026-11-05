@@ -4,9 +4,9 @@
 
 export const fr = {
   meta: {
-    title: "Remplacement de personnage par IA · propulsé par Genjutsu",
+    title: "Remplacement de personnage par IA · moteur Shinka",
     description:
-      "Studio vidéo premium propulsé par Genjutsu : mets ton personnage dans n'importe quelle vidéo, en gardant les gestes, le décor, la caméra et le son.",
+      "Studio vidéo premium avec le moteur Shinka : mets ton personnage dans n'importe quelle vidéo, en gardant les gestes, le décor, la caméra et le son.",
     login: "Connexion",
     password: "Nouveau mot de passe",
     studio: "Studio",
@@ -47,9 +47,9 @@ export const fr = {
       { title: "Lincoln en vlog" },
       { title: "Le combat du siècle" },
     ],
-    heroText: "Un clip, une photo\nGenjutsu fait le reste",
-    reelEyebrow: "Rendus Genjutsu",
-    genjutsuTitle: "Genjutsu en action",
+    heroText: "Un clip, une photo\nShinka fait le reste",
+    reelEyebrow: "Rendus Shinka",
+    genjutsuTitle: "Shinka en action",
     genjutsuList: [
       "Deux légendes en uniforme",
       "Duel dans la cour",
@@ -74,11 +74,11 @@ export const fr = {
     openStudio: "Ouvrir le studio",
     studioShort: "Studio",
     start: "Commencer",
-    eyebrow: "Le studio premium · propulsé par Genjutsu",
+    eyebrow: "Le studio premium · moteur Shinka",
     titleTop: "Ton personnage.",
     titleBottom: "Dans la vidéo.",
     ctaFirst: "Créer ma première vidéo",
-    perks: ["Qualité Genjutsu, jusqu'en 1080p", "Sans abonnement obligatoire", "Crédits rendus en cas d'échec"],
+    perks: ["Qualité Shinka, jusqu'en 1080p", "Sans abonnement obligatoire", "Crédits rendus en cas d'échec"],
     compareBefore: "Original",
     compareAfter: "Ton personnage",
     mockWindow: "twinpost · Studio",
@@ -98,7 +98,7 @@ export const fr = {
     ],
     mockBadge: "720p · 17 s",
     models: [
-      "Propulsé par Genjutsu",
+      "Moteur Shinka",
       "720p et 1080p",
       "Son d'origine gardé",
       "Coupes respectées",
@@ -107,8 +107,8 @@ export const fr = {
     featuresTitle: "Un seul moteur. Le meilleur.",
     featureList: [
       {
-        title: "Genjutsu, et rien d'autre",
-        text: "TwinPost n'utilise qu'un moteur : Genjutsu, conçu pour garder un vrai jeu d'acteur. Pas de modèle au rabais, pas de rendu approximatif.",
+        title: "Shinka, et rien d'autre",
+        text: "TwinPost n'utilise qu'un moteur : Shinka. Il garde le vrai jeu d'acteur, sans modèle au rabais ni rendu approximatif.",
       },
       {
         title: "Remplacer",
@@ -143,7 +143,7 @@ export const fr = {
       },
     ],
     pricingTitle: "Des crédits, à ton rythme",
-    pricingText: "Genjutsu : {std} crédits la seconde en 720p. Genjutsu Max : {max} en 720p, {hd} en 1080p, le double en haute fidélité. Plus {sheet} crédits par personnage pour sa fiche.",
+    pricingText: "Shinka : {std} crédits la seconde en 720p. Shinka Max : {max} en 720p, {hd} en 1080p, le double en haute fidélité. Plus {sheet} crédits par personnage pour sa fiche.",
     popular: "Populaire",
     bestValue: "Meilleure offre",
     perCredit: "le crédit",
@@ -211,13 +211,13 @@ export const fr = {
 
   studio: {
     createTitle: "Créer une vidéo",
-    poweredByLabel: "Propulsé par",
+    poweredByLabel: "Moteur",
     modelLabel: "Modèle",
     qualityLabel: "Qualité",
     methodLabel: "Méthode",
     changeModel: "Changer",
-    modelStandard: "Genjutsu",
-    modelMax: "Genjutsu Max",
+    modelStandard: "Shinka",
+    modelMax: "Shinka Max",
     modelStandardTagline: "Rapide et économique",
     modelMaxTagline: "La qualité maximale",
     modelNew: "Nouveau",
@@ -285,7 +285,7 @@ export const fr = {
     restoring: "Récupération de ton projet…",
     longClipWarning: "Les vidéos de plus de 15 s sont découpées en plusieurs segments — certains peuvent échouer.",
     methodStandard: "Standard",
-    methodStandardHint: "Une passe Genjutsu · {rate} crédits/s · le plus rapide",
+    methodStandardHint: "Une passe Shinka · {rate} crédits/s · le plus rapide",
     methodFidelity: "Haute fidélité",
     methodFidelityHint: "Méthode du mannequin · {rate} crédits/s · rien de la personne d'origine ne transparaît, rendu 2× plus long",
     modeReplace: "Remplacer",
@@ -490,7 +490,7 @@ export const fr = {
     insufficientCredits: "Pas assez de crédits. Recharge-les depuis la page Crédits.",
     outOfCredit: "Le compte du service de génération n'a plus de crédit. Tes crédits ont été rendus.",
     genjutsuUnavailable: "Le moteur est momentanément indisponible. Tes crédits ont été rendus : réessaie dans quelques minutes.",
-    genjutsuRefused: "Genjutsu a refusé une séquence de ce clip : le remplacement est arrêté. Tes crédits ont été rendus. Essaie un autre passage ou un autre personnage.",
+    genjutsuRefused: "Shinka a refusé une séquence de ce clip : le remplacement est arrêté. Tes crédits ont été rendus. Essaie un autre passage ou un autre personnage.",
     swapTooShort: "Le passage doit durer au moins {min} s.",
     precheckMinor:
       "Le modèle vidéo refuse les scènes avec des enfants. {reason} Choisis un clip ou une photo avec uniquement des adultes. Aucun crédit n'a été débité.",
@@ -531,8 +531,8 @@ export const fr = {
     billedYearly: "facturé {price} par an",
     yearlySave: "Tu économises {amount} par an",
     expiring: "Dont {n} crédits d'abonnement, à utiliser avant le {date}",
-    eqSeconds: "= {n} s avec Genjutsu Max en 720p",
-    eqStandard: "= {n} s avec Genjutsu en 720p",
+    eqSeconds: "= {n} s avec Shinka Max en 720p",
+    eqStandard: "= {n} s avec Shinka en 720p",
     eqClips: "≈ {n} vidéos de {s} s",
     eqFidelity: "= {n} s en haute fidélité",
     packTag: "Sans engagement",

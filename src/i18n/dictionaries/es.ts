@@ -2,9 +2,9 @@ import type { Dictionary } from "./fr";
 
 export const es: Dictionary = {
   meta: {
-    title: "Reemplazo de personaje con IA · con Genjutsu",
+    title: "Reemplazo de personaje con IA · motor Shinka",
     description:
-      "Estudio de vídeo premium con la tecnología de Genjutsu: pon a tu personaje en cualquier vídeo, conservando los gestos, el decorado, la cámara y el sonido.",
+      "Estudio de vídeo premium con el motor Shinka: pon a tu personaje en cualquier vídeo, conservando los gestos, el decorado, la cámara y el sonido.",
     login: "Iniciar sesión",
     password: "Nueva contraseña",
     studio: "Studio",
@@ -45,9 +45,9 @@ export const es: Dictionary = {
       { title: "Lincoln hace vlog" },
       { title: "El combate del siglo" },
     ],
-    heroText: "Un clip, una foto\nGenjutsu hace el resto",
-    reelEyebrow: "Renders de Genjutsu",
-    genjutsuTitle: "Genjutsu en acción",
+    heroText: "Un clip, una foto\nShinka hace el resto",
+    reelEyebrow: "Renders de Shinka",
+    genjutsuTitle: "Shinka en acción",
     genjutsuList: [
       "Dos leyendas en uniforme",
       "Duelo en el patio",
@@ -72,11 +72,11 @@ export const es: Dictionary = {
     openStudio: "Abrir el estudio",
     studioShort: "Studio",
     start: "Empezar",
-    eyebrow: "El estudio premium · con la tecnología de Genjutsu",
+    eyebrow: "El estudio premium · motor Shinka",
     titleTop: "Tu personaje.",
     titleBottom: "En el vídeo.",
     ctaFirst: "Crear mi primer vídeo",
-    perks: ["Calidad Genjutsu, hasta 1080p", "Sin suscripción obligatoria", "Créditos devueltos si falla"],
+    perks: ["Calidad Shinka, hasta 1080p", "Sin suscripción obligatoria", "Créditos devueltos si falla"],
     compareBefore: "Original",
     compareAfter: "Tu personaje",
     mockWindow: "twinpost · Studio",
@@ -96,7 +96,7 @@ export const es: Dictionary = {
     ],
     mockBadge: "720p · 17 s",
     models: [
-      "Con la tecnología de Genjutsu",
+      "Motor Shinka",
       "720p y 1080p",
       "Sonido original conservado",
       "Cortes respetados",
@@ -105,8 +105,8 @@ export const es: Dictionary = {
     featuresTitle: "Un solo motor. El mejor.",
     featureList: [
       {
-        title: "Genjutsu y nada más",
-        text: "TwinPost usa un único motor: Genjutsu, pensado para conservar una actuación real. Sin modelos baratos ni renders aproximados.",
+        title: "Shinka y nada más",
+        text: "TwinPost usa un único motor: Shinka. Conserva la actuación real, sin modelos baratos ni renders aproximados.",
       },
       {
         title: "Reemplazar",
@@ -141,7 +141,7 @@ export const es: Dictionary = {
       },
     ],
     pricingTitle: "Créditos, a tu ritmo",
-    pricingText: "Genjutsu: {std} créditos por segundo en 720p. Genjutsu Max: {max} en 720p, {hd} en 1080p, el doble en alta fidelidad. Más {sheet} créditos por personaje para su ficha.",
+    pricingText: "Shinka: {std} créditos por segundo en 720p. Shinka Max: {max} en 720p, {hd} en 1080p, el doble en alta fidelidad. Más {sheet} créditos por personaje para su ficha.",
     popular: "Popular",
     bestValue: "Mejor oferta",
     perCredit: "el crédito",
@@ -209,13 +209,13 @@ export const es: Dictionary = {
 
   studio: {
     createTitle: "Crear un vídeo",
-    poweredByLabel: "Con la tecnología de",
+    poweredByLabel: "Motor",
     modelLabel: "Modelo",
     qualityLabel: "Calidad",
     methodLabel: "Método",
     changeModel: "Cambiar",
-    modelStandard: "Genjutsu",
-    modelMax: "Genjutsu Max",
+    modelStandard: "Shinka",
+    modelMax: "Shinka Max",
     modelStandardTagline: "Rápido y económico",
     modelMaxTagline: "La calidad máxima",
     modelNew: "Nuevo",
@@ -283,7 +283,7 @@ export const es: Dictionary = {
     restoring: "Recuperando tu proyecto…",
     longClipWarning: "Los videos de más de 15 s se dividen en segmentos — algunos pueden fallar.",
     methodStandard: "Estándar",
-    methodStandardHint: "Una pasada de Genjutsu · {rate} créditos/s · lo más rápido",
+    methodStandardHint: "Una pasada de Shinka · {rate} créditos/s · lo más rápido",
     methodFidelity: "Alta fidelidad",
     methodFidelityHint: "Método del maniquí · {rate} créditos/s · nada de la persona original se transparenta, render 2× más largo",
     modeReplace: "Reemplazar",
@@ -493,7 +493,7 @@ export const es: Dictionary = {
     outOfCredit:
       "La cuenta del servicio de generación se ha quedado sin crédito. Te hemos devuelto los créditos.",
     genjutsuUnavailable: "El motor no está disponible por el momento. Te hemos devuelto los créditos: inténtalo de nuevo en unos minutos.",
-    genjutsuRefused: "Genjutsu rechazó una secuencia de este clip y el reemplazo se detuvo. Te devolvimos los créditos. Prueba otro fragmento u otro personaje.",
+    genjutsuRefused: "Shinka rechazó una secuencia de este clip y el reemplazo se detuvo. Te devolvimos los créditos. Prueba otro fragmento u otro personaje.",
     swapTooShort: "El fragmento debe durar al menos {min} s.",
     swapRedoUnavailable: "Este plano no se puede rehacer.",
     cancelUnavailable: "Demasiado tarde para cancelar: el vídeo ya se está montando.",
@@ -530,8 +530,8 @@ export const es: Dictionary = {
     billedYearly: "facturado {price} al año",
     yearlySave: "Ahorras {amount} al año",
     expiring: "De ellos, {n} créditos de suscripción para usar antes del {date}",
-    eqSeconds: "= {n} s con Genjutsu Max en 720p",
-    eqStandard: "= {n} s con Genjutsu en 720p",
+    eqSeconds: "= {n} s con Shinka Max en 720p",
+    eqStandard: "= {n} s con Shinka en 720p",
     eqClips: "≈ {n} vídeos de {s} s",
     eqFidelity: "= {n} s en alta fidelidad",
     packTag: "Sin compromiso",

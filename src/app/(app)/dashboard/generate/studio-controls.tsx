@@ -1,11 +1,15 @@
 "use client";
 
 import { Check, ChevronRight, Move, Replace, Sparkles, Zap, type LucideIcon } from "lucide-react";
+import { Space_Grotesk } from "next/font/google";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePauseWhenHidden } from "@/app/pause-hidden";
 import { useI18n } from "@/i18n/provider";
 import type { GenjutsuModel } from "@/lib/generation";
+
+// Nom du modèle sur sa carte.
+const modelNameFont = Space_Grotesk({ subsets: ["latin"], weight: "700" });
 
 // Commandes du panneau de création : la carte du modèle, les deux modes, et
 // les lignes de réglage dont le menu s'ouvre à côté du panneau.
@@ -186,7 +190,7 @@ export function Tag({ children }: { children: React.ReactNode }) {
 
 export const MODEL_ICON: Record<GenjutsuModel, LucideIcon> = { standard: Zap, max: Sparkles };
 
-// Carte du modèle en tête du panneau : un de ses rendus en boucle, son nom en
+// Carte du modèle en tête du panneau : un rendu en boucle, son nom en
 // grand, et « Changer » pour ouvrir la liste des modèles.
 export function ModelCard({
   name,
@@ -211,8 +215,8 @@ export function ModelCard({
       className="relative isolate h-36 overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding"
     >
       <video
-        src="/examples/genjutsu-salle.mp4"
-        poster="/examples/genjutsu-salle.jpg"
+        src="/examples/shinka-card.mp4"
+        poster="/examples/shinka-card.jpg"
         muted
         loop
         playsInline
@@ -221,9 +225,9 @@ export function ModelCard({
         disableRemotePlayback
         preload="none"
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
+        className="pointer-events-none absolute inset-0 -z-10 size-full object-cover object-[50%_30%]"
       />
-      <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
+      <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/90 via-black/55 to-black/10" />
       <button
         ref={anchor}
         type="button"
@@ -234,18 +238,12 @@ export function ModelCard({
       >
         {changeLabel}
       </button>
-      <div className="absolute inset-x-0 bottom-0 p-4">
+      <div className="@container absolute inset-x-0 bottom-0 p-4">
         <p className="text-[0.6875rem] font-semibold text-white/70">{t.studio.poweredByLabel}</p>
         <p
-          className="font-headline text-[2.6rem] leading-[0.85] italic uppercase"
-          style={{
-            background: "linear-gradient(180deg, #b0b0b0 0%, #e8e8e8 35%, #ffffff 50%, #a0a0a0 65%, #707070 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
+          className={`${modelNameFont.className} text-[9.2cqw] leading-none tracking-tight whitespace-nowrap text-[#b4a3ff] uppercase [text-shadow:0_1px_6px_rgb(0_0_0_/_0.7)]`}
         >
-          {name}
+          TwinPost {name}
         </p>
         <p className="mt-1 text-xs text-white/75">{tagline}</p>
       </div>

@@ -37,9 +37,9 @@ export function isSwapEngine(value: unknown): value is SwapEngine {
 
 // Deux modèles Genjutsu chez Higgsfield, nommés autrement sur le site :
 // - standard : « Genjutsu Light » chez Higgsfield (sorti le 2026-10-20),
-//   affiché « Genjutsu ». 0,05 / 0,10 / 0,20 $ la seconde en 480p / 720p /
+//   affiché « Shinka ». 0,05 / 0,10 / 0,20 $ la seconde en 480p / 720p /
 //   1080p, 15 s au plus par requête ;
-// - max : « Genjutsu » chez Higgsfield, affiché « Genjutsu Max ». 0,318 /
+// - max : « Genjutsu » chez Higgsfield, affiché « Shinka Max ». 0,318 /
 //   0,681 / 1,632 $ la seconde.
 // Crédits la seconde au même coût par crédit que le barème d'origine
 // (0,681 $ = 28 crédits, soit ~0,0243 $ le crédit), arrondis au-dessus.
