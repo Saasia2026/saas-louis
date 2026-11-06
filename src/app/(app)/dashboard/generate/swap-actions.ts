@@ -170,14 +170,15 @@ export async function startSwap(input: {
         ? c.target.trim().slice(0, 200)
         : "",
   }));
-  // Images en vrac : un seul groupe (8 au plus, la limite de Higgsfield).
+  // Images en vrac : chaque photo est un personnage séparé, envoyé à
+  // Genjutsu avec son propre slot (8 au plus, la limite de Higgsfield).
   const flatPhotos =
     !preset && Array.isArray(input.photos)
       ? input.photos.filter((p): p is string => typeof p === "string").slice(0, GENJUTSU_MAX_IMAGES)
       : [];
   const flat = flatPhotos.length > 0;
   if (flat) {
-    characters = [{ imagePath: flatPhotos[0], extraPaths: flatPhotos.slice(1), target: "", object: false }];
+    characters = flatPhotos.map((p) => ({ imagePath: p, extraPaths: [], target: "", object: false }));
   }
   let decorImagePath = typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
   // Sans image dans la case principale, seul le lieu change.
@@ -251,12 +252,8 @@ export async function startSwap(input: {
   });
   if (!shots?.length) return { error: errors.swapUnreadable };
 
-  // Images en vrac : un seul groupe, avec les photos qu'un personnage peut avoir.
-  if (flat) {
-    characters = [
-      { ...characters[0], extraPaths: characters[0].extraPaths.slice(0, photosPerCharacter(1, decorImagePath ? 1 : 0) - 1) },
-    ];
-  }
+  // Images en vrac : déjà séparées en un personnage par photo (voir plus haut).
+  // Rien à regrouper ici.
   // Consignes libres envoyées telles quelles à Genjutsu (il lit la plupart
   // des langues ; plus de reformulation par Claude).
   const instructions: string | undefined = rawInstructions || undefined;
@@ -266,8 +263,9 @@ export async function startSwap(input: {
   if (!people.length) vessel = false;
   // Toutes les images comptent comme personnages seulement si c'est le cas.
   const listed = several || people.length !== characters.length;
-  // Plusieurs éléments : il faut savoir ce que chacun remplace.
-  if (several && characters.some((c) => !c.target)) return { error: errors.swapTargets };
+  // Plusieurs éléments groupés manuellement : il faut savoir ce que chacun
+  // remplace. En mode vrac, c'est le prompt du créateur qui le dit.
+  if (several && !flat && characters.some((c) => !c.target)) return { error: errors.swapTargets };
   // Photos de chaque personnage, dans la distribution retenue.
   const urlOfPath = new Map(allPhotoPaths.map((p, i) => [p, allPhotoUrls[i]!]));
   const photoUrls = characters.map((c) => [c.imagePath as string, ...c.extraPaths].map((p) => urlOfPath.get(p)!));
