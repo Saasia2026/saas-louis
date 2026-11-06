@@ -40,13 +40,12 @@ import {
 import { payShortfall } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { planSwapCast, polishSwapInstructions, precheckSwapInputs, type SwapCast } from "@/lib/swap-check";
+
 import {
   advanceSwap,
   cancelSwap as cancelSwapGeneration,
   preparePart,
   probeVideo,
-  sampleFrames,
   splitIntoParts,
   type SwapMetadata,
   type SwapPart,
@@ -68,30 +67,7 @@ type Result<T> = { data: T; error?: never } | { data?: never; error: string; nee
 
 const INPUT_URL_TTL_SECONDS = 60 * 60;
 
-// Images du passage montrées au contrôle d'avant paiement.
-const PRECHECK_FRAMES = 6;
 
-// Distribution rendue par Claude utilisable : au plus 3 personnages et
-// 3 objets, chacun avec au moins une photo existante et ce qu'il remplace
-// (facultatif pour un personnage seul), aucune photo prise deux fois.
-function validCast(plan: SwapCast, photoCount: number) {
-  const { cast, objects, location } = plan;
-  if (cast.length > SWAP_MAX_CHARACTERS || objects.length > SWAP_MAX_CHARACTERS) return false;
-  const seen = new Set<number>();
-  const free = (n: number) => {
-    if (!Number.isInteger(n) || n < 1 || n > photoCount || seen.has(n)) return false;
-    seen.add(n);
-    return true;
-  };
-  const alone = cast.length === 1 && !objects.length;
-  for (const c of cast) {
-    if (!c.photos.length || (!alone && !c.target.trim()) || !c.photos.every(free)) return false;
-  }
-  for (const o of objects) {
-    if (!o.photos.length || !o.target.trim() || !o.photos.every(free)) return false;
-  }
-  return location === 0 || free(location);
-}
 
 // Photos déposées par le créateur (URL signées), envoyées chez Higgsfield
 // telles quelles.
@@ -130,7 +106,7 @@ export async function startSwap(input: {
   // remplace (facultatif s'il est seul).
   characters: { imagePath: string; extraPaths?: string[]; target?: string }[];
   // Images en vrac du prompt unique (@image1 = la première…), à la place de
-  // `characters` : la distribution vient du prompt (voir planSwapCast).
+  // `characters` : les photos sont groupées par le créateur.
   photos?: string[];
   // Plan prêt (voir presets.ts) : son clip tient lieu de videoPath, et qui
   // chaque personnage remplace vient de lui.
@@ -194,8 +170,7 @@ export async function startSwap(input: {
         ? c.target.trim().slice(0, 200)
         : "",
   }));
-  // Images en vrac : un seul groupe, que planSwapCast répartit d'après le
-  // prompt (8 images au plus, la limite de Higgsfield).
+  // Images en vrac : un seul groupe (8 au plus, la limite de Higgsfield).
   const flatPhotos =
     !preset && Array.isArray(input.photos)
       ? input.photos.filter((p): p is string => typeof p === "string").slice(0, GENJUTSU_MAX_IMAGES)
@@ -264,92 +239,27 @@ export async function startSwap(input: {
 
   // Avant de faire payer, en même temps : le découpage en séquences, qui
   // fixe le prix, et quelques images du clip pour les contrôles.
-  const [shots, frames] = await Promise.all([
-    splitIntoParts(
-      sourceUrl,
-      start,
-      clipSeconds,
-      engine,
-      model === "standard" ? GENJUTSU_LIGHT_MAX_SECONDS : undefined,
-    ).catch((e) => {
-      console.error("startSwap: découpage", errorMessage(e));
-      return null;
-    }),
-    sampleFrames(sourceUrl, start, clipSeconds, PRECHECK_FRAMES).catch((e) => {
-      console.error("startSwap: images du clip", errorMessage(e));
-      return null;
-    }),
-  ]);
+  const shots = await splitIntoParts(
+    sourceUrl,
+    start,
+    clipSeconds,
+    engine,
+    model === "standard" ? GENJUTSU_LIGHT_MAX_SECONDS : undefined,
+  ).catch((e) => {
+    console.error("startSwap: découpage", errorMessage(e));
+    return null;
+  });
   if (!shots?.length) return { error: errors.swapUnreadable };
 
-  // Distribution des images (voir planSwapCast) : Claude relit tout et dit ce
-  // que chaque image remplace — deux remplacements écrits dans un seul champ
-  // font deux personnages, une photo de voiture devient un objet, une photo
-  // d'endroit le lieu. Plan prêt : sa distribution est fixée. Claude
-  // indisponible et plusieurs images ou un prompt : rien n'est lancé ni débité,
-  // un rendu sans distribution ne ferait pas ce qui est demandé. Une seule
-  // image sans texte reste un personnage.
-  const needsPlan = !preset;
-  let groupStart = 1;
-  const plan =
-    needsPlan && frames
-      ? await planSwapCast({
-          frames,
-          photoUrls: allPhotoUrls,
-          groups: flat
-            ? []
-            : characters.map((c) => {
-                const count = 1 + c.extraPaths.length;
-                const photos = Array.from({ length: count }, (_, k) => groupStart + k);
-                groupStart += count;
-                return { photos, target: c.target };
-              }),
-          instructions: rawInstructions,
-        }).catch((e) => {
-          console.error("planSwapCast", errorMessage(e));
-          return null;
-        })
-      : null;
-  const planned = plan && validCast(plan, allPhotoPaths.length) ? plan : null;
-  if (needsPlan && !planned && (rawInstructions || allPhotoPaths.length > 1)) {
-    return { error: errors.swapPlanUnavailable };
+  // Images en vrac : un seul groupe, avec les photos qu'un personnage peut avoir.
+  if (flat) {
+    characters = [
+      { ...characters[0], extraPaths: characters[0].extraPaths.slice(0, photosPerCharacter(1, decorImagePath ? 1 : 0) - 1) },
+    ];
   }
-  let instructions: string | undefined;
-  if (planned) {
-    if (planned.location && !decorImagePath) {
-      decorImagePath = allPhotoPaths[planned.location - 1];
-      decorSignedUrl = allPhotoUrls[planned.location - 1];
-    }
-    const perItem = photosPerCharacter(planned.cast.length + planned.objects.length, decorImagePath ? 1 : 0);
-    const items = (list: SwapCast["cast"], object: boolean) =>
-      list.map((c) => ({
-        imagePath: allPhotoPaths[c.photos[0] - 1],
-        extraPaths: c.photos.slice(1, perItem).map((n) => allPhotoPaths[n - 1]),
-        target: c.target.trim().slice(0, 200),
-        object,
-      }));
-    // Les personnages d'abord : les mannequins les suivent dans cet ordre.
-    characters = [...items(planned.cast, false), ...items(planned.objects, true)];
-    instructions = planned.instructions.trim().slice(0, 1000) || undefined;
-    // Rien à remplacer avec ces images : rien n'est débité.
-    if (!characters.length && !decorImagePath) return { error: errors.swapNoTarget };
-  } else {
-    // Sans distribution exploitable, des images en vrac font un seul
-    // personnage, avec les photos qu'un personnage peut avoir.
-    if (flat) {
-      characters = [
-        { ...characters[0], extraPaths: characters[0].extraPaths.slice(0, photosPerCharacter(1, decorImagePath ? 1 : 0) - 1) },
-      ];
-    }
-    // Consignes libres reformulées en anglais ; en panne, le texte brut sert.
-    if (rawInstructions) {
-      instructions =
-        (await polishSwapInstructions(rawInstructions).catch((e) => {
-          console.error("polishSwapInstructions", errorMessage(e));
-          return null;
-        })) ?? rawInstructions;
-    }
-  }
+  // Consignes libres envoyées telles quelles à Genjutsu (il lit la plupart
+  // des langues ; plus de reformulation par Claude).
+  const instructions: string | undefined = rawInstructions || undefined;
   const several = characters.length > 1;
   const people = characters.filter((c) => !c.object);
   // La haute fidélité passe par des mannequins de personnes.
@@ -364,33 +274,11 @@ export async function startSwap(input: {
   const imageUrls = photoUrls.map((urls) => urls[0]);
   const target = characters[0]?.target || undefined;
 
-  // Contrôle du clip et des photos, sur la distribution retenue. Le filtre du
-  // moteur refuse les enfants et la nudité : le créateur le sait tout de
-  // suite, sans rien débiter. Contrôle indisponible : le clip passe.
-  const precheck = frames
-    ? await precheckSwapInputs({
-        frames,
-        photoUrls: [...imageUrls, ...(decorSignedUrl ? [decorSignedUrl] : [])],
-        characterCount: people.length,
-      }).catch((e) => {
-        console.error("startSwap: contrôle", errorMessage(e));
-        return null;
-      })
-    : null;
-  if (precheck?.blocked) {
-    return {
-      error: fmt(precheck.cause === "minor" ? errors.precheckMinor : errors.precheckNudity, {
-        reason: precheck.reason,
-      }),
-    };
-  }
-  // Haute fidélité, mannequin de chaque personnage : sa silhouette (contrôle
-  // indisponible : homme) et une couleur à lui, qui le distingue à la seconde
-  // passe.
-  const feminine = precheck && !precheck.blocked ? precheck.feminine : undefined;
+  // Haute fidélité, mannequin de chaque personnage : homme par défaut (plus de
+  // détection automatique sans Claude).
   const mannequins = vessel
     ? people.map((_, i) => ({
-        figure: (feminine?.[i] ? "femme" : "homme") as MannequinFigure,
+        figure: "homme" as MannequinFigure,
         color: MANNEQUIN_COLORS[i],
       }))
     : [];

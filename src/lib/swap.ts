@@ -47,7 +47,6 @@ import {
   type PredictionState,
 } from "@/lib/predictions";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { checkSwapShot } from "@/lib/swap-check";
 import { swapWebhookUrl } from "@/lib/swap-webhook";
 
 // Remplacement de personnage dans un vrai clip (Kling O3 Pro Edit, voir
@@ -113,7 +112,7 @@ const OUTPUT_FPS: Record<SwapEngine, number> = { kling: 30, genjutsu: 24, magich
 const MAX_ATTEMPTS = 2;
 // Contrôles par passage d'advanceSwap : chacun appelle Claude (~5-10 s).
 const CHECKS_PER_CALL = 6;
-const CHECK_FRAMES = 4;
+
 // Verrou d'advanceSwap, au-delà duquel un appel bloqué est ignoré.
 const LOCK_SECONDS = 150;
 // Suivis en erreur d'affilée (404, clé révoquée…) avant d'abandonner un plan,
@@ -510,64 +509,6 @@ export async function sampleFrames(url: string, start: number, seconds: number, 
   }
 }
 
-// Images de référence montrées au contrôle d'un plan rendu : la fiche
-// (kling), ou la première photo de chaque personnage (genjutsu), relue dans
-// le stockage parce que les URLs signées expirent.
-async function checkReferences(metadata: SwapMetadata) {
-  const target = metadata.target;
-  const people = metadata.characters?.filter((c) => !c.object);
-  if (metadata.photos) {
-    const paths = people?.map((c) => c.image_path) ?? [metadata.character_image_path];
-    const { data } = await createAdminClient()
-      .storage.from(SWAP_INPUTS_BUCKET)
-      .createSignedUrls(paths.filter((p): p is string => Boolean(p)), 60 * 60);
-    const urls = (data ?? []).map((d) => d.signedUrl);
-    if (urls.length === paths.length && urls.every(Boolean)) {
-      return people
-        ? people.map((c, i) => ({ url: urls[i]!, target: c.target }))
-        : [{ url: urls[0]!, target }];
-    }
-  }
-  return (
-    people?.map((c) => ({ url: c.front_url, target: c.target })) ?? [
-      { url: metadata.sheet!.frontUrl, target },
-    ]
-  );
-}
-
-// Images JPEG (base64) réparties sur un plan rendu, pour son contrôle.
-async function checkFrames(clipPath: string) {
-  const { data, error } = await createAdminClient().storage.from(GENERATIONS_BUCKET).download(clipPath);
-  if (error) throw error;
-  const dir = await mkdtemp(path.join(tmpdir(), "twinpost-swap-"));
-  try {
-    const input = path.join(dir, "clip.mp4");
-    await writeFile(input, Buffer.from(await data.arrayBuffer()));
-    const info = await execFileAsync(ffmpegPath!, ["-hide_banner", "-i", input]).then(
-      (r) => r.stderr,
-      (e: { stderr?: string }) => e.stderr ?? "",
-    );
-    const duration = info.match(/Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/);
-    const seconds = duration ? Number(duration[3]) + Number(duration[2]) * 60 : 5;
-    await execFileAsync(
-      ffmpegPath!,
-      [
-        "-hide_banner",
-        "-loglevel", "error",
-        "-i", input,
-        "-vf", `fps=${CHECK_FRAMES}/${Math.max(seconds, 1).toFixed(3)},scale=512:-2`,
-        "-frames:v", String(CHECK_FRAMES),
-        "-q:v", "4",
-        path.join(dir, "f%02d.jpg"),
-      ],
-      { timeout: 60_000 },
-    );
-    const files = (await readdir(dir)).filter((f) => f.endsWith(".jpg")).sort();
-    return Promise.all(files.map(async (f) => (await readFile(path.join(dir, f))).toString("base64")));
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
-}
 
 // Fait avancer un remplacement, plan par plan, puis le remonte. Appelé à
 // chaque suivi (getGeneration). Un verrou dans les métadonnées garantit
@@ -1095,46 +1036,13 @@ async function advanceParts(
     }
   }
 
-  // Contrôles menés de front : des séquences lancées ensemble finissent
-  // ensemble. Genjutsu : toutes d'un coup, un contrôle raté ne fait que signaler.
-  // Sans personnage (objet ou lieu seuls), il n'y a rien à contrôler.
-  const checkable = !metadata.characters || metadata.characters.some((c) => !c.object);
-  const references = checkable && parts.some((p) => p.stage === "check")
-    ? await checkReferences(metadata).catch(() => null)
-    : null;
-  await Promise.all(
-    parts
-      .filter((p) => p.stage === "check")
-      .slice(0, genjutsu ? GENJUTSU_IN_FLIGHT : CHECKS_PER_CALL)
-      .map(async (part) => {
-        const result = !checkable
-          ? null
-          : await checkFrames(part.clipPath!)
-              .then((frames) =>
-                checkSwapShot({
-                  frames,
-                  characters: references ?? [{ url: sheet.frontUrl, target }],
-                }),
-              )
-              .catch((e) => {
-                console.error("checkSwapShot", errorMessage(e));
-                return null;
-              });
-        const ok = !result || (result.replaced && result.sameCharacter);
-        // Kling : nouvel essai de la vidéo, à partir de la même image clé.
-        // Genjutsu : une séquence rendue est payée, elle est seulement signalée.
-        if (!ok && !genjutsu && (part.attempts ?? 1) < MAX_ATTEMPTS) {
-          part.check = result?.reason;
-          part.predictionId = undefined;
-          part.face = undefined;
-          part.stage = "video";
-          return;
-        }
-        part.check = ok ? undefined : result?.reason;
-        // `redo` est gardé jusqu'au montage réussi (voir assembleSwap).
-        part.stage = "done";
-      }),
-  );
+  // Sans Claude, les séquences passent directement en « done » sans contrôle.
+  // Genjutsu : une séquence rendue est payée, rien à refaire d'office.
+  for (const part of parts) {
+    if (part.stage === "check") {
+      part.stage = "done";
+    }
+  }
 
   if (!parts.every((p) => p.stage === "done" && p.clipPath)) return "continue";
   // Aucune séquence rendue : rien à livrer, tout est rendu.
