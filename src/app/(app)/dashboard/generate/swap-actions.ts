@@ -178,7 +178,15 @@ export async function startSwap(input: {
       : [];
   const flat = flatPhotos.length > 0;
   if (flat) {
-    characters = flatPhotos.map((p) => ({ imagePath: p, extraPaths: [], target: "", object: false }));
+    characters = flatPhotos.map((p, i) => ({
+      imagePath: p,
+      extraPaths: [],
+      // Genjutsu a besoin de savoir qui chaque image remplace. Le prompt du
+      // créateur (passé via instructions) le précise ; ici on numérote pour que
+      // le prompt structuré ne dise pas « the main person » pour tous.
+      target: flatPhotos.length > 1 ? `person ${i + 1} in the video` : "",
+      object: false,
+    }));
   }
   let decorImagePath = typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
   // Sans image dans la case principale, seul le lieu change.
@@ -252,11 +260,16 @@ export async function startSwap(input: {
   });
   if (!shots?.length) return { error: errors.swapUnreadable };
 
-  // Images en vrac : déjà séparées en un personnage par photo (voir plus haut).
-  // Rien à regrouper ici.
-  // Consignes libres envoyées telles quelles à Genjutsu (il lit la plupart
-  // des langues ; plus de reformulation par Claude).
-  const instructions: string | undefined = rawInstructions || undefined;
+  // Images en vrac : les tags @image1, @img1, @photo1 (ou « image 1 »)
+  // sont du jargon TwinPost. Genjutsu appelle ses images « reference image N »,
+  // donc on traduit avant d'envoyer.
+  let instructions: string | undefined = rawInstructions || undefined;
+  if (flat && instructions) {
+    instructions = instructions.replace(
+      /(?:@(?:image|img|photo)\s*(\d+))|(?:\bimage\s+(\d+)\b)/gi,
+      (_, n1, n2) => `reference image ${n1 ?? n2}`,
+    );
+  }
   const several = characters.length > 1;
   const people = characters.filter((c) => !c.object);
   // La haute fidélité passe par des mannequins de personnes.
