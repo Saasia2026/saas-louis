@@ -245,6 +245,20 @@ function genjutsuPrompt(
   ].join("\n\n");
 }
 
+// Mode vrac avec consignes : le créateur écrit lui-même quel personnage
+// remplace qui, en citant les images par leur numéro (« reference image 1 »
+// ou « l'image 3 »). On laisse les consignes piloter le prompt, avec un
+// cadrage léger pour que Genjutsu préserve la performance source.
+function directInstructionsPrompt(instructions: string) {
+  return [
+    "EDIT THE SOURCE VIDEO as described below. The uploaded reference images are numbered in order (reference image 1, reference image 2, …).",
+    instructions,
+    "SOURCE PRIORITY — The source video controls all movement, performance, lip-sync, facial expressions, gaze, gestures, interactions, body positions, camera movement, framing, editing and timing. The reference images control only the identity of what they replace.",
+    "EXACT SOURCE PERFORMANCE — Keep every gesture, pause, mouth movement, head turn, body sway and interaction at its original time and speed. Preserve every camera movement and every cut exactly where they occur. Keep the original duration, aspect ratio and playback speed.",
+    "ENVIRONMENT AND INTEGRATION — Keep the original background, set, objects, every other person not mentioned above, lighting, shadows, perspective and composition from the source video.",
+  ].join("\n\n");
+}
+
 // Un passage de 4 à 30 s, coupes comprises. Les images sont les photos du
 // personnage déposées par le créateur (8 au plus, tous personnages confondus).
 // `webhookUrl` : Higgsfield y signale la fin du rendu (paramètre
@@ -261,8 +275,11 @@ export async function createGenjutsuSwap(input: {
   // Photo du lieu (déjà chez Higgsfield) : la scène est reconstruite dans ce
   // décor, via Motion Transfer. Absente : Object Swap, décor du clip gardé.
   decorUrl?: string;
-  // Consignes libres du créateur, en anglais (voir polishSwapInstructions).
+  // Consignes libres du créateur (dans sa langue).
   instructions?: string;
+  // Mode vrac multi-personnage : les consignes sont le prompt principal
+  // (comme sur l'interface Higgsfield), pas un « REQUESTED CHANGES ».
+  directPrompt?: boolean;
   // Passe mannequin : chaque personne visée devient le mannequin dont la
   // planche est dans `characters` (même ordre) ; décor et consignes
   // attendent la passe des personnages.
@@ -306,7 +323,9 @@ export async function createGenjutsuSwap(input: {
     headers: headers(),
     signal: AbortSignal.timeout(60_000),
     body: JSON.stringify({
-      prompt: genjutsuPrompt(input.characters, Boolean(input.decorUrl), input.instructions),
+      prompt: input.directPrompt && input.instructions
+        ? directInstructionsPrompt(input.instructions)
+        : genjutsuPrompt(input.characters, Boolean(input.decorUrl), input.instructions),
       video_url: input.videoUrl,
       image_urls: input.decorUrl ? [...characterUrls, input.decorUrl] : characterUrls,
       resolution,

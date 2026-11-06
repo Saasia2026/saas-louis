@@ -170,23 +170,25 @@ export async function startSwap(input: {
         ? c.target.trim().slice(0, 200)
         : "",
   }));
-  // Images en vrac : chaque photo est un personnage séparé, envoyé à
-  // Genjutsu avec son propre slot (8 au plus, la limite de Higgsfield).
+  const rawInstructions =
+    typeof input.instructions === "string" ? input.instructions.trim().slice(0, 1000) : "";
+  // Images en vrac (mode « photos »). Deux cas :
+  // — avec consignes + plusieurs photos : chaque photo = une image de
+  //   référence distincte ; les consignes disent qui remplacer par quelle
+  //   image, exactement comme l'interface Higgsfield.
+  // — sans consignes ou une seule photo : toutes les photos sont des vues
+  //   du même personnage.
   const flatPhotos =
     !preset && Array.isArray(input.photos)
       ? input.photos.filter((p): p is string => typeof p === "string").slice(0, GENJUTSU_MAX_IMAGES)
       : [];
   const flat = flatPhotos.length > 0;
   if (flat) {
-    characters = flatPhotos.map((p, i) => ({
-      imagePath: p,
-      extraPaths: [],
-      // Genjutsu a besoin de savoir qui chaque image remplace. Le prompt du
-      // créateur (passé via instructions) le précise ; ici on numérote pour que
-      // le prompt structuré ne dise pas « the main person » pour tous.
-      target: flatPhotos.length > 1 ? `person ${i + 1} in the video` : "",
-      object: false,
-    }));
+    if (rawInstructions && flatPhotos.length > 1) {
+      characters = flatPhotos.map((p) => ({ imagePath: p, extraPaths: [] as string[], target: "", object: false }));
+    } else {
+      characters = [{ imagePath: flatPhotos[0], extraPaths: flatPhotos.slice(1), target: "", object: false }];
+    }
   }
   let decorImagePath = typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
   // Sans image dans la case principale, seul le lieu change.
@@ -194,8 +196,6 @@ export async function startSwap(input: {
     return { error: errors.swapFiles };
   }
   if (preset && characters.length > preset.people.length) return { error: errors.swapFiles };
-  const rawInstructions =
-    typeof input.instructions === "string" ? input.instructions.trim().slice(0, 1000) : "";
   if (
     (!preset && !own(input.videoPath)) ||
     !characters.every((c) => own(c.imagePath) && c.extraPaths.every(own)) ||
@@ -260,24 +260,25 @@ export async function startSwap(input: {
   });
   if (!shots?.length) return { error: errors.swapUnreadable };
 
-  // Images en vrac : les tags @image1, @img1, @photo1 (ou « image 1 »)
-  // sont du jargon TwinPost. Genjutsu appelle ses images « reference image N »,
-  // donc on traduit avant d'envoyer.
+  // Tags @image1, @img2, @photo3… → « reference image N » pour que Genjutsu
+  // comprenne quelle image de référence est visée (numérotée dans l'ordre
+  // de image_urls). Le reste du texte reste dans la langue du créateur.
   let instructions: string | undefined = rawInstructions || undefined;
-  if (flat && instructions) {
+  if (instructions) {
     instructions = instructions.replace(
-      /(?:@(?:image|img|photo)\s*(\d+))|(?:\bimage\s+(\d+)\b)/gi,
-      (_, n1, n2) => `reference image ${n1 ?? n2}`,
+      /@(?:image|img|photo)\s*(\d+)/gi,
+      (_, n) => `reference image ${n}`,
     );
   }
+  const directPrompt = flat && !!instructions && flatPhotos.length > 1;
   const several = characters.length > 1;
   const people = characters.filter((c) => !c.object);
   // La haute fidélité passe par des mannequins de personnes.
   if (!people.length) vessel = false;
   // Toutes les images comptent comme personnages seulement si c'est le cas.
   const listed = several || people.length !== characters.length;
-  // Plusieurs éléments groupés manuellement : il faut savoir ce que chacun
-  // remplace. En mode vrac, c'est le prompt du créateur qui le dit.
+  // Plusieurs éléments : il faut savoir ce que chacun remplace (sauf en
+  // mode vrac, où les consignes du créateur font le ciblage).
   if (several && !flat && characters.some((c) => !c.target)) return { error: errors.swapTargets };
   // Photos de chaque personnage, dans la distribution retenue.
   const urlOfPath = new Map(allPhotoPaths.map((p, i) => [p, allPhotoUrls[i]!]));
@@ -301,6 +302,7 @@ export async function startSwap(input: {
     quality,
     ...(decorImagePath && { decor_image_path: decorImagePath }),
     ...(instructions && { instructions }),
+    ...(directPrompt && { direct_prompt: true }),
     ...(vessel && { vessel: true }),
     photos: true,
     aspect_ratio: probe.aspectRatio,

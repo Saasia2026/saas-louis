@@ -215,10 +215,11 @@ export type SwapMetadata = {
   // du clip est gardé.
   decor_image_path?: string;
   decor_url?: string;
-  // Consignes libres du créateur (genjutsu), reformulées en anglais au
-  // lancement (voir polishSwapInstructions) : changements en plus du
-  // remplacement (« turn the chair into a sports car »).
+  // Consignes libres du créateur (genjutsu), dans sa langue.
   instructions?: string;
+  // Mode vrac multi-personnage : les consignes sont le prompt principal
+  // (comme sur l'interface Higgsfield).
+  direct_prompt?: boolean;
   // Méthode du mannequin (genjutsu) : chaque séquence passe d'abord par des
   // mannequins neutres, un par personnage (silhouette du personnage, couleur
   // propre, planche déjà chez Higgsfield), puis par les personnages.
@@ -777,6 +778,7 @@ async function advanceParts(
                   })),
                   decorUrl: metadata.decor_url,
                   instructions: metadata.instructions,
+                  directPrompt: metadata.direct_prompt,
                   ...genjutsuSettingsOf(metadata),
                   webhookUrl,
                 });
