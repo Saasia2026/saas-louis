@@ -250,13 +250,7 @@ function genjutsuPrompt(
 // ou « l'image 3 »). On laisse les consignes piloter le prompt, avec un
 // cadrage léger pour que Genjutsu préserve la performance source.
 function directInstructionsPrompt(instructions: string) {
-  return [
-    "EDIT THE SOURCE VIDEO as described below. The uploaded reference images are numbered in order (reference image 1, reference image 2, …).",
-    instructions,
-    "SOURCE PRIORITY — The source video controls all movement, performance, lip-sync, facial expressions, gaze, gestures, interactions, body positions, camera movement, framing, editing and timing. The reference images control only the identity of what they replace.",
-    "EXACT SOURCE PERFORMANCE — Keep every gesture, pause, mouth movement, head turn, body sway and interaction at its original time and speed. Preserve every camera movement and every cut exactly where they occur. Keep the original duration, aspect ratio and playback speed.",
-    "ENVIRONMENT AND INTEGRATION — Keep the original background, set, objects, every other person not mentioned above, lighting, shadows, perspective and composition from the source video.",
-  ].join("\n\n");
+  return instructions;
 }
 
 // Un passage de 4 à 30 s, coupes comprises. Les images sont les photos du
@@ -312,7 +306,7 @@ export async function createGenjutsuSwap(input: {
     if (!request_id) throw new Error("Higgsfield création : réponse sans identifiant");
     return `hf:swap:${request_id}`;
   }
-  const endpoint = genjutsuEndpoint(model, Boolean(input.decorUrl));
+  const endpoint = genjutsuEndpoint(model, Boolean(input.decorUrl) || Boolean(input.directPrompt));
   // 8 images au plus ; le décor prend la dernière place (le prompt le désigne
   // comme la dernière image).
   const characterUrls = input.characters
