@@ -7,27 +7,15 @@ import type { PredictionState } from "@/lib/predictions";
 // retente tout seul la création d'une requête, au risque de la payer deux fois.
 const BASE_URL = "https://api.higgsfield.ai";
 
-// Genjutsu Object Swap remplace un élément du clip et garde le reste : jeu,
-// caméra, coupes et mouvements de bouche sont repris du clip. 0,681 $ la
-// seconde en 720p, 1,632 $ en 1080p (vérifié le 2026-09-26), durée du clip
-// arrondie à la seconde supérieure. L'identifiant officiel s'écrit bien
-// « higgsfiled ».
-const GENJUTSU_SWAP_ENDPOINT = "higgsfiled/genjutsu/object-swap/v1.0";
-// Motion Transfer : même schéma, même prix, mais la scène entière est
-// refabriquée à partir des références — c'est ce qui permet de poser le clip
-// dans un autre décor (photo du lieu en dernière référence). Utilisé
-// seulement quand un décor est demandé : sans décor, Object Swap préserve
-// mieux le clip d'origine. Testé le 2026-09-28.
-const GENJUTSU_TRANSFER_ENDPOINT = "higgsfiled/genjutsu/motion-transfer/v1.0";
-// Genjutsu Light (affiché « Shinka » sur le site, voir GENJUTSU_RATES) :
-// mêmes paramètres, environ 7 fois moins cher, 15 s au plus par requête.
-// Identifiant documenté avec l'orthographe correcte, cette fois.
-const GENJUTSU_LIGHT_SWAP_ENDPOINT = "higgsfield/genjutsu-light/object-swap/v1.0";
-const GENJUTSU_LIGHT_TRANSFER_ENDPOINT = "higgsfield/genjutsu-light/motion-transfer/v1.0";
+// Genjutsu Motion Transfer : seul endpoint documenté par Higgsfield
+// (2026-11-06). 0,681 $/s en 720p, 1,632 $/s en 1080p (Genjutsu Max) ;
+// 0,10 $/s en 720p (Genjutsu Light). Vidéo source 4–30 s.
+const GENJUTSU_ENDPOINT = "higgsfield/genjutsu/motion-transfer/v1.0";
+// Genjutsu Light (affiché « Shinka » sur le site) : 15 s max.
+const GENJUTSU_LIGHT_ENDPOINT = "higgsfield/genjutsu-light/motion-transfer/v1.0";
 
-function genjutsuEndpoint(model: GenjutsuModel, transfer: boolean) {
-  if (model === "standard") return transfer ? GENJUTSU_LIGHT_TRANSFER_ENDPOINT : GENJUTSU_LIGHT_SWAP_ENDPOINT;
-  return transfer ? GENJUTSU_TRANSFER_ENDPOINT : GENJUTSU_SWAP_ENDPOINT;
+function genjutsuEndpoint(model: GenjutsuModel) {
+  return model === "standard" ? GENJUTSU_LIGHT_ENDPOINT : GENJUTSU_ENDPOINT;
 }
 
 // HF_CREDENTIALS : "identifiant:secret" de la clé (console.higgsfield.ai).
@@ -287,7 +275,7 @@ export async function createGenjutsuSwap(input: {
   const model = input.model ?? "max";
   const resolution = input.quality ?? "720p";
   if (input.mannequins) {
-    const response = await fetch(`${BASE_URL}/${genjutsuEndpoint(model, false)}${hook}`, {
+    const response = await fetch(`${BASE_URL}/${genjutsuEndpoint(model)}${hook}`, {
       method: "POST",
       headers: headers(),
       signal: AbortSignal.timeout(60_000),
@@ -306,7 +294,7 @@ export async function createGenjutsuSwap(input: {
     if (!request_id) throw new Error("Higgsfield création : réponse sans identifiant");
     return `hf:swap:${request_id}`;
   }
-  const endpoint = genjutsuEndpoint(model, Boolean(input.decorUrl) || Boolean(input.directPrompt));
+  const endpoint = genjutsuEndpoint(model);
   // 8 images au plus ; le décor prend la dernière place (le prompt le désigne
   // comme la dernière image).
   const characterUrls = input.characters
