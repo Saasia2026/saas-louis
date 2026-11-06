@@ -1,4 +1,5 @@
 import { Download, Plus } from "lucide-react";
+import Image from "next/image";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -14,11 +15,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: `${t.meta.videos} — TwinPost` };
 }
 
-// Remplacements terminés ou en cours. Un rendu prend plusieurs minutes : on
-// revient le chercher ici.
 export default async function VideosPage() {
   const t = await getDictionary();
   const V = t.videos;
+  const S = t.studio;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) redirect("/login?next=/dashboard/videos");
@@ -46,57 +46,117 @@ export default async function VideosPage() {
           </Link>
         </div>
       ) : (
-        // Galerie sans cadre, comme les exemples du landing : la vidéo est la
-        // carte, la légende reste en retrait.
-        <ul className="mt-8 grid gap-x-4 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-          {shown.map((video, i) => (
-            <li
-              key={video.id}
-              className="animate-fade-up"
-              style={{ animationDelay: `${Math.min(i, 8) * 60}ms` }}
-            >
-              <div
-                className="relative flex w-full items-center justify-center overflow-hidden rounded-xl border border-line bg-black bg-clip-padding"
-                style={{ aspectRatio: video.aspectRatio.replace(":", " / ") }}
+        <ul className="mt-8 flex flex-col gap-6">
+          {shown.map((video, i) => {
+            const engine = video.settings.model === "max" ? S.modelMax : S.modelStandard;
+            return (
+              <li
+                key={video.id}
+                className="animate-fade-up overflow-hidden rounded-2xl border border-line bg-surface"
+                style={{ animationDelay: `${Math.min(i, 8) * 60}ms` }}
               >
-                <DeleteButton id={video.id} confirm={V.deleteConfirm} />
-                {video.mediaUrl ? (
-                  <video
-                    src={video.mediaUrl}
-                    controls
-                    preload="metadata"
-                    playsInline
-                    webkit-playsinline=""
-                    className="size-full object-contain"
-                  />
-                ) : (
-                  <span className="flex flex-col items-center gap-3 text-sm text-muted">
-                    <span className="size-7 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
-                    {V.running}
-                  </span>
-                )}
-              </div>
-              <div className="mt-3 flex items-center justify-between gap-3 px-0.5">
-                <p className="text-xs text-muted tabular-nums">
-                  {video.date}
-                  {video.seconds ? ` · ${fmt(V.seconds, { seconds: video.seconds })}` : ""}
-                  {video.incomplete && (
-                    <span className="mt-1 block text-amber-300">{video.incomplete}</span>
-                  )}
-                </p>
-                {video.running ? (
-                  <Link href={`/dashboard/generate?v=${video.id}`} className="btn btn-secondary">
-                    {V.resume}
-                  </Link>
-                ) : (
-                  <a href={video.downloadUrl ?? video.mediaUrl} className="btn btn-ghost">
-                    <Download />
-                    {V.download}
-                  </a>
-                )}
-              </div>
-            </li>
-          ))}
+                <div className="flex flex-col md:flex-row">
+                  {/* Video */}
+                  <div
+                    className="relative flex shrink-0 items-center justify-center bg-black md:w-[55%]"
+                    style={{ aspectRatio: video.aspectRatio.replace(":", " / ") }}
+                  >
+                    <DeleteButton id={video.id} confirm={V.deleteConfirm} />
+                    {video.mediaUrl ? (
+                      <video
+                        src={video.mediaUrl}
+                        controls
+                        preload="metadata"
+                        playsInline
+                        webkit-playsinline=""
+                        className="size-full object-contain"
+                      />
+                    ) : (
+                      <span className="flex flex-col items-center gap-3 text-sm text-muted">
+                        <span className="size-7 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
+                        {V.running}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Panel */}
+                  <div className="flex flex-1 flex-col gap-5 p-5 md:p-6">
+                    {/* Engine badge */}
+                    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-line-strong px-3 py-1 text-xs font-medium">
+                      {engine}
+                    </span>
+
+                    {/* Prompt */}
+                    {video.prompt && (
+                      <p className="line-clamp-4 text-sm leading-relaxed text-secondary">
+                        {video.prompt}
+                      </p>
+                    )}
+
+                    {/* Thumbnails */}
+                    {video.thumbs.length > 0 && (
+                      <div className="flex gap-2">
+                        {video.thumbs.map((url, k) => (
+                          <div
+                            key={k}
+                            className="size-12 shrink-0 overflow-hidden rounded-lg border border-line bg-black"
+                          >
+                            <Image
+                              src={url}
+                              alt=""
+                              width={48}
+                              height={48}
+                              className="size-full object-cover"
+                              unoptimized
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Metadata chips */}
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
+                      <span className="inline-flex items-center gap-1 rounded-md border border-line px-2 py-0.5">
+                        {video.settings.quality}
+                      </span>
+                      {video.seconds != null && (
+                        <span className="inline-flex items-center gap-1 rounded-md border border-line px-2 py-0.5">
+                          {video.seconds} s
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 rounded-md border border-line px-2 py-0.5">
+                        {video.aspectRatio}
+                      </span>
+                      {video.fidelity && (
+                        <span className="inline-flex items-center gap-1 rounded-md border border-line px-2 py-0.5">
+                          HD
+                        </span>
+                      )}
+                    </div>
+
+                    {video.incomplete && (
+                      <p className="text-xs text-amber-300">{video.incomplete}</p>
+                    )}
+
+                    {/* Date + actions */}
+                    <div className="mt-auto flex items-center justify-between gap-3">
+                      <p className="text-xs text-muted">{video.date}</p>
+                      {video.running ? (
+                        <Link href={`/dashboard/generate?v=${video.id}`} className="btn btn-secondary">
+                          {V.resume}
+                        </Link>
+                      ) : (
+                        <a href={video.downloadUrl ?? video.mediaUrl} className="btn btn-ghost">
+                          <Download />
+                          {V.download}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

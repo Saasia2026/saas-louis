@@ -29,6 +29,8 @@ export type SwapHistoryItem = {
   fidelity: boolean;
   // Mouvement transféré dans un nouveau lieu (Motion Transfer).
   transfer: boolean;
+  // Consignes libres du créateur.
+  prompt: string;
   // Photos des personnages, dans l'ordre.
   thumbs: string[];
 };
@@ -40,6 +42,7 @@ type HistoryMetadata = {
   quality?: unknown;
   vessel?: boolean;
   decor_image_path?: string;
+  instructions?: string;
   swap_parts?: { original?: boolean }[];
   character_image_path?: string;
   characters?: { image_path?: string }[];
@@ -103,6 +106,7 @@ export async function listSwapHistory(limit = 24): Promise<SwapHistoryItem[]> {
         date: dateFormat.format(new Date(g.created_at)),
         settings: genjutsuSettingsOf(g.meta),
         fidelity: g.meta.vessel === true,
+        prompt: g.meta.instructions ?? "",
         transfer: Boolean(g.meta.decor_image_path),
         thumbs: photoPaths[i].flatMap((p) => photoUrl.get(p) ?? []),
       };
