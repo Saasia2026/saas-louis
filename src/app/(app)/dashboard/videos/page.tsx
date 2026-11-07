@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { fmt } from "@/i18n/config";
 import { getDictionary } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
+import { VideoPlayer } from "@/app/video-player";
 import { PageHeader } from "../../page-header";
 import { listSwapHistory } from "../swap-history";
 import { DeleteButton } from "./delete-button";
@@ -57,25 +58,22 @@ export default async function VideosPage() {
               >
                 <div className="flex flex-col md:flex-row">
                   {/* Video */}
-                  <div
-                    className="relative flex shrink-0 items-center justify-center bg-black md:w-[55%]"
-                    style={{ aspectRatio: video.aspectRatio.replace(":", " / ") }}
-                  >
-                    <DeleteButton id={video.id} confirm={V.deleteConfirm} />
+                  <div className="shrink-0 p-3 md:w-[55%]">
                     {video.mediaUrl ? (
-                      <video
-                        src={video.mediaUrl}
-                        controls
-                        preload="metadata"
-                        playsInline
-                        webkit-playsinline=""
-                        className="size-full object-contain"
-                      />
+                      <VideoPlayer src={video.mediaUrl} aspectRatio={video.aspectRatio}>
+                        <DeleteButton id={video.id} confirm={V.deleteConfirm} />
+                      </VideoPlayer>
                     ) : (
-                      <span className="flex flex-col items-center gap-3 text-sm text-muted">
-                        <span className="size-7 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
-                        {V.running}
-                      </span>
+                      <div
+                        className="relative flex items-center justify-center rounded-xl border border-line bg-black"
+                        style={{ aspectRatio: video.aspectRatio.replace(":", " / ") }}
+                      >
+                        <DeleteButton id={video.id} confirm={V.deleteConfirm} />
+                        <span className="flex flex-col items-center gap-3 text-sm text-muted">
+                          <span className="size-7 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
+                          {V.running}
+                        </span>
+                      </div>
                     )}
                   </div>
 

@@ -28,6 +28,7 @@ import {
 import type { SwapPreset } from "@/lib/presets";
 import type { SwapHistoryItem } from "../swap-history";
 import { getGeneration, type GenerationView } from "./actions";
+import { ResultStage, StageAction } from "./result-stage";
 import type { DemoClip } from "./demo-clips";
 import { clearDraft, loadDraft, saveDraft, type DraftFile } from "./draft";
 import { ExamplesPanel } from "./examples-panel";
@@ -784,69 +785,70 @@ function Result({
   const cancellable =
     phase.kind === "generating" && Boolean(phase.id) && phase.view?.stage !== "assembling";
 
+  const actions = (
+    <>
+      {phase.kind === "done" && (
+        <StageAction icon={Download} label={t.studio.download} href={phase.view.downloadUrl ?? phase.view.mediaUrl} />
+      )}
+      {cancellable && (
+        <StageAction
+          icon={X}
+          label={t.studio.cancel}
+          disabled={cancelling}
+          onClick={async () => {
+            setCancelling(true);
+            await onCancel().finally(() => setCancelling(false));
+          }}
+        />
+      )}
+      {phase.kind !== "generating" && <StageAction icon={RefreshCw} label={t.studio.newVideo} onClick={onReset} />}
+    </>
+  );
+
   return (
     <section className="panel animate-fade-up overflow-hidden">
-      <div className="flex justify-center p-6">
-        {phase.kind === "error" ? (
+      {phase.kind === "error" ? (
+        <div className="flex flex-col items-center gap-4 p-6">
           <div
             role="alert"
-            className="my-8 flex max-w-md items-start gap-3 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger"
+            className="my-4 flex max-w-md items-start gap-3 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger"
           >
             <TriangleAlert className="mt-0.5 size-4 shrink-0" />
             <p>{phase.message}</p>
           </div>
-        ) : (
-          <div
-            className={`relative flex w-full items-center justify-center overflow-hidden rounded-xl border bg-black bg-clip-padding ${
-              aspectRatio === "16:9" ? "max-w-xl" : "max-w-[16rem]"
-            } ${phase.kind === "generating" ? "glow" : "border-line"}`}
-            style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
-          >
-            {phase.kind === "done" ? (
-              <video
-                src={phase.view.mediaUrl}
-                controls
-                autoPlay
-                loop
-                muted
-                playsInline
-                webkit-playsinline=""
-                className="size-full object-cover"
-              />
-            ) : (
-              <>
-                {sourcePreview && (
-                  <video
-                    src={sourcePreview}
-                    muted
-                    loop
-                    autoPlay
-                    playsInline
-                    webkit-playsinline=""
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 size-full object-cover opacity-30"
+          <button type="button" onClick={onReset} className="btn btn-secondary">
+            <RefreshCw />
+            {t.studio.newVideo}
+          </button>
+        </div>
+      ) : (
+        <ResultStage
+          // Nouvelle scène par rendu : le fondu rejoue pour chaque vidéo.
+          key={phase.id}
+          aspectRatio={aspectRatio}
+          mediaUrl={phase.kind === "done" ? phase.view.mediaUrl : undefined}
+          backdrop={sourcePreview}
+          actions={actions}
+          overlay={
+            phase.kind === "generating" && (
+              <div className="relative flex w-full flex-col items-center gap-3 px-5 text-center text-sm">
+                {characterPreview ? (
+                  // Aperçu local (blob:) : pas d'optimisation Next.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={characterPreview}
+                    alt=""
+                    className="size-14 rounded-xl border border-white/25 object-cover shadow-[0_12px_32px_-8px_rgb(0_0_0/0.8)]"
                   />
+                ) : (
+                  <span className="size-9 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
                 )}
-                <span className="pointer-events-none absolute inset-x-0 h-16 animate-scan bg-gradient-to-b from-transparent via-accent/25 to-transparent" />
-                <div className="relative flex w-full flex-col items-center gap-3 px-5 text-center text-sm">
-                  {characterPreview ? (
-                    // Aperçu local (blob:) : pas d'optimisation Next.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={characterPreview}
-                      alt=""
-                      className="size-14 rounded-xl border border-white/25 object-cover shadow-[0_12px_32px_-8px_rgb(0_0_0/0.8)]"
-                    />
-                  ) : (
-                    <span className="size-9 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
-                  )}
-                  <ProgressLabel phase={phase} />
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
+                <ProgressLabel phase={phase} />
+              </div>
+            )
+          }
+        />
+      )}
 
       {phase.kind === "done" && phase.view.unreplaced > 0 && (
         <p className="border-t border-line px-4 py-3 text-sm text-amber-300">
@@ -899,34 +901,6 @@ function Result({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line p-3">
-        {phase.kind === "done" && (
-          <a href={phase.view.downloadUrl ?? phase.view.mediaUrl} className="btn btn-hot py-2.5 text-[0.9375rem]">
-            <Download />
-            {t.studio.download}
-          </a>
-        )}
-        {cancellable && (
-          <button
-            type="button"
-            disabled={cancelling}
-            onClick={async () => {
-              setCancelling(true);
-              await onCancel().finally(() => setCancelling(false));
-            }}
-            className="btn btn-secondary"
-          >
-            <X />
-            {t.studio.cancel}
-          </button>
-        )}
-        {phase.kind !== "generating" && (
-          <button type="button" onClick={onReset} className="btn btn-secondary">
-            <RefreshCw />
-            {t.studio.newVideo}
-          </button>
-        )}
-      </div>
     </section>
   );
 }

@@ -25,6 +25,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { playInline } from "@/app/inline-video";
 import { usePauseWhenHidden } from "@/app/pause-hidden";
+import { VideoPlayer } from "@/app/video-player";
 import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import type { AspectRatio } from "@/lib/generation";
@@ -70,27 +71,24 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
           key={item.id}
           className="panel relative flex animate-fade-up flex-col gap-4 p-3 transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-line-strong sm:flex-row"
         >
-          <div
-            className={`flex w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-black bg-clip-padding ${THUMB_WIDTH[item.aspectRatio]}`}
-            style={{ aspectRatio: item.aspectRatio.replace(":", " / ") }}
-          >
-            {item.mediaUrl ? (
-              <video
-                // #t= : la première image s'affiche avant la lecture.
-                src={`${item.mediaUrl}#t=0.1`}
-                controls
-                preload="metadata"
-                playsInline
-                webkit-playsinline=""
-                className="size-full object-contain"
-              />
-            ) : (
+          {item.mediaUrl ? (
+            <VideoPlayer
+              src={item.mediaUrl}
+              aspectRatio={item.aspectRatio}
+              compact
+              className={`w-full shrink-0 ${THUMB_WIDTH[item.aspectRatio]}`}
+            />
+          ) : (
+            <div
+              className={`flex w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-black bg-clip-padding ${THUMB_WIDTH[item.aspectRatio]}`}
+              style={{ aspectRatio: item.aspectRatio.replace(":", " / ") }}
+            >
               <span className="flex flex-col items-center gap-3 text-sm text-muted">
                 <span className="size-7 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
                 {V.running}
               </span>
-            )}
-          </div>
+            </div>
+          )}
 
           <DeleteButton
             id={item.id}
