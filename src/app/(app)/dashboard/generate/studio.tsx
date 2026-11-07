@@ -1,6 +1,6 @@
 "use client";
 
-import { CirclePlay, Clock, Coins, Download, Film, History, Layers, MonitorPlay, RefreshCw, Scissors, TriangleAlert, WandSparkles, X } from "lucide-react";
+import { CirclePlay, Clock, Coins, Download, Film, History, MonitorPlay, RefreshCw, Scissors, TriangleAlert, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fmt, INTL_LOCALES, plural } from "@/i18n/config";
@@ -621,26 +621,6 @@ export function Studio({
                 icon={MonitorPlay}
                 title={q}
                 aside={rate(swapMethodRate({ model, quality: q }, fidelity))}
-              />
-            ))
-          }
-        </SettingRow>
-        <SettingRow label={t.studio.methodLabel} value={fidelity ? t.studio.methodFidelity : t.studio.methodStandard}>
-          {(close) =>
-            ([false, true] as const).map((f) => (
-              <Option
-                key={String(f)}
-                selected={fidelity === f}
-                onSelect={() => {
-                  setFidelity(f);
-                  close();
-                }}
-                icon={f ? Layers : WandSparkles}
-                title={f ? t.studio.methodFidelity : t.studio.methodStandard}
-                detail={fmt(f ? t.studio.methodFidelityHint : t.studio.methodStandardHint, {
-                  rate: swapMethodRate(settings, f).toLocaleString(locale),
-                })}
-                aside={rate(swapMethodRate(settings, f))}
               />
             ))
           }
