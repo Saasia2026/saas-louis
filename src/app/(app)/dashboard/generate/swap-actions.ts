@@ -50,13 +50,14 @@ import {
 
 // Le clip déposé, envoyé chez Higgsfield tel quel : ni découpe ni
 // réencodage, Genjutsu lit lui-même les vidéos de téléphone (2026-11-08).
+// Le dépôt Higgsfield n'accepte que le type video/mp4 (422 sur
+// video/quicktime, 2026-11-08) : toute vidéo est déclarée ainsi, le fichier
+// restant intact. Un .mov d'iPhone a le même conteneur qu'un .mp4, et
+// Genjutsu lit le fichier d'après son contenu.
 async function uploadOriginal(url: string) {
   const file = await fetch(url);
   if (!file.ok) throw new Error(`Clip déposé : ${file.status}`);
-  return uploadToHiggsfield(
-    await file.arrayBuffer(),
-    file.headers.get("content-type")?.split(";")[0] || "video/mp4",
-  );
+  return uploadToHiggsfield(await file.arrayBuffer(), "video/mp4");
 }
 
 // `needCredits` : refus faute de crédits, avec le prix de ce qui était demandé.
