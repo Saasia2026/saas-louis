@@ -162,6 +162,7 @@ export const en: Dictionary = {
     wait: "One moment…",
     submitSignIn: "Sign in",
     submitSignUp: "Create my account",
+    code: "Partner code (optional)",
     freeCredits: "12 free credits when you sign up",
     fromStudio: "Your project is saved: sign in to start the render.",
     invalidLink: "This confirmation link is invalid or has expired.",

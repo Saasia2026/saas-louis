@@ -162,6 +162,7 @@ export const es: Dictionary = {
     wait: "Un momento…",
     submitSignIn: "Iniciar sesión",
     submitSignUp: "Crear mi cuenta",
+    code: "Código de socio (opcional)",
     freeCredits: "12 créditos gratis al registrarte",
     fromStudio: "Tu proyecto está guardado: inicia sesión para lanzar la generación.",
     invalidLink: "Este enlace de confirmación no es válido o ha caducado.",

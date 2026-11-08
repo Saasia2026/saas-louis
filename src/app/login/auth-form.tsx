@@ -16,14 +16,20 @@ export function AuthForm({
   next,
   initialError,
   initialMode = "signin",
+  refCode,
 }: {
   next?: string;
   initialError?: string;
   initialMode?: Mode;
+  // Code partenaire déjà connu (lien ?ref=), prérempli à l'inscription.
+  refCode?: string;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [forgot, setForgot] = useState(false);
+  const [code, setCode] = useState(refCode ?? "");
   const { t } = useI18n();
+  // Envoyé seulement à l'inscription ; Google sert aux deux onglets.
+  const sentCode = mode === "signup" ? code : "";
 
   return (
     <div className="panel glass animate-fade-up p-6 shadow-[0_30px_80px_-30px_rgb(0_0_0/0.8)] [animation-delay:150ms]">
@@ -46,7 +52,22 @@ export function AuthForm({
               </button>
             ))}
           </div>
-          <GoogleButton next={next} />
+          {mode === "signup" && (
+            <label className="mb-4 flex flex-col gap-2">
+              <span className="label">{t.login.code}</span>
+              <input
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                maxLength={32}
+                autoComplete="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+                className="field uppercase"
+              />
+            </label>
+          )}
+          <GoogleButton next={next} code={sentCode} />
           <div className="my-5 flex items-center gap-3 text-xs text-faint">
             <span className="h-px flex-1 bg-line" />
             {t.login.or}
@@ -57,6 +78,7 @@ export function AuthForm({
             key={mode}
             mode={mode}
             next={next}
+            code={sentCode}
             initialError={mode === "signin" ? initialError : undefined}
             onForgot={() => setForgot(true)}
           />
@@ -66,7 +88,7 @@ export function AuthForm({
   );
 }
 
-function GoogleButton({ next }: { next?: string }) {
+function GoogleButton({ next, code }: { next?: string; code: string }) {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(
     signInWithGoogle,
     {},
@@ -76,6 +98,7 @@ function GoogleButton({ next }: { next?: string }) {
   return (
     <form action={formAction}>
       {next && <input type="hidden" name="next" value={next} />}
+      {code && <input type="hidden" name="code" value={code} />}
       <button type="submit" disabled={pending} className="btn btn-secondary w-full">
         <GoogleMark />
         {pending ? t.login.wait : t.login.google}
@@ -159,11 +182,13 @@ function ForgotForm({ onBack }: { onBack: () => void }) {
 function CredentialsForm({
   mode,
   next,
+  code,
   initialError,
   onForgot,
 }: {
   mode: Mode;
   next?: string;
+  code: string;
   initialError?: string;
   onForgot: () => void;
 }) {
@@ -176,6 +201,7 @@ function CredentialsForm({
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {next && <input type="hidden" name="next" value={next} />}
+      {code && <input type="hidden" name="code" value={code} />}
       <label className="flex flex-col gap-2">
         <span className="label">{t.login.email}</span>
         <input

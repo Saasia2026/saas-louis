@@ -6,6 +6,7 @@ import { getDictionary } from "@/i18n/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/safe-next-path";
+import { claimRefCode, rememberRefCode } from "@/lib/referral";
 
 export type AuthState = { error?: string; message?: string };
 
@@ -65,6 +66,10 @@ export async function signUp(
     return { error: fmt(t.errors.tooShort, { min: MIN_PASSWORD_LENGTH }) };
   }
 
+  // Code partenaire tapé à l'inscription : rattaché dès que la session
+  // existe (ici, ou au retour du lien de confirmation).
+  await rememberRefCode(formData.get("code"));
+
   const origin = await appOrigin();
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -81,6 +86,7 @@ export async function signUp(
 
   // Confirmation d'email désactivée côté Supabase : la session existe déjà.
   if (data.session) {
+    await claimRefCode(supabase);
     redirect("/dashboard");
   }
 
@@ -95,6 +101,7 @@ export async function signInWithGoogle(
   formData: FormData,
 ): Promise<AuthState> {
   const next = safeNextPath(formData.get("next"));
+  await rememberRefCode(formData.get("code"));
   const origin = await appOrigin();
   const supabase = await createClient();
 

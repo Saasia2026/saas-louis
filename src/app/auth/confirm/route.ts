@@ -2,6 +2,7 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/safe-next-path";
+import { claimRefCode } from "@/lib/referral";
 
 // Cible du lien de confirmation envoyé par email.
 // Gère le flux PKCE (?code=) et le flux token_hash (?token_hash=&type=).
@@ -25,6 +26,9 @@ export async function GET(request: NextRequest) {
     });
     ok = !error;
   }
+
+  // Nouveau compte arrivé par un lien ou un code partenaire.
+  if (ok) await claimRefCode(supabase);
 
   const url = request.nextUrl.clone();
   url.search = "";

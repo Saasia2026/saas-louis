@@ -316,6 +316,24 @@ export type Database = {
           },
         ]
       }
+      partners: {
+        Row: {
+          code: string
+          created_at: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          name?: string
+        }
+        Relationships: []
+      }
       posting_plans: {
         Row: {
           account_ids: string[]
@@ -365,6 +383,7 @@ export type Database = {
           id: string
           pay_as_you_go: boolean
           plan: string
+          referred_by: string | null
           auto_recharge_at: string | null
           auto_recharge_failed: boolean
           auto_recharge_pack: string | null
@@ -384,6 +403,7 @@ export type Database = {
           id: string
           pay_as_you_go?: boolean
           plan?: string
+          referred_by?: string | null
           auto_recharge_at?: string | null
           auto_recharge_failed?: boolean
           auto_recharge_pack?: string | null
@@ -403,6 +423,7 @@ export type Database = {
           id?: string
           pay_as_you_go?: boolean
           plan?: string
+          referred_by?: string | null
           auto_recharge_at?: string | null
           auto_recharge_failed?: boolean
           auto_recharge_pack?: string | null
@@ -411,7 +432,15 @@ export type Database = {
           updated_at?: string
           zernio_profile_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       scheduled_posts: {
         Row: {
@@ -644,6 +673,7 @@ export type Database = {
         Args: { p_needed?: number; p_user_id: string }
         Returns: string
       }
+      claim_referral: { Args: { p_code: string }; Returns: boolean }
       fail_generation: { Args: { p_generation_id: string }; Returns: undefined }
       max_video_seconds: { Args: { p_plan: string }; Returns: number }
       start_generation: {

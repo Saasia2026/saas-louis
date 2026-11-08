@@ -164,6 +164,7 @@ export const fr = {
     wait: "Un instant…",
     submitSignIn: "Se connecter",
     submitSignUp: "Créer mon compte",
+    code: "Code partenaire (facultatif)",
     freeCredits: "12 crédits offerts à l'inscription",
     fromStudio: "Ton projet est gardé : connecte-toi pour lancer la génération.",
     invalidLink: "Ce lien de confirmation est invalide ou a expiré.",

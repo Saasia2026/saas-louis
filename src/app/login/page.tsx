@@ -5,6 +5,7 @@ import { LogoMark } from "@/app/logo-mark";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { ParticleField } from "@/app/particle-field";
 import { getDictionary } from "@/i18n/server";
+import { readRefCode } from "@/lib/referral";
 import { AuthForm } from "./auth-form";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,6 +19,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   // d'abord l'inscription.
   const fromStudio = from === "studio";
   const t = await getDictionary();
+  // Venu par un lien partenaire : code prérempli, onglet inscription.
+  const refCode = await readRefCode();
 
   return (
     <main className="relative isolate flex flex-1 items-stretch">
@@ -39,7 +42,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         </p>
         <AuthForm
           next={typeof next === "string" ? next : undefined}
-          initialMode={fromStudio ? "signup" : "signin"}
+          initialMode={fromStudio || refCode ? "signup" : "signin"}
+          refCode={refCode ?? undefined}
           initialError={
             error === "lien_invalide"
               ? t.login.invalidLink
