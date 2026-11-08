@@ -7,15 +7,27 @@ import type { PredictionState } from "@/lib/predictions";
 // retente tout seul la création d'une requête, au risque de la payer deux fois.
 const BASE_URL = "https://api.higgsfield.ai";
 
-// Genjutsu Motion Transfer : seul endpoint documenté par Higgsfield
-// (2026-11-06). 0,681 $/s en 720p, 1,632 $/s en 1080p (Genjutsu Max) ;
-// 0,10 $/s en 720p (Genjutsu Light). Vidéo source 4–30 s.
-const GENJUTSU_ENDPOINT = "higgsfield/genjutsu/motion-transfer/v1.0";
-// Genjutsu Light (affiché « Shinka » sur le site) : 15 s max.
-const GENJUTSU_LIGHT_ENDPOINT = "higgsfield/genjutsu-light/motion-transfer/v1.0";
+// Les deux modes de Genjutsu, comme sur Higgsfield (vérifiés le 2026-11-08 :
+// les quatre identifiants répondent). 0,681 $/s en 720p, 1,632 $/s en 1080p
+// (Genjutsu Max) ; 0,10 $/s en 720p (Genjutsu Light, affiché « Shinka »,
+// 15 s lues au plus). Vidéo source 4–30 s.
+// — Object Swap (onglet « Remplacer ») : remplace ce que dit le prompt et
+//   garde le reste du clip (décor, caméra, jeu, coupes).
+// — Motion Transfer (onglet « Transfert ») : refabrique toute la scène à
+//   partir des références ; tout passer par lui redessinait la vidéo entière.
+const GENJUTSU_ENDPOINTS = {
+  max: {
+    swap: "higgsfield/genjutsu/object-swap/v1.0",
+    transfer: "higgsfield/genjutsu/motion-transfer/v1.0",
+  },
+  standard: {
+    swap: "higgsfield/genjutsu-light/object-swap/v1.0",
+    transfer: "higgsfield/genjutsu-light/motion-transfer/v1.0",
+  },
+} as const;
 
-function genjutsuEndpoint(model: GenjutsuModel) {
-  return model === "standard" ? GENJUTSU_LIGHT_ENDPOINT : GENJUTSU_ENDPOINT;
+function genjutsuEndpoint(model: GenjutsuModel, transfer = false) {
+  return GENJUTSU_ENDPOINTS[model === "standard" ? "standard" : "max"][transfer ? "transfer" : "swap"];
 }
 
 // HF_CREDENTIALS : "identifiant:secret" de la clé (console.higgsfield.ai).
@@ -288,7 +300,8 @@ export async function createGenjutsuSwap(input: {
     if (!request_id) throw new Error("Higgsfield création : réponse sans identifiant");
     return `hf:swap:${request_id}`;
   }
-  const endpoint = genjutsuEndpoint(model);
+  // Photo de lieu (onglet « Transfert ») : Motion Transfer ; sinon Object Swap.
+  const endpoint = genjutsuEndpoint(model, Boolean(input.decorUrl));
   // 8 images au plus ; le décor prend la dernière place (le prompt le désigne
   // comme la dernière image).
   const characterUrls = input.characters
