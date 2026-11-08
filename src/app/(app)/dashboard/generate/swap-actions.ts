@@ -16,7 +16,6 @@ import {
   isSwapQuality,
   type GenjutsuModel,
   type SwapQuality,
-  genjutsuBilledSeconds,
   photosPerCharacter,
   swapCredits,
   swapShotCredits,
@@ -44,22 +43,20 @@ import { createClient } from "@/lib/supabase/server";
 import {
   advanceSwap,
   cancelSwap as cancelSwapGeneration,
-  preparePart,
   probeVideo,
-  splitIntoParts,
   type SwapMetadata,
   type SwapPart,
 } from "@/lib/swap";
 
-// Morceaux préparés (ffmpeg, envoi) en même temps, au plus.
-const PREPARE_BATCH = 4;
-
-async function mapInBatches<T, R>(items: T[], size: number, fn: (item: T) => Promise<R>) {
-  const results: R[] = [];
-  for (let i = 0; i < items.length; i += size) {
-    results.push(...(await Promise.all(items.slice(i, i + size).map(fn))));
-  }
-  return results;
+// Le clip déposé, envoyé chez Higgsfield tel quel : ni découpe ni
+// réencodage, Genjutsu lit lui-même les vidéos de téléphone (2026-11-08).
+async function uploadOriginal(url: string) {
+  const file = await fetch(url);
+  if (!file.ok) throw new Error(`Clip déposé : ${file.status}`);
+  return uploadToHiggsfield(
+    await file.arrayBuffer(),
+    file.headers.get("content-type")?.split(";")[0] || "video/mp4",
+  );
 }
 
 // `needCredits` : refus faute de crédits, avec le prix de ce qui était demandé.
@@ -170,8 +167,9 @@ export async function startSwap(input: {
         ? c.target.trim().slice(0, 200)
         : "",
   }));
+  // Le prompt du créateur, tel qu'il l'a écrit (vide s'il n'a rien écrit).
   const rawInstructions =
-    typeof input.instructions === "string" ? input.instructions.trim().slice(0, 1000) : "";
+    typeof input.instructions === "string" && input.instructions.trim() ? input.instructions : "";
   // Images en vrac (mode « photos »). Deux cas :
   // — avec consignes + plusieurs photos : chaque photo = une image de
   //   référence distincte ; les consignes disent qui remplacer par quelle
@@ -183,6 +181,11 @@ export async function startSwap(input: {
       ? input.photos.filter((p): p is string => typeof p === "string").slice(0, GENJUTSU_MAX_IMAGES)
       : [];
   const flat = flatPhotos.length > 0;
+  // Studio : tout part tel quel chez Genjutsu, comme sur Higgsfield : la
+  // vidéo, les images dans l'ordre du dépôt (8 au plus) et le prompt mot pour
+  // mot. Prompt vide : le rendu part quand même, avec un prompt vide. Seuls
+  // les plans prêts gardent un prompt écrit par le site.
+  const directMode = flat;
   if (flat) {
     if (rawInstructions && flatPhotos.length > 1) {
       characters = flatPhotos.map((p) => ({ imagePath: p, extraPaths: [] as string[], target: "", object: false }));
@@ -190,10 +193,11 @@ export async function startSwap(input: {
       characters = [{ imagePath: flatPhotos[0], extraPaths: flatPhotos.slice(1), target: "", object: false }];
     }
   }
-  let decorImagePath = typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
+  const decorImagePath = typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
   // Sans image dans la case principale, seul le lieu change.
-  if ((!characters.length && !decorImagePath) || characters.length > SWAP_MAX_CHARACTERS) {
-    return { error: errors.swapFiles };
+  if (!characters.length && !decorImagePath) return { error: errors.swapFiles };
+  if (characters.length > (directMode ? GENJUTSU_MAX_IMAGES : SWAP_MAX_CHARACTERS)) {
+    return { error: fmt(errors.swapTooManyCharacters, { max: SWAP_MAX_CHARACTERS }) };
   }
   if (preset && characters.length > preset.people.length) return { error: errors.swapFiles };
   if (
@@ -214,7 +218,7 @@ export async function startSwap(input: {
   const [sourceUrl, ...rest] = (signed ?? []).map((s) => s.signedUrl);
   // Toutes non nulles, vérifié juste après.
   const allPhotoUrls = rest.slice(0, allPhotoPaths.length) as string[];
-  let decorSignedUrl = decorImagePath ? rest[allPhotoPaths.length] : undefined;
+  const decorSignedUrl = decorImagePath ? rest[allPhotoPaths.length] : undefined;
   if (!sourceUrl || rest.length !== allPhotoPaths.length + extraPaths.length || rest.some((u) => !u)) {
     return { error: errors.swapFiles };
   }
@@ -225,52 +229,25 @@ export async function startSwap(input: {
   });
   if (!probe) return { error: errors.swapUnreadable };
 
-  // Passage gardé : au plus la durée du moteur à partir de `start`. Une
-  // fraction de seconde au-delà de la limite est tolérée (arrondi).
-  const start =
-    typeof input.start === "number" && Number.isFinite(input.start)
-      ? Math.min(Math.max(0, input.start), Math.max(0, probe.seconds - 1))
-      : 0;
+  // Le clip part tel quel, en un seul envoi : pas de découpe ni de
+  // réencodage. Seules comptent les règles de Genjutsu : 4 s au moins, et il
+  // ne lit que les 30 premières secondes (15 pour Shinka), seules facturées.
+  const start = 0;
   const clipSeconds = Math.min(
-    probe.seconds - start,
-    SWAP_ENGINES[engine].maxSeconds,
+    probe.seconds,
+    model === "standard" ? GENJUTSU_LIGHT_MAX_SECONDS : SWAP_ENGINES[engine].maxSeconds,
     // Plan prêt : sa durée annoncée, donc son prix.
     preset?.seconds ?? Infinity,
-    typeof input.seconds === "number" && Number.isFinite(input.seconds)
-      ? Math.max(GENJUTSU_MIN_SECONDS, input.seconds)
-      : Infinity,
   );
-  // Genjutsu refuse une vidéo de moins de 4 s.
-  if (clipSeconds < GENJUTSU_MIN_SECONDS) {
-    return { error: fmt(errors.swapTooShort, { min: Math.ceil(GENJUTSU_MIN_SECONDS) }) };
+  if (probe.seconds < GENJUTSU_MIN_SECONDS - 0.5) {
+    return { error: fmt(errors.swapTooShort, { min: Math.ceil(GENJUTSU_MIN_SECONDS - 0.5) }) };
   }
   const durationSeconds = Math.max(1, Math.round(clipSeconds));
+  const shots: SwapPart[] = [{ start: 0, seconds: clipSeconds, stage: "video" }];
 
-  // Avant de faire payer, en même temps : le découpage en séquences, qui
-  // fixe le prix, et quelques images du clip pour les contrôles.
-  const shots = await splitIntoParts(
-    sourceUrl,
-    start,
-    clipSeconds,
-    engine,
-    model === "standard" ? GENJUTSU_LIGHT_MAX_SECONDS : undefined,
-  ).catch((e) => {
-    console.error("startSwap: découpage", errorMessage(e));
-    return null;
-  });
-  if (!shots?.length) return { error: errors.swapUnreadable };
-
-  // Tags @image1, @img2, @photo3… → « reference image N » pour que Genjutsu
-  // comprenne quelle image de référence est visée (numérotée dans l'ordre
-  // de image_urls). Le reste du texte reste dans la langue du créateur.
-  let instructions: string | undefined = rawInstructions || undefined;
-  if (instructions) {
-    instructions = instructions.replace(
-      /@(?:image|img|photo)\s*(\d+)/gi,
-      (_, n) => `reference image ${n}`,
-    );
-  }
-  const directPrompt = flat && !!instructions && flatPhotos.length > 1;
+  // Mot pour mot : aucune réécriture (les @image1 restent tels quels).
+  const instructions: string | undefined = rawInstructions || undefined;
+  const directPrompt = directMode;
   const several = characters.length > 1;
   const people = characters.filter((c) => !c.object);
   // La haute fidélité passe par des mannequins de personnes.
@@ -313,19 +290,18 @@ export async function startSwap(input: {
     started_at: new Date().toISOString(),
     ...(target && { target }),
   };
-  // Secondes réellement facturées par passe, une fois le clip découpé.
-  const billedSeconds = genjutsuBilledSeconds(shots.map((s) => s.seconds));
+  // Secondes facturées par Higgsfield : la durée lue, à la seconde entamée.
+  const billedSeconds = Math.ceil(clipSeconds - 0.01);
   const debit = () =>
     admin.rpc("start_swap_generation", {
       p_user_id: userId,
       p_duration_seconds: durationSeconds,
-      // Les séquences sont réencodées à 30 images/s.
       p_frames_per_second: 30,
       p_metadata: metadata,
       p_engine: engine,
       p_billed_seconds: billedSeconds,
-      // Fiche gratuite désormais : le nombre reste seulement borné à 1-3.
-      p_characters: Math.min(SWAP_MAX_CHARACTERS, Math.max(1, people.length)),
+      // Le prix ne dépend pas du nombre de personnages ; la base le borne à 3.
+      p_characters: Math.min(3, Math.max(1, people.length)),
       p_hd: hd,
       // Haute fidélité : la passe mannequin, au tarif de celle des personnages.
       p_vessel: vessel,
@@ -358,14 +334,11 @@ export async function startSwap(input: {
   }
 
   try {
-    // En même temps, pour ne pas faire attendre : les séquences du clip, les
-    // images de chaque élément, telles que déposées, la photo du lieu s'il y
-    // en a une et la planche de chaque mannequin.
+    // En même temps, pour ne pas faire attendre : le clip et les images de
+    // chaque élément, tels que déposés, la photo du lieu s'il y en a une et la
+    // planche de chaque mannequin, tous transférés chez Higgsfield.
     const [parts, prepared, decorUrl, sheetUrls] = await Promise.all([
-      mapInBatches(shots, PREPARE_BATCH, async (shot): Promise<SwapPart> => {
-        const clip = await preparePart(sourceUrl, start + shot.start, shot.seconds, "genjutsu", hd);
-        return { ...shot, videoUrl: await uploadToHiggsfield(clip, "video/mp4"), stage: "video" };
-      }),
+      uploadOriginal(sourceUrl).then((videoUrl) => shots.map((shot) => ({ ...shot, videoUrl }))),
       Promise.all(
         photoUrls.map(async (urls) => ({
           sheet: { frontUrl: urls[0] },

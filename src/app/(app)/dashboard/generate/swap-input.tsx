@@ -1,7 +1,7 @@
 "use client";
 
 import { Maximize2, X } from "lucide-react";
-import { useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
+import { useRef, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
 import { playInline } from "@/app/inline-video";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
@@ -10,7 +10,6 @@ import {
   SWAP_IMAGE_TYPES,
   SWAP_INPUTS_BUCKET,
   SWAP_MAX_BYTES,
-  SWAP_VIDEO_TYPES,
 } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/client";
 import { CameraGlyph, CubeGlyph, GlassBubble, HeadGlyph, MountainGlyph, PlusGlyph, ShirtGlyph } from "./bubble-icons";
@@ -29,8 +28,39 @@ export type SwapFile = { path: string; previewUrl: string; seconds?: number; sta
 // null si l'envoi échoue.
 export async function uploadSwapFile(supabase: Supabase, userId: string, file: File) {
   const path = `${userId}/${crypto.randomUUID()}.${file.name.split(".").pop() ?? "bin"}`;
-  const { error } = await supabase.storage.from(SWAP_INPUTS_BUCKET).upload(path, file, { contentType: file.type });
+  // Vidéo sans type déclaré (certains téléphones) : déduit de l'extension.
+  const contentType =
+    file.type || (/\.(mov|qt)$/i.test(file.name) ? "video/quicktime" : /\.webm$/i.test(file.name) ? "video/webm" : "video/mp4");
+  const { error } = await supabase.storage.from(SWAP_INPUTS_BUCKET).upload(path, file, { contentType });
   return error ? null : path;
+}
+
+const VIDEO_EXTENSIONS = /\.(mp4|m4v|mov|qt|webm|mkv|avi|3gp|3g2|mts|m2ts|hevc)$/i;
+
+// Vidéo : tout type video/*, ou un fichier sans type (certains téléphones)
+// qui porte une extension de vidéo. Image : les formats que Genjutsu lit.
+function isAccepted(kind: "video" | "image", file: File) {
+  if (kind === "image") return SWAP_IMAGE_TYPES.includes(file.type);
+  return file.type.startsWith("video/") || (!file.type && VIDEO_EXTENSIONS.test(file.name));
+}
+
+// Photo dans un autre format (HEIC, AVIF, GIF…) : redessinée en JPEG par le
+// navigateur. null si le navigateur ne sait pas la lire.
+async function toSupportedImage(file: File): Promise<File | null> {
+  if (SWAP_IMAGE_TYPES.includes(file.type)) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+    if (!blob) return null;
+    return new File([blob], `${file.name.replace(/\.[^.]*$/, "") || "photo"}.jpg`, { type: "image/jpeg" });
+  } catch {
+    return null;
+  }
 }
 
 export function readDuration(url: string) {
@@ -99,10 +129,12 @@ export function SwapInput({
   const canAdd = images.length < maxImages;
 
   // Dépose un fichier dans swap-inputs (ou le garde dans le navigateur pour
-  // un visiteur) ; null si refusé ou raté (erreur affichée).
-  async function upload(kind: "video" | "image", file: File) {
-    const types = kind === "video" ? SWAP_VIDEO_TYPES : SWAP_IMAGE_TYPES;
-    if (!types.includes(file.type)) return (setError(t.generateErrors.swapFormat), null);
+  // un visiteur) ; null si refusé ou raté (erreur affichée). Toute vidéo et
+  // toute image sont prises telles quelles ; seules les photos dans un format
+  // que Genjutsu ne lit pas (HEIC d'iPhone…) sont converties en JPEG.
+  async function upload(kind: "video" | "image", picked: File) {
+    const file = kind === "image" ? await toSupportedImage(picked) : picked;
+    if (!file || !isAccepted(kind, file)) return (setError(t.generateErrors.swapFormat), null);
     if (file.size > SWAP_MAX_BYTES) return (setError(t.generateErrors.swapTooBig), null);
     const previewUrl = URL.createObjectURL(file);
     const [seconds, stored] = await Promise.all([
@@ -188,7 +220,7 @@ export function SwapInput({
           >
             <input
               type="file"
-              accept={SWAP_VIDEO_TYPES.join(",")}
+              accept="video/*"
               className="sr-only"
               disabled={uploading !== null}
               onChange={(e) => {
@@ -213,10 +245,12 @@ export function SwapInput({
             )}
           </label>
         )}
+        {/* Clip plus long que ce que lit le moteur : il part entier, Genjutsu
+            n'en garde que le début. */}
         {video && (video.seconds ?? 0) > maxSeconds + 0.5 && (
-          <div className="px-4 pb-4">
-            <SegmentPicker video={video} maxSeconds={maxSeconds} onChange={(start) => onVideo({ ...video, start })} />
-          </div>
+          <p className="px-4 pb-4 text-xs text-muted">
+            {fmt(t.studio.firstSecondsOnly, { seconds: Math.round(video.seconds!), max: maxSeconds })}
+          </p>
         )}
       </div>
 
@@ -233,7 +267,7 @@ export function SwapInput({
             <input
               type="file"
               multiple
-              accept={SWAP_IMAGE_TYPES.join(",")}
+              accept="image/*"
               className="sr-only"
               aria-label={t.studio.addImages}
               disabled={uploading !== null}
@@ -273,7 +307,7 @@ export function SwapInput({
               <input
                 type="file"
                 multiple
-                accept={SWAP_IMAGE_TYPES.join(",")}
+                accept="image/*"
                 className="sr-only"
                 aria-label={t.studio.addImages}
                 disabled={uploading !== null}
@@ -355,7 +389,7 @@ export function SwapInput({
             <label className="group relative flex aspect-[16/7] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-line px-4 text-center transition-colors hover:border-accent/50 hover:bg-surface-2">
               <input
                 type="file"
-                accept={SWAP_IMAGE_TYPES.join(",")}
+                accept="image/*"
                 className="sr-only"
                 aria-label={t.studio.decorImage}
                 disabled={uploading !== null}
@@ -496,124 +530,6 @@ function SegmentPreview({
       className="size-full object-cover"
     />
   );
-}
-
-// Clip trop long : le créateur choisit le passage de `maxSeconds` gardé, en
-// faisant glisser une fenêtre sur la frise du clip (le curseur natif, masqué,
-// sert au clavier).
-function SegmentPicker({
-  video,
-  maxSeconds,
-  onChange,
-}: {
-  video: SwapFile;
-  maxSeconds: number;
-  onChange: (start: number) => void;
-}) {
-  const { t } = useI18n();
-  const total = video.seconds ?? 0;
-  const max = Math.max(0, Math.floor(total - maxSeconds));
-  const start = clampedStart(video, maxSeconds);
-  const track = useRef<HTMLDivElement>(null);
-  const [dragging, setDragging] = useState(false);
-  const frames = useFilmstrip(video.previewUrl, total);
-
-  // La fenêtre se centre sous le doigt.
-  const pick = (clientX: number) => {
-    const box = track.current?.getBoundingClientRect();
-    if (!box) return;
-    const at = ((clientX - box.left) / box.width) * total - maxSeconds / 2;
-    onChange(Math.round(Math.min(Math.max(at, 0), max)));
-  };
-
-  return (
-    <div>
-      <p className="flex items-baseline justify-between gap-3 text-xs">
-        <span className="font-medium text-muted">{fmt(t.studio.segment, { max: maxSeconds })}</span>
-        <span className="text-faint tabular-nums">
-          {clock(start)} → {clock(start + maxSeconds)} / {clock(total)}
-        </span>
-      </p>
-      <div
-        ref={track}
-        onPointerDown={(e) => {
-          e.currentTarget.setPointerCapture(e.pointerId);
-          setDragging(true);
-          pick(e.clientX);
-        }}
-        onPointerMove={(e) => dragging && pick(e.clientX)}
-        onPointerUp={() => setDragging(false)}
-        onPointerCancel={() => setDragging(false)}
-        className={`relative mt-2 h-12 touch-none overflow-hidden rounded-lg border border-line bg-surface-2 select-none ${
-          dragging ? "cursor-grabbing" : "cursor-grab"
-        }`}
-      >
-        <div className="flex h-full opacity-60">
-          {frames.map((src, i) => (
-            // Images tirées du clip local (blob:) : pas d'optimisation Next.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={i} src={src} alt="" className="h-full min-w-0 flex-1 object-cover" />
-          ))}
-        </div>
-        <span
-          aria-hidden
-          className="absolute inset-y-0 rounded-md border-2 border-accent bg-accent/15 shadow-[0_0_0_9999px_rgb(0_0_0/0.35)] transition-[left] duration-75"
-          style={{ left: `${(start / total) * 100}%`, width: `${(maxSeconds / total) * 100}%` }}
-        />
-        <input
-          type="range"
-          min={0}
-          max={max}
-          step={1}
-          value={start}
-          onChange={(e) => onChange(Number(e.target.value))}
-          aria-label={fmt(t.studio.segment, { max: maxSeconds })}
-          className="sr-only"
-        />
-      </div>
-    </div>
-  );
-}
-
-// Huit images réparties sur le clip, tirées localement pour la frise.
-const FILMSTRIP_FRAMES = 8;
-function useFilmstrip(url: string, total: number) {
-  const [frames, setFrames] = useState<string[]>([]);
-  useEffect(() => {
-    if (!Number.isFinite(total) || total <= 0) return;
-    let cancelled = false;
-    const el = document.createElement("video");
-    el.muted = true;
-    el.preload = "auto";
-    el.src = url;
-    const canvas = document.createElement("canvas");
-    const seek = (time: number) =>
-      new Promise<void>((resolve) => {
-        el.onseeked = () => resolve();
-        el.currentTime = time;
-      });
-    (async () => {
-      await new Promise<void>((resolve) => {
-        el.onloadeddata = () => resolve();
-        el.onerror = () => resolve();
-      });
-      const shots: string[] = [];
-      for (let i = 0; i < FILMSTRIP_FRAMES && !cancelled; i++) {
-        await seek(((i + 0.5) / FILMSTRIP_FRAMES) * total);
-        canvas.height = 96;
-        canvas.width = Math.max(1, Math.round((el.videoWidth / Math.max(1, el.videoHeight)) * 96));
-        canvas.getContext("2d")?.drawImage(el, 0, 0, canvas.width, canvas.height);
-        shots.push(canvas.toDataURL("image/jpeg", 0.6));
-      }
-      if (!cancelled) setFrames(shots);
-    })();
-    return () => {
-      cancelled = true;
-      el.removeAttribute("src");
-      el.load();
-    };
-  }, [url, total]);
-  return frames;
 }
 
 // Le prompt unique. Taper « @ » propose les images déposées (et le clip) :

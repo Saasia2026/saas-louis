@@ -425,6 +425,9 @@ export async function preparePart(
       [
         "-hide_banner",
         "-loglevel", "error",
+        // Deux fils au plus, au décodage comme à l'encodage : par défaut
+        // ffmpeg en ouvre un par cœur vu, et sa mémoire grimpe d'autant.
+        "-threads", "2",
         "-ss", start.toFixed(3),
         "-t", seconds.toFixed(3),
         "-i", url,
@@ -444,6 +447,7 @@ export async function preparePart(
             ["-af", "apad", "-frames:v", String(genjutsuFrames(seconds)), "-shortest"]
           : []),
         "-c:v", "libx264",
+        "-threads", "2",
         "-preset", "veryfast",
         "-crf", "18",
         "-c:a", "aac",
@@ -451,7 +455,15 @@ export async function preparePart(
         output,
       ],
       { timeout: 180_000 },
-    );
+    ).catch((e) => {
+      // Le message d'origine reprend la commande, lien signé compris, et
+      // pas la raison : on garde la raison (code, signal, fin du message).
+      const err = e as { code?: unknown; signal?: unknown; killed?: unknown; stderr?: unknown };
+      const stderr = typeof err.stderr === "string" ? err.stderr.trim().slice(-300) : "";
+      throw new Error(
+        `ffmpeg (préparation ${start.toFixed(1)}s+${seconds.toFixed(1)}s) : code ${String(err.code)}, signal ${String(err.signal)}${err.killed ? ", tué" : ""}${stderr ? ` · ${stderr}` : ""}`,
+      );
+    });
     return await readFile(output);
   } finally {
     await rm(dir, { recursive: true, force: true });

@@ -1,6 +1,6 @@
 "use client";
 
-import { CirclePlay, Clock, Coins, Download, Film, History, MonitorPlay, RefreshCw, Scissors, TriangleAlert, WandSparkles, X } from "lucide-react";
+import { CirclePlay, Coins, Download, Film, History, MonitorPlay, RefreshCw, TriangleAlert, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fmt, INTL_LOCALES, plural } from "@/i18n/config";
@@ -14,6 +14,7 @@ import {
   GENJUTSU_MIN_SECONDS,
   GENJUTSU_MODELS,
   SWAP_ENGINES,
+  GENJUTSU_LIGHT_MAX_SECONDS,
   GENJUTSU_MAX_IMAGES,
   SWAP_MAX_CHARACTERS,
   SWAP_QUALITIES,
@@ -35,7 +36,7 @@ import { ExamplesPanel } from "./examples-panel";
 import { HistoryEmpty, HistoryList } from "./history-list";
 import { cancelSwap, redoSwapShot, startSwap } from "./swap-actions";
 import { MODEL_ICON, ModelBadge, ModelCard, ModeTabs, Option, PanelTabs, SettingRow, Tag } from "./studio-controls";
-import { SwapInput, clampedStart, readDuration, uploadSwapFile, type SwapFile } from "./swap-input";
+import { SwapInput, readDuration, uploadSwapFile, type SwapFile } from "./swap-input";
 
 const POLL_INTERVAL_MS = 5_000;
 // Durée annoncée d'un rendu. Les séquences se rendent en même temps (quelques
@@ -44,9 +45,6 @@ const POLL_INTERVAL_MS = 5_000;
 function genjutsuMinutes(seconds: number) {
   return seconds <= 15 ? 5 : seconds <= 30 ? 6 : seconds <= 60 ? 8 : 10;
 }
-// Durées de passage proposées, en plus du clip entier : un essai court coûte
-// peu (surtout en Qualité max, facturé à la seconde).
-const LENGTHS = [5, 10, 15, 30, 60];
 
 // Les séquences se rendent en même temps : quelques minutes, plus la file
 // d'attente du fournisseur. Compter large : au-delà, la vidéo se retrouve
@@ -145,8 +143,6 @@ export function Studio({
   const castKnown = Boolean(preset) || images.length <= 1;
   // Transfert : la photo du nouveau lieu est ce qui le distingue.
   const decorReady = mode === "replace" || Boolean(decorPhoto);
-  // Durée du passage choisie ; rien = tout le clip, dans la limite du moteur.
-  const [length, setLength] = useState<number | null>(null);
 
   const [phase, setPhase] = useState<Phase>(
     resume ? { kind: "generating", job: resume.job, id: resume.id } : { kind: "idle" },
@@ -158,14 +154,10 @@ export function Studio({
   const resultEnd = useRef<HTMLElement>(null);
   const busy = phase.kind === "generating";
   const started = phase.kind !== "idle";
-  // Un clip plus long est découpé au passage choisi. Même arrondi que le
-  // serveur (voir startSwap). Le prix final dépend du découpage du clip, fait
-  // par le serveur : celui-ci est le plus bas possible.
-  const engineMax = SWAP_ENGINES[engine].maxSeconds;
-  const maxSeconds = Math.min(engineMax, length ?? engineMax);
+  // Le clip part tel quel chez Genjutsu, qui en lit au plus 30 s (15 s pour
+  // Shinka). Même calcul que le serveur (voir startSwap).
+  const maxSeconds = model === "standard" ? GENJUTSU_LIGHT_MAX_SECONDS : SWAP_ENGINES[engine].maxSeconds;
   const durationKnown = Number.isFinite(video?.seconds);
-  const lengths = LENGTHS.filter((l) => l < engineMax && (!durationKnown || l < video!.seconds!));
-  const wholeSeconds = durationKnown ? Math.min(engineMax, Math.floor(video!.seconds!)) : engineMax;
   const clipSeconds = Math.min(maxSeconds, durationKnown ? video!.seconds! : NaN);
   const seconds = durationKnown
     ? Math.max(1, Math.round(clipSeconds))
@@ -256,7 +248,7 @@ export function Studio({
       quality,
       fidelity,
       instructions: prompt,
-      length,
+      length: null,
     });
   }
 
@@ -291,7 +283,6 @@ export function Studio({
         setQuality(draft.quality ?? (draft.hd ? "1080p" : DEFAULT_SWAP_QUALITY));
         setFidelity(draft.fidelity);
         setPrompt(draft.instructions);
-        setLength(draft.length);
         // Fichiers désormais dans le stockage : un prochain retour ne les
         // renvoie pas.
         await saveDraft({
@@ -319,7 +310,6 @@ export function Studio({
   function choosePreset(p: StudioPreset) {
     setPreset(p);
     setVideo({ path: p.path, previewUrl: p.previewUrl, seconds: p.seconds, start: 0 });
-    setLength(null);
     // Les images déjà déposées restent, une par personne du plan.
     setImages((list) => list.slice(0, p.people.length));
   }
@@ -342,7 +332,6 @@ export function Studio({
     if (video) URL.revokeObjectURL(video.previewUrl);
     setVideo({ path, previewUrl, seconds, start: 0, file });
     setPreset(null);
-    setLength(null);
     setMode("replace");
     window.scrollTo({ top: 0, behavior: "smooth" });
     return true;
@@ -379,8 +368,6 @@ export function Studio({
       ...(preset
         ? { characters: images.slice(0, preset.people.length).map((f) => ({ imagePath: f.path })) }
         : { characters: [], photos: images.map((f) => f.path) }),
-      start: clampedStart(video, maxSeconds),
-      seconds: maxSeconds,
       model,
       quality,
       vessel: fidelity,
@@ -489,21 +476,6 @@ export function Studio({
       />
     ));
 
-  // Durées proposées : quelques passages courts, ou tout le clip.
-  const lengthOptions = video
-    ? [
-        ...lengths.map((l) => ({ value: l as number | null, label: `${l} s` })),
-        {
-          value: null,
-          // Clip plus long que le maximum : c'est un passage, pas le clip entier.
-          label:
-            durationKnown && video.seconds! > engineMax
-              ? `${engineMax} s`
-              : fmt(t.studio.lengthAll, { seconds: wholeSeconds }),
-        },
-      ].map((o) => ({ ...o, on: o.value === null ? !length || length >= engineMax : length === o.value }))
-    : [];
-
   const composer = (
     <form
       onSubmit={(e) => {
@@ -531,12 +503,8 @@ export function Studio({
         video={video}
         onVideo={(file) => {
           setVideo(file);
-          // Autre clip : la durée choisie pour le précédent ne vaut plus, et
-          // un plan prêt laisse la place au clip déposé, avec ses cibles.
-          if (file?.path !== video?.path) {
-            setLength(null);
-            if (preset) setPreset(null);
-          }
+          // Autre clip : un plan prêt laisse la place au clip déposé.
+          if (file?.path !== video?.path && preset) setPreset(null);
         }}
         images={images}
         onImages={setImages}
@@ -625,24 +593,6 @@ export function Studio({
             ))
           }
         </SettingRow>
-        {video && lengths.length > 0 && (
-          <SettingRow label={t.studio.length} value={lengthOptions.find((o) => o.on)?.label}>
-            {(close) =>
-              lengthOptions.map((o) => (
-                <Option
-                  key={o.label}
-                  selected={o.on}
-                  onSelect={() => {
-                    setLength(o.value);
-                    close();
-                  }}
-                  icon={o.value === null ? Scissors : Clock}
-                  title={o.label}
-                />
-              ))
-            }
-          </SettingRow>
-        )}
       </div>
 
       <div className="border-t border-line px-4 pt-3 pb-4">

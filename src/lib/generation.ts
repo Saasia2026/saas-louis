@@ -114,9 +114,10 @@ export const GENJUTSU_MAX_IMAGES = 8;
 export function photosPerCharacter(characters: number, reserved = 0) {
   return Math.max(1, Math.floor((GENJUTSU_MAX_IMAGES - reserved) / Math.max(1, characters)));
 }
-// Personnages remplacés dans un même clip, au plus (moteur genjutsu ; kling
-// n'en remplace qu'un). Aligné avec public.start_swap_generation.
-export const SWAP_MAX_CHARACTERS = 3;
+// Personnages remplacés dans un même clip, au plus : autant que d'images de
+// référence acceptées par Genjutsu (kling n'en remplace qu'un). La base borne
+// p_characters à 3 : le prix n'en dépend pas.
+export const SWAP_MAX_CHARACTERS = GENJUTSU_MAX_IMAGES;
 // Kling refuse un plan de moins de 3 s : un plan plus court lui est envoyé
 // prolongé à cette durée (voir preparePart), et payé comme tel. Un clip très
 // coupé se paie donc au nombre de plans, pas à sa seule durée.
@@ -165,9 +166,9 @@ export function klingBilledSeconds(partSeconds: number[]) {
   return partSeconds.reduce((sum, s) => sum + Math.max(s, KLING_MIN_PART_SECONDS), 0);
 }
 
-// Taille alignée avec le bucket swap-inputs.
-export const SWAP_MAX_BYTES = 50 * 1024 * 1024;
-export const SWAP_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
+// Taille alignée avec le bucket swap-inputs : une vidéo de téléphone de 30 s
+// (4K, 60 i/s) passe, Genjutsu la reçoit telle quelle.
+export const SWAP_MAX_BYTES = 500 * 1024 * 1024;
 export const SWAP_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 // Format d'affichage le plus proche de celui du clip (voir probeVideo).

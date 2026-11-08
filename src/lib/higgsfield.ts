@@ -55,7 +55,8 @@ export async function uploadToHiggsfield(data: Buffer | ArrayBuffer, contentType
   const put = await fetch(target.upload_url, {
     method: "PUT",
     headers: target.upload_headers ?? { "Content-Type": contentType },
-    body: new Blob([new Uint8Array(data as ArrayBuffer)], { type: contentType }),
+    // Sans copie : une vidéo de téléphone peut peser plusieurs centaines de Mo.
+    body: data instanceof ArrayBuffer ? new Uint8Array(data) : new Uint8Array(data.buffer as ArrayBuffer, data.byteOffset, data.byteLength),
   });
   if (!put.ok) throw await failure("dépôt", put);
   return target.public_url;
@@ -233,14 +234,6 @@ function genjutsuPrompt(
   ].join("\n\n");
 }
 
-// Mode vrac avec consignes : le créateur écrit lui-même quel personnage
-// remplace qui, en citant les images par leur numéro (« reference image 1 »
-// ou « l'image 3 »). On laisse les consignes piloter le prompt, avec un
-// cadrage léger pour que Genjutsu préserve la performance source.
-function directInstructionsPrompt(instructions: string) {
-  return instructions;
-}
-
 // Un passage de 4 à 30 s, coupes comprises. Les images sont les photos du
 // personnage déposées par le créateur (8 au plus, tous personnages confondus).
 // `webhookUrl` : Higgsfield y signale la fin du rendu (paramètre
@@ -259,8 +252,9 @@ export async function createGenjutsuSwap(input: {
   decorUrl?: string;
   // Consignes libres du créateur (dans sa langue).
   instructions?: string;
-  // Mode vrac multi-personnage : les consignes sont le prompt principal
-  // (comme sur l'interface Higgsfield), pas un « REQUESTED CHANGES ».
+  // Studio : le prompt du créateur part mot pour mot, comme sur l'interface
+  // Higgsfield ; vide, le rendu part avec un prompt vide. Sans cela (plans
+  // prêts), le site écrit le prompt.
   directPrompt?: boolean;
   // Passe mannequin : chaque personne visée devient le mannequin dont la
   // planche est dans `characters` (même ordre) ; décor et consignes
@@ -305,8 +299,8 @@ export async function createGenjutsuSwap(input: {
     headers: headers(),
     signal: AbortSignal.timeout(60_000),
     body: JSON.stringify({
-      prompt: input.directPrompt && input.instructions
-        ? directInstructionsPrompt(input.instructions)
+      prompt: input.directPrompt
+        ? (input.instructions ?? "")
         : genjutsuPrompt(input.characters, Boolean(input.decorUrl), input.instructions),
       video_url: input.videoUrl,
       image_urls: input.decorUrl ? [...characterUrls, input.decorUrl] : characterUrls,
