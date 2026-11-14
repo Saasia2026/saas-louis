@@ -182,10 +182,10 @@ export async function startSwap(input: {
       ? input.photos.filter((p): p is string => typeof p === "string").slice(0, GENJUTSU_MAX_IMAGES)
       : [];
   const flat = flatPhotos.length > 0;
-  // Studio : tout part tel quel chez Genjutsu, comme sur Higgsfield : la
-  // vidéo, les images dans l'ordre du dépôt (8 au plus) et le prompt mot pour
-  // mot. Prompt vide : le rendu part quand même, avec un prompt vide. Seuls
-  // les plans prêts gardent un prompt écrit par le site.
+  // Studio : la vidéo et les images partent dans l'ordre du dépôt (8 au plus).
+  // Le prompt du créateur, s'il en a écrit un, est intégré dans le prompt
+  // structuré comme REQUESTED CHANGES. Sans consignes, le prompt structuré
+  // assure l'intégration du personnage (sinon Genjutsu le « détoure »).
   const directMode = flat;
   if (flat) {
     if (rawInstructions && flatPhotos.length > 1) {
@@ -246,7 +246,7 @@ export async function startSwap(input: {
   const durationSeconds = Math.max(1, Math.round(clipSeconds));
   const shots: SwapPart[] = [{ start: 0, seconds: clipSeconds, stage: "video" }];
 
-  // Mot pour mot : aucune réécriture (les @image1 restent tels quels).
+  // Consignes du créateur, passées au prompt structuré (REQUESTED CHANGES).
   const instructions: string | undefined = rawInstructions || undefined;
   const directPrompt = directMode;
   const several = characters.length > 1;

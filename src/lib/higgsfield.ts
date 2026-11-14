@@ -307,14 +307,16 @@ export async function createGenjutsuSwap(input: {
   const characterUrls = input.characters
     .flatMap((c) => c.imageUrls)
     .slice(0, input.decorUrl ? 7 : 8);
+  // Prompt structuré, toujours : le site Higgsfield enrichit chaque prompt
+  // avant de l'envoyer à Genjutsu (enhanced_prompt). Sans ça, un prompt vide
+  // ou trop court donne un personnage « détouré » au lieu d'être intégré dans
+  // la scène. Les consignes du créateur passent en REQUESTED CHANGES.
   const response = await fetch(`${BASE_URL}/${endpoint}${hook}`, {
     method: "POST",
     headers: headers(),
     signal: AbortSignal.timeout(60_000),
     body: JSON.stringify({
-      prompt: input.directPrompt
-        ? (input.instructions ?? "")
-        : genjutsuPrompt(input.characters, Boolean(input.decorUrl), input.instructions),
+      prompt: genjutsuPrompt(input.characters, Boolean(input.decorUrl), input.instructions),
       video_url: input.videoUrl,
       image_urls: input.decorUrl ? [...characterUrls, input.decorUrl] : characterUrls,
       resolution,
