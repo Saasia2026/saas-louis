@@ -36,7 +36,7 @@ export function CopyButton({ text, label, className = "" }: { text: string; labe
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-3 hover:text-text ${className}`}
+      className={`flex size-8 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/[0.08] hover:text-text ${className}`}
     >
       {copied ? <Check className="size-4 text-accent-light" /> : <Copy className="size-4" />}
     </button>
@@ -86,7 +86,7 @@ export function RefStrip({ item }: { item: Pick<SwapHistoryItem, "clip" | "refs"
             aria-label={ref.label}
             title={ref.label}
             onClick={() => setOpen(ref)}
-            className="group relative size-16 shrink-0 overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding transition-[border-color] hover:border-line-strong"
+            className="group relative size-16 shrink-0 overflow-hidden rounded-xl border border-white/[0.08] bg-black bg-clip-padding transition-all duration-200 hover:border-white/20 hover:ring-1 hover:ring-white/10"
           >
             {ref.kind === "video" ? (
               <>

@@ -5,7 +5,7 @@ import { useTransition } from "react";
 import { deleteGeneration } from "./actions";
 
 const OVERLAY =
-  "absolute top-2 right-2 z-10 size-7 bg-black/60 text-white/80 backdrop-blur hover:bg-red-600 hover:text-white";
+  "absolute top-2 right-2 z-10 size-7 bg-black/50 text-white/70 backdrop-blur-sm hover:bg-red-500/80 hover:text-white";
 
 export function DeleteButton({
   id,

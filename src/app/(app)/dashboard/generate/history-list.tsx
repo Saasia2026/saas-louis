@@ -52,8 +52,8 @@ const FORMAT_ICON: Record<AspectRatio, LucideIcon> = {
 function Chip({ icon: Icon, accent, children }: { icon: LucideIcon; accent?: boolean; children: React.ReactNode }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold tabular-nums ${
-        accent ? "bg-accent-soft text-accent-light" : "bg-surface-2 text-text"
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold tabular-nums ${
+        accent ? "bg-accent-soft text-accent-light" : "bg-white/[0.06] text-muted"
       }`}
     >
       <Icon className={`size-3.5 ${accent ? "" : "text-muted"}`} />
@@ -64,7 +64,7 @@ function Chip({ icon: Icon, accent, children }: { icon: LucideIcon; accent?: boo
 
 // Bouton rond posé sur le panneau de la vidéo.
 const STAGE_BUTTON =
-  "flex size-10 items-center justify-center rounded-full border border-line bg-surface-3 text-muted transition-colors hover:text-text";
+  "flex size-10 items-center justify-center rounded-full bg-black/50 text-white/70 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white";
 
 // Les rendus, un par ligne, en deux panneaux : la vidéo en grand à gauche ;
 // à droite le moteur, le prompt, les références (clip, images, lieu), les
@@ -97,10 +97,10 @@ function Stage({ item }: { item: SwapHistoryItem }) {
   const V = t.videos;
   const player = usePlayer({ muted: false });
   return (
-    <div className="relative flex min-h-64 flex-col gap-2 rounded-2xl border border-line bg-surface-2/50 p-3">
+    <div className="relative flex min-h-64 flex-col gap-2 overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-surface-2/70 to-surface/30 p-3">
       <div className="flex flex-1 items-center justify-center">
         <div
-          className={`relative overflow-hidden rounded-xl bg-black ${FRAME[item.aspectRatio]}`}
+          className={`group relative overflow-hidden rounded-xl bg-black ${FRAME[item.aspectRatio]}`}
           style={{ aspectRatio: item.aspectRatio.replace(":", " / ") }}
         >
           {item.mediaUrl ? (
@@ -116,7 +116,7 @@ function Stage({ item }: { item: SwapHistoryItem }) {
                 className="size-full cursor-pointer object-contain"
               />
               {!player.playing && (
-                <span className="pointer-events-none absolute inset-0 m-auto flex size-14 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm">
+                <span className="pointer-events-none absolute inset-0 m-auto flex size-14 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-transform duration-200 group-hover:scale-110">
                   <Play className="size-6 translate-x-0.5 fill-current" />
                 </span>
               )}
@@ -153,9 +153,9 @@ function Details({ item, onReuse }: { item: SwapHistoryItem; onReuse?: (item: Sw
   const S = t.studio;
   const reuseClass = "btn btn-secondary";
   return (
-    <div className="flex min-w-0 flex-col gap-4 rounded-2xl border border-line bg-surface p-4">
-      <span className="inline-flex items-center gap-2 self-start rounded-xl border border-line-strong px-3 py-1.5 text-sm font-semibold">
-        <Sparkles className="size-4 text-accent-light" />
+    <div className="flex min-w-0 flex-col gap-4 rounded-2xl border border-white/[0.06] bg-surface p-4">
+      <span className="inline-flex items-center gap-2 self-start rounded-full bg-accent-soft px-3.5 py-1.5 text-sm font-semibold text-accent-light">
+        <Sparkles className="size-4" />
         {item.settings.model === "max" ? S.modelMax : S.modelStandard} · {item.transfer ? S.modeTransfer : S.modeReplace}
       </span>
 
@@ -179,9 +179,9 @@ function Details({ item, onReuse }: { item: SwapHistoryItem; onReuse?: (item: Sw
         </p>
       )}
 
-      <p className="mt-auto pt-2 text-sm text-muted tabular-nums">{item.date}</p>
+      <p className="mt-auto pt-2 text-[0.8125rem] text-faint tabular-nums">{item.date}</p>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         {item.running ? (
           <Link href={`/dashboard/generate?v=${item.id}`} className="btn btn-accent">
             {V.resume}

@@ -116,13 +116,17 @@ export function PlayerBar({ player, compact = false }: { player: Player; compact
           else return;
           e.preventDefault();
         }}
-        className="group flex h-4 cursor-pointer touch-none items-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="group flex h-5 cursor-pointer touch-none items-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
-        <div className="relative h-1 w-full rounded-full bg-surface-3 transition-[height] duration-150 group-hover:h-1.5">
-          <div className="absolute inset-y-0 left-0 rounded-full bg-text" style={{ width: `${progress}%` }} />
+        <div className="relative h-[3px] w-full rounded-full bg-white/[0.08] transition-[height] duration-150 group-hover:h-1.5">
+          <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-accent to-accent-2" style={{ width: `${progress}%` }} />
+          <span
+            className="pointer-events-none absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-text shadow-sm opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+            style={{ left: `${progress}%` }}
+          />
         </div>
       </div>
-      <div className={`flex items-center text-muted ${compact ? "" : "mt-1 gap-1"}`}>
+      <div className={`flex items-center text-muted ${compact ? "" : "gap-0.5"}`}>
         <PlayerButton
           icon={playing ? Pause : Play}
           label={playing ? P.pause : P.play}
@@ -135,7 +139,7 @@ export function PlayerBar({ player, compact = false }: { player: Player; compact
           onClick={player.toggleMuted}
           compact={compact}
         />
-        <span className={`tabular-nums ${compact ? "ml-0.5 text-[0.6875rem]" : "ml-1 text-xs"}`}>
+        <span className={`font-medium tabular-nums ${compact ? "ml-0.5 text-[0.6875rem]" : "ml-1.5 text-[0.8125rem]"}`}>
           {compact ? clock(time) : `${clock(time)} / ${clock(duration)}`}
         </span>
         <PlayerButton
@@ -169,8 +173,8 @@ function PlayerButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-surface-3 hover:text-text ${
-        compact ? "size-7" : "size-8"
+      className={`flex shrink-0 items-center justify-center rounded-full transition-colors hover:bg-white/[0.08] hover:text-text ${
+        compact ? "size-7" : "size-9"
       } ${className}`}
     >
       <Icon className={compact ? "size-3.5" : "size-4"} />
@@ -197,7 +201,7 @@ export function VideoPlayer({
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       <div
-        className="relative overflow-hidden rounded-xl border border-line bg-black bg-clip-padding"
+        className="relative overflow-hidden rounded-xl border border-white/[0.06] bg-black bg-clip-padding"
         style={{ aspectRatio: aspectRatio.replace(":", " / ") }}
       >
         {children}
