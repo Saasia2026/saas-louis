@@ -82,7 +82,7 @@ export type Player = ReturnType<typeof usePlayer>;
 
 // Barre de lecture sous la vidéo : rien ne recouvre l'image. compact pour les
 // vignettes étroites (temps écoulé seul).
-export function PlayerBar({ player, compact = false }: { player: Player; compact?: boolean }) {
+export function PlayerBar({ player, compact = false, overlay = false }: { player: Player; compact?: boolean; overlay?: boolean }) {
   const { t } = useI18n();
   const P = t.studio.player;
   const { time, duration, playing, muted } = player;
@@ -94,7 +94,10 @@ export function PlayerBar({ player, compact = false }: { player: Player; compact
   };
 
   return (
-    <div>
+    <div
+      className={overlay ? "absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/60 to-transparent px-3 pb-2 pt-6" : ""}
+      onClick={overlay ? (e) => e.stopPropagation() : undefined}
+    >
       <div
         role="slider"
         tabIndex={0}
