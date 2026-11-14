@@ -232,6 +232,12 @@ export type SwapMetadata = {
   swap_parts?: SwapPart[];
   source_video_path?: string;
   source_start?: number;
+  // Passage découpé au studio : `source_video_path` est alors le passage
+  // envoyé, et voici le clip déposé et la fenêtre gardée dedans.
+  source_original_path?: string;
+  source_trim?: { start: number; seconds: number };
+  // Toutes les images de référence déposées, dans l'ordre (@image1…).
+  photo_paths?: string[];
   target?: string;
   // Fiche personnage (voir createFalCharacterSheet).
   sheet?: { frontUrl: string; sideUrl?: string };
@@ -276,7 +282,83 @@ export async function probeVideo(url: string) {
   if (/rotation of -?90|rotate\s*:\s*-?(90|270)/.test(stderr)) {
     [width, height] = [height, width];
   }
-  return { seconds, aspectRatio: nearestFormat(width / height) };
+  // Vidéo HDR (iPhone en HLG, Dolby Vision) : à ramener en couleurs
+  // ordinaires quand elle est réencodée (voir trimClip).
+  const hdr = /Video:.*(arib-std-b67|smpte2084)/.test(stderr);
+  return { seconds, aspectRatio: nearestFormat(width / height), hdr };
+}
+
+// Passage du clip choisi par le créateur (fenêtre de découpe du studio),
+// envoyé à la place du clip entier. Renvoie le fichier et sa durée réelle :
+// Higgsfield facture la durée reçue à la seconde entamée, le débit se fonde
+// donc sur elle, et la coupe s'arrête un souffle avant la seconde pleine.
+// — Depuis le début du clip : les images sont recopiées telles quelles.
+// — Depuis un autre point : une recopie ne peut partir que d'une image
+//   entière (parfois plusieurs secondes avant le point choisi), le passage
+//   est donc réencodé, à l'image près, en haute qualité (1080p au plus, ce
+//   que Genjutsu rend de mieux).
+export async function trimClip(url: string, start: number, seconds: number, hdr = false) {
+  if (!ffmpegPath) throw new Error("ffmpeg indisponible sur cette plateforme");
+  const ffmpeg = ffmpegPath;
+  const dir = await mkdtemp(path.join(tmpdir(), "twinpost-trim-"));
+  const output = path.join(dir, "trim.mp4");
+  const length = (margin: number) => Math.max(1, seconds - margin).toFixed(3);
+  const measured = async () => {
+    const stderr = await execFileAsync(ffmpeg, ["-hide_banner", "-i", output]).then(
+      (r) => r.stderr,
+      (e: { stderr?: string }) => e.stderr ?? "",
+    );
+    const d = stderr.match(/Duration: (d+):(d+):(d+(?:.d+)?)/);
+    if (!d) throw new Error("ffmpeg (découpe) : durée du passage illisible");
+    return Number(d[1]) * 3600 + Number(d[2]) * 60 + Number(d[3]);
+  };
+  const run = (args: string[]) =>
+    execFileAsync(ffmpeg, ["-hide_banner", "-loglevel", "error", "-y", ...args, "-movflags", "+faststart", output], {
+      timeout: 240_000,
+    }).catch((e) => {
+      // Jamais la commande (elle porte l'URL signée) : seulement la raison.
+      const err = e as { code?: unknown; signal?: unknown; stderr?: unknown };
+      const stderr = typeof err.stderr === "string" ? err.stderr.trim().slice(-300) : "";
+      throw new Error(`ffmpeg (découpe) : code ${String(err.code)}, signal ${String(err.signal)}${stderr ? ` · ${stderr}` : ""}`);
+    });
+  const fit = "scale='trunc(iw*min(1,1920/max(iw,ih))/2)*2':'trunc(ih*min(1,1920/max(iw,ih))/2)*2'";
+  const tonemap =
+    "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv";
+  const encode = (filter: string) =>
+    run([
+      "-threads", "2",
+      "-ss", start.toFixed(3),
+      "-t", length(0.08),
+      "-i", url,
+      "-map", "0:v:0",
+      "-map", "0:a:0?",
+      "-vf", `${filter},setsar=1,format=yuv420p`,
+      "-c:v", "libx264",
+      "-threads", "2",
+      "-preset", "veryfast",
+      "-crf", "14",
+      "-c:a", "aac",
+      "-b:a", "192k",
+    ]);
+  try {
+    if (start < 0.05) {
+      // Un conteneur qui refuse la recopie (son PCM d'une caméra…), ou une
+      // recopie qui déborde sur la seconde suivante (cadence variable) :
+      // réencodé.
+      const copied = await run(["-t", length(0.05), "-i", url, "-map", "0:v:0", "-map", "0:a:0?", "-c", "copy"]).then(
+        measured,
+        () => null,
+      );
+      if (copied !== null && copied <= seconds - 0.01) return { data: await readFile(output), seconds: copied };
+    }
+    // Sans le filtre de couleurs (ffmpeg compilé sans zscale), l'HDR sort
+    // délavé mais le passage part quand même.
+    if (hdr) await encode(`${fit},${tonemap}`).catch(() => encode(fit));
+    else await encode(fit);
+    return { data: await readFile(output), seconds: await measured() };
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 }
 
 function nearestFormat(ratio: number): AspectRatio {

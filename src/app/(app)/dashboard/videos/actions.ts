@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { GENERATIONS_BUCKET } from "@/lib/generation";
+import { GENERATIONS_BUCKET, SWAP_INPUTS_BUCKET } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
 
 export async function deleteGeneration(id: string) {
@@ -20,6 +20,8 @@ export async function deleteGeneration(id: string) {
   if (gen.storage_path) {
     await supabase.storage.from(GENERATIONS_BUCKET).remove([gen.storage_path]);
   }
+  // Passage découpé pour ce rendu (voir startSwap), s'il y en a un.
+  await supabase.storage.from(SWAP_INPUTS_BUCKET).remove([`${gen.user_id}/cuts/${gen.id}.mp4`]);
 
   await supabase.from("generations").delete().eq("id", id);
   revalidatePath("/dashboard/videos");

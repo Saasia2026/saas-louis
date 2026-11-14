@@ -1,6 +1,6 @@
 "use client";
 
-import { Maximize2, X } from "lucide-react";
+import { Maximize2, Scissors, X } from "lucide-react";
 import { useRef, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
 import { playInline } from "@/app/inline-video";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
@@ -13,16 +13,26 @@ import {
 } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/client";
 import { CameraGlyph, CubeGlyph, GlassBubble, HeadGlyph, MountainGlyph, PlusGlyph, ShirtGlyph } from "./bubble-icons";
+import { MediaLibrary, type LibraryItem } from "./media-library";
+import { TrimDialog } from "./trim-dialog";
 
 type Supabase = ReturnType<typeof createClient>;
 
 // Fichier déposé dans swap-inputs. `seconds` : durée lue par le navigateur,
 // pour afficher le coût (le serveur la remesure) ; NaN s'il ne sait pas la
-// lire (certains .mov). `start` : début du passage gardé d'un clip plus
-// long que la durée du moteur (`maxSeconds`), découpé par le serveur.
-// `path` vide : visiteur sans compte, le fichier reste dans le navigateur
-// (`file`) jusqu'à sa connexion.
-export type SwapFile = { path: string; previewUrl: string; seconds?: number; start?: number; file?: File };
+// lire (certains .mov). `start` et `length` : passage gardé, choisi dans la
+// fenêtre de découpe et coupé par le serveur au lancement ; sans `length`,
+// le clip part entier. `path` vide : visiteur sans compte, le fichier reste
+// dans le navigateur (`file`) jusqu'à sa connexion. Sans `file` : fichier
+// repris de la bibliothèque, `previewUrl` est alors une URL signée.
+export type SwapFile = {
+  path: string;
+  previewUrl: string;
+  seconds?: number;
+  start?: number;
+  length?: number;
+  file?: File;
+};
 
 // Envoie un fichier dans swap-inputs, sous le dossier de l'utilisateur ;
 // null si l'envoi échoue.
@@ -73,13 +83,64 @@ export function readDuration(url: string) {
   });
 }
 
-// Début du passage gardé, ramené dans le clip : la durée gardée change avec
-// le moteur, le début choisi reste tel quel dans l'état.
-export function clampedStart(file: SwapFile, maxSeconds: number) {
-  const start = file.start ?? 0;
-  return Number.isFinite(file.seconds)
-    ? Math.min(start, Math.max(0, Math.floor(file.seconds! - maxSeconds)))
-    : start;
+// Durée gardée : le passage choisi, borné par ce que lit le moteur et par la
+// fin du clip. Durée du clip inconnue et rien de choisi : celle du moteur.
+export function keptSeconds(file: SwapFile, maxSeconds: number) {
+  const rest = Number.isFinite(file.seconds) ? file.seconds! - (file.start ?? 0) : Infinity;
+  return Math.min(maxSeconds, file.length ?? Infinity, rest);
+}
+
+// Zone de dépôt : avec un compte, elle ouvre la bibliothèque (où déposer un
+// nouveau fichier reste le premier choix) ; sans compte, le sélecteur de
+// fichiers du navigateur.
+function DropZone({
+  library,
+  onOpen,
+  onFiles,
+  accept,
+  multiple = false,
+  disabled = false,
+  label,
+  title,
+  className,
+  children,
+}: {
+  library: boolean;
+  onOpen: () => void;
+  onFiles: (files: File[]) => void;
+  accept: string;
+  multiple?: boolean;
+  disabled?: boolean;
+  label?: string;
+  title?: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (library) {
+    return (
+      <button type="button" onClick={onOpen} disabled={disabled} aria-label={label} title={title} className={className}>
+        {children}
+      </button>
+    );
+  }
+  return (
+    <label title={title} className={`cursor-pointer ${className}`}>
+      <input
+        type="file"
+        accept={accept}
+        multiple={multiple}
+        className="sr-only"
+        aria-label={label}
+        disabled={disabled}
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []);
+          e.target.value = "";
+          if (files.length) onFiles(files);
+        }}
+      />
+      {children}
+    </label>
+  );
 }
 
 // Nom d'une image dans le prompt : @image1, @image2…
@@ -102,6 +163,7 @@ export function SwapInput({
   prompt,
   onPrompt,
   presetPeople,
+  canTrim = true,
 }: {
   // null : visiteur sans compte, rien n'est envoyé avant sa connexion.
   userId: string | null;
@@ -121,64 +183,149 @@ export function SwapInput({
   // Plan prêt : qui chaque image remplace, déjà fixé (un libellé par image,
   // dans la langue du site).
   presetPeople?: string[];
+  // Faux pour un plan prêt : son passage est fixé.
+  canTrim?: boolean;
 }) {
   const [supabase] = useState(createClient);
   const { t, locale } = useI18n();
   const [uploading, setUploading] = useState<"video" | "images" | "decor" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const canAdd = images.length < maxImages;
+  // Bibliothèque ouverte, et pour quelle case.
+  const [library, setLibrary] = useState<"video" | "images" | "decor" | null>(null);
+  // Fenêtre de découpe : le clip à découper et, s'il vient d'être déposé,
+  // son envoi encore en cours.
+  const [trim, setTrim] = useState<{ file: SwapFile; stored?: Promise<string | null> } | null>(null);
+  const [placing, setPlacing] = useState(false);
+  const hasLibrary = Boolean(userId);
+  const minSeconds = GENJUTSU_MIN_SECONDS;
+  const trimmable = (seconds: number | undefined) =>
+    canTrim && Number.isFinite(seconds) && seconds! > minSeconds + 0.3;
 
-  // Dépose un fichier dans swap-inputs (ou le garde dans le navigateur pour
-  // un visiteur) ; null si refusé ou raté (erreur affichée). Toute vidéo et
-  // toute image sont prises telles quelles ; seules les photos dans un format
-  // que Genjutsu ne lit pas (HEIC d'iPhone…) sont converties en JPEG.
-  async function upload(kind: "video" | "image", picked: File) {
+  // Fichier accepté ; null si refusé (erreur affichée). Toute vidéo et toute
+  // image sont prises telles quelles ; seules les photos dans un format que
+  // Genjutsu ne lit pas (HEIC d'iPhone…) sont converties en JPEG.
+  async function check(kind: "video" | "image", picked: File) {
     const file = kind === "image" ? await toSupportedImage(picked) : picked;
     if (!file || !isAccepted(kind, file)) return (setError(t.generateErrors.swapFormat), null);
     if (file.size > SWAP_MAX_BYTES) return (setError(t.generateErrors.swapTooBig), null);
+    return file;
+  }
+
+  // Dépôt dans swap-inputs ; un visiteur garde le fichier dans son navigateur.
+  const store = (file: File) => (userId ? uploadSwapFile(supabase, userId, file) : Promise.resolve(""));
+
+  async function upload(picked: File) {
+    const file = await check("image", picked);
+    if (!file) return null;
     const previewUrl = URL.createObjectURL(file);
-    const [seconds, stored] = await Promise.all([
-      kind === "video" ? readDuration(previewUrl) : undefined,
-      userId ? uploadSwapFile(supabase, userId, file) : "",
-    ]);
+    const stored = await store(file);
     if (stored === null) {
       URL.revokeObjectURL(previewUrl);
       setError(t.generateErrors.swapUpload);
       return null;
     }
-    return { path: stored, previewUrl, seconds, start: 0, file } satisfies SwapFile;
+    return { path: stored, previewUrl, start: 0, file } satisfies SwapFile;
   }
 
-  async function pickVideo(file: File | undefined) {
+  // Le clip entre dans le studio, une fois son envoi fini. `cut` : passage
+  // choisi dans la fenêtre de découpe ; absent, le clip part entier.
+  async function place(file: SwapFile, stored?: Promise<string | null>, cut?: { start: number; length: number }) {
+    setPlacing(true);
+    const path = stored ? await stored : file.path;
+    setPlacing(false);
+    setUploading(null);
+    setTrim(null);
+    if (path === null) {
+      URL.revokeObjectURL(file.previewUrl);
+      setError(t.generateErrors.swapUpload);
+      return;
+    }
+    if (video && video.previewUrl !== file.previewUrl) URL.revokeObjectURL(video.previewUrl);
+    onVideo({ ...file, path, start: cut?.start ?? 0, length: cut?.length });
+  }
+
+  // Clip déposé : la fenêtre de découpe s'ouvre aussitôt sur l'aperçu local,
+  // l'envoi continue derrière.
+  async function pickVideo(picked: File | undefined) {
+    if (!picked) return;
+    setError(null);
+    const file = await check("video", picked);
     if (!file) return;
+    setUploading("video");
+    const previewUrl = URL.createObjectURL(file);
+    const stored = store(file);
+    const seconds = await readDuration(previewUrl);
+    const next: SwapFile = { path: "", previewUrl, seconds, start: 0, file };
+    if (trimmable(seconds)) setTrim({ file: next, stored });
+    else await place(next, stored);
+  }
+
+  // Clip repris de la bibliothèque : déjà déposé, il ne manque que sa durée.
+  async function pickLibraryVideo(item: LibraryItem) {
     setError(null);
     setUploading("video");
-    const next = await upload("video", file);
+    const seconds = await readDuration(item.url);
+    const next: SwapFile = { path: item.path, previewUrl: item.url, seconds, start: 0 };
+    if (trimmable(seconds)) {
+      setUploading(null);
+      setTrim({ file: next });
+    } else await place(next);
+  }
+
+  // Fenêtre fermée sans choisir : un clip tout juste déposé n'entre pas dans
+  // le studio (il reste dans la bibliothèque), le clip déjà en place ne change pas.
+  function closeTrim() {
+    if (trim && trim.file.previewUrl !== video?.previewUrl) URL.revokeObjectURL(trim.file.previewUrl);
+    setTrim(null);
     setUploading(null);
-    if (!next) return;
-    if (video) URL.revokeObjectURL(video.previewUrl);
-    onVideo(next);
   }
 
   async function pickDecor(file: File | undefined) {
     if (!file) return;
     setError(null);
     setUploading("decor");
-    const next = await upload("image", file);
+    const next = await upload(file);
     setUploading(null);
     if (!next) return;
     if (decorPhoto) URL.revokeObjectURL(decorPhoto.previewUrl);
     onDecorPhoto?.(next);
   }
 
+  // Fichiers repris de la bibliothèque ou déposés depuis elle.
+  function fromLibrary(items: LibraryItem[]) {
+    const slot = library;
+    setLibrary(null);
+    if (slot === "video") void pickLibraryVideo(items[0]);
+    else if (slot === "decor") onDecorPhoto?.({ path: items[0].path, previewUrl: items[0].url });
+    else {
+      onImages((current) =>
+        [
+          ...current,
+          ...items
+            .filter((item) => !current.some((c) => c.path === item.path))
+            .map((item) => ({ path: item.path, previewUrl: item.url })),
+        ].slice(0, maxImages),
+      );
+    }
+  }
+
+  function uploadFromLibrary(files: File[]) {
+    const slot = library;
+    setLibrary(null);
+    if (slot === "video") void pickVideo(files[0]);
+    else if (slot === "decor") void pickDecor(files[0]);
+    else void addImages(files);
+  }
+
   // Plusieurs images d'un coup, dans la limite des places restantes.
-  async function addImages(files: FileList | null) {
-    const list = Array.from(files ?? []).slice(0, maxImages - images.length);
+  async function addImages(files: File[]) {
+    const list = files.slice(0, maxImages - images.length);
     if (!list.length) return;
     setError(null);
     setUploading("images");
     for (const file of list) {
-      const next = await upload("image", file);
+      const next = await upload(file);
       if (next) onImages((current) => (current.length < maxImages ? [...current, next] : current));
     }
     setUploading(null);
@@ -208,26 +355,23 @@ export function SwapInput({
             maxSeconds={maxSeconds}
             removeLabel={t.studio.removeVideo}
             expandLabel={t.studio.expandVideo}
+            trimLabel={t.studio.trimButton}
+            onTrim={trimmable(video.seconds) ? () => setTrim({ file: video }) : undefined}
             onRemove={() => {
               URL.revokeObjectURL(video.previewUrl);
               onVideo(null);
             }}
           />
         ) : (
-          <label
+          <DropZone
+            library={hasLibrary}
+            onOpen={() => setLibrary("video")}
+            onFiles={(files) => pickVideo(files[0])}
+            accept="video/*"
+            disabled={uploading !== null}
             title={fmt(t.studio.videoHint, { max: maxSeconds })}
-            className="group relative flex aspect-video cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-line px-4 text-center transition-colors hover:border-accent/50 hover:bg-surface-2"
+            className="group relative flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-dashed border-line px-4 text-center transition-colors hover:border-accent/50 hover:bg-surface-2"
           >
-            <input
-              type="file"
-              accept="video/*"
-              className="sr-only"
-              disabled={uploading !== null}
-              onChange={(e) => {
-                pickVideo(e.target.files?.[0]);
-                e.target.value = "";
-              }}
-            />
             <GlassBubble className="size-16 group-hover:scale-105">
               <CameraGlyph className="size-7" />
             </GlassBubble>
@@ -243,11 +387,11 @@ export function SwapInput({
                 {t.studio.uploading}
               </span>
             )}
-          </label>
+          </DropZone>
         )}
-        {/* Clip plus long que ce que lit le moteur : il part entier, Genjutsu
-            n'en garde que le début. */}
-        {video && (video.seconds ?? 0) > maxSeconds + 0.5 && (
+        {/* Clip plus long que ce que lit le moteur, sans passage choisi : il
+            part entier, Genjutsu n'en garde que le début. */}
+        {video && video.length === undefined && (video.seconds ?? 0) > maxSeconds + 0.5 && (
           <p className="px-4 pb-4 text-xs text-muted">
             {fmt(t.studio.firstSecondsOnly, { seconds: Math.round(video.seconds!), max: maxSeconds })}
           </p>
@@ -260,22 +404,17 @@ export function SwapInput({
             ajouter ; ensuite, une tuile « + » en tête de la rangée. Le prompt
             dit ce que chaque image remplace. */}
         {!images.length ? (
-          <label
+          <DropZone
+            library={hasLibrary}
+            onOpen={() => setLibrary("images")}
+            onFiles={addImages}
+            accept="image/*"
+            multiple
+            disabled={uploading !== null}
+            label={t.studio.addImages}
             title={`${t.studio.addImages} · ${fmt(t.studio.imagesLimit, { max: maxImages })}`}
-            className="group flex cursor-pointer flex-col items-center text-center"
+            className="group flex w-full flex-col items-center text-center"
           >
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              className="sr-only"
-              aria-label={t.studio.addImages}
-              disabled={uploading !== null}
-              onChange={(e) => {
-                addImages(e.target.files);
-                e.target.value = "";
-              }}
-            />
             {uploading === "images" ? (
               <span className="flex h-16 items-center">
                 <span className="size-6 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
@@ -296,26 +435,21 @@ export function SwapInput({
             <span className="mt-3 text-xs text-muted">
               {t.studio.imageDrop} · {t.studio.imageDropSub}
             </span>
-          </label>
+          </DropZone>
         ) : (
         <div className="flex flex-wrap items-center justify-center gap-2.5">
           {canAdd && (
-            <label
+            <DropZone
+              library={hasLibrary}
+              onOpen={() => setLibrary("images")}
+              onFiles={addImages}
+              accept="image/*"
+              multiple
+              disabled={uploading !== null}
+              label={t.studio.addImages}
               title={`${t.studio.addImages} · ${fmt(t.studio.imagesLimit, { max: maxImages })}`}
-              className="group relative flex size-24 cursor-pointer items-center justify-center rounded-[1.25rem] bg-surface-3 transition-colors hover:bg-surface-3/70"
+              className="group relative flex size-24 items-center justify-center rounded-[1.25rem] bg-surface-3 transition-colors hover:bg-surface-3/70"
             >
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                className="sr-only"
-                aria-label={t.studio.addImages}
-                disabled={uploading !== null}
-                onChange={(e) => {
-                  addImages(e.target.files);
-                  e.target.value = "";
-                }}
-              />
               {uploading === "images" ? (
                 <span className="size-5 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
               ) : (
@@ -323,7 +457,7 @@ export function SwapInput({
                   <PlusGlyph className="size-4.5" />
                 </GlassBubble>
               )}
-            </label>
+            </DropZone>
           )}
           {images.map((f, i) => (
             <div
@@ -386,18 +520,15 @@ export function SwapInput({
               </button>
             </div>
           ) : (
-            <label className="group relative flex aspect-[16/7] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-line px-4 text-center transition-colors hover:border-accent/50 hover:bg-surface-2">
-              <input
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                aria-label={t.studio.decorImage}
-                disabled={uploading !== null}
-                onChange={(e) => {
-                  pickDecor(e.target.files?.[0]);
-                  e.target.value = "";
-                }}
-              />
+            <DropZone
+              library={hasLibrary}
+              onOpen={() => setLibrary("decor")}
+              onFiles={(files) => pickDecor(files[0])}
+              accept="image/*"
+              disabled={uploading !== null}
+              label={t.studio.decorImage}
+              className="group relative flex aspect-[16/7] w-full flex-col items-center justify-center rounded-2xl border border-dashed border-line px-4 text-center transition-colors hover:border-accent/50 hover:bg-surface-2"
+            >
               <GlassBubble className="size-14 group-hover:scale-105">
                 <MountainGlyph className="size-6" />
               </GlassBubble>
@@ -408,7 +539,7 @@ export function SwapInput({
                   {t.studio.uploading}
                 </span>
               )}
-            </label>
+            </DropZone>
           )}
         </div>
       )}
@@ -424,6 +555,31 @@ export function SwapInput({
         hasVideo={Boolean(video)}
       />
       <p className="px-1 text-xs text-muted">{t.studio.promptHint}</p>
+
+      {library && userId && (
+        <MediaLibrary
+          userId={userId}
+          kind={library === "video" ? "video" : "image"}
+          max={library === "images" ? maxImages - images.length : 1}
+          taken={library === "images" ? images.map((f) => f.path) : []}
+          onPick={fromLibrary}
+          onUpload={uploadFromLibrary}
+          onClose={() => setLibrary(null)}
+        />
+      )}
+      {trim && (
+        <TrimDialog
+          src={trim.file.previewUrl}
+          duration={trim.file.seconds!}
+          initial={{ start: trim.file.start ?? 0, length: trim.file.length }}
+          minSeconds={minSeconds}
+          maxSeconds={maxSeconds}
+          busy={placing}
+          onConfirm={(start, length) => place(trim.file, trim.stored, { start, length })}
+          onSkip={() => place(trim.file, trim.stored)}
+          onClose={closeTrim}
+        />
+      )}
     </div>
   );
 }
@@ -434,14 +590,19 @@ function VideoCard({
   file,
   maxSeconds,
   onRemove,
+  onTrim,
   removeLabel,
   expandLabel,
+  trimLabel,
 }: {
   file: SwapFile;
   maxSeconds: number;
   onRemove: () => void;
+  // Rouvre la fenêtre de découpe ; absent quand il n'y a rien à découper.
+  onTrim?: () => void;
   removeLabel: string;
   expandLabel: string;
+  trimLabel: string;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [ratio, setRatio] = useState(16 / 9);
@@ -473,8 +634,21 @@ function VideoCard({
         </button>
         {Number.isFinite(file.seconds) && (
           <span className="absolute bottom-2.5 left-2.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[0.6875rem] font-medium text-white tabular-nums">
-            {clock(file.seconds!)}
+            {file.length === undefined
+              ? clock(file.seconds!)
+              : `${clock(file.start ?? 0)} – ${clock((file.start ?? 0) + keptSeconds(file, maxSeconds))}`}
           </span>
+        )}
+        {onTrim && (
+          <button
+            type="button"
+            aria-label={trimLabel}
+            title={trimLabel}
+            onClick={onTrim}
+            className="absolute right-2.5 bottom-2.5 flex size-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-colors hover:bg-accent"
+          >
+            <Scissors className="size-4" />
+          </button>
         )}
         <button
           type="button"
@@ -502,7 +676,8 @@ function SegmentPreview({
   videoRef: RefObject<HTMLVideoElement | null>;
   onRatio: (ratio: number) => void;
 }) {
-  const start = clampedStart(file, maxSeconds);
+  const start = file.start ?? 0;
+  const end = start + keptSeconds(file, maxSeconds);
   return (
     <video
       ref={videoRef}
@@ -518,7 +693,7 @@ function SegmentPreview({
       }}
       onTimeUpdate={(e) => {
         const el = e.currentTarget;
-        if (el.currentTime < start - 0.3 || el.currentTime >= start + maxSeconds) {
+        if (el.currentTime < start - 0.3 || el.currentTime >= end) {
           el.currentTime = start;
           playInline(el);
         }

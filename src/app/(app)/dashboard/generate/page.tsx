@@ -25,8 +25,9 @@ function stalePendingBefore() {
 }
 
 export default async function GeneratePage(props: PageProps<"/dashboard/generate">) {
-  // ?v= : remplacement en cours rouvert depuis Mes vidéos.
-  const { v } = await props.searchParams;
+  // ?v= : remplacement en cours rouvert depuis Mes vidéos ; ?reuse= : rendu à
+  // reprendre dans le studio.
+  const { v, reuse } = await props.searchParams;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) {
@@ -97,6 +98,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
       history={history}
       userId={auth.claims.sub}
       resume={resume}
+      reuseId={typeof reuse === "string" ? reuse : undefined}
       credits={profile?.credits_remaining ?? 0}
       payAsYouGo={Boolean(profile?.pay_as_you_go && profile.stripe_customer_id) && !profile?.auto_recharge_failed}
       engines={[

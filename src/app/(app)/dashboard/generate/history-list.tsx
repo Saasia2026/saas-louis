@@ -13,6 +13,8 @@ import {
   PawPrint,
   RectangleHorizontal,
   RectangleVertical,
+  RefreshCw,
+  Replace,
   Sparkles,
   Square,
   TriangleAlert,
@@ -29,6 +31,7 @@ import { VideoPlayer } from "@/app/video-player";
 import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import type { AspectRatio } from "@/lib/generation";
+import { PromptBlock, RefStrip } from "../generation-details";
 import type { SwapHistoryItem } from "../swap-history";
 import { DeleteButton } from "../videos/delete-button";
 
@@ -60,7 +63,16 @@ function Chip({ icon: Icon, accent, children }: { icon: LucideIcon; accent?: boo
   );
 }
 
-export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
+// Fiche de chaque rendu : la vidéo, puis son prompt (à copier), ses
+// références (clip, images, lieu) et ses réglages. « Réutiliser » remet le
+// tout dans le studio.
+export function HistoryList({
+  items,
+  onReuse,
+}: {
+  items: SwapHistoryItem[];
+  onReuse?: (item: SwapHistoryItem) => void;
+}) {
   const { t } = useI18n();
   const V = t.videos;
 
@@ -97,22 +109,11 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
           />
 
           <div className="flex min-w-0 flex-1 flex-col gap-3 py-1 sm:pr-8">
-            {item.thumbs.length > 0 && (
-              <div className="flex gap-2">
-                {item.thumbs.map((src) => (
-                  // URL signée Supabase : pas d'optimisation Next.
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={src}
-                    src={src}
-                    alt=""
-                    className="size-14 rounded-xl border border-line object-cover transition-transform duration-200 hover:scale-105"
-                  />
-                ))}
-              </div>
-            )}
+            <PromptBlock prompt={item.prompt} />
+            <RefStrip item={item} />
             <div className="flex flex-wrap gap-1.5">
               <Chip icon={Sparkles}>{item.settings.model === "max" ? t.studio.modelMax : t.studio.modelStandard}</Chip>
+              {!item.transfer && <Chip icon={Replace}>{t.studio.modeReplace}</Chip>}
               <Chip icon={MonitorPlay}>{item.settings.quality}</Chip>
               {item.seconds ? <Chip icon={Clock}>{fmt(V.seconds, { seconds: item.seconds })}</Chip> : null}
               <Chip icon={FORMAT_ICON[item.aspectRatio]}>{item.aspectRatio}</Chip>
@@ -139,16 +140,29 @@ export function HistoryList({ items }: { items: SwapHistoryItem[] }) {
                 <CalendarDays className="size-3.5" />
                 {item.date}
               </span>
-              {item.running ? (
-                <Link href={`/dashboard/generate?v=${item.id}`} className="btn btn-accent">
-                  {V.resume}
-                </Link>
-              ) : (
-                <a href={item.downloadUrl ?? item.mediaUrl} className="btn btn-hot">
-                  <Download />
-                  {V.download}
-                </a>
-              )}
+              <span className="flex flex-wrap justify-end gap-2">
+                {onReuse && (
+                  <button
+                    type="button"
+                    onClick={() => onReuse(item)}
+                    title={t.studio.reuseHint}
+                    className="btn btn-secondary"
+                  >
+                    <RefreshCw />
+                    {t.studio.reuse}
+                  </button>
+                )}
+                {item.running ? (
+                  <Link href={`/dashboard/generate?v=${item.id}`} className="btn btn-accent">
+                    {V.resume}
+                  </Link>
+                ) : (
+                  <a href={item.downloadUrl ?? item.mediaUrl} className="btn btn-hot">
+                    <Download />
+                    {V.download}
+                  </a>
+                )}
+              </span>
             </div>
           </div>
         </li>

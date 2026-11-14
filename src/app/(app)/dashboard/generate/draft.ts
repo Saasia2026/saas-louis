@@ -4,7 +4,8 @@
 
 import type { GenjutsuModel, SwapQuality } from "@/lib/generation";
 
-export type DraftFile = { file: File; path?: string; seconds?: number; start?: number };
+// `file` absent : fichier repris de la bibliothèque, gardé par son chemin.
+export type DraftFile = { file?: File; path?: string; seconds?: number; start?: number; length?: number };
 
 export type StudioDraft = {
   video: DraftFile;

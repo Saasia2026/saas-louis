@@ -1,5 +1,4 @@
-import { Download, Plus } from "lucide-react";
-import Image from "next/image";
+import { Download, Plus, RefreshCw } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -8,6 +7,7 @@ import { getDictionary } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { VideoPlayer } from "@/app/video-player";
 import { PageHeader } from "../../page-header";
+import { PromptBlock, RefStrip } from "../generation-details";
 import { listSwapHistory } from "../swap-history";
 import { DeleteButton } from "./delete-button";
 
@@ -84,33 +84,11 @@ export default async function VideosPage() {
                       {engine}
                     </span>
 
-                    {/* Prompt */}
-                    {video.prompt && (
-                      <p className="line-clamp-4 text-sm leading-relaxed text-secondary">
-                        {video.prompt}
-                      </p>
-                    )}
+                    {/* Prompt, à copier */}
+                    <PromptBlock prompt={video.prompt} />
 
-                    {/* Thumbnails */}
-                    {video.thumbs.length > 0 && (
-                      <div className="flex gap-2">
-                        {video.thumbs.map((url, k) => (
-                          <div
-                            key={k}
-                            className="size-12 shrink-0 overflow-hidden rounded-lg border border-line bg-black"
-                          >
-                            <Image
-                              src={url}
-                              alt=""
-                              width={48}
-                              height={48}
-                              className="size-full object-cover"
-                              unoptimized
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {/* Références : clip, images, lieu */}
+                    <RefStrip item={{ clip: video.clip, refs: video.refs, decor: video.decor }} />
 
                     {/* Metadata chips */}
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
@@ -139,16 +117,26 @@ export default async function VideosPage() {
                     {/* Date + actions */}
                     <div className="mt-auto flex items-center justify-between gap-3">
                       <p className="text-xs text-muted">{video.date}</p>
-                      {video.running ? (
-                        <Link href={`/dashboard/generate?v=${video.id}`} className="btn btn-secondary">
-                          {V.resume}
+                      <span className="flex flex-wrap justify-end gap-2">
+                        <Link
+                          href={`/dashboard/generate?reuse=${video.id}`}
+                          title={S.reuseHint}
+                          className="btn btn-secondary"
+                        >
+                          <RefreshCw />
+                          {S.reuse}
                         </Link>
-                      ) : (
-                        <a href={video.downloadUrl ?? video.mediaUrl} className="btn btn-ghost">
-                          <Download />
-                          {V.download}
-                        </a>
-                      )}
+                        {video.running ? (
+                          <Link href={`/dashboard/generate?v=${video.id}`} className="btn btn-secondary">
+                            {V.resume}
+                          </Link>
+                        ) : (
+                          <a href={video.downloadUrl ?? video.mediaUrl} className="btn btn-ghost">
+                            <Download />
+                            {V.download}
+                          </a>
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>

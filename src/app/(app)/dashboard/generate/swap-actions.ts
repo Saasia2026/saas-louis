@@ -44,6 +44,7 @@ import {
   advanceSwap,
   cancelSwap as cancelSwapGeneration,
   probeVideo,
+  trimClip,
   type SwapMetadata,
   type SwapPart,
 } from "@/lib/swap";
@@ -230,19 +231,37 @@ export async function startSwap(input: {
   });
   if (!probe) return { error: errors.swapUnreadable };
 
-  // Le clip part tel quel, en un seul envoi : pas de découpe ni de
-  // réencodage. Seules comptent les règles de Genjutsu : 4 s au moins, et il
-  // ne lit que les 30 premières secondes (15 pour Shinka), seules facturées.
-  const start = 0;
-  const clipSeconds = Math.min(
-    probe.seconds,
-    model === "standard" ? GENJUTSU_LIGHT_MAX_SECONDS : SWAP_ENGINES[engine].maxSeconds,
+  // Sans découpe, le clip part tel quel, en un seul envoi. Seules comptent
+  // les règles de Genjutsu : 4 s au moins, et il ne lit que les 30 premières
+  // secondes (15 pour Shinka), seules facturées. Avec la fenêtre de découpe
+  // du studio, seul le passage choisi part (voir trimClip).
+  const maxSeconds = model === "standard" ? GENJUTSU_LIGHT_MAX_SECONDS : SWAP_ENGINES[engine].maxSeconds;
+  const asked = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : undefined);
+  const askedStart = preset ? 0 : Math.min(asked(input.start) ?? 0, Math.max(0, probe.seconds - 1));
+  const start = askedStart < 0.05 ? 0 : askedStart;
+  const remaining = probe.seconds - start;
+  const askedSeconds = preset ? undefined : asked(input.seconds);
+  // Découpe : un début choisi, ou une fin avant celle du clip.
+  const trimmed = start > 0 || (askedSeconds !== undefined && askedSeconds < remaining - 0.15);
+  let clipSeconds = Math.min(
+    trimmed ? (askedSeconds ?? remaining) : probe.seconds,
+    remaining,
+    maxSeconds,
     // Plan prêt : sa durée annoncée, donc son prix.
     preset?.seconds ?? Infinity,
   );
-  if (probe.seconds < GENJUTSU_MIN_SECONDS - 0.5) {
+  if (clipSeconds < GENJUTSU_MIN_SECONDS - 0.5) {
     return { error: fmt(errors.swapTooShort, { min: Math.ceil(GENJUTSU_MIN_SECONDS - 0.5) }) };
   }
+  // Le passage est découpé avant le débit : le prix suit sa durée réelle.
+  const cut = trimmed
+    ? await trimClip(sourceUrl, start, clipSeconds, probe.hdr).catch((e) => {
+        console.error("trimClip", errorMessage(e));
+        return null;
+      })
+    : undefined;
+  if (cut === null) return { error: errors.swapUnreadable };
+  if (cut) clipSeconds = cut.seconds;
   const durationSeconds = Math.max(1, Math.round(clipSeconds));
   const shots: SwapPart[] = [{ start: 0, seconds: clipSeconds, stage: "video" }];
 
@@ -288,6 +307,8 @@ export async function startSwap(input: {
     ...(preset && { preset: preset.id }),
     source_start: start,
     character_image_path: characters[0]?.imagePath,
+    photo_paths: allPhotoPaths,
+    ...(cut && { source_original_path: videoPath, source_trim: { start, seconds: clipSeconds } }),
     started_at: new Date().toISOString(),
     ...(target && { target }),
   };
@@ -334,12 +355,27 @@ export async function startSwap(input: {
     return { error: errors.startFailed };
   }
 
+  // Le clip chez Higgsfield : entier, ou seulement le passage choisi. Le
+  // passage découpé est aussi gardé dans swap-inputs (hors de la bibliothèque
+  // du créateur) : c'est lui que montre la fiche du rendu, et son son sert au
+  // montage.
+  const sendClip = async () => {
+    if (!cut) return { videoUrl: await uploadOriginal(sourceUrl), cutPath: undefined };
+    const cutPath = `${userId}/cuts/${generationId}.mp4`;
+    const [videoUrl, stored] = await Promise.all([
+      uploadToHiggsfield(cut.data, "video/mp4"),
+      admin.storage.from(SWAP_INPUTS_BUCKET).upload(cutPath, cut.data, { contentType: "video/mp4", upsert: true }),
+    ]);
+    if (stored.error) console.error("startSwap découpe", stored.error.message);
+    return { videoUrl, cutPath: stored.error ? undefined : cutPath };
+  };
+
   try {
     // En même temps, pour ne pas faire attendre : le clip et les images de
     // chaque élément, tels que déposés, la photo du lieu s'il y en a une et la
     // planche de chaque mannequin, tous transférés chez Higgsfield.
-    const [parts, prepared, decorUrl, sheetUrls] = await Promise.all([
-      uploadOriginal(sourceUrl).then((videoUrl) => shots.map((shot) => ({ ...shot, videoUrl }))),
+    const [clip, prepared, decorUrl, sheetUrls] = await Promise.all([
+      sendClip(),
       Promise.all(
         photoUrls.map(async (urls) => ({
           sheet: { frontUrl: urls[0] },
@@ -357,6 +393,7 @@ export async function startSwap(input: {
         status: "processing",
         metadata: {
           ...metadata,
+          ...(clip.cutPath && { source_video_path: clip.cutPath, source_start: 0 }),
           // Lieu seul : sa photo sert de repère au suivi.
           sheet: prepared[0]?.sheet ?? { frontUrl: decorSignedUrl },
           character_urls: prepared[0]?.urls ?? [],
@@ -373,7 +410,7 @@ export async function startSwap(input: {
               ...(c.object && { object: true }),
             })),
           }),
-          swap_parts: parts,
+          swap_parts: shots.map((shot) => ({ ...shot, videoUrl: clip.videoUrl })),
           rev: 0,
         },
       })

@@ -14,6 +14,9 @@ import { createClient } from "@/lib/supabase/server";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
+// Fichier déposé dans swap-inputs, avec une URL signée pour l'afficher.
+export type SwapRef = { path: string; url: string };
+
 export type SwapHistoryItem = {
   id: string;
   running: boolean;
@@ -31,8 +34,15 @@ export type SwapHistoryItem = {
   transfer: boolean;
   // Consignes libres du créateur.
   prompt: string;
-  // Photos des personnages, dans l'ordre.
-  thumbs: string[];
+  // Images de référence, dans l'ordre du prompt (@image1…).
+  refs: SwapRef[];
+  // Photo du nouveau lieu (Motion Transfer).
+  decor?: SwapRef;
+  // Le clip tel qu'il est parti : entier, ou le passage découpé.
+  clip?: SwapRef;
+  // Le clip déposé et le passage gardé dedans, pour reprendre ce rendu dans
+  // le studio. Absent pour un plan prêt.
+  source?: SwapRef & { start: number; seconds?: number };
 };
 
 type HistoryMetadata = {
@@ -46,6 +56,11 @@ type HistoryMetadata = {
   swap_parts?: { original?: boolean }[];
   character_image_path?: string;
   characters?: { image_path?: string }[];
+  photo_paths?: string[];
+  source_video_path?: string;
+  source_original_path?: string;
+  source_trim?: { start?: number; seconds?: number };
+  preset?: string;
 };
 
 // Remplacements terminés ou en cours de l'utilisateur, du plus récent au plus
@@ -61,13 +76,20 @@ export async function listSwapHistory(limit = 24): Promise<SwapHistoryItem[]> {
     .limit(limit);
   const rows = (generations ?? []).map((g) => ({ ...g, meta: (g.metadata ?? {}) as HistoryMetadata }));
 
-  // Les photos déposées se signent toutes d'un coup.
+  // Les fichiers déposés (images, lieu, clip) se signent tous d'un coup.
   const photoPaths = rows.map((g) =>
-    (g.meta.characters?.map((c) => c.image_path) ?? [g.meta.character_image_path]).filter(
+    (g.meta.photo_paths ?? g.meta.characters?.map((c) => c.image_path) ?? [g.meta.character_image_path]).filter(
       (p): p is string => typeof p === "string",
     ),
   );
-  const uniquePaths = [...new Set(photoPaths.flat())];
+  const uniquePaths = [
+    ...new Set(
+      [
+        ...photoPaths.flat(),
+        ...rows.flatMap((g) => [g.meta.decor_image_path, g.meta.source_video_path, g.meta.source_original_path]),
+      ].filter((p): p is string => typeof p === "string"),
+    ),
+  ];
   const { data: signedPhotos } = uniquePaths.length
     ? await createAdminClient()
         .storage.from(SWAP_INPUTS_BUCKET)
@@ -76,6 +98,11 @@ export async function listSwapHistory(limit = 24): Promise<SwapHistoryItem[]> {
   const photoUrl = new Map(
     (signedPhotos ?? []).flatMap((s) => (s.path && s.signedUrl && !s.error ? [[s.path, s.signedUrl]] : [])),
   );
+
+  const ref = (path: string | undefined): SwapRef | undefined => {
+    const url = path && photoUrl.get(path);
+    return path && url ? { path, url } : undefined;
+  };
 
   const bucket = supabase.storage.from(GENERATIONS_BUCKET);
   const dateFormat = new Intl.DateTimeFormat(INTL_LOCALES[locale], { dateStyle: "medium" });
@@ -108,9 +135,17 @@ export async function listSwapHistory(limit = 24): Promise<SwapHistoryItem[]> {
         fidelity: g.meta.vessel === true,
         prompt: g.meta.instructions ?? "",
         transfer: Boolean(g.meta.decor_image_path),
-        thumbs: photoPaths[i].flatMap((p) => photoUrl.get(p) ?? []),
+        refs: photoPaths[i].flatMap((p) => ref(p) ?? []),
+        decor: ref(g.meta.decor_image_path),
+        clip: ref(g.meta.source_video_path),
+        source: g.meta.preset ? undefined : source(g.meta),
       };
     }),
   );
   return items.filter((v) => v.running || v.mediaUrl);
+
+  function source(meta: HistoryMetadata): SwapHistoryItem["source"] {
+    const original = ref(meta.source_original_path ?? meta.source_video_path);
+    return original && { ...original, start: meta.source_trim?.start ?? 0, seconds: meta.source_trim?.seconds };
+  }
 }

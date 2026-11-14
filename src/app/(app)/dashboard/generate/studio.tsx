@@ -17,6 +17,7 @@ import {
   GENJUTSU_LIGHT_MAX_SECONDS,
   GENJUTSU_MAX_IMAGES,
   STUDIO_QUALITIES,
+  SWAP_INPUTS_BUCKET,
   SWAP_MAX_CHARACTERS,
   swapCredits,
   swapMethodRate,
@@ -36,7 +37,7 @@ import { ExamplesPanel } from "./examples-panel";
 import { HistoryEmpty, HistoryList } from "./history-list";
 import { cancelSwap, redoSwapShot, startSwap } from "./swap-actions";
 import { MODEL_ICON, ModelBadge, ModelCard, ModeTabs, Option, PanelTabs, SettingRow, Tag } from "./studio-controls";
-import { SwapInput, readDuration, uploadSwapFile, type SwapFile } from "./swap-input";
+import { SwapInput, keptSeconds, readDuration, uploadSwapFile, type SwapFile } from "./swap-input";
 
 const POLL_INTERVAL_MS = 5_000;
 // Durée annoncée d'un rendu. Les séquences se rendent en même temps (quelques
@@ -78,6 +79,7 @@ export function Studio({
   presets = [],
   history = [],
   resume,
+  reuseId,
 }: {
   // null : visiteur sans compte. Il prépare tout ; au lancement, son projet
   // est gardé dans le navigateur et il passe par la connexion (voir draft.ts).
@@ -94,6 +96,8 @@ export function Studio({
   history?: SwapHistoryItem[];
   // Remplacement encore en cours, repris à l'ouverture de la page.
   resume?: Active;
+  // Rendu à reprendre dans le studio (« Réutiliser » depuis Mes vidéos).
+  reuseId?: string;
 }) {
   const router = useRouter();
   const { t, locale } = useI18n();
@@ -157,11 +161,12 @@ export function Studio({
   // Notification éphémère après un lancement réussi.
   const [launched, setLaunched] = useState(false);
   const started = phase.kind !== "idle";
-  // Le clip part tel quel chez Genjutsu, qui en lit au plus 30 s (15 s pour
-  // Shinka). Même calcul que le serveur (voir startSwap).
+  // Genjutsu lit au plus 30 s (15 s pour Shinka) du clip, ou du passage
+  // choisi dans la fenêtre de découpe. Même calcul que le serveur (voir
+  // startSwap).
   const maxSeconds = model === "standard" ? GENJUTSU_LIGHT_MAX_SECONDS : SWAP_ENGINES[engine].maxSeconds;
   const durationKnown = Number.isFinite(video?.seconds);
-  const clipSeconds = Math.min(maxSeconds, durationKnown ? video!.seconds! : NaN);
+  const clipSeconds = durationKnown ? keptSeconds(video!, maxSeconds) : NaN;
   const seconds = durationKnown
     ? Math.max(1, Math.round(clipSeconds))
     : maxSeconds;
@@ -236,16 +241,20 @@ export function Studio({
   // par la page Crédits.
   async function keepDraft() {
     const draftFile = (f: SwapFile): DraftFile => ({
-      file: f.file!,
+      file: f.file,
       path: f.path || undefined,
       seconds: f.seconds,
       start: f.start,
+      length: f.length,
     });
-    if (!video?.file || images.some((f) => !f.file)) return;
+    // Chaque fichier est gardé lui-même, ou par son chemin s'il vient de la
+    // bibliothèque.
+    const kept = (f: SwapFile) => Boolean(f.file || f.path);
+    if (!video || !kept(video) || !images.every(kept)) return;
     await saveDraft({
       video: draftFile(video),
       images: images.map(draftFile),
-      decor: decorPhoto?.file ? draftFile(decorPhoto) : null,
+      decor: decorPhoto && kept(decorPhoto) ? draftFile(decorPhoto) : null,
       mode,
       model,
       quality,
@@ -266,9 +275,15 @@ export function Studio({
       setRestoring(true);
       try {
         const restore = async (d: DraftFile): Promise<SwapFile | null> => {
-          const path = d.path ?? (await uploadSwapFile(supabase, userId, d.file));
+          const file = d.file;
+          const path = d.path ?? (file ? await uploadSwapFile(supabase, userId, file) : null);
           if (!path) return null;
-          return { path, previewUrl: URL.createObjectURL(d.file), seconds: d.seconds, start: d.start, file: d.file };
+          // Fichier de la bibliothèque : son aperçu est une URL signée.
+          const previewUrl = file
+            ? URL.createObjectURL(file)
+            : (await supabase.storage.from(SWAP_INPUTS_BUCKET).createSignedUrl(path, 60 * 60)).data?.signedUrl;
+          if (!previewUrl) return null;
+          return { path, previewUrl, seconds: d.seconds, start: d.start, length: d.length, file };
         };
         const restored = await restore(draft.video);
         // Anciens brouillons : images rangées personnage par personnage.
@@ -347,6 +362,41 @@ export function Studio({
     return true;
   }
 
+  // Reprendre un rendu : son clip (avec le passage gardé), ses images, son
+  // prompt et ses réglages reviennent dans le studio, prêts à relancer.
+  async function reuse(item: SwapHistoryItem) {
+    const source = item.source;
+    if (source) {
+      const seconds = await readDuration(source.url);
+      setVideo((current) => {
+        if (current) URL.revokeObjectURL(current.previewUrl);
+        return { path: source.path, previewUrl: source.url, seconds, start: source.start, length: source.seconds };
+      });
+      setPreset(null);
+    }
+    setImages(item.refs.map((r) => ({ path: r.path, previewUrl: r.url })));
+    setDecorPhoto(item.decor ? { path: item.decor.path, previewUrl: item.decor.url } : null);
+    setMode(item.transfer ? "transfer" : "replace");
+    setModel(item.settings.model);
+    setQuality(STUDIO_QUALITIES.includes(item.settings.quality) ? item.settings.quality : DEFAULT_SWAP_QUALITY);
+    setFidelity(item.fidelity);
+    setPrompt(item.prompt);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // « Réutiliser » depuis Mes vidéos : le rendu demandé est repris une fois.
+  const reuseOnOpen = useEffectEvent(async () => {
+    const item = history.find((h) => h.id === reuseId);
+    if (!item) return;
+    await reuse(item);
+    router.replace("/dashboard/generate", { scroll: false });
+  });
+  useEffect(() => {
+    if (!reuseId) return;
+    const timer = setTimeout(reuseOnOpen, 0);
+    return () => clearTimeout(timer);
+  }, [reuseId]);
+
   // À court de crédits : le projet est gardé, direction les packs, avec ce
   // qui manque.
   async function goPay(missing: number) {
@@ -379,6 +429,8 @@ export function Studio({
         vessel: fidelity,
         decorImagePath: mode === "transfer" ? decorPhoto?.path : undefined,
         instructions: prompt.trim() || undefined,
+        // Passage choisi dans la fenêtre de découpe ; sans lui, le clip entier.
+        ...(!preset && video.length !== undefined && { start: video.start ?? 0, seconds: video.length }),
       });
       if (res.error !== undefined) {
         if (res.needCredits !== undefined) {
@@ -513,6 +565,7 @@ export function Studio({
         onImages={setImages}
         maxImages={maxImages}
         presetPeople={preset?.people.map((p) => p.label[locale])}
+        canTrim={!preset}
         maxSeconds={preset ? preset.seconds : maxSeconds}
         decorPhoto={decorPhoto}
         onDecorPhoto={setDecorPhoto}
@@ -683,7 +736,7 @@ export function Studio({
           <div className="mt-4">
             {tab === "history" &&
               (pastItems.length > 0 ? (
-                <HistoryList items={pastItems} />
+                <HistoryList items={pastItems} onReuse={reuse} />
               ) : (
                 <p className="py-16 text-center text-sm text-muted">{t.studio.historyNone}</p>
               ))}
