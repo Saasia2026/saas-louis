@@ -71,7 +71,7 @@ function CreditsBox({
 }) {
   const fidelity = Math.max(0, Math.floor((credits - SWAP_SHEET_CREDITS) / swapMethodRate({}, true)));
   return (
-    <div className="mt-5 rounded-xl border border-line bg-surface-2/60 p-4">
+    <div className="mt-5 rounded-2xl bg-surface-2/60 p-4">
       <ul className="space-y-1 text-sm text-muted tabular-nums">
         <li>{title}</li>
         <li>{fmt(P.eqStandard, { n: swapMethodSecondsFor(credits, { model: "standard" }) })}</li>
@@ -197,7 +197,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
       {notice && (
         <p
           role="status"
-          className={`mt-8 rounded-xl border px-4 py-3 text-sm ${
+          className={`mt-8 rounded-2xl border px-4 py-3 text-sm ${
             notice.ok
               ? "border-success/30 bg-success/10 text-success"
               : "border-danger/30 bg-danger/10 text-danger"
@@ -209,7 +209,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
       {/* Arrivée depuis le studio à court de crédits : ce qui manque, juste
           au-dessus du paiement à l'usage. */}
       {needNotice && !notice && (
-        <p role="status" className="mt-8 rounded-xl border border-accent/40 bg-accent-soft px-4 py-3 text-sm">
+        <p role="status" className="mt-8 rounded-2xl border border-accent/40 bg-accent-soft px-4 py-3 text-sm">
           {needNotice}
         </p>
       )}
@@ -219,7 +219,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
       <div className="mt-8 grid animate-fade-up gap-5 lg:grid-cols-5 lg:items-start">
         <section
           id="auto"
-          className="scroll-mt-24 rounded-2xl border p-6 sm:p-8 lg:col-span-3"
+          className="scroll-mt-24 rounded-3xl border p-6 sm:p-8 lg:col-span-3"
           style={tierCard("var(--accent)", 22)}
         >
           <div className="flex flex-wrap items-center gap-2">
@@ -254,7 +254,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
             </div>
           ) : (
             <>
-              <div className="mt-7 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface/70 px-4 py-3">
+              <div className="mt-7 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface/70 px-4 py-3">
                 <div className="min-w-0">
                   <p className="flex items-center gap-1.5 text-xs font-medium text-success">
                     <Check className="size-3.5" />
@@ -286,9 +286,9 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                   </span>
                 </label>
                 {profile?.auto_recharge_failed ? (
-                  <p className="rounded-lg border border-danger/20 bg-danger/5 px-3 py-2 text-sm text-danger">{A.usageFailed}</p>
+                  <p className="rounded-xl border border-danger/20 bg-danger/5 px-3 py-2 text-sm text-danger">{A.usageFailed}</p>
                 ) : payAsYouGo ? (
-                  <p className="rounded-lg border border-success/20 bg-success/5 px-3 py-2 text-sm text-success">{A.usageOn}</p>
+                  <p className="rounded-xl border border-success/20 bg-success/5 px-3 py-2 text-sm text-success">{A.usageOn}</p>
                 ) : null}
                 <button type="submit" className="btn btn-accent">
                   {A.save}
@@ -334,13 +334,13 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
             <p className="mt-3 max-w-xl text-sm text-muted">{S.intro}</p>
           </div>
           {!subscription && (
-            <div className="flex rounded-lg border border-line bg-surface-2 p-0.5 text-xs">
+            <div className="rail flex gap-1 border border-line text-xs">
               {(["month", "year"] as const).map((interval) => (
                 <Link
                   key={interval}
                   href={`?billing=${interval}`}
                   scroll={false}
-                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 font-semibold transition-colors ${
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 font-semibold transition-colors ${
                     billing === interval ? "bg-accent text-white" : "text-muted hover:text-text"
                   }`}
                 >
@@ -388,7 +388,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
               return (
                 <li
                   key={plan.id}
-                  className={`flex flex-col rounded-2xl border p-6 transition-transform duration-200 hover:-translate-y-1 ${tier.badge === "popular" ? "ring-2 ring-accent/40" : ""}`}
+                  className={`flex flex-col rounded-3xl border p-6 transition-transform duration-200 hover:-translate-y-1 ${tier.badge === "popular" ? "ring-2 ring-accent/40" : ""}`}
                   style={tierCard(tier.color, tier.strength)}
                 >
                   <div className="flex flex-wrap items-center gap-2">
@@ -425,7 +425,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                       {S.subscribe}
                     </button>
                   </form>
-                  <p className="mt-3 rounded-lg bg-surface-2/70 py-2 text-center text-sm font-semibold">
+                  <p className="mt-3 rounded-full bg-surface-2/70 py-2 text-center text-sm font-semibold">
                     {fmt(P.yearlySave, { amount: price(saving) })}
                   </p>
                 </li>
@@ -448,14 +448,14 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
             return (
               <li
                 key={pack.id}
-                className={`flex animate-fade-up flex-col rounded-2xl border p-6 transition-transform duration-200 hover:-translate-y-1 ${featured ? "ring-2 ring-accent/40" : ""}`}
+                className={`flex animate-fade-up flex-col rounded-3xl border p-6 transition-transform duration-200 hover:-translate-y-1 ${featured ? "ring-2 ring-accent/40" : ""}`}
                 style={{ ...tierCard(tier.color, Math.round(tier.strength / 2)), animationDelay: `${100 + i * 90}ms` }}
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-headline text-4xl leading-none">{P.packs[pack.id]}</h3>
                   {featured && <span className={`${BADGE} bg-accent text-white`}>{P.popular}</span>}
                   {tier.badge === "best" && <span className={`${BADGE} bg-amber-400 text-black`}>{P.bestValue}</span>}
-                  {!featured && tier.badge !== "best" && <span className="rounded-md border border-line px-2 py-0.5 text-xs font-medium text-muted">{P.packTag}</span>}
+                  {!featured && tier.badge !== "best" && <span className="rounded-full border border-line px-2.5 py-0.5 text-xs font-medium text-muted">{P.packTag}</span>}
                 </div>
                 <p className="mt-2 text-sm text-muted">{P.taglines[pack.id]}</p>
 

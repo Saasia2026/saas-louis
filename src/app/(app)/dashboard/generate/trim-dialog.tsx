@@ -235,14 +235,14 @@ export function TrimDialog({
             }}
             aria-label={playing ? S.player.pause : S.player.play}
             title={playing ? S.player.pause : S.player.play}
-            className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-surface-3 text-text transition-colors hover:bg-[var(--surface-hover)]"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-3 text-text transition-colors hover:bg-[var(--surface-hover)]"
           >
             {playing ? <Pause className="size-4 fill-current" /> : <Play className="size-4 translate-x-px fill-current" />}
           </button>
 
           <div
             ref={track}
-            className="relative h-14 min-w-0 flex-1 touch-none overflow-hidden rounded-xl bg-surface-2 select-none"
+            className="relative h-14 min-w-0 flex-1 touch-none overflow-hidden rounded-2xl bg-surface-2 select-none"
             onPointerDown={(e) => {
               const box = e.currentTarget.getBoundingClientRect();
               const at = ((e.clientX - box.left) / box.width) * duration;
@@ -292,7 +292,7 @@ export function TrimDialog({
             onClick={() => setMuted((m) => !m)}
             aria-label={muted ? S.player.unmute : S.player.mute}
             title={muted ? S.player.unmute : S.player.mute}
-            className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-surface-3 text-muted transition-colors hover:text-text"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-3 text-muted transition-colors hover:text-text"
           >
             {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
           </button>

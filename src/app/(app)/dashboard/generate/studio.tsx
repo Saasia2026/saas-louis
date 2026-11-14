@@ -586,7 +586,7 @@ export function Studio({
                 type="button"
                 onClick={() => choosePreset(p)}
                 aria-pressed={preset?.id === p.id}
-                className={`group relative aspect-[9/16] shrink-0 overflow-hidden rounded-xl border bg-black bg-clip-padding text-left transition-[border-color,box-shadow] duration-200 ${
+                className={`group relative aspect-[9/16] shrink-0 overflow-hidden rounded-2xl border bg-black bg-clip-padding text-left transition-[border-color,box-shadow] duration-200 ${
                   preset?.id === p.id
                     ? "border-accent shadow-[0_0_0_1px_var(--accent)]"
                     : "border-line hover:border-line-strong"
@@ -678,7 +678,7 @@ export function Studio({
           {launching ? <Loader2 className="animate-spin" /> : <WandSparkles />}
           {t.studio.launch}
           {video && (
-            <span className="ml-1 inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-sm tabular-nums">
+            <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-0.5 text-sm tabular-nums">
               <Coins className="size-3.5" />
               {costLabel}
             </span>
@@ -700,14 +700,14 @@ export function Studio({
     <VideoWall />
     {launched && (
       <div className="fixed inset-x-0 top-4 z-50 flex justify-center animate-fade-up pointer-events-none">
-        <div className="pointer-events-auto flex items-center gap-2 rounded-xl border border-accent/30 bg-surface/95 px-4 py-2.5 text-sm font-medium text-foreground shadow-lg backdrop-blur">
+        <div className="topbar pointer-events-auto gap-2 px-4 py-2.5 text-sm font-medium">
           <Check className="size-4 text-accent" />
           {t.studio.launched}
         </div>
       </div>
     )}
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
-      <aside className="relative z-20 animate-fade-up lg:sticky lg:top-24 lg:-mx-3 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:px-3 lg:pb-3">
+      <aside className="relative z-20 animate-fade-up lg:sticky lg:top-24 lg:-mx-3 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:px-3 lg:pb-3 lg:[scrollbar-width:none]">
         {composer}
       </aside>
 
@@ -723,7 +723,9 @@ export function Studio({
             onCancel={cancel}
           />
         )}
-        <div className="panel animate-fade-up p-3 sm:p-4">
+        {/* Les onglets posés sur la page, sans cadre autour : chaque rendu
+            est déjà sa propre carte. */}
+        <div className="animate-fade-up">
           <PanelTabs
             value={tab}
             onChange={setTab}
@@ -738,9 +740,13 @@ export function Studio({
               (pastItems.length > 0 ? (
                 <HistoryList items={pastItems} onReuse={reuse} />
               ) : (
-                <p className="py-16 text-center text-sm text-muted">{t.studio.historyNone}</p>
+                <p className="panel py-16 text-center text-sm text-muted">{t.studio.historyNone}</p>
               ))}
-            {tab === "examples" && <ExamplesPanel onRecreate={recreateDemo} />}
+            {tab === "examples" && (
+              <div className="panel p-4 sm:p-6">
+                <ExamplesPanel onRecreate={recreateDemo} />
+              </div>
+            )}
             {tab === "how" && <HistoryEmpty />}
           </div>
         </div>
@@ -805,7 +811,7 @@ function Result({
         <div className="flex flex-col items-center gap-4 p-6">
           <div
             role="alert"
-            className="my-4 flex max-w-md items-start gap-3 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger"
+            className="my-4 flex max-w-md items-start gap-3 rounded-2xl bg-danger/10 px-4 py-3 text-sm text-danger"
           >
             <TriangleAlert className="mt-0.5 size-4 shrink-0" />
             <p>{phase.message}</p>

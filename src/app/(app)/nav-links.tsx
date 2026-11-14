@@ -22,10 +22,10 @@ function useActive() {
   return (href: string) => pathname.startsWith(href);
 }
 
-// Navigation de la barre du haut (écrans larges) : une tuile d'icône et le
-// nom par entrée (le nom à partir des écrans larges, l'explication en
-// infobulle). Le fond de l'entrée active glisse de l'une à l'autre ; les
-// entrées n'ayant pas la même largeur, il est mesuré sur la page.
+// Navigation de la barre du haut (écrans larges) : une icône et le nom par
+// entrée (le nom à partir des écrans larges, l'explication en infobulle).
+// La pastille de l'entrée active glisse de l'une à l'autre ; les entrées
+// n'ayant pas la même largeur, elle est mesurée sur la page.
 export function MainNav() {
   const isActive = useActive();
   const { t } = useI18n();
@@ -59,11 +59,11 @@ export function MainNav() {
   }, [activeIndex, t]);
 
   return (
-    <nav className="relative flex items-center gap-1">
+    <nav className="relative flex items-center gap-0.5">
       <span
         ref={pill}
         aria-hidden
-        className="absolute inset-y-0 left-0 rounded-xl border border-line bg-surface-3 opacity-0 transition-[transform,width,opacity] duration-300 [transition-timing-function:var(--ease-out)]"
+        className="absolute inset-y-0 left-0 rounded-full bg-surface-3 opacity-0 transition-[transform,width,opacity] duration-300 [transition-timing-function:var(--ease-out)]"
       />
       {NAV_LINKS.map(({ href, key, icon: Icon }, i) => {
         const active = i === activeIndex;
@@ -76,21 +76,12 @@ export function MainNav() {
             href={href}
             title={t.shell.navHint[key]}
             aria-current={active ? "page" : undefined}
-            className={`group relative flex items-center gap-2.5 rounded-xl p-1.5 transition-colors xl:pr-3.5 ${
-              active ? "text-text" : "text-muted hover:bg-surface-2/70 hover:text-text"
+            className={`relative flex items-center gap-2 rounded-full px-3 py-2 transition-colors lg:px-3.5 ${
+              active ? "text-text" : "text-muted hover:text-text"
             }`}
           >
-            <span
-              className={`flex size-8 shrink-0 items-center justify-center rounded-lg border transition-[background-color,border-color,color,transform] duration-200 group-hover:-translate-y-0.5 ${
-                active
-                  ? "border-transparent bg-gradient-to-b from-accent-2 to-accent text-white"
-                  : "border-line bg-surface-2 text-faint group-hover:border-line-strong group-hover:text-text"
-              }`}
-              style={active ? { boxShadow: "0 3px 0 color-mix(in oklab, var(--accent) 62%, black)" } : undefined}
-            >
-              <Icon className="size-4" />
-            </span>
-            <span className="hidden text-sm font-semibold whitespace-nowrap xl:inline">{t.shell.nav[key]}</span>
+            <Icon className={`size-4 shrink-0 transition-colors ${active ? "text-accent-light" : ""}`} />
+            <span className="hidden text-sm font-medium whitespace-nowrap lg:inline">{t.shell.nav[key]}</span>
           </Link>
         );
       })}
@@ -119,7 +110,10 @@ export function BottomNav() {
   const isActive = useActive();
   const { t } = useI18n();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-bg pb-[env(safe-area-inset-bottom)] md:hidden">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-30 grid border-t border-line bg-bg pb-[env(safe-area-inset-bottom)] md:hidden"
+      style={{ gridTemplateColumns: `repeat(${NAV_LINKS.length}, minmax(0, 1fr))` }}
+    >
       {NAV_LINKS.map(({ href, key, icon: Icon }) => {
         const active = isActive(href);
         return (

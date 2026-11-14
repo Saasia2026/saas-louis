@@ -7,16 +7,16 @@
    (choix de l'utilisateur, voir theme-toggle.tsx) ou, sans choix, si
    l'appareil est en mode clair. */
 :root {
-  --bg: #07060c;
-  --surface: #0f0d16;
-  --surface-2: #16131f;
-  --surface-3: #1e1a2a;
-  --surface-hover: #282338;
-  --line: rgb(255 255 255 / 0.08);
-  --line-strong: rgb(255 255 255 / 0.16);
-  --text: #f8f7fc;
-  --text-muted: #aaa5bd;
-  --text-faint: #6d6882;
+  --bg: #08080b;
+  --surface: #101014;
+  --surface-2: #17171d;
+  --surface-3: #202028;
+  --surface-hover: #2a2a35;
+  --line: rgb(255 255 255 / 0.07);
+  --line-strong: rgb(255 255 255 / 0.13);
+  --text: #f7f7fa;
+  --text-muted: #a5a4b3;
+  --text-faint: #6c6b7c;
   /* Anciennes lueurs néon : devenues des ombres d'élévation neutres, les
      noms restent pour ne pas toucher aux composants. */
   --neon: 0 0 0 1px rgb(255 255 255 / 0.16), 0 24px 56px -16px rgb(0 0 0 / 0.85);
@@ -36,20 +36,23 @@
   --on-primary: #0a0a0a;
   --primary-hover: #ffffff;
   --primary-glow: rgb(255 255 255 / 0.25);
-  --glass-bg: rgb(7 6 12 / 0.88);
-  --composer-bg: rgb(15 13 22 / 0.88);
-  --menu-bg: rgb(22 19 31 / 0.97);
-  --highlight: rgb(255 255 255 / 0.05);
+  --glass-bg: rgb(14 14 18 / 0.92);
+  --composer-bg: rgb(16 16 20 / 0.88);
+  --menu-bg: rgb(23 23 29 / 0.97);
+  --highlight: rgb(255 255 255 / 0.04);
   --gradient-from: #ffffff;
   --gradient-to: #9c9ca6;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   --panel-shadow: 0 0 #0000;
-  --thumb-bg: var(--surface-3);
-  --thumb-shadow: none;
-  --btn-secondary-bg: var(--surface-3);
-  --btn-secondary-hover: var(--surface-hover);
+  /* Barre flottante (en-têtes) : détachée du fond par une ombre, sans flou. */
+  --bar-shadow: 0 12px 32px -16px rgb(0 0 0 / 0.8);
+  --thumb-bg: rgb(255 255 255 / 0.1);
+  --thumb-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 1px 3px rgb(0 0 0 / 0.35);
+  --btn-secondary-bg: rgb(255 255 255 / 0.07);
+  --btn-secondary-hover: rgb(255 255 255 / 0.12);
   --btn-secondary-border: var(--line);
-  --btn-secondary-edge: color-mix(in oklab, var(--surface-3) 55%, black);
+  /* Reflet du haut des boutons pleins. */
+  --btn-sheen: inset 0 1px 0 rgb(255 255 255 / 0.2);
   color-scheme: dark;
 }
 
@@ -152,7 +155,8 @@
   --btn-secondary-bg: #ffffff;
   --btn-secondary-hover: #f6f6f7;
   --btn-secondary-border: var(--line-strong);
-  --btn-secondary-edge: #d4d4da;
+  --bar-shadow: 0 1px 2px rgb(12 12 20 / 0.05), 0 12px 32px -18px rgb(12 12 20 / 0.22);
+  --btn-sheen: inset 0 1px 0 rgb(255 255 255 / 0.25);
   color-scheme: light;
 }
 
@@ -195,7 +199,8 @@
     --btn-secondary-bg: #ffffff;
     --btn-secondary-hover: #f6f6f7;
     --btn-secondary-border: var(--line-strong);
-    --btn-secondary-edge: #d4d4da;
+    --bar-shadow: 0 1px 2px rgb(12 12 20 / 0.05), 0 12px 32px -18px rgb(12 12 20 / 0.22);
+    --btn-sheen: inset 0 1px 0 rgb(255 255 255 / 0.25);
     color-scheme: light;
   }
 }
@@ -379,13 +384,22 @@ body {
 }
 
 ::selection {
-  background: rgb(94 108 242 / 0.35);
+  background: color-mix(in oklab, var(--accent) 40%, transparent);
 }
 
-/* Barres de défilement discrètes, comme dans un logiciel. */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--surface-3) transparent;
+/* Au clavier, l'élément visé se voit toujours : un anneau d'accent, décollé. */
+:where(a, button, summary, [role="tab"], [role="slider"]):focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 2px;
+}
+
+/* Barres de défilement discrètes, comme dans un logiciel. Dans la couche de
+   base : un utilitaire peut les masquer là où elles gênent. */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface-3) transparent;
+  }
 }
 
 /* Large et gras : le logo seulement. */
@@ -569,7 +583,7 @@ html {
 @utility panel {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 1rem;
+  border-radius: 1.5rem;
   box-shadow:
     inset 0 1px 0 var(--highlight),
     var(--panel-shadow);
@@ -580,6 +594,42 @@ html {
    les GPU modestes ; une translucidité plus opaque suffit. */
 @utility glass {
   background: var(--glass-bg);
+}
+
+/* <header> collant de la barre flottante : une marge autour d'elle, et un
+   fondu vers le fond de page pour que le contenu qui défile s'efface avant
+   de passer dessous. Il laisse passer les clics autour de la barre. */
+@utility topbar-shell {
+  position: sticky;
+  top: 0;
+  margin-bottom: -1.25rem;
+  padding: 0.75rem 0.75rem 1.25rem;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--bg) 35%, transparent);
+  @media (width >= 40rem) {
+    padding-inline: 1.5rem;
+  }
+}
+
+/* Barre du haut : une pilule flottante, la même sur l'accueil, le studio et
+   l'espace connecté. */
+@utility topbar {
+  display: flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  background: var(--glass-bg);
+  box-shadow:
+    inset 0 1px 0 var(--highlight),
+    var(--bar-shadow);
+}
+
+/* Rail d'un sélecteur (onglets, choix segmentés) : l'option choisie y est
+   une pastille .thumb. */
+@utility rail {
+  border-radius: 9999px;
+  background: var(--surface-2);
+  padding: 0.25rem;
 }
 
 /* Carte survolée : elle se soulève à peine, ses bords se précisent. */
@@ -643,8 +693,8 @@ html {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.875rem;
-  padding: 0.625rem 1rem;
+  border-radius: 9999px;
+  padding: 0.625rem 1.125rem;
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.25rem;
@@ -652,8 +702,8 @@ html {
   transition:
     background-color 150ms,
     border-color 150ms,
-    box-shadow 120ms var(--ease-out),
-    transform 120ms var(--ease-out),
+    color 150ms,
+    transform 150ms var(--ease-out),
     filter 150ms,
     opacity 150ms;
   & svg {
@@ -664,9 +714,9 @@ html {
   &:hover:not(:disabled) svg:last-child:not(:first-child) {
     transform: translateX(2px);
   }
-  /* À l'appui, le bouton descend sur son bord (voir les boutons en relief). */
+  /* À l'appui, le bouton se tasse à peine. */
   &:active:not(:disabled) {
-    transform: translateY(2px);
+    transform: scale(0.97);
   }
   &:disabled {
     cursor: not-allowed;
@@ -674,60 +724,42 @@ html {
   }
 }
 
-/* Boutons en relief : un bord plein, plus sombre que le bouton, dessous ;
-   il s'écrase de moitié à l'appui. */
+/* Boutons à plat, en pilule : la couleur fait le bouton, un reflet fin en
+   haut lui donne du corps. Ni bord en relief, ni lueur. */
 @utility btn-primary {
-  --btn-edge: color-mix(in oklab, var(--text) 62%, black);
   background: var(--text);
   color: var(--on-primary);
-  box-shadow: 0 4px 0 var(--btn-edge);
   &:hover:not(:disabled) {
     background: var(--primary-hover);
-  }
-  &:active:not(:disabled) {
-    box-shadow: 0 2px 0 var(--btn-edge);
   }
 }
 
 /* Bouton d'action forte : l'accent, en léger dégradé. */
 @utility btn-accent {
-  --btn-edge: color-mix(in oklab, var(--accent) 62%, black);
   color: #fff;
   background: linear-gradient(180deg, var(--accent-2), var(--accent));
-  box-shadow: 0 4px 0 var(--btn-edge);
+  box-shadow: var(--btn-sheen);
   &:hover:not(:disabled) {
-    filter: brightness(1.07);
-  }
-  &:active:not(:disabled) {
-    box-shadow: 0 2px 0 var(--btn-edge);
+    filter: brightness(1.1);
   }
 }
 
 @utility btn-hot {
-  --btn-edge: color-mix(in oklab, var(--accent-hot) 62%, black);
   color: #fff;
   background: linear-gradient(180deg, color-mix(in oklab, var(--accent-hot) 85%, white), var(--accent-hot));
-  box-shadow: 0 4px 0 var(--btn-edge);
+  box-shadow: var(--btn-sheen);
   &:hover:not(:disabled) {
-    filter: brightness(1.07);
-  }
-  &:active:not(:disabled) {
-    box-shadow: 0 2px 0 var(--btn-edge);
+    filter: brightness(1.1);
   }
 }
 
 @utility btn-secondary {
-  --btn-edge: var(--btn-secondary-edge);
   background: var(--btn-secondary-bg);
   border: 1px solid var(--btn-secondary-border);
   color: var(--text);
-  box-shadow: 0 4px 0 var(--btn-edge);
   &:hover:not(:disabled) {
     border-color: var(--line-strong);
     background: var(--btn-secondary-hover);
-  }
-  &:active:not(:disabled) {
-    box-shadow: 0 2px 0 var(--btn-edge);
   }
 }
 
@@ -743,8 +775,8 @@ html {
   width: 100%;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 0.625rem;
-  padding: 0.625rem 0.875rem;
+  border-radius: 0.875rem;
+  padding: 0.6875rem 0.9375rem;
   font-size: 0.875rem;
   color: var(--text);
   outline: none;
@@ -877,16 +909,11 @@ html {
 @utility composer {
   position: relative;
   background: var(--surface);
-  border: 1px solid var(--line-strong);
-  border-radius: 1rem;
-  box-shadow: var(--neon-soft);
-  transition:
-    border-color 250ms,
-    box-shadow 250ms;
-  &:focus-within {
-    border-color: var(--accent);
-    box-shadow: var(--neon);
-  }
+  border: 1px solid var(--line);
+  border-radius: 1.75rem;
+  box-shadow:
+    inset 0 1px 0 var(--highlight),
+    0 24px 60px -28px rgb(0 0 0 / 0.7);
 }
 
 /* Option choisie d'un sélecteur (onglets, choix segmentés) : en clair, un
@@ -958,7 +985,7 @@ html {
   position: absolute;
   z-index: 40;
   min-width: 13rem;
-  border-radius: 0.875rem;
+  border-radius: 1.125rem;
   border: 1px solid var(--line-strong);
   background: var(--menu-bg);
   backdrop-filter: blur(16px);

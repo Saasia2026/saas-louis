@@ -103,7 +103,7 @@ export default async function PlanningPage(props: PageProps<"/dashboard/planning
       {notice && (
         <p
           role="status"
-          className={`mt-8 rounded-xl border px-4 py-3 text-sm ${
+          className={`mt-8 rounded-2xl border px-4 py-3 text-sm ${
             notice.ok ? "border-success/30 bg-success/10 text-success" : "border-danger/30 bg-danger/10 text-danger"
           }`}
         >

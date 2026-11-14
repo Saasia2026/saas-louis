@@ -25,15 +25,15 @@ export default async function GuestStudioPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
       <ParticleField subtle />
-      <header className="glass sticky top-0 z-20 border-b border-line">
-        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5 sm:px-6">
+      <header className="topbar-shell z-20">
+        <div className="topbar pointer-events-auto mx-auto max-w-7xl gap-3 py-1.5 pr-2 pl-4">
           <Logo className="min-w-0 shrink" />
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <div className="flex items-center">
               <ThemeToggle />
               <LanguageSwitcher />
             </div>
-            <Link href="/login?next=/dashboard/generate" className="btn btn-secondary px-3 py-2 text-[0.8125rem]">
+            <Link href="/login?next=/dashboard/generate" className="btn btn-primary px-4 py-2 text-[0.8125rem]">
               {t.login.submitSignIn}
             </Link>
           </div>

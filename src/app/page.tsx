@@ -63,10 +63,10 @@ export default async function Home() {
     <div className="flex flex-1 flex-col overflow-x-clip">
       <SmoothScroll />
       <VideoWall />
-      <header className="glass sticky top-0 z-30 border-b border-line">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
+      <header className="topbar-shell z-30">
+        <div className="topbar pointer-events-auto mx-auto max-w-6xl justify-between gap-2 py-1.5 pr-2 pl-4">
           <Logo className="min-w-0 shrink" />
-          <nav className="flex shrink-0 items-center gap-0.5 text-sm sm:gap-1">
+          <nav className="flex shrink-0 items-center gap-0.5 text-sm">
             <a href="#exemples" className="btn btn-ghost hidden px-3 sm:inline-flex">
               {L.examples}
             </a>
@@ -81,7 +81,7 @@ export default async function Home() {
             </a>
             <ThemeToggle />
             <LanguageSwitcher />
-            <Link href={studio} className="btn btn-accent ml-0.5 shrink-0 px-3 text-[0.8125rem] sm:ml-1 sm:px-5 sm:text-sm">
+            <Link href={studio} className="btn btn-accent ml-1 shrink-0 px-3.5 py-2 text-[0.8125rem] sm:px-5 sm:text-sm">
               {loggedIn ? L.studioShort : L.start}
               <ArrowRight className="hidden sm:inline-flex" />
             </Link>
@@ -268,7 +268,7 @@ export default async function Home() {
               return (
                 <li
                   key={pack.id}
-                  className={`flex animate-fade-up flex-col rounded-2xl border p-6 transition-transform duration-200 hover:-translate-y-1 ${featured ? "ring-2 ring-accent/40 lg:scale-[1.03]" : ""}`}
+                  className={`flex animate-fade-up flex-col rounded-3xl border p-6 transition-transform duration-200 hover:-translate-y-1 ${featured ? "ring-2 ring-accent/40 lg:scale-[1.03]" : ""}`}
                   style={{ ...tierCard(tier.color, featured ? tier.strength + 6 : tier.strength), animationDelay: `${i * 90}ms` }}
                 >
                   <div className="flex flex-wrap items-center gap-2">
@@ -297,7 +297,7 @@ export default async function Home() {
           </ul>
           {/* Sans pack : la carte paie chaque vidéo au lancement. */}
           <div
-            className="mt-5 flex animate-fade-up flex-col gap-6 rounded-2xl border p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between"
+            className="mt-5 flex animate-fade-up flex-col gap-6 rounded-3xl border p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between"
             style={tierCard("var(--accent)", 20)}
           >
             <div className="min-w-0">

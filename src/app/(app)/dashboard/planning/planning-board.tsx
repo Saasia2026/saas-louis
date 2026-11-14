@@ -191,7 +191,7 @@ export function PlanningBoard({
                   {day}
                 </span>
               </p>
-              {slots.length === 0 && <div className="h-24 rounded-xl border border-line/60 bg-surface/40" />}
+              {slots.length === 0 && <div className="h-24 rounded-2xl border border-line/60 bg-surface/40" />}
               {slots.map((entry) => {
                 const post = entry.post;
                 if (!post) {
@@ -201,7 +201,7 @@ export function PlanningBoard({
                       type="button"
                       disabled={!enabled}
                       onClick={() => setPicking(entry.at)}
-                      className="group flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-xl border border-line bg-surface-2/50 text-sm transition-[border-color,background-color,translate] duration-200 hover:-translate-y-0.5 hover:border-accent/50 hover:bg-surface-2 disabled:pointer-events-none disabled:opacity-50"
+                      className="group flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface-2/50 text-sm transition-[border-color,background-color,translate] duration-200 hover:-translate-y-0.5 hover:border-accent/50 hover:bg-surface-2 disabled:pointer-events-none disabled:opacity-50"
                     >
                       <span className="text-xs font-semibold text-muted tabular-nums">{timeOf(entry.at)}</span>
                       <span className="flex size-9 items-center justify-center rounded-full bg-gradient-to-b from-accent-2 to-accent text-white transition-transform group-hover:scale-105">
@@ -215,7 +215,7 @@ export function PlanningBoard({
                 return (
                   <div
                     key={entry.at + post.id}
-                    className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-line bg-black bg-clip-padding"
+                    className="group relative aspect-[3/4] overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding"
                   >
                     {video ? (
                       <video
@@ -315,7 +315,7 @@ function PickerDialog({ title, onClose, children }: { title: string; onClose: ()
       >
         <div className="flex items-start justify-between gap-4">
           <h3 className="text-lg font-semibold first-letter:uppercase">{title}</h3>
-          <button type="button" onClick={onClose} aria-label={t.planning.close} className="btn btn-ghost p-2">
+          <button type="button" onClick={onClose} aria-label={t.planning.close} className="btn btn-ghost size-9 p-0">
             <X />
           </button>
         </div>
@@ -421,7 +421,7 @@ function RhythmEditor({
   const { t } = useI18n();
   const P = t.planning;
   const pill =
-    "flex cursor-pointer items-center justify-center rounded-lg border border-line bg-surface-2/60 px-2.5 py-1.5 text-sm font-medium text-muted transition-colors has-[:checked]:border-accent/60 has-[:checked]:bg-accent-soft has-[:checked]:text-text";
+    "flex cursor-pointer items-center justify-center rounded-full border border-line bg-surface-2/60 px-3 py-1.5 text-sm font-medium text-muted transition-colors has-[:checked]:border-accent/60 has-[:checked]:bg-accent-soft has-[:checked]:text-text";
   const timeInputs = Array.from({ length: MAX_PLAN_TIMES }, (_, i) => plan.times[i] ?? "");
   return (
     <form action={savePlan} className="panel mt-4 grid animate-fade-up gap-5 p-5 md:grid-cols-2">

@@ -51,7 +51,7 @@ export function PromptText({ prompt }: { prompt: string }) {
     <p className="max-h-40 overflow-y-auto text-[0.9375rem] leading-relaxed break-words whitespace-pre-wrap text-muted">
       {prompt.split(/(@(?:image\d+|video)\b)/gi).map((part, i) =>
         i % 2 ? (
-          <span key={i} className="rounded-md bg-accent-soft px-1 py-0.5 font-semibold text-accent-light">
+          <span key={i} className="rounded-full bg-accent-soft px-2 py-0.5 font-semibold text-accent-light">
             {part}
           </span>
         ) : (
@@ -86,7 +86,7 @@ export function RefStrip({ item }: { item: Pick<SwapHistoryItem, "clip" | "refs"
             aria-label={ref.label}
             title={ref.label}
             onClick={() => setOpen(ref)}
-            className="group relative size-16 shrink-0 overflow-hidden rounded-xl border border-white/[0.08] bg-black bg-clip-padding transition-all duration-200 hover:border-white/20 hover:ring-1 hover:ring-white/10"
+            className="group relative size-16 shrink-0 overflow-hidden rounded-2xl bg-black ring-1 ring-line transition-shadow duration-200 hover:ring-line-strong"
           >
             {ref.kind === "video" ? (
               <>

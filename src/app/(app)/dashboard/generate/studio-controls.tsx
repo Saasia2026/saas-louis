@@ -77,7 +77,7 @@ export function Popover({
       ref={box}
       role="dialog"
       style={{ top: place?.top ?? -9999, left: place?.left ?? -9999, width }}
-      className="fixed z-50 max-h-[min(28rem,calc(100dvh-1rem))] animate-fade-up overflow-y-auto rounded-2xl border border-line-strong bg-surface p-1.5 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.55)]"
+      className="fixed z-50 max-h-[min(28rem,calc(100dvh-1rem))] animate-fade-up overflow-y-auto rounded-3xl border border-line-strong bg-surface p-2 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.55)]"
     >
       {children}
     </div>,
@@ -108,8 +108,8 @@ export function SettingRow({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors ${
-          open ? "border-line-strong bg-surface-2" : "border-line bg-surface-2/60 hover:border-line-strong hover:bg-surface-2"
+        className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-colors ${
+          open ? "bg-surface-3" : "bg-surface-2/60 hover:bg-surface-2"
         }`}
       >
         <span className="min-w-0 flex-1">
@@ -151,12 +151,16 @@ export function Option({
       role="menuitemradio"
       aria-checked={selected}
       onClick={onSelect}
-      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+      className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors ${
         selected ? "bg-surface-2" : "hover:bg-surface-2/70"
       }`}
     >
       {Icon && (
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-2 text-muted">
+        <span
+          className={`flex size-9 shrink-0 items-center justify-center rounded-full transition-colors ${
+            selected ? "bg-accent-soft text-accent-light" : "bg-surface-3 text-muted"
+          }`}
+        >
           <Icon className="size-4" />
         </span>
       )}
@@ -175,7 +179,7 @@ export function Option({
 
 export function ModelBadge({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-md bg-accent-soft px-1.5 py-px text-[0.6875rem] font-semibold text-accent-light">
+    <span className="rounded-full bg-accent-soft px-2 py-px text-[0.6875rem] font-semibold text-accent-light">
       {children}
     </span>
   );
@@ -184,7 +188,7 @@ export function ModelBadge({ children }: { children: React.ReactNode }) {
 // Petite étiquette grise dans le détail d'un choix (résolution, durée).
 export function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-md border border-line px-1.5 py-px text-[0.6875rem] tabular-nums">{children}</span>
+    <span className="rounded-full bg-surface-3 px-2 py-px text-[0.6875rem] tabular-nums">{children}</span>
   );
 }
 
@@ -212,7 +216,7 @@ export function ModelCard({
   return (
     <div
       ref={box}
-      className="relative isolate h-36 overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding"
+      className="relative isolate h-36 overflow-hidden rounded-[1.25rem] bg-black"
     >
       <video
         src="/examples/shinka-card.mp4"
@@ -234,7 +238,7 @@ export function ModelCard({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="absolute top-2.5 right-2.5 inline-flex items-center gap-1.5 rounded-lg bg-black/55 px-2.5 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition-colors hover:bg-black/75"
+        className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/25"
       >
         {changeLabel}
       </button>
@@ -274,11 +278,11 @@ export function ModeTabs({
 }) {
   const [hover, setHover] = useState<StudioMode | null>(null);
   return (
-    <div role="tablist" className="relative grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface-2/60 p-1">
+    <div role="tablist" className="rail relative grid grid-cols-2 gap-1">
       {/* Fond de l'onglet actif : il glisse d'un onglet à l'autre. */}
       <span
         aria-hidden
-        className="absolute inset-y-1 left-1 w-[calc(50%-0.375rem)] rounded-lg border border-line-strong thumb transition-transform duration-300 [transition-timing-function:var(--ease-out)]"
+        className="thumb absolute inset-y-1 left-1 w-[calc(50%-0.375rem)] rounded-full transition-transform duration-300 [transition-timing-function:var(--ease-out)]"
         style={{ transform: value === "transfer" ? "translateX(calc(100% + 0.25rem))" : undefined }}
       />
       {(["replace", "transfer"] as const).map((m) => {
@@ -294,7 +298,7 @@ export function ModeTabs({
             onPointerLeave={() => setHover(null)}
             onFocus={() => setHover(m)}
             onBlur={() => setHover(null)}
-            className={`relative flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${
+            className={`relative flex items-center justify-center gap-1.5 rounded-full px-2 py-2 text-sm font-semibold transition-colors ${
               value === m ? "text-text" : "text-muted hover:text-text"
             }`}
           >
@@ -303,7 +307,7 @@ export function ModeTabs({
             {hover === m && (
               <span
                 role="tooltip"
-                className={`pointer-events-none absolute top-full z-40 mt-2 w-60 animate-fade-up ${m === "replace" ? "left-0" : "right-0"} overflow-hidden rounded-xl border border-line-strong bg-surface text-left shadow-[0_20px_50px_-12px_rgb(0_0_0/0.6)]`}
+                className={`pointer-events-none absolute top-full z-40 mt-2 w-60 animate-fade-up ${m === "replace" ? "left-0" : "right-0"} overflow-hidden rounded-2xl border border-line-strong bg-surface text-left shadow-[0_20px_50px_-12px_rgb(0_0_0/0.6)]`}
               >
                 <video
                   src={`${video}.mp4`}
@@ -340,7 +344,7 @@ export function PanelTabs<T extends string>({
   tabs: { value: T; label: string; icon: LucideIcon }[];
 }) {
   return (
-    <div role="tablist" className="flex flex-wrap gap-1">
+    <div role="tablist" className="rail inline-flex max-w-full gap-1 overflow-x-auto border border-line">
       {tabs.map(({ value: v, label, icon: Icon }) => (
         <button
           key={v}
@@ -348,11 +352,11 @@ export function PanelTabs<T extends string>({
           role="tab"
           aria-selected={value === v}
           onClick={() => onChange(v)}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-            value === v ? "bg-surface-2 text-text" : "text-muted hover:bg-surface-2/60 hover:text-text"
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+            value === v ? "thumb text-text" : "text-muted hover:text-text"
           }`}
         >
-          <Icon className="size-4" />
+          <Icon className={`size-4 ${value === v ? "text-accent-light" : ""}`} />
           {label}
         </button>
       ))}

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CirclePlay,
   Clock,
   Download,
   Film,
@@ -81,7 +80,7 @@ export function HistoryList({
   return (
     <ul className="@container w-full space-y-4">
       {items.map((item) => (
-        <li key={item.id} className="grid animate-fade-up gap-3 @[40rem]:grid-cols-[minmax(0,1fr)_minmax(0,21rem)]">
+        <li key={item.id} className="grid animate-fade-up gap-2.5 @[40rem]:grid-cols-[minmax(0,1fr)_minmax(0,21rem)]">
           <Stage item={item} />
           <Details item={item} onReuse={onReuse} />
         </li>
@@ -97,10 +96,10 @@ function Stage({ item }: { item: SwapHistoryItem }) {
   const V = t.videos;
   const player = usePlayer({ muted: false });
   return (
-    <div className="relative flex min-h-64 flex-col gap-2 overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-surface-2/70 to-surface/30 p-3">
+    <div className="panel relative flex min-h-64 flex-col gap-2 overflow-hidden p-3">
       <div className="flex flex-1 items-center justify-center">
         <div
-          className={`group relative overflow-hidden rounded-xl bg-black ${FRAME[item.aspectRatio]}`}
+          className={`group relative overflow-hidden rounded-2xl bg-black ${FRAME[item.aspectRatio]}`}
           style={{ aspectRatio: item.aspectRatio.replace(":", " / ") }}
         >
           {item.mediaUrl ? (
@@ -151,7 +150,7 @@ function Details({ item, onReuse }: { item: SwapHistoryItem; onReuse?: (item: Sw
   const S = t.studio;
   const reuseClass = "btn btn-secondary";
   return (
-    <div className="flex min-w-0 flex-col gap-4 rounded-2xl border border-white/[0.06] bg-surface p-4">
+    <div className="panel flex min-w-0 flex-col gap-4 p-5">
       <span className="inline-flex items-center gap-2 self-start rounded-full bg-accent-soft px-3.5 py-1.5 text-sm font-semibold text-accent-light">
         <Sparkles className="size-4" />
         {item.settings.model === "max" ? S.modelMax : S.modelStandard} · {item.transfer ? S.modeTransfer : S.modeReplace}
@@ -171,7 +170,7 @@ function Details({ item, onReuse }: { item: SwapHistoryItem; onReuse?: (item: Sw
         )}
       </div>
       {item.incomplete && (
-        <p className="inline-flex items-center gap-1.5 self-start rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">
+        <p className="inline-flex items-center gap-1.5 self-start rounded-full bg-warning/10 px-3 py-1.5 text-xs font-medium text-warning">
           <TriangleAlert className="size-3.5" />
           {item.incomplete}
         </p>
@@ -201,7 +200,7 @@ function Details({ item, onReuse }: { item: SwapHistoryItem; onReuse?: (item: Sw
           id={item.id}
           confirm={V.deleteConfirm}
           icon={Trash2}
-          className="size-9 rounded-lg text-muted hover:bg-red-500/15 hover:text-red-400"
+          className="size-9 text-muted hover:bg-danger/15 hover:text-danger"
         />
       </div>
     </div>
@@ -357,19 +356,15 @@ export function HistoryEmpty() {
   };
 
   return (
-    <div ref={root} className="panel animate-fade-up p-5">
-      <p className="flex items-center gap-1.5 text-xs font-semibold text-accent-light">
-        <CirclePlay className="size-3.5" />
-        {D.title}
-      </p>
-      <ol className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div ref={root} className="panel animate-fade-up p-4 sm:p-5">
+      <ol aria-label={D.title} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {D.steps.map((s, i) => {
           const active = shown === i;
           return (
             <li key={s.title} className={`transition-opacity duration-300 ${active || reduced ? "" : "opacity-55"}`}>
               <div
-                className={`relative aspect-[9/16] overflow-hidden rounded-xl border bg-surface-2/40 bg-clip-padding transition-colors duration-300 ${
-                  active ? "border-accent/60" : i === 2 ? "border-line" : "border-line"
+                className={`relative aspect-[9/16] overflow-hidden rounded-2xl border bg-surface-2/40 bg-clip-padding transition-colors duration-300 ${
+                  active ? "border-accent/60" : "border-line"
                 }`}
               >
                 {visual(i)}

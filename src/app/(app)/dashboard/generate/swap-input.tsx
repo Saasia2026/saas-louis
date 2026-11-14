@@ -348,7 +348,7 @@ export function SwapInput({
   return (
     <div className="space-y-3 px-4 pt-4 pb-2">
       {/* Le clip : carte penchée une fois déposé. */}
-      <div className="rounded-2xl bg-surface-2/60">
+      <div className="rounded-[1.25rem] bg-surface-2/60">
         {video ? (
           <VideoCard
             file={video}
@@ -370,7 +370,7 @@ export function SwapInput({
             accept="video/*"
             disabled={uploading !== null}
             title={fmt(t.studio.videoHint, { max: maxSeconds })}
-            className="group relative flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-dashed border-line px-4 text-center transition-colors hover:border-accent/50 hover:bg-surface-2"
+            className="group relative flex aspect-video w-full flex-col items-center justify-center rounded-[1.25rem] px-4 text-center transition-colors hover:bg-surface-2"
           >
             <GlassBubble className="size-16 group-hover:scale-105">
               <CameraGlyph className="size-7" />
@@ -383,7 +383,7 @@ export function SwapInput({
               })}
             </span>
             {uploading === "video" && (
-              <span className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/60 text-sm text-white">
+              <span className="absolute inset-0 flex items-center justify-center rounded-[1.25rem] bg-black/60 text-sm text-white">
                 {t.studio.uploading}
               </span>
             )}
@@ -399,7 +399,7 @@ export function SwapInput({
       </div>
 
       {/* Les images : une tuile « + », puis chaque image, citée @image1… */}
-      <div className="rounded-2xl bg-surface-2/60 px-4 py-8">
+      <div className="rounded-[1.25rem] bg-surface-2/60 px-4 py-8">
         {/* Aucune image : le trio personnage · tenue · objet invite à en
             ajouter ; ensuite, une tuile « + » en tête de la rangée. Le prompt
             dit ce que chaque image remplace. */}
@@ -497,9 +497,9 @@ export function SwapInput({
 
       {/* Le nouveau lieu : même dépôt que le clip, puis la photo en grand. */}
       {showDecor && (
-        <div className="rounded-2xl bg-surface-2/60">
+        <div className="rounded-[1.25rem] bg-surface-2/60">
           {decorPhoto ? (
-            <div className="relative aspect-video overflow-hidden rounded-2xl border border-white/10 bg-black bg-clip-padding">
+            <div className="relative aspect-video overflow-hidden rounded-[1.25rem] bg-black">
               {/* Aperçu local (blob:) : pas d'optimisation Next. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={decorPhoto.previewUrl} alt={t.studio.decorImage} className="size-full object-cover" />
@@ -527,7 +527,7 @@ export function SwapInput({
               accept="image/*"
               disabled={uploading !== null}
               label={t.studio.decorImage}
-              className="group relative flex aspect-[16/7] w-full flex-col items-center justify-center rounded-2xl border border-dashed border-line px-4 text-center transition-colors hover:border-accent/50 hover:bg-surface-2"
+              className="group relative flex aspect-[16/7] w-full flex-col items-center justify-center rounded-[1.25rem] px-4 text-center transition-colors hover:bg-surface-2"
             >
               <GlassBubble className="size-14 group-hover:scale-105">
                 <MountainGlyph className="size-6" />
@@ -535,7 +535,7 @@ export function SwapInput({
               <span className="mt-2.5 text-sm leading-snug font-medium">{t.studio.decorDrop}</span>
               <span className="mt-0.5 text-xs text-muted">{t.studio.decorDropSub}</span>
               {uploading === "decor" && (
-                <span className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/60 text-sm text-white">
+                <span className="absolute inset-0 flex items-center justify-center rounded-[1.25rem] bg-black/60 text-sm text-white">
                   {t.studio.uploading}
                 </span>
               )}
@@ -758,7 +758,7 @@ function PromptBox({
   }
 
   return (
-    <div className="overflow-visible rounded-2xl bg-surface-2/60">
+    <div className="overflow-visible rounded-[1.25rem] bg-surface-2/60">
       <button
         type="button"
         onClick={() => {

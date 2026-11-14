@@ -52,7 +52,7 @@ export function Modal({
         role="dialog"
         aria-modal
         aria-label={label}
-        className={`flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-2xl border border-line-strong bg-surface shadow-[0_24px_60px_-12px_rgb(0_0_0/0.6)] sm:rounded-2xl ${className}`}
+        className={`flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-line-strong bg-surface shadow-[0_24px_60px_-12px_rgb(0_0_0/0.6)] sm:rounded-3xl ${className}`}
       >
         {children}
       </div>
@@ -160,7 +160,7 @@ export function MediaLibrary({
     <Modal label={S.libraryTitle} onClose={onClose} className="sm:max-w-4xl">
       <header className="flex items-center gap-3 px-4 pt-4 pb-3 sm:px-5">
         <h2 className="text-base font-semibold">{S.libraryTitle}</h2>
-        <div role="tablist" className="ml-2 flex gap-1">
+        <div role="tablist" className="rail ml-2 flex gap-1">
           {(["recent", "all"] as const).map((s) => (
             <button
               key={s}
@@ -168,8 +168,8 @@ export function MediaLibrary({
               role="tab"
               aria-selected={scope === s}
               onClick={() => setScope(s)}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                scope === s ? "bg-surface-2 text-text" : "text-muted hover:bg-surface-2/60 hover:text-text"
+              className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                scope === s ? "thumb text-text" : "text-muted hover:text-text"
               }`}
             >
               {s === "recent" ? S.libraryRecent : S.libraryAll}
@@ -182,7 +182,7 @@ export function MediaLibrary({
 
       <div className="min-h-0 flex-1 overflow-y-auto border-t border-line px-4 py-4 sm:px-5">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-          <label className="group flex aspect-square cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-line-strong text-center transition-colors hover:border-accent/60 hover:bg-surface-2">
+          <label className="group flex aspect-square cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl bg-surface-2/60 text-center transition-colors hover:bg-surface-2">
             <input
               type="file"
               accept={kind === "video" ? "video/*" : "image/*"}
@@ -202,7 +202,7 @@ export function MediaLibrary({
 
           {items === null &&
             Array.from({ length: 7 }, (_, i) => (
-              <div key={i} className="aspect-square animate-pulse rounded-xl bg-surface-2" />
+              <div key={i} className="aspect-square animate-pulse rounded-2xl bg-surface-2" />
             ))}
 
           {Array.isArray(items) &&
@@ -294,7 +294,7 @@ function Tile({
       onClick={onChoose}
       onPointerEnter={(e) => e.pointerType === "mouse" && video.current && playInline(video.current)}
       onPointerLeave={() => video.current?.pause()}
-      className={`group relative aspect-square overflow-hidden rounded-xl border bg-black bg-clip-padding transition-[border-color,opacity] ${
+      className={`group relative aspect-square overflow-hidden rounded-2xl border bg-black bg-clip-padding transition-[border-color,opacity] ${
         selected ? "border-accent shadow-[0_0_0_1px_var(--accent)]" : "border-line hover:border-line-strong"
       } ${disabled && !selected ? "opacity-40" : ""}`}
     >

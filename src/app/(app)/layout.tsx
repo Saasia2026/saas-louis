@@ -46,10 +46,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           concentré, le site reste un seul monde. */}
       <ParticleField subtle />
 
-      {/* Barre du haut, sur toute la largeur : la navigation y tient en une
+      {/* Barre du haut, en pilule flottante : la navigation y tient en une
           ligne et laisse tout l'écran au contenu. */}
-      <header className="glass sticky top-0 z-20 border-b border-line">
-        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5 sm:px-6">
+      <header className="topbar-shell z-20">
+        <div className="topbar pointer-events-auto mx-auto max-w-7xl gap-3 py-1.5 pr-2 pl-4">
           <div className="shrink-0">
             <Logo href="/dashboard" compact />
           </div>
@@ -57,23 +57,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <MainNav />
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
             {/* Solde en grand (sa durée de vidéo en infobulle), avec la recharge. */}
-            <div
-              title={videoLabel}
-              className="flex items-center gap-2.5 rounded-xl border border-line bg-surface-2/80 py-1 pr-1 pl-3"
-            >
+            <div title={videoLabel} className="flex items-center gap-2 rounded-full bg-surface-2 py-1 pr-1 pl-3.5">
               <Coins className="size-4 shrink-0 text-accent-light" />
               <span className="min-w-0">
                 <span className="block max-w-[9rem] truncate font-headline text-lg leading-none tabular-nums sm:max-w-none">
                   {creditsLabel}
                 </span>
               </span>
-              <Link
-                href="/dashboard/credits"
-                title={t.shell.recharge}
-                className="btn btn-accent px-2.5 py-2.5 text-[0.8125rem] sm:py-1.5"
-              >
+              <Link href="/dashboard/credits" title={t.shell.recharge} className="btn btn-accent size-9 p-0 sm:size-8">
                 <Plus />
                 <span className="sr-only">{t.shell.recharge}</span>
               </Link>
@@ -86,12 +79,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
             <span
               title={displayName}
-              className="hidden size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-surface-3 to-surface-2 text-xs font-semibold uppercase ring-1 ring-line-strong xl:flex"
+              className="hidden size-8 shrink-0 items-center justify-center rounded-full bg-surface-3 text-xs font-semibold uppercase xl:flex"
             >
               {displayName.charAt(0)}
             </span>
             <form action={signOut}>
-              <button type="submit" title={t.common.signOut} className="btn btn-ghost p-2">
+              <button type="submit" title={t.common.signOut} className="btn btn-ghost size-9 p-0">
                 <LogOut />
                 <span className="sr-only">{t.common.signOut}</span>
               </button>

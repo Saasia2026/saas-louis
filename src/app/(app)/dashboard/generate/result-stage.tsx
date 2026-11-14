@@ -35,7 +35,7 @@ export function ResultStage({
     <>
       <div className="relative flex flex-col items-center gap-3 px-4 pt-5 pb-4 sm:px-20">
         <div
-          className={`relative flex items-center justify-center overflow-hidden rounded-xl border border-line bg-black bg-clip-padding ${frame.className}`}
+          className={`relative flex items-center justify-center overflow-hidden rounded-2xl bg-black ${frame.className}`}
           style={{ aspectRatio: aspectRatio.replace(":", " / "), height: frame.height }}
         >
           {backdrop && !player.ready && (
@@ -94,7 +94,7 @@ export function StageAction({
   disabled?: boolean;
 }) {
   const className =
-    "flex size-10 items-center justify-center rounded-full border border-line bg-surface-3 text-muted transition-colors hover:bg-[var(--surface-hover)] hover:text-text disabled:opacity-50";
+    "flex size-10 items-center justify-center rounded-full bg-surface-3 text-muted transition-colors hover:bg-[var(--surface-hover)] hover:text-text disabled:opacity-50";
   const icon = <Icon className="size-[1.125rem]" />;
   return href ? (
     <a href={href} aria-label={label} title={label} className={className}>

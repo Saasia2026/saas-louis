@@ -149,7 +149,7 @@ function RefundCard({ clip, status, refunded, balance, balanceValue, poster, act
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={poster} alt="" className="absolute inset-0 size-full scale-110 object-cover opacity-70 blur-2xl saturate-150 pointer-coarse:hidden" />
       <span className="absolute inset-0 bg-black/45" />
-      <div className="relative w-full max-w-sm rounded-2xl border border-line bg-surface p-5 shadow-[0_30px_60px_-30px_rgb(0_0_0/0.7)]">
+      <div className="relative w-full max-w-sm rounded-3xl border border-line bg-surface p-5 shadow-[0_30px_60px_-30px_rgb(0_0_0/0.7)]">
         <div className="flex items-center gap-3.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={poster} alt="" className="h-16 w-11 shrink-0 rounded-lg object-cover" />
