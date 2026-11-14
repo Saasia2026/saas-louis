@@ -26,7 +26,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { playInline } from "@/app/inline-video";
 import { usePauseWhenHidden } from "@/app/pause-hidden";
-import { PlayerBar, usePlayer } from "@/app/video-player";
+import { usePlayer } from "@/app/video-player";
 import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import type { AspectRatio } from "@/lib/generation";
@@ -130,17 +130,14 @@ function Stage({ item }: { item: SwapHistoryItem }) {
         </div>
       </div>
       {item.mediaUrl && (
-        <>
-          <PlayerBar player={player} />
-          <a
-            href={item.downloadUrl ?? item.mediaUrl}
-            aria-label={V.download}
-            title={V.download}
-            className={`absolute top-3 right-3 ${STAGE_BUTTON}`}
-          >
-            <Download className="size-[1.125rem]" />
-          </a>
-        </>
+        <a
+          href={item.downloadUrl ?? item.mediaUrl}
+          aria-label={V.download}
+          title={V.download}
+          className={`absolute top-3 right-3 ${STAGE_BUTTON}`}
+        >
+          <Download className="size-[1.125rem]" />
+        </a>
       )}
     </div>
   );
