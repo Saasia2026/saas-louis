@@ -279,6 +279,7 @@ export const fr = {
     explain:
       "Les gestes, le décor, la caméra et le son viennent de ton clip : seul le personnage change. Utilise un clip que tu as le droit de réutiliser.",
     launch: "Générer",
+    launched: "Rendu lancé — tu peux en lancer un autre",
     costFrom: "Dès {cost} {credits}",
     payByCard: "Il te manque {n} crédits : {price} seront débités de ta carte au lancement.",
     notEnoughCredits: "Il te manque {n} crédits : « Générer » t'emmène au paiement, ton projet est gardé.",

@@ -277,6 +277,7 @@ export const en: Dictionary = {
     explain:
       "Moves, set, camera and sound come from your clip: only the character changes. Use a clip you have the right to reuse.",
     launch: "Generate",
+    launched: "Rendering started — you can launch another",
     costFrom: "From {cost} {credits}",
     payByCard: "You need {n} more credits: {price} will be charged to your card at launch.",
     notEnoughCredits: "You need {n} more credits: Generate takes you to checkout, your project is kept.",

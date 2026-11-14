@@ -55,6 +55,8 @@ export const GENJUTSU_RATES: Record<GenjutsuModel, Record<SwapQuality, number>> 
 };
 export const DEFAULT_GENJUTSU_MODEL: GenjutsuModel = "max";
 export const DEFAULT_SWAP_QUALITY: SwapQuality = "720p";
+// Qualités proposées au studio ; le 480p ne sert plus qu'aux rendus existants.
+export const STUDIO_QUALITIES: SwapQuality[] = ["720p", "1080p"];
 // Genjutsu Light ne lit que les 15 premières secondes de la vidéo reçue.
 export const GENJUTSU_LIGHT_MAX_SECONDS = 15;
 

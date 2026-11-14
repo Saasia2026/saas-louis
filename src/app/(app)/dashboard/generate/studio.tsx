@@ -1,6 +1,6 @@
 "use client";
 
-import { CirclePlay, Coins, Download, Film, History, MonitorPlay, RefreshCw, TriangleAlert, WandSparkles, X } from "lucide-react";
+import { Check, CirclePlay, Coins, Download, Film, History, Loader2, MonitorPlay, RefreshCw, TriangleAlert, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fmt, INTL_LOCALES, plural } from "@/i18n/config";
@@ -16,8 +16,8 @@ import {
   SWAP_ENGINES,
   GENJUTSU_LIGHT_MAX_SECONDS,
   GENJUTSU_MAX_IMAGES,
+  STUDIO_QUALITIES,
   SWAP_MAX_CHARACTERS,
-  SWAP_QUALITIES,
   swapCredits,
   swapMethodRate,
   swapShotCredits,
@@ -152,7 +152,10 @@ export function Studio({
   const [tab, setTab] = useState<"history" | "examples" | "how">(history.length ? "history" : "examples");
 
   const resultEnd = useRef<HTMLElement>(null);
-  const busy = phase.kind === "generating";
+  // Appel API en cours (quelques secondes) : empêche le double-clic.
+  const [launching, setLaunching] = useState(false);
+  // Notification éphémère après un lancement réussi.
+  const [launched, setLaunched] = useState(false);
   const started = phase.kind !== "idle";
   // Le clip part tel quel chez Genjutsu, qui en lit au plus 30 s (15 s pour
   // Shinka). Même calcul que le serveur (voir startSwap).
@@ -181,7 +184,7 @@ export function Studio({
   const short = !guest && ready && credits < gate && !payAsYouGo;
   // Paiement à l'usage : ce que la carte paiera, annoncé avant de lancer.
   const byCard = !guest && ready && credits < gate && payAsYouGo;
-  const canSend = available && !busy && !restoring && ready;
+  const canSend = available && !launching && !restoring && ready;
 
   // Lancement, fin ou erreur : le rendu suivi revient à l'écran (sur mobile,
   // il est sous le formulaire).
@@ -280,7 +283,14 @@ export function Studio({
         setDecorPhoto(decor);
         setMode(draft.mode);
         setModel(draft.model ?? "max");
-        setQuality(draft.quality ?? (draft.hd ? "1080p" : DEFAULT_SWAP_QUALITY));
+        // Un brouillon en 480p (qualité retirée du studio) repart en 720p.
+        setQuality(
+          draft.quality && STUDIO_QUALITIES.includes(draft.quality)
+            ? draft.quality
+            : draft.hd
+              ? "1080p"
+              : DEFAULT_SWAP_QUALITY,
+        );
         setFidelity(draft.fidelity);
         setPrompt(draft.instructions);
         // Fichiers désormais dans le stockage : un prochain retour ne les
@@ -356,43 +366,36 @@ export function Studio({
       await goPay(gate - credits);
       return;
     }
-    setPhase({
-      kind: "generating",
-      job: { aspectRatio: preset?.aspectRatio ?? "9:16", durationSeconds: seconds, vessel: fidelity },
-      id: "",
-    });
-    const res = await startSwap({
-      videoPath: video.path,
-      presetId: preset?.id,
-      // Plan prêt : image N pour sa personne N. Sinon les images en vrac.
-      ...(preset
-        ? { characters: images.slice(0, preset.people.length).map((f) => ({ imagePath: f.path })) }
-        : { characters: [], photos: images.map((f) => f.path) }),
-      model,
-      quality,
-      vessel: fidelity,
-      decorImagePath: mode === "transfer" ? decorPhoto?.path : undefined,
-      instructions: prompt.trim() || undefined,
-    });
-    router.refresh();
-    if (res.error !== undefined) {
-      // Le serveur mesure le clip : s'il coûte plus que le solde, même chemin.
-      if (res.needCredits !== undefined) {
-        setPhase({ kind: "idle" });
-        await goPay(res.needCredits - credits);
+    setLaunching(true);
+    try {
+      const res = await startSwap({
+        videoPath: video.path,
+        presetId: preset?.id,
+        ...(preset
+          ? { characters: images.slice(0, preset.people.length).map((f) => ({ imagePath: f.path })) }
+          : { characters: [], photos: images.map((f) => f.path) }),
+        model,
+        quality,
+        vessel: fidelity,
+        decorImagePath: mode === "transfer" ? decorPhoto?.path : undefined,
+        instructions: prompt.trim() || undefined,
+      });
+      if (res.error !== undefined) {
+        if (res.needCredits !== undefined) {
+          await goPay(res.needCredits - credits);
+          return;
+        }
+        setPhase({ kind: "error", message: res.error });
         return;
       }
-      setPhase({ kind: "error", message: res.error });
-      return;
+      clearDraft();
+      router.refresh();
+      setTab("history");
+      setLaunched(true);
+      setTimeout(() => setLaunched(false), 4000);
+    } finally {
+      setLaunching(false);
     }
-    clearDraft();
-    const job: Job = {
-      aspectRatio: res.data.aspectRatio,
-      durationSeconds: res.data.durationSeconds,
-      vessel: fidelity,
-    };
-    setPhase({ kind: "generating", job, id: res.data.generationId });
-    setActive({ id: res.data.generationId, job });
   }
 
   // Ctrl/⌘ + Entrée lance le rendu.
@@ -578,7 +581,7 @@ export function Studio({
         </SettingRow>
         <SettingRow label={t.studio.qualityLabel} value={quality}>
           {(close) =>
-            SWAP_QUALITIES.map((q) => (
+            STUDIO_QUALITIES.map((q) => (
               <Option
                 key={q}
                 selected={quality === q}
@@ -619,7 +622,7 @@ export function Studio({
           }
           className="btn btn-accent w-full py-3.5 text-base"
         >
-          <WandSparkles />
+          {launching ? <Loader2 className="animate-spin" /> : <WandSparkles />}
           {t.studio.launch}
           {video && (
             <span className="ml-1 inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-sm tabular-nums">
@@ -642,6 +645,14 @@ export function Studio({
   return (
     <>
     <VideoWall />
+    {launched && (
+      <div className="fixed inset-x-0 top-4 z-50 flex justify-center animate-fade-up pointer-events-none">
+        <div className="pointer-events-auto flex items-center gap-2 rounded-xl border border-accent/30 bg-surface/95 px-4 py-2.5 text-sm font-medium text-foreground shadow-lg backdrop-blur">
+          <Check className="size-4 text-accent" />
+          {t.studio.launched}
+        </div>
+      </div>
+    )}
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
       <aside className="relative z-20 animate-fade-up lg:sticky lg:top-24 lg:-mx-3 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:px-3 lg:pb-3">
         {composer}

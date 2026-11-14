@@ -277,6 +277,7 @@ export const es: Dictionary = {
     explain:
       "Los gestos, el decorado, la cámara y el sonido vienen de tu clip: solo cambia el personaje. Usa un clip que tengas derecho a reutilizar.",
     launch: "Generar",
+    launched: "Render iniciado — puedes lanzar otro",
     costFrom: "Desde {cost} {credits}",
     payByCard: "Te faltan {n} créditos: se cobrarán {price} a tu tarjeta al lanzar.",
     notEnoughCredits: "Te faltan {n} créditos: «Generar» te lleva al pago y tu proyecto se guarda.",
