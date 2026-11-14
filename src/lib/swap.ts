@@ -1412,10 +1412,12 @@ async function concatenateParts(input: {
       return storagePath;
     };
 
-    // Une séquence Genjutsu seule, en H.264 et pas plus longue que le passage :
-    // l'image est recopiée sans recompression, c'est le fichier que Higgsfield
-    // donne sur son site. Remontée, elle perdait les trois quarts de son débit
-    // (10 Mb/s rendus, 2,5 Mb/s livrés, mesuré le 2026-11-14).
+    // Une séquence Genjutsu seule, pas plus longue que le passage : l'image
+    // est recopiée sans recompression, c'est le fichier que Higgsfield donne
+    // sur son site. Remontée, elle perdait les trois quarts de son débit
+    // (10 Mb/s rendus, 2,5 Mb/s livrés, mesuré le 2026-11-14). Le 1080p reste
+    // donc en HEVC 10 bits, que certains navigateurs ne lisent pas : choix du
+    // propriétaire, la qualité passe avant.
     const duration = firstInfo.match(/Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/);
     const rawSeconds = duration
       ? Number(duration[1]) * 3600 + Number(duration[2]) * 60 + Number(duration[3])
@@ -1423,7 +1425,6 @@ async function concatenateParts(input: {
     if (
       input.asIs &&
       files.length === 1 &&
-      /Stream #.*Video: h264/.test(firstInfo) &&
       rawSeconds <= total + 0.1 &&
       (await stat(files[0])).size <= MAX_VIDEO_MB * 1024 * 1024
     ) {
