@@ -186,6 +186,25 @@ function referencePrompt(
   ].join("\n\n");
 }
 
+// Images en vrac du studio, avec un prompt : rien ne dit ce que chaque image
+// remplace, sinon le prompt du créateur (« @image1 », « @image2 »…). Une
+// image n'est donc pas forcément un personnage (un objet, des billets) : le
+// prompt du créateur commande, les blocs autour assurent l'intégration.
+function guidedPrompt(images: number, decor: boolean, instructions: string) {
+  return [
+    `STRICT REPLACEMENT GUIDED BY THE CREATOR — ${images} REFERENCE IMAGES. Edit the uploaded source video: change only what the creator's instructions ask for.${decor ? " The setting is also replaced by the location shown in the FINAL reference image." : ""} In the instructions, "@image1" is reference image 1, "@image2" is reference image 2, and so on, in the order the images are given. A reference image can show a character, an outfit or an object.`,
+    `CREATOR'S INSTRUCTIONS — ${instructions}`,
+    `SOURCE PRIORITY — The source video controls all movement, performance, lip-sync, facial expressions, gaze, gestures, interactions, body positions, camera movement, framing, editing and timing. Each reference image controls only the appearance of what it replaces.${decor ? " The final reference image controls only the environment." : ""}`,
+    "REFERENCE FIDELITY — Match each reference image exactly: a character's face, age, skin or fur, hairstyle and hair colour, body proportions, clothing and accessories; an object's shape, proportions, colours, materials and details. A replaced person keeps their exact actions, rhythm, posture, head movements, hand gestures, gaze, facial expressions and lip-sync; do not add a smile or extra mouth movement. A replaced object keeps the position, scale, movement and timing of what it replaces, and every interaction with it.",
+    "PERMANENT IDENTITY ASSIGNMENT — Bind each replacement to what it replaces for the full clip, even through turns, overlap, different framing, motion blur and temporary occlusion. Never blend faces, exchange outfits or transfer one person's gestures to another.",
+    "EXACT SOURCE PERFORMANCE — Reproduce the existing performance moment by moment. Keep every gesture, pause, mouth movement, head turn, body sway and interaction at its original time and speed. Preserve every camera movement and every cut exactly where they occur. Keep the original duration, aspect ratio and playback speed. Do not introduce new choreography, poses, reactions, camera angles, cuts, slow motion or additional people.",
+    decor
+      ? "ENVIRONMENT AND INTEGRATION — Rebuild the whole scene inside the location shown in the FINAL reference image. Keep the original framing, camera distance, camera movement and cuts, but the walls, ground, furniture and depth of the shot now belong to that location. Light everyone consistently with that location, with accurate contact shadows. Do not copy borders, labels or captions from the reference images into the output."
+      : "ENVIRONMENT AND INTEGRATION — Apart from what the creator's instructions change, keep the original background, set, objects, every other person, lighting, shadows, perspective and composition from the source video. Adapt each replacement to the scene's lighting and movement, with natural fabric motion, accurate contact shadows and consistent positioning. Do not copy backgrounds, borders, labels or captions from the reference images into the output.",
+    `FINAL RESULT — The same ${decor ? "performances and camera work as the source video, played inside the location from the final reference image" : "source video and the same performances"}, with only what the creator's instructions name changed according to the reference images.`,
+  ].join("\n\n");
+}
+
 // Consigne Genjutsu, en blocs titrés : la vidéo source commande tout le jeu,
 // les références commandent l'identité ; chaque personne remplacée est liée à
 // son personnage pour tout le clip ; la scène reste intacte ; la planche de
@@ -201,6 +220,9 @@ function genjutsuPrompt(
 ) {
   if (!characters.length || characters.some((c) => c.object)) {
     return referencePrompt(characters, decor, instructions);
+  }
+  if (instructions && characters.length > 1 && characters.every((c) => !c.target)) {
+    return guidedPrompt(characters.length, decor, instructions);
   }
   const several = characters.length > 1;
   let next = 1;
