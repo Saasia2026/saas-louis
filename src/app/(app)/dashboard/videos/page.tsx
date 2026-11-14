@@ -1,15 +1,12 @@
-import { Download, Plus, RefreshCw } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { fmt } from "@/i18n/config";
 import { getDictionary } from "@/i18n/server";
 import { createClient } from "@/lib/supabase/server";
-import { VideoPlayer } from "@/app/video-player";
 import { PageHeader } from "../../page-header";
-import { PromptBlock, RefStrip } from "../generation-details";
+import { HistoryList } from "../generate/history-list";
 import { listSwapHistory } from "../swap-history";
-import { DeleteButton } from "./delete-button";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
@@ -19,7 +16,6 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function VideosPage() {
   const t = await getDictionary();
   const V = t.videos;
-  const S = t.studio;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) redirect("/login?next=/dashboard/videos");
@@ -47,103 +43,9 @@ export default async function VideosPage() {
           </Link>
         </div>
       ) : (
-        <ul className="mt-8 flex flex-col gap-6">
-          {shown.map((video, i) => {
-            const engine = video.settings.model === "max" ? S.modelMax : S.modelStandard;
-            return (
-              <li
-                key={video.id}
-                className="animate-fade-up overflow-hidden rounded-2xl border border-line bg-surface"
-                style={{ animationDelay: `${Math.min(i, 8) * 60}ms` }}
-              >
-                <div className="flex flex-col md:flex-row">
-                  {/* Video */}
-                  <div className="shrink-0 p-3 md:w-[55%]">
-                    {video.mediaUrl ? (
-                      <VideoPlayer src={video.mediaUrl} aspectRatio={video.aspectRatio}>
-                        <DeleteButton id={video.id} confirm={V.deleteConfirm} />
-                      </VideoPlayer>
-                    ) : (
-                      <div
-                        className="relative flex items-center justify-center rounded-xl border border-line bg-black"
-                        style={{ aspectRatio: video.aspectRatio.replace(":", " / ") }}
-                      >
-                        <DeleteButton id={video.id} confirm={V.deleteConfirm} />
-                        <span className="flex flex-col items-center gap-3 text-sm text-muted">
-                          <span className="size-7 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
-                          {V.running}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Panel */}
-                  <div className="flex flex-1 flex-col gap-5 p-5 md:p-6">
-                    {/* Engine badge */}
-                    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-line-strong px-3 py-1 text-xs font-medium">
-                      {engine}
-                    </span>
-
-                    {/* Prompt, à copier */}
-                    <PromptBlock prompt={video.prompt} />
-
-                    {/* Références : clip, images, lieu */}
-                    <RefStrip item={{ clip: video.clip, refs: video.refs, decor: video.decor }} />
-
-                    {/* Metadata chips */}
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-                      <span className="inline-flex items-center gap-1 rounded-md border border-line px-2 py-0.5">
-                        {video.settings.quality}
-                      </span>
-                      {video.seconds != null && (
-                        <span className="inline-flex items-center gap-1 rounded-md border border-line px-2 py-0.5">
-                          {video.seconds} s
-                        </span>
-                      )}
-                      <span className="inline-flex items-center gap-1 rounded-md border border-line px-2 py-0.5">
-                        {video.aspectRatio}
-                      </span>
-                      {video.fidelity && (
-                        <span className="inline-flex items-center gap-1 rounded-md border border-line px-2 py-0.5">
-                          HD
-                        </span>
-                      )}
-                    </div>
-
-                    {video.incomplete && (
-                      <p className="text-xs text-amber-300">{video.incomplete}</p>
-                    )}
-
-                    {/* Date + actions */}
-                    <div className="mt-auto flex items-center justify-between gap-3">
-                      <p className="text-xs text-muted">{video.date}</p>
-                      <span className="flex flex-wrap justify-end gap-2">
-                        <Link
-                          href={`/dashboard/generate?reuse=${video.id}`}
-                          title={S.reuseHint}
-                          className="btn btn-secondary"
-                        >
-                          <RefreshCw />
-                          {S.reuse}
-                        </Link>
-                        {video.running ? (
-                          <Link href={`/dashboard/generate?v=${video.id}`} className="btn btn-secondary">
-                            {V.resume}
-                          </Link>
-                        ) : (
-                          <a href={video.downloadUrl ?? video.mediaUrl} className="btn btn-ghost">
-                            <Download />
-                            {V.download}
-                          </a>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="mt-8">
+          <HistoryList items={shown} />
+        </div>
       )}
     </div>
   );

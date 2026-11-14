@@ -43,26 +43,22 @@ export function CopyButton({ text, label, className = "" }: { text: string; labe
   );
 }
 
-// Le prompt d'un rendu, tel que le créateur l'a écrit : les @image1… en
-// couleur, et un bouton pour le copier.
-export function PromptBlock({ prompt }: { prompt: string }) {
+// Le prompt d'un rendu, tel que le créateur l'a écrit, les @image1… en couleur.
+export function PromptText({ prompt }: { prompt: string }) {
   const { t } = useI18n();
-  if (!prompt.trim()) return <p className="text-sm text-faint">{t.studio.noPrompt}</p>;
+  if (!prompt.trim()) return <p className="text-[0.9375rem] text-faint">{t.studio.noPrompt}</p>;
   return (
-    <div className="flex items-start gap-1 rounded-xl border border-line bg-surface-2/60 py-2 pr-1.5 pl-3">
-      <p className="max-h-32 min-w-0 flex-1 overflow-y-auto py-0.5 text-sm leading-relaxed break-words whitespace-pre-wrap">
-        {prompt.split(/(@(?:image\d+|video)\b)/gi).map((part, i) =>
-          i % 2 ? (
-            <span key={i} className="font-medium text-accent-light">
-              {part}
-            </span>
-          ) : (
-            part
-          ),
-        )}
-      </p>
-      <CopyButton text={prompt} label={t.studio.copyPrompt} />
-    </div>
+    <p className="max-h-40 overflow-y-auto text-[0.9375rem] leading-relaxed break-words whitespace-pre-wrap text-muted">
+      {prompt.split(/(@(?:image\d+|video)\b)/gi).map((part, i) =>
+        i % 2 ? (
+          <span key={i} className="rounded-md bg-accent-soft px-1 py-0.5 font-semibold text-accent-light">
+            {part}
+          </span>
+        ) : (
+          part
+        ),
+      )}
+    </p>
   );
 }
 
@@ -90,7 +86,7 @@ export function RefStrip({ item }: { item: Pick<SwapHistoryItem, "clip" | "refs"
             aria-label={ref.label}
             title={ref.label}
             onClick={() => setOpen(ref)}
-            className="group relative size-14 shrink-0 overflow-hidden rounded-xl border border-line bg-black bg-clip-padding transition-[border-color] hover:border-line-strong"
+            className="group relative size-16 shrink-0 overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding transition-[border-color] hover:border-line-strong"
           >
             {ref.kind === "video" ? (
               <>

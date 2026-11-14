@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CalendarDays,
   CirclePlay,
   Clock,
   Download,
@@ -9,14 +8,14 @@ import {
   Ghost,
   Layers,
   MonitorPlay,
-  Move,
   PawPrint,
+  Play,
   RectangleHorizontal,
   RectangleVertical,
   RefreshCw,
-  Replace,
   Sparkles,
   Square,
+  Trash2,
   TriangleAlert,
   UserRound,
   Video,
@@ -27,20 +26,20 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { playInline } from "@/app/inline-video";
 import { usePauseWhenHidden } from "@/app/pause-hidden";
-import { VideoPlayer } from "@/app/video-player";
+import { PlayerBar, usePlayer } from "@/app/video-player";
 import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import type { AspectRatio } from "@/lib/generation";
-import { PromptBlock, RefStrip } from "../generation-details";
+import { CopyButton, PromptText, RefStrip } from "../generation-details";
 import type { SwapHistoryItem } from "../swap-history";
 import { DeleteButton } from "../videos/delete-button";
 
-// Largeur de la vignette selon le format : même hauteur à peu près pour tous,
-// et sur mobile une vidéo verticale ne prend pas tout l'écran.
-const THUMB_WIDTH: Record<AspectRatio, string> = {
-  "9:16": "max-w-56 self-center sm:w-40 sm:self-auto",
-  "1:1": "max-w-72 self-center sm:w-56 sm:self-auto",
-  "16:9": "sm:w-80",
+// Cadre de la vidéo dans son panneau : les formats verticaux prennent la
+// hauteur du panneau, le 16:9 sa largeur.
+const FRAME: Record<AspectRatio, string> = {
+  "9:16": "h-[26rem] max-w-full",
+  "1:1": "h-[22rem] max-w-full",
+  "16:9": "w-full",
 };
 
 const FORMAT_ICON: Record<AspectRatio, LucideIcon> = {
@@ -49,23 +48,29 @@ const FORMAT_ICON: Record<AspectRatio, LucideIcon> = {
   "16:9": RectangleHorizontal,
 };
 
-// Réglage d'une création, avec son icône ; `accent` pour les options.
+// Réglage d'un rendu, avec son icône ; `accent` pour les options.
 function Chip({ icon: Icon, accent, children }: { icon: LucideIcon; accent?: boolean; children: React.ReactNode }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium ${
-        accent ? "border-accent/30 bg-accent-soft text-accent-light" : "border-line bg-surface-2 text-muted"
+      className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold tabular-nums ${
+        accent ? "bg-accent-soft text-accent-light" : "bg-surface-2 text-text"
       }`}
     >
-      <Icon className={`size-3.5 ${accent ? "" : "text-faint"}`} />
+      <Icon className={`size-3.5 ${accent ? "" : "text-muted"}`} />
       {children}
     </span>
   );
 }
 
-// Fiche de chaque rendu : la vidéo, puis son prompt (à copier), ses
-// références (clip, images, lieu) et ses réglages. « Réutiliser » remet le
-// tout dans le studio.
+// Bouton rond posé sur le panneau de la vidéo.
+const STAGE_BUTTON =
+  "flex size-10 items-center justify-center rounded-full border border-line bg-surface-3 text-muted transition-colors hover:text-text";
+
+// Les rendus, un par ligne, en deux panneaux : la vidéo en grand à gauche ;
+// à droite le moteur, le prompt, les références (clip, images, lieu), les
+// réglages et la date, puis « Réutiliser », copier le prompt et supprimer.
+// `onReuse` : le studio reprend le rendu sur place ; sans lui (Mes vidéos),
+// « Réutiliser » y mène.
 export function HistoryList({
   items,
   onReuse,
@@ -73,101 +78,135 @@ export function HistoryList({
   items: SwapHistoryItem[];
   onReuse?: (item: SwapHistoryItem) => void;
 }) {
-  const { t } = useI18n();
-  const V = t.videos;
-
   return (
-    <ul className="space-y-3">
+    <ul className="@container w-full space-y-4">
       {items.map((item) => (
-        <li
-          key={item.id}
-          className="panel relative flex animate-fade-up flex-col gap-4 p-3 transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-line-strong sm:flex-row"
-        >
-          {item.mediaUrl ? (
-            <VideoPlayer
-              src={item.mediaUrl}
-              aspectRatio={item.aspectRatio}
-              compact
-              className={`w-full shrink-0 ${THUMB_WIDTH[item.aspectRatio]}`}
-            />
-          ) : (
-            <div
-              className={`flex w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-black bg-clip-padding ${THUMB_WIDTH[item.aspectRatio]}`}
-              style={{ aspectRatio: item.aspectRatio.replace(":", " / ") }}
-            >
-              <span className="flex flex-col items-center gap-3 text-sm text-muted">
-                <span className="size-7 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
-                {V.running}
-              </span>
-            </div>
-          )}
-
-          <DeleteButton
-            id={item.id}
-            confirm={V.deleteConfirm}
-            className="absolute top-2 right-2 z-10 size-8 text-faint hover:bg-red-500/15 hover:text-red-400"
-          />
-
-          <div className="flex min-w-0 flex-1 flex-col gap-3 py-1 sm:pr-8">
-            <PromptBlock prompt={item.prompt} />
-            <RefStrip item={item} />
-            <div className="flex flex-wrap gap-1.5">
-              <Chip icon={Sparkles}>{item.settings.model === "max" ? t.studio.modelMax : t.studio.modelStandard}</Chip>
-              {!item.transfer && <Chip icon={Replace}>{t.studio.modeReplace}</Chip>}
-              <Chip icon={MonitorPlay}>{item.settings.quality}</Chip>
-              {item.seconds ? <Chip icon={Clock}>{fmt(V.seconds, { seconds: item.seconds })}</Chip> : null}
-              <Chip icon={FORMAT_ICON[item.aspectRatio]}>{item.aspectRatio}</Chip>
-              {item.transfer && (
-                <Chip icon={Move} accent>
-                  {t.studio.modeTransfer}
-                </Chip>
-              )}
-              {item.fidelity && (
-                <Chip icon={Layers} accent>
-                  {t.studio.methodFidelity}
-                </Chip>
-              )}
-            </div>
-            {item.incomplete && (
-              <p className="inline-flex items-center gap-1.5 self-start rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">
-                <TriangleAlert className="size-3.5" />
-                {item.incomplete}
-              </p>
-            )}
-
-            <div className="mt-auto flex items-center justify-between gap-3 pt-1">
-              <span className="flex items-center gap-1.5 text-xs text-faint tabular-nums">
-                <CalendarDays className="size-3.5" />
-                {item.date}
-              </span>
-              <span className="flex flex-wrap justify-end gap-2">
-                {onReuse && (
-                  <button
-                    type="button"
-                    onClick={() => onReuse(item)}
-                    title={t.studio.reuseHint}
-                    className="btn btn-secondary"
-                  >
-                    <RefreshCw />
-                    {t.studio.reuse}
-                  </button>
-                )}
-                {item.running ? (
-                  <Link href={`/dashboard/generate?v=${item.id}`} className="btn btn-accent">
-                    {V.resume}
-                  </Link>
-                ) : (
-                  <a href={item.downloadUrl ?? item.mediaUrl} className="btn btn-hot">
-                    <Download />
-                    {V.download}
-                  </a>
-                )}
-              </span>
-            </div>
-          </div>
+        <li key={item.id} className="grid animate-fade-up gap-3 @[40rem]:grid-cols-[minmax(0,1fr)_minmax(0,21rem)]">
+          <Stage item={item} />
+          <Details item={item} onReuse={onReuse} />
         </li>
       ))}
     </ul>
+  );
+}
+
+// Panneau de gauche : la vidéo centrée, sa barre de lecture dessous, et le
+// téléchargement sur le bord.
+function Stage({ item }: { item: SwapHistoryItem }) {
+  const { t } = useI18n();
+  const V = t.videos;
+  const player = usePlayer({ muted: false });
+  return (
+    <div className="relative flex min-h-64 flex-col gap-2 rounded-2xl border border-line bg-surface-2/50 p-3">
+      <div className="flex flex-1 items-center justify-center">
+        <div
+          className={`relative overflow-hidden rounded-xl bg-black ${FRAME[item.aspectRatio]}`}
+          style={{ aspectRatio: item.aspectRatio.replace(":", " / ") }}
+        >
+          {item.mediaUrl ? (
+            <>
+              <video
+                // #t= : la première image s'affiche avant la lecture.
+                src={`${item.mediaUrl}#t=0.1`}
+                preload="metadata"
+                loop
+                playsInline
+                webkit-playsinline=""
+                {...player.videoProps}
+                className="size-full cursor-pointer object-contain"
+              />
+              {!player.playing && (
+                <span className="pointer-events-none absolute inset-0 m-auto flex size-14 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm">
+                  <Play className="size-6 translate-x-0.5 fill-current" />
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-white/70">
+              <span className="size-7 animate-spin rounded-full border-2 border-white/25 border-t-accent" />
+              {V.running}
+            </span>
+          )}
+        </div>
+      </div>
+      {item.mediaUrl && (
+        <>
+          <PlayerBar player={player} />
+          <a
+            href={item.downloadUrl ?? item.mediaUrl}
+            aria-label={V.download}
+            title={V.download}
+            className={`absolute top-3 right-3 ${STAGE_BUTTON}`}
+          >
+            <Download className="size-[1.125rem]" />
+          </a>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Panneau de droite : tout ce qui a servi au rendu, et ses actions.
+function Details({ item, onReuse }: { item: SwapHistoryItem; onReuse?: (item: SwapHistoryItem) => void }) {
+  const { t } = useI18n();
+  const V = t.videos;
+  const S = t.studio;
+  const reuseClass = "btn btn-secondary";
+  return (
+    <div className="flex min-w-0 flex-col gap-4 rounded-2xl border border-line bg-surface p-4">
+      <span className="inline-flex items-center gap-2 self-start rounded-xl border border-line-strong px-3 py-1.5 text-sm font-semibold">
+        <Sparkles className="size-4 text-accent-light" />
+        {item.settings.model === "max" ? S.modelMax : S.modelStandard} · {item.transfer ? S.modeTransfer : S.modeReplace}
+      </span>
+
+      <PromptText prompt={item.prompt} />
+      <RefStrip item={item} />
+
+      <div className="flex flex-wrap gap-1.5">
+        <Chip icon={MonitorPlay}>{item.settings.quality}</Chip>
+        {item.seconds ? <Chip icon={Clock}>{fmt(V.seconds, { seconds: item.seconds })}</Chip> : null}
+        <Chip icon={FORMAT_ICON[item.aspectRatio]}>{item.aspectRatio}</Chip>
+        {item.fidelity && (
+          <Chip icon={Layers} accent>
+            {S.methodFidelity}
+          </Chip>
+        )}
+      </div>
+      {item.incomplete && (
+        <p className="inline-flex items-center gap-1.5 self-start rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">
+          <TriangleAlert className="size-3.5" />
+          {item.incomplete}
+        </p>
+      )}
+
+      <p className="mt-auto pt-2 text-sm text-muted tabular-nums">{item.date}</p>
+
+      <div className="flex items-center gap-1">
+        {item.running ? (
+          <Link href={`/dashboard/generate?v=${item.id}`} className="btn btn-accent">
+            {V.resume}
+          </Link>
+        ) : onReuse ? (
+          <button type="button" onClick={() => onReuse(item)} title={S.reuseHint} className={reuseClass}>
+            <RefreshCw />
+            {S.reuse}
+          </button>
+        ) : (
+          <Link href={`/dashboard/generate?reuse=${item.id}`} title={S.reuseHint} className={reuseClass}>
+            <RefreshCw />
+            {S.reuse}
+          </Link>
+        )}
+        <span className="ml-auto" />
+        {item.prompt.trim() && <CopyButton text={item.prompt} label={S.copyPrompt} className="size-9" />}
+        <DeleteButton
+          id={item.id}
+          confirm={V.deleteConfirm}
+          icon={Trash2}
+          className="size-9 rounded-lg text-muted hover:bg-red-500/15 hover:text-red-400"
+        />
+      </div>
+    </div>
   );
 }
 

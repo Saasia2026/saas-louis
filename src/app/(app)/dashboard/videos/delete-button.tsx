@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X, type LucideIcon } from "lucide-react";
 import { useTransition } from "react";
 import { deleteGeneration } from "./actions";
 
@@ -11,10 +11,12 @@ export function DeleteButton({
   id,
   confirm,
   className = OVERLAY,
+  icon: Icon = X,
 }: {
   id: string;
   confirm: string;
   className?: string;
+  icon?: LucideIcon;
 }) {
   const [pending, start] = useTransition();
   return (
@@ -29,7 +31,7 @@ export function DeleteButton({
         start(() => deleteGeneration(id));
       }}
     >
-      <X className="size-4" />
+      <Icon className="size-4" />
     </button>
   );
 }
