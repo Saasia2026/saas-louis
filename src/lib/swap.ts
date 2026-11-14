@@ -308,7 +308,7 @@ export async function trimClip(url: string, start: number, seconds: number, hdr 
       (r) => r.stderr,
       (e: { stderr?: string }) => e.stderr ?? "",
     );
-    const d = stderr.match(/Duration: (d+):(d+):(d+(?:.d+)?)/);
+    const d = stderr.match(/Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/);
     if (!d) throw new Error("ffmpeg (découpe) : durée du passage illisible");
     return Number(d[1]) * 3600 + Number(d[2]) * 60 + Number(d[3]);
   };
