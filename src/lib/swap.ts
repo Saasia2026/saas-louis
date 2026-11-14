@@ -1,6 +1,6 @@
 import "server-only";
 import { execFile } from "node:child_process";
-import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -127,8 +127,8 @@ export const PART_NOT_RENDERED = "non rendue";
 // interrompu (fonction coupée) est repris. Plus long que maxDuration (300 s).
 const ASSEMBLE_ATTEMPTS = 3;
 const ASSEMBLE_STALE_MS = 6 * 60_000;
-// Marge sous la limite de taille d'un fichier dans Supabase Storage (50 Mo).
-const MAX_VIDEO_MB = 40;
+// Marge sous la limite de taille d'un fichier du bucket generations (100 Mo).
+const MAX_VIDEO_MB = 90;
 const GENJUTSU_WAIT_MAX_MS = 10 * 60_000;
 // Une séquence Genjutsu ou un passage Magic Hour se rend en quelques minutes,
 // file d'attente en plus. Au-delà de ce délai, le remplacement est abandonné
@@ -1336,6 +1336,7 @@ async function assembleSwap(generation: { id: string; user_id: string }, metadat
       parts: metadata.swap_parts!,
       sourceUrl: source?.signedUrl,
       sourceStart: metadata.source_start ?? 0,
+      asIs: metadata.engine === "genjutsu",
     });
     for (const part of metadata.swap_parts!) part.redo = undefined;
     await admin
@@ -1373,6 +1374,8 @@ async function concatenateParts(input: {
   parts: SwapPart[];
   sourceUrl?: string;
   sourceStart: number;
+  // Genjutsu : une séquence seule est livrée sans être recompressée.
+  asIs?: boolean;
 }) {
   if (!ffmpegPath) throw new Error("ffmpeg indisponible sur cette plateforme");
   const bucket = createAdminClient().storage.from(GENERATIONS_BUCKET);
@@ -1394,7 +1397,59 @@ async function concatenateParts(input: {
     const size = firstInfo.match(/Stream #.*Video:.*?, (\d{2,5})x(\d{2,5})[ ,[]/);
     const [width, height] = size ? [Number(size[1]), Number(size[2])] : [1080, 1920];
     const total = input.parts.reduce((sum, p) => sum + p.seconds, 0);
-    const maxKbps = Math.floor(Math.min(8000, (MAX_VIDEO_MB * 8192) / Math.max(total, 1)));
+    const maxKbps = Math.floor(Math.min(16000, (MAX_VIDEO_MB * 8192) / Math.max(total, 1)));
+    const source = input.sourceUrl
+      ? ["-ss", input.sourceStart.toFixed(3), "-t", total.toFixed(3), "-i", input.sourceUrl]
+      : [];
+    const output = path.join(dir, "output.mp4");
+    const storagePath = `${input.userId}/${input.generationId}.mp4`;
+    const deliver = async () => {
+      const { error } = await bucket.upload(storagePath, await readFile(output), {
+        contentType: "video/mp4",
+        upsert: true,
+      });
+      if (error) throw error;
+      return storagePath;
+    };
+
+    // Une séquence Genjutsu seule, en H.264 et pas plus longue que le passage :
+    // l'image est recopiée sans recompression, c'est le fichier que Higgsfield
+    // donne sur son site. Remontée, elle perdait les trois quarts de son débit
+    // (10 Mb/s rendus, 2,5 Mb/s livrés, mesuré le 2026-11-14).
+    const duration = firstInfo.match(/Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/);
+    const rawSeconds = duration
+      ? Number(duration[1]) * 3600 + Number(duration[2]) * 60 + Number(duration[3])
+      : Infinity;
+    if (
+      input.asIs &&
+      files.length === 1 &&
+      /Stream #.*Video: h264/.test(firstInfo) &&
+      rawSeconds <= total + 0.1 &&
+      (await stat(files[0])).size <= MAX_VIDEO_MB * 1024 * 1024
+    ) {
+      // Son du rendu s'il en a un, sinon celui du clip.
+      const ownSound = /Stream #.*Audio:/.test(firstInfo);
+      await execFileAsync(
+        ffmpegPath,
+        [
+          "-hide_banner",
+          "-loglevel", "error",
+          "-i", files[0],
+          ...(ownSound ? [] : source),
+          "-map", "0:v:0",
+          ...(ownSound
+            ? ["-map", "0:a:0", "-c:a", "copy"]
+            : input.sourceUrl
+              ? ["-map", "1:a?", "-c:a", "aac", "-b:a", "192k", "-af", "apad", "-shortest"]
+              : []),
+          "-c:v", "copy",
+          "-movflags", "+faststart",
+          output,
+        ],
+        { timeout: 240_000 },
+      );
+      return await deliver();
+    }
 
     // Chaque morceau occupe exactement ses images dans la vidéo finale,
     // comptées d'après ses bornes dans le passage : les arrondis ne
@@ -1417,11 +1472,7 @@ async function concatenateParts(input: {
         .join("") +
       files.map((_, i) => `[v${i}]`).join("") +
       `concat=n=${files.length}:v=1:a=0[outv]`;
-    const source = input.sourceUrl
-      ? ["-ss", input.sourceStart.toFixed(3), "-t", total.toFixed(3), "-i", input.sourceUrl]
-      : [];
 
-    const output = path.join(dir, "output.mp4");
     await execFileAsync(
       ffmpegPath,
       [
@@ -1433,11 +1484,14 @@ async function concatenateParts(input: {
         "-map", "[outv]",
         // apad : la vidéo fixe la durée, même si le son du clip s'arrête avant.
         ...(input.sourceUrl
-          ? ["-map", `${files.length}:a?`, "-c:a", "aac", "-af", "apad", "-shortest"]
+          ? ["-map", `${files.length}:a?`, "-c:a", "aac", "-b:a", "192k", "-af", "apad", "-shortest"]
           : []),
+        // Cadence imposée : en production les vidéos sortaient à 25 images/s,
+        // soit une image doublée par seconde d'un rendu à 24.
+        "-r", String(input.fps),
         "-c:v", "libx264",
-        "-preset", "veryfast",
-        "-crf", "20",
+        "-preset", "fast",
+        "-crf", "16",
         "-maxrate", `${maxKbps}k`,
         "-bufsize", `${maxKbps * 2}k`,
         "-pix_fmt", "yuv420p",
@@ -1446,14 +1500,7 @@ async function concatenateParts(input: {
       ],
       { timeout: 240_000 },
     );
-
-    const storagePath = `${input.userId}/${input.generationId}.mp4`;
-    const { error } = await bucket.upload(storagePath, await readFile(output), {
-      contentType: "video/mp4",
-      upsert: true,
-    });
-    if (error) throw error;
-    return storagePath;
+    return await deliver();
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
