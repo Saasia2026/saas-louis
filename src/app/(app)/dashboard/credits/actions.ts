@@ -238,6 +238,64 @@ export async function openBillingPortal() {
   redirect(url ?? `${PAGE}?error=portal`);
 }
 
+// Abonnement du client connecté, lu chez Stripe à partir de son profil :
+// aucun identifiant ne vient du navigateur.
+async function ownSubscription(userId: string) {
+  const { data: profile } = await createAdminClient()
+    .from("profiles")
+    .select("stripe_customer_id")
+    .eq("id", userId)
+    .single();
+  return activeSubscription(profile?.stripe_customer_id);
+}
+
+// Résiliation depuis le site. Abonnement à jour : il s'arrête à la fin de la
+// période payée, les crédits restent jusque-là et « Reprendre » l'annule.
+// Paiement en échec : rien n'est payé pour la période en cours, il s'arrête
+// tout de suite et Stripe ne retente plus la carte.
+export async function cancelSubscription() {
+  if (!stripeEnabled()) redirect(`${PAGE}?error=unavailable`);
+  const user = await currentUser();
+  let target = PAGE;
+  try {
+    const sub = await ownSubscription(user.id);
+    if (sub) {
+      const stripe = createStripe();
+      if (sub.status !== "active" && sub.status !== "trialing") {
+        await stripe.subscriptions.cancel(sub.id);
+      } else if (!sub.ending) {
+        await stripe.subscriptions.update(sub.id, { cancel_at_period_end: true });
+      }
+      target = `${PAGE}?canceled=1`;
+    }
+  } catch (e) {
+    console.error("cancelSubscription", e instanceof Error ? e.message : e);
+    target = `${PAGE}?error=cancel`;
+  }
+  redirect(target);
+}
+
+// Annule une résiliation tant que la période payée court encore.
+export async function resumeSubscription() {
+  if (!stripeEnabled()) redirect(`${PAGE}?error=unavailable`);
+  const user = await currentUser();
+  let target = PAGE;
+  try {
+    const sub = await ownSubscription(user.id);
+    if (sub?.ending) {
+      await createStripe().subscriptions.update(
+        sub.id,
+        sub.cancelAtPeriodEnd ? { cancel_at_period_end: false } : { cancel_at: "" },
+      );
+      target = `${PAGE}?resumed=1`;
+    }
+  } catch (e) {
+    console.error("resumeSubscription", e instanceof Error ? e.message : e);
+    target = `${PAGE}?error=cancel`;
+  }
+  redirect(target);
+}
+
 // Paiement à l'usage, activé ou coupé. L'activer suppose une carte
 // enregistrée ; le réactiver après un refus de la banque efface le refus.
 export async function savePayAsYouGo(formData: FormData) {

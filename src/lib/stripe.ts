@@ -79,11 +79,16 @@ export async function savedCard(customerId: string | null | undefined): Promise<
 }
 
 export type ActiveSubscription = {
+  id: string;
   planId: string;
   interval: BillingInterval;
   status: Stripe.Subscription.Status;
+  // Prochain paiement, ou date d'arrêt si l'abonnement est résilié.
   renewsAt: number | null;
   cancelAtPeriodEnd: boolean;
+  // Résilié : il s'arrête à `renewsAt`, que l'arrêt vienne du site
+  // (cancel_at_period_end) ou de l'espace client Stripe (cancel_at).
+  ending: boolean;
 };
 
 // Abonnement en cours du client, s'il en a un.
@@ -100,11 +105,13 @@ export async function activeSubscription(
   if (!sub) return null;
   const item = sub.items.data[0];
   return {
+    id: sub.id,
     planId: sub.metadata.plan_id ?? "",
     interval: sub.metadata.interval === "year" ? "year" : "month",
     status: sub.status,
-    renewsAt: item?.current_period_end ?? null,
+    renewsAt: sub.cancel_at ?? item?.current_period_end ?? null,
     cancelAtPeriodEnd: sub.cancel_at_period_end,
+    ending: sub.cancel_at_period_end || sub.cancel_at !== null,
   };
 }
 

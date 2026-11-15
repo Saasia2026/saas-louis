@@ -40,8 +40,10 @@ import {
   addCard,
   buyCredits,
   buyWithSavedCard,
+  cancelSubscription,
   openBillingPortal,
   removeCard,
+  resumeSubscription,
   savePayAsYouGo,
   subscribe,
 } from "./actions";
@@ -51,7 +53,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: `${t.meta.credits} — TwinPost` };
 }
 
-const ERRORS = ["unavailable", "checkout", "card", "nocard", "portal", "subscribed"] as const;
+const ERRORS = ["unavailable", "checkout", "card", "nocard", "portal", "subscribed", "cancel"] as const;
 
 // Réduction réelle de l'annuel la plus forte, face aux mêmes crédits en packs
 // (comme sur chaque offre) : affichée sur le choix « Annuel ».
@@ -153,6 +155,10 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
     notice = { ok: true, text: P.notices.saved };
   } else if (params.removed) {
     notice = { ok: true, text: P.notices.removed };
+  } else if (params.canceled) {
+    notice = { ok: true, text: P.notices.canceled };
+  } else if (params.resumed) {
+    notice = { ok: true, text: P.notices.resumed };
   } else if (typeof params.error === "string") {
     const error = ERRORS.find((e) => e === params.error);
     if (error) {
@@ -179,6 +185,11 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
       ])
     : [null, null];
   const payAsYouGo = Boolean(profile?.pay_as_you_go) && !profile?.auto_recharge_failed;
+  // Abonnement à jour : la résiliation prend effet à la fin de la période
+  // payée et peut être annulée. Paiement en échec : elle est immédiate.
+  const subscriptionPaid = subscription?.status === "active" || subscription?.status === "trialing";
+  const canCancel = Boolean(subscription) && (!subscription?.ending || !subscriptionPaid);
+  const confirmCancel = params.cancel === "1" && canCancel;
   // Clé à usage unique de l'achat en un clic (voir buyWithSavedCard).
   const nonce = crypto.randomUUID();
   const dateOf = (seconds: number) =>
@@ -353,27 +364,68 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
         </div>
 
         {subscription ? (
-          <div className="panel glow mt-6 flex flex-wrap items-center justify-between gap-4 p-6">
-            <div>
-              <p className="font-semibold">
-                {fmt(S.current, {
-                  label: S.plans[subscription.planId as keyof typeof S.plans] ?? subscription.planId,
-                  period: subscription.interval === "year" ? S.yearlyLabel : S.monthlyLabel,
-                })}
-              </p>
-              <p className={`mt-1 text-sm ${subscription.status === "active" || subscription.status === "trialing" ? "text-muted" : "text-danger"}`}>
-                {subscription.status === "past_due" || subscription.status === "unpaid"
-                  ? S.pastDue
-                  : subscription.renewsAt
-                    ? fmt(subscription.cancelAtPeriodEnd ? S.ends : S.renews, { date: dateOf(subscription.renewsAt) })
-                    : null}
-              </p>
+          <div className="panel glow mt-6 p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="font-semibold">
+                  {fmt(S.current, {
+                    label: S.plans[subscription.planId as keyof typeof S.plans] ?? subscription.planId,
+                    period: subscription.interval === "year" ? S.yearlyLabel : S.monthlyLabel,
+                  })}
+                </p>
+                <p className={`mt-1 text-sm ${subscriptionPaid ? "text-muted" : "text-danger"}`}>
+                  {subscription.status === "past_due" || subscription.status === "unpaid"
+                    ? S.pastDue
+                    : subscription.renewsAt
+                      ? fmt(subscription.ending ? S.ends : S.renews, { date: dateOf(subscription.renewsAt) })
+                      : null}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {subscription.ending && subscriptionPaid && (
+                  <form action={resumeSubscription}>
+                    <button type="submit" className="btn btn-accent">
+                      {S.resume}
+                    </button>
+                  </form>
+                )}
+                <form action={openBillingPortal}>
+                  <button type="submit" className="btn btn-secondary">
+                    {S.manage}
+                  </button>
+                </form>
+              </div>
             </div>
-            <form action={openBillingPortal}>
-              <button type="submit" className="btn btn-secondary">
-                {S.manage}
-              </button>
-            </form>
+            {/* Résilier : un petit lien discret sous la ligne, pas un bouton. */}
+            {canCancel && !confirmCancel && (
+              <p className="mt-3 text-right">
+                <Link href="?cancel=1" scroll={false} className="text-xs text-faint hover:text-muted hover:underline">
+                  {S.cancel}
+                </Link>
+              </p>
+            )}
+
+            {/* Résiliation : une confirmation qui dit quand elle prend effet. */}
+            {confirmCancel && (
+              <div className="mt-5 border-t border-line pt-5">
+                <p className="font-semibold">{S.cancelTitle}</p>
+                <p className="mt-1 max-w-xl text-sm text-muted">
+                  {subscriptionPaid && subscription.renewsAt
+                    ? fmt(S.cancelAtEnd, { date: dateOf(subscription.renewsAt) })
+                    : S.cancelNow}
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <form action={cancelSubscription}>
+                    <button type="submit" className="btn btn-secondary">
+                      {S.cancelConfirm}
+                    </button>
+                  </form>
+                  <Link href="/dashboard/credits" scroll={false} className="btn btn-ghost">
+                    {S.cancelKeep}
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <ul className="mt-8 grid gap-5 md:grid-cols-2">
