@@ -19,6 +19,7 @@ import {
   savedCard,
   stripeEnabled,
 } from "@/lib/stripe";
+import { safeNextPath } from "@/lib/safe-next-path";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -32,6 +33,13 @@ async function currentUser() {
     id: auth.claims.sub,
     email: typeof auth.claims.email === "string" ? auth.claims.email : undefined,
   };
+}
+
+// Retour Stripe réussi : la page des crédits ajoute les crédits puis renvoie
+// vers `next` (le studio, depuis le tunnel d'accueil).
+function successUrl(base: string, formData: FormData) {
+  const next = safeNextPath(formData.get("next"), "");
+  return `${base}${PAGE}?session_id={CHECKOUT_SESSION_ID}${next ? `&next=${encodeURIComponent(next)}` : ""}`;
 }
 
 async function origin() {
@@ -77,7 +85,7 @@ export async function buyCredits(formData: FormData) {
       payment_intent_data: { setup_future_usage: "off_session" },
       client_reference_id: user.id,
       metadata: { user_id: user.id, pack_id: pack.id },
-      success_url: `${base}${PAGE}?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: successUrl(base, formData),
       cancel_url: `${base}${PAGE}`,
     });
     url = session.url;
@@ -208,7 +216,7 @@ export async function subscribe(formData: FormData) {
       subscription_data: { metadata },
       metadata,
       client_reference_id: user.id,
-      success_url: `${base}${PAGE}?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: successUrl(base, formData),
       cancel_url: `${base}${PAGE}?billing=${interval}`,
     });
     url = session.url;

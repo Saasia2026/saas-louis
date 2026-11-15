@@ -192,6 +192,63 @@ export const en: Dictionary = {
     created: "Account created! Click the link we emailed you to activate it.",
   },
 
+  welcome: {
+    title: "Welcome",
+    back: "Back",
+    continue: "Continue",
+    goal: {
+      question: "What do you want to do with your videos?",
+      options: {
+        viral: { label: "Go viral", hint: "Funny videos, characters people react to" },
+        community: { label: "Build a community", hint: "A recurring character people follow" },
+        brand: { label: "Make ads for my brand", hint: "A product, a mascot, a campaign" },
+        clients: { label: "Create for clients", hint: "Agency, freelancer, editor" },
+        fun: { label: "Have fun", hint: "Put my friends or my characters in scenes" },
+      },
+    },
+    platforms: {
+      question: "Where do you post?",
+      hint: "Pick as many as you like.",
+      options: { tiktok: "TikTok", instagram: "Instagram Reels", youtube: "YouTube Shorts", other: "Somewhere else, or not yet" },
+    },
+    audience: {
+      question: "How many followers do you have today?",
+      options: { "0": "Just starting (under 1,000)", "1k": "1,000 to 10,000", "10k": "10,000 to 100,000", "100k": "Over 100,000" },
+    },
+    target: {
+      question: "Your follower goal?",
+      options: { "1k": "1,000 followers", "10k": "10,000 followers", "100k": "100,000 followers", "1m": "1 million followers" },
+    },
+    pace: {
+      question: "How often do you want to post?",
+      options: { weekly: "1 video a week", few: "3 videos a week", daily: "1 video a day", multi: "Several videos a day" },
+      perMonth: "≈ {n} videos a month",
+    },
+    plan: {
+      eyebrow: "Your plan",
+      target: "Goal: {target}",
+      targetOn: "Goal: {target} on {platforms}",
+      goals: {
+        viral: "Goal: get people reacting to your characters",
+        community: "Goal: a community around your character",
+        brand: "Goal: ads for your brand",
+        clients: "Goal: videos for your clients",
+        fun: "Goal: have fun with your characters",
+      },
+      pace: "{pace}, about {n} 15-second videos a month.",
+      tip: "On TikTok and Reels, consistency helps you get discovered: 3 videos a week is a good pace to start.",
+      recommended: "For you",
+      covers: "≈ {n} 15-second videos a month with Shinka, or {max} with Shinka Max",
+      subscribe: "Start with {plan}",
+      cancelAnytime: "Cancel anytime from the Credits page.",
+      noCommitment: "No subscription: {credits} credits for {price}",
+      buyPack: "Buy",
+      draftKept: "Your project is saved: it's waiting for you in the studio.",
+      allOffers: "See all plans",
+      later: "Later",
+    },
+  },
+
   password: {
     title: "New password",
     intro: "Choose a password of at least {min} characters.",

@@ -381,6 +381,8 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          onboarded_at: string | null
+          onboarding: Json | null
           pay_as_you_go: boolean
           plan: string
           referred_by: string | null
@@ -401,6 +403,8 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          onboarded_at?: string | null
+          onboarding?: Json | null
           pay_as_you_go?: boolean
           plan?: string
           referred_by?: string | null
@@ -421,6 +425,8 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          onboarded_at?: string | null
+          onboarding?: Json | null
           pay_as_you_go?: boolean
           plan?: string
           referred_by?: string | null

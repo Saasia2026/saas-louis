@@ -50,11 +50,15 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
   const [{ data: profile }, history] = await Promise.all([
     supabase
       .from("profiles")
-      .select("credits_remaining, stripe_customer_id, pay_as_you_go, auto_recharge_failed")
+      .select("credits_remaining, stripe_customer_id, pay_as_you_go, auto_recharge_failed, onboarded_at")
       .eq("id", auth.claims.sub)
       .single(),
     listSwapHistory(),
   ]);
+
+  // Nouvel inscrit : le tunnel d'accueil d'abord (le projet préparé dans le
+  // studio reste gardé dans le navigateur).
+  if (profile && !profile.onboarded_at) redirect("/welcome?next=/dashboard/generate");
 
   // Remplacement encore en cours : il n'avance que suivi, on le reprend donc
   // plutôt que d'afficher un studio vide, même longtemps après (son rendu est

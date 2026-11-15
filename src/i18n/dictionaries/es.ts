@@ -192,6 +192,63 @@ export const es: Dictionary = {
     created: "¡Cuenta creada! Haz clic en el enlace que te enviamos por email para activarla.",
   },
 
+  welcome: {
+    title: "Bienvenida",
+    back: "Atrás",
+    continue: "Continuar",
+    goal: {
+      question: "¿Qué quieres hacer con tus vídeos?",
+      options: {
+        viral: { label: "Hacerme viral", hint: "Vídeos divertidos, personajes que hacen reaccionar" },
+        community: { label: "Crear una comunidad", hint: "Un personaje recurrente que la gente sigue" },
+        brand: { label: "Hacer anuncios para mi marca", hint: "Un producto, una mascota, una campaña" },
+        clients: { label: "Crear para clientes", hint: "Agencia, freelance, editor" },
+        fun: { label: "Divertirme", hint: "Poner a mis amigos o mis personajes en escena" },
+      },
+    },
+    platforms: {
+      question: "¿Dónde publicas?",
+      hint: "Puedes elegir varias.",
+      options: { tiktok: "TikTok", instagram: "Instagram Reels", youtube: "YouTube Shorts", other: "En otro sitio, o todavía no" },
+    },
+    audience: {
+      question: "¿Cuántos seguidores tienes hoy?",
+      options: { "0": "Empiezo (menos de 1000)", "1k": "De 1000 a 10 000", "10k": "De 10 000 a 100 000", "100k": "Más de 100 000" },
+    },
+    target: {
+      question: "¿Tu objetivo de seguidores?",
+      options: { "1k": "1000 seguidores", "10k": "10 000 seguidores", "100k": "100 000 seguidores", "1m": "1 millón de seguidores" },
+    },
+    pace: {
+      question: "¿Con qué ritmo quieres publicar?",
+      options: { weekly: "1 vídeo por semana", few: "3 vídeos por semana", daily: "1 vídeo al día", multi: "Varios vídeos al día" },
+      perMonth: "≈ {n} vídeos al mes",
+    },
+    plan: {
+      eyebrow: "Tu plan",
+      target: "Objetivo: {target}",
+      targetOn: "Objetivo: {target} en {platforms}",
+      goals: {
+        viral: "Objetivo: hacer reaccionar con tus personajes",
+        community: "Objetivo: una comunidad alrededor de tu personaje",
+        brand: "Objetivo: anuncios para tu marca",
+        clients: "Objetivo: vídeos para tus clientes",
+        fun: "Objetivo: divertirte con tus personajes",
+      },
+      pace: "{pace}, unos {n} vídeos de 15 s al mes.",
+      tip: "En TikTok y Reels, la constancia ayuda a que te descubran: 3 vídeos por semana es un buen ritmo para empezar.",
+      recommended: "Para ti",
+      covers: "≈ {n} vídeos de 15 s al mes con Shinka, o {max} con Shinka Max",
+      subscribe: "Empezar con {plan}",
+      cancelAnytime: "Cancelable en cualquier momento desde la página Créditos.",
+      noCommitment: "Sin suscripción: {credits} créditos por {price}",
+      buyPack: "Comprar",
+      draftKept: "Tu proyecto está guardado: te espera en el estudio.",
+      allOffers: "Ver todas las ofertas",
+      later: "Más tarde",
+    },
+  },
+
   password: {
     title: "Nueva contraseña",
     intro: "Elige una contraseña de al menos {min} caracteres.",

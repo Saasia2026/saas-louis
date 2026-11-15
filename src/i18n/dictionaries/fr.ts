@@ -194,6 +194,63 @@ export const fr = {
     created: "Compte créé ! Clique sur le lien reçu par email pour l'activer.",
   },
 
+  welcome: {
+    title: "Bienvenue",
+    back: "Retour",
+    continue: "Continuer",
+    goal: {
+      question: "Qu'est-ce que tu veux faire avec tes vidéos ?",
+      options: {
+        viral: { label: "Devenir viral", hint: "Des vidéos drôles, des personnages qui font réagir" },
+        community: { label: "Construire une communauté", hint: "Un personnage récurrent que les gens suivent" },
+        brand: { label: "Faire des pubs pour ma marque", hint: "Un produit, une mascotte, une campagne" },
+        clients: { label: "Créer pour des clients", hint: "Agence, freelance, monteur" },
+        fun: { label: "M'amuser", hint: "Mettre mes potes ou mes personnages en scène" },
+      },
+    },
+    platforms: {
+      question: "Où tu publies ?",
+      hint: "Plusieurs choix possibles.",
+      options: { tiktok: "TikTok", instagram: "Instagram Reels", youtube: "YouTube Shorts", other: "Ailleurs, ou pas encore" },
+    },
+    audience: {
+      question: "Combien d'abonnés tu as aujourd'hui ?",
+      options: { "0": "Je commence (moins de 1 000)", "1k": "1 000 à 10 000", "10k": "10 000 à 100 000", "100k": "Plus de 100 000" },
+    },
+    target: {
+      question: "Ton objectif d'abonnés ?",
+      options: { "1k": "1 000 abonnés", "10k": "10 000 abonnés", "100k": "100 000 abonnés", "1m": "1 million d'abonnés" },
+    },
+    pace: {
+      question: "À quel rythme tu veux publier ?",
+      options: { weekly: "1 vidéo par semaine", few: "3 vidéos par semaine", daily: "1 vidéo par jour", multi: "Plusieurs vidéos par jour" },
+      perMonth: "≈ {n} vidéos par mois",
+    },
+    plan: {
+      eyebrow: "Ton plan",
+      target: "Objectif : {target}",
+      targetOn: "Objectif : {target} sur {platforms}",
+      goals: {
+        viral: "Objectif : faire réagir avec tes personnages",
+        community: "Objectif : une communauté autour de ton personnage",
+        brand: "Objectif : des pubs pour ta marque",
+        clients: "Objectif : des vidéos pour tes clients",
+        fun: "Objectif : t'amuser avec tes personnages",
+      },
+      pace: "{pace}, soit environ {n} vidéos de 15 s par mois.",
+      tip: "Sur TikTok et Reels, la régularité aide à être découvert : 3 vidéos par semaine est un bon rythme pour démarrer.",
+      recommended: "Pour toi",
+      covers: "≈ {n} vidéos de 15 s par mois en Shinka, ou {max} en Shinka Max",
+      subscribe: "Commencer avec {plan}",
+      cancelAnytime: "Résiliable à tout moment depuis la page Crédits.",
+      noCommitment: "Sans abonnement : {credits} crédits pour {price}",
+      buyPack: "Acheter",
+      draftKept: "Ton projet est gardé : il t'attend dans le studio.",
+      allOffers: "Voir toutes les offres",
+      later: "Plus tard",
+    },
+  },
+
   password: {
     title: "Nouveau mot de passe",
     intro: "Choisis un mot de passe d'au moins {min} caractères.",

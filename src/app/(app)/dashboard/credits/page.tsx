@@ -33,6 +33,7 @@ import {
 } from "@/lib/stripe";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
+import { safeNextPath } from "@/lib/safe-next-path";
 import { createClient } from "@/lib/supabase/server";
 import { BADGE, OFF_BADGE, OFF_BADGE_SM, TIERS, tierCard } from "@/app/tier-style";
 import { PageHeader } from "../../page-header";
@@ -164,6 +165,13 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
     if (error) {
       notice = { ok: false, text: error === "subscribed" ? P.notices.hasSubscription : P.notices[error] };
     }
+  }
+
+  // Payé depuis le tunnel d'accueil : crédits ajoutés, retour au studio où
+  // le projet attend (hors du try : redirect() lève une exception).
+  const paidNext = safeNextPath(params.next, "");
+  if (paidNext && typeof sessionId === "string" && notice?.ok && notice.text !== P.notices.pending) {
+    redirect(paidNext);
   }
 
   // Arrivée depuis le studio, à court de crédits pour une vidéo.
