@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronLeft } from "lucide-react";
+import { Check, ChevronLeft, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -102,12 +102,21 @@ export function Funnel({ next, paymentsEnabled }: { next: string; paymentsEnable
 
   return (
     <div className="mx-auto w-full max-w-xl">
-      {/* Retour à la question précédente. */}
-      <div className="h-9">
-        {index > 0 && (
+      {/* Retour à la question précédente ; sur les offres, une croix pour
+          fermer et aller sur le site sans choisir. */}
+      <div className="flex h-9 items-center justify-between">
+        {index > 0 ? (
           <button type="button" onClick={() => go(steps[index - 1])} className="btn btn-ghost size-9 p-0">
             <ChevronLeft />
             <span className="sr-only">{W.back}</span>
+          </button>
+        ) : (
+          <span />
+        )}
+        {step === "plan" && (
+          <button type="button" onClick={later} disabled={leaving} title={W.close} className="btn btn-ghost size-9 p-0">
+            <X />
+            <span className="sr-only">{W.close}</span>
           </button>
         )}
       </div>

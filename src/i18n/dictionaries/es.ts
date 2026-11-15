@@ -195,6 +195,7 @@ export const es: Dictionary = {
   welcome: {
     title: "Bienvenida",
     back: "Atrás",
+    close: "Cerrar",
     continue: "Continuar",
     goal: {
       question: "¿Qué quieres hacer con tus vídeos?",

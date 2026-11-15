@@ -197,6 +197,7 @@ export const fr = {
   welcome: {
     title: "Bienvenue",
     back: "Retour",
+    close: "Fermer",
     continue: "Continuer",
     goal: {
       question: "Qu'est-ce que tu veux faire avec tes vidéos ?",
