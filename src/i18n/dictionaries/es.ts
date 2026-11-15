@@ -114,7 +114,7 @@ export const es: Dictionary = {
       },
       {
         title: "Transferir el movimiento",
-        text: "Conserva los gestos y la cámara, y vuelve a rodar la escena en el lugar de tu foto.",
+        text: "Conserva los gestos y la cámara, y rehace toda la escena con tu personaje, incluso un animal. En un nuevo lugar si quieres.",
       },
       {
         title: "Alta fidelidad",
@@ -266,8 +266,8 @@ export const es: Dictionary = {
     characterTarget: "¿A quién reemplaza el personaje {n}? ej.: el hombre de camiseta roja",
     partNoFace: "rostro no aplicado, pase reembolsado",
     decorImage: "Foto del lugar",
-    decorDrop: "Añade una foto del lugar",
-    decorDropSub: "La escena se repetirá en ese decorado",
+    decorDrop: "Foto de un nuevo lugar (opcional)",
+    decorDropSub: "Sin foto, se retoma el decorado del clip",
     instructions: "Prompt",
     instructionsPlaceholder:
       "Di lo que quieres, p. ej.: «@image1 reemplaza al hombre de negro, @image2 reemplaza la silla». Cita tus imágenes con @image1, @image2…",
@@ -290,11 +290,11 @@ export const es: Dictionary = {
     modeReplace: "Reemplazar",
     modeTransfer: "Transferir el movimiento",
     modeReplaceHint: "Cambia a una persona, un objeto o la ropa, y conserva el resto.",
-    modeTransferHint: "Conserva los movimientos y la cámara, y vuelve a rodar la escena en un nuevo lugar.",
+    modeTransferHint:
+      "Rehace toda la escena a partir de los movimientos: el personaje ocupa todo el cuerpo, animales y criaturas incluidos. El decorado puede cambiar un poco.",
     decorRequiredTitle: "Nuevo lugar",
     missingVideo: "Para empezar: añade tu clip.",
     missingCharacter: "Para empezar: añade al menos una imagen.",
-    missingDecor: "Para empezar: añade la foto del lugar.",
     promptHint: "Indica qué reemplaza cada imagen. Varias fotos del mismo personaje ayudan al motor.",
     keyframes: "Colocando al personaje en cada plano",
     shots: "Rodaje y revisión de los planos",

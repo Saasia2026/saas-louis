@@ -114,7 +114,7 @@ export const en: Dictionary = {
       },
       {
         title: "Motion transfer",
-        text: "Keep the moves and the camera, and replay the scene in the location from your photo.",
+        text: "Keep the moves and the camera, and rebuild the whole scene with your character, even an animal. In a new location if you like.",
       },
       {
         title: "High fidelity",
@@ -266,8 +266,8 @@ export const en: Dictionary = {
     characterTarget: "Who does character {n} replace? e.g. the man in the red t-shirt",
     partNoFace: "face not applied, pass refunded",
     decorImage: "Photo of the place",
-    decorDrop: "Add a photo of the place",
-    decorDropSub: "The scene will be replayed in that setting",
+    decorDrop: "Photo of a new location (optional)",
+    decorDropSub: "Without one, the clip's own setting is used",
     instructions: "Prompt",
     instructionsPlaceholder:
       "Say what you want, e.g. '@image1 replaces the man in black, @image2 replaces the chair'. Mention your images with @image1, @image2…",
@@ -290,11 +290,11 @@ export const en: Dictionary = {
     modeReplace: "Replace",
     modeTransfer: "Motion transfer",
     modeReplaceHint: "Swap a person, an object or an outfit, and keep the rest.",
-    modeTransferHint: "Keep the moves and the camera, and replay the scene in a new location.",
+    modeTransferHint:
+      "Rebuilds the whole scene from the moves: the character takes over the full body, animals and creatures included. The set may change slightly.",
     decorRequiredTitle: "New location",
     missingVideo: "To start: add your clip.",
     missingCharacter: "To start: add at least one image.",
-    missingDecor: "To start: add the photo of the place.",
     promptHint: "Say what each image replaces. Several photos of the same character help the engine.",
     keyframes: "Placing the character in each shot",
     shots: "Filming and checking the shots",

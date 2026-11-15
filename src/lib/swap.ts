@@ -215,6 +215,9 @@ export type SwapMetadata = {
   // du clip est gardé.
   decor_image_path?: string;
   decor_url?: string;
+  // Onglet « Transfert » du studio : Motion Transfer, avec ou sans photo de
+  // lieu. Absent avec une photo de lieu : rendus d'avant le 2026-11-15.
+  transfer?: boolean;
   // Consignes libres du créateur (genjutsu), dans sa langue.
   instructions?: string;
   // Mode vrac multi-personnage : les consignes sont le prompt principal
@@ -871,6 +874,9 @@ async function advanceParts(
                     object: c.object,
                   })),
                   decorUrl: metadata.decor_url,
+                  // Le mannequin est posé par Object Swap ; seule la passe
+                  // des personnages suit le mode choisi.
+                  transfer: metadata.transfer,
                   instructions: metadata.instructions,
                   directPrompt: metadata.direct_prompt,
                   ...genjutsuSettingsOf(metadata),

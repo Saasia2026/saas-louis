@@ -12,9 +12,14 @@ const BASE_URL = "https://api.higgsfield.ai";
 // (Genjutsu Max) ; 0,10 $/s en 720p (Genjutsu Light, affiché « Shinka »,
 // 15 s lues au plus). Vidéo source 4–30 s.
 // — Object Swap (onglet « Remplacer ») : remplace ce que dit le prompt et
-//   garde le reste du clip (décor, caméra, jeu, coupes).
+//   garde le reste du clip (décor, caméra, jeu, coupes). Il retouche la vidéo
+//   en place : un personnage de forme humaine passe, un animal reste collé
+//   sur la personne ou posé à côté (chèvre, 2026-11-14 et 15).
 // — Motion Transfer (onglet « Transfert ») : refabrique toute la scène à
-//   partir des références ; tout passer par lui redessinait la vidéo entière.
+//   partir des mouvements et des références, avec ou sans photo de lieu. Le
+//   personnage prend tout le corps (animal, créature), mais le décor est
+//   redessiné : c'est le mode des rendus du site Higgsfield que le créateur
+//   prend pour modèle (« hf_mult_motion_control », 2026-10-15 et 16).
 const GENJUTSU_ENDPOINTS = {
   max: {
     swap: "higgsfield/genjutsu/object-swap/v1.0",
@@ -209,6 +214,14 @@ function guidedPrompt(images: number, decor: boolean, instructions: string) {
   ].join("\n\n");
 }
 
+// Transfert sans photo de lieu : le prompt du créateur part tel qu'il l'a
+// écrit, comme sur le site Higgsfield (aucun prompt enrichi n'y est enregistré
+// pour ce mode). « @image1 » devient « image 1 », la forme de ses prompts qui
+// y ont marché (« la chevre de l image 1 »).
+function transferPrompt(instructions: string) {
+  return instructions.trim().replace(/@(?:image|img|photo)\s*(\d+)/gi, "image $1");
+}
+
 // Consigne Genjutsu, en blocs titrés : la vidéo source commande tout le jeu,
 // les références commandent l'identité ; chaque personne remplacée est liée à
 // son personnage pour tout le clip ; la scène reste intacte ; la planche de
@@ -286,8 +299,11 @@ export async function createGenjutsuSwap(input: {
   // Vide : seul le lieu change.
   characters: { imageUrls: string[]; target?: string; object?: boolean }[];
   // Photo du lieu (déjà chez Higgsfield) : la scène est reconstruite dans ce
-  // décor, via Motion Transfer. Absente : Object Swap, décor du clip gardé.
+  // décor, via Motion Transfer.
   decorUrl?: string;
+  // Onglet « Transfert » : Motion Transfer, même sans photo de lieu. Sans
+  // lui ni photo de lieu : Object Swap, le clip est gardé.
+  transfer?: boolean;
   // Consignes libres du créateur (dans sa langue).
   instructions?: string;
   // Studio : le prompt du créateur part mot pour mot, comme sur l'interface
@@ -326,23 +342,27 @@ export async function createGenjutsuSwap(input: {
     if (!request_id) throw new Error("Higgsfield création : réponse sans identifiant");
     return `hf:swap:${request_id}`;
   }
-  // Photo de lieu (onglet « Transfert ») : Motion Transfer ; sinon Object Swap.
-  const endpoint = genjutsuEndpoint(model, Boolean(input.decorUrl));
+  // Onglet « Transfert » ou photo de lieu : Motion Transfer ; sinon Object Swap.
+  const endpoint = genjutsuEndpoint(model, Boolean(input.transfer || input.decorUrl));
+  const raw = input.transfer && !input.decorUrl && input.directPrompt && input.instructions?.trim();
   // 8 images au plus ; le décor prend la dernière place (le prompt le désigne
   // comme la dernière image).
   const characterUrls = input.characters
     .flatMap((c) => c.imageUrls)
     .slice(0, input.decorUrl ? 7 : 8);
-  // Prompt structuré, toujours : le site Higgsfield enrichit chaque prompt
-  // avant de l'envoyer à Genjutsu (enhanced_prompt). Sans ça, un prompt vide
-  // ou trop court donne un personnage « détouré » au lieu d'être intégré dans
-  // la scène. Les consignes du créateur passent en REQUESTED CHANGES.
+  // Object Swap : prompt structuré, toujours. Le site Higgsfield y enrichit
+  // chaque prompt avant de l'envoyer à Genjutsu (enhanced_prompt) ; sans ça,
+  // un prompt vide ou trop court donne un personnage « détouré » au lieu
+  // d'être intégré dans la scène. Les consignes du créateur passent en
+  // REQUESTED CHANGES. Transfert sans lieu : voir transferPrompt.
   const response = await fetch(`${BASE_URL}/${endpoint}${hook}`, {
     method: "POST",
     headers: headers(),
     signal: AbortSignal.timeout(60_000),
     body: JSON.stringify({
-      prompt: genjutsuPrompt(input.characters, Boolean(input.decorUrl), input.instructions),
+      prompt: raw
+        ? transferPrompt(raw)
+        : genjutsuPrompt(input.characters, Boolean(input.decorUrl), input.instructions),
       video_url: input.videoUrl,
       image_urls: input.decorUrl ? [...characterUrls, input.decorUrl] : characterUrls,
       resolution,

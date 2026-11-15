@@ -117,11 +117,12 @@ export function Studio({
   const settings = { model, quality };
   // Haute fidélité : méthode du mannequin, deux passes, au double du prix.
   const [fidelity, setFidelity] = useState(false);
-  // Remplacer (Object Swap, la scène est gardée) ou transférer le mouvement
-  // (Motion Transfer, la scène est rejouée dans le lieu de la photo).
+  // Remplacer (Object Swap, le clip est retouché en place) ou transférer le
+  // mouvement (Motion Transfer, toute la scène est refaite : le personnage
+  // prend tout le corps, animal compris).
   const [mode, setMode] = useState<"replace" | "transfer">("replace");
-  // Changement de décor : photo du lieu, facultative. Sans photo, seuls les
-  // personnages et les cases remplies comptent, le décor du clip est gardé.
+  // Transfert : photo d'un nouveau lieu, facultative. Sans elle, la scène est
+  // refaite d'après le décor du clip.
   const [decorPhoto, setDecorPhoto] = useState<SwapFile | null>(null);
   // Le prompt unique : qui remplace qui et toute autre demande, reformulé
   // côté serveur (voir planSwapCast).
@@ -145,8 +146,6 @@ export function Studio({
   // distribution retenue, jamais plus que ce prix affiché.
   const castCount = preset ? preset.people.length : Math.min(SWAP_MAX_CHARACTERS, Math.max(1, images.length));
   const castKnown = Boolean(preset) || images.length <= 1;
-  // Transfert : la photo du nouveau lieu est ce qui le distingue.
-  const decorReady = mode === "replace" || Boolean(decorPhoto);
 
   const [phase, setPhase] = useState<Phase>(
     resume ? { kind: "generating", job: resume.job, id: resume.id } : { kind: "idle" },
@@ -176,15 +175,9 @@ export function Studio({
   const gate = durationKnown
     ? cost
     : swapCredits(1, engine, undefined, castCount, settings, false, fidelity);
-  const ready = Boolean(video) && imagesReady && decorReady;
+  const ready = Boolean(video) && imagesReady;
   // Ce qu'il manque pour lancer, affiché au-dessus du bouton.
-  const missing = !video
-    ? t.studio.missingVideo
-    : !imagesReady
-      ? t.studio.missingCharacter
-      : !decorReady
-        ? t.studio.missingDecor
-        : null;
+  const missing = !video ? t.studio.missingVideo : !imagesReady ? t.studio.missingCharacter : null;
   // Connecté mais à court de crédits : « Générer » mène aux packs.
   const short = !guest && ready && credits < gate && !payAsYouGo;
   // Paiement à l'usage : ce que la carte paiera, annoncé avant de lancer.
@@ -427,6 +420,7 @@ export function Studio({
         model,
         quality,
         vessel: fidelity,
+        transfer: mode === "transfer",
         decorImagePath: mode === "transfer" ? decorPhoto?.path : undefined,
         instructions: prompt.trim() || undefined,
         // Passage choisi dans la fenêtre de découpe ; sans lui, le clip entier.

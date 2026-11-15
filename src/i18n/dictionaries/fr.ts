@@ -116,7 +116,7 @@ export const fr = {
       },
       {
         title: "Transférer le mouvement",
-        text: "Garde les gestes et la caméra, et rejoue la scène dans le lieu de ta photo.",
+        text: "Garde les gestes et la caméra, et refait toute la scène avec ton personnage, même un animal. Dans un nouveau lieu si tu veux.",
       },
       {
         title: "Haute fidélité",
@@ -268,8 +268,8 @@ export const fr = {
     characterTarget: "Qui le personnage {n} remplace ? ex. : l'homme en t-shirt rouge",
     partNoFace: "visage non posé, prix de la passe rendu",
     decorImage: "Photo du lieu",
-    decorDrop: "Ajoute la photo du lieu",
-    decorDropSub: "La scène sera rejouée dans ce décor",
+    decorDrop: "Photo d'un nouveau lieu (facultatif)",
+    decorDropSub: "Sans photo, le décor du clip est repris",
     instructions: "Prompt",
     instructionsPlaceholder:
       "Dis ce que tu veux, ex. : « @image1 remplace l'homme en noir, @image2 remplace la chaise ». Cite tes images avec @image1, @image2…",
@@ -292,11 +292,11 @@ export const fr = {
     modeReplace: "Remplacer",
     modeTransfer: "Transférer le mouvement",
     modeReplaceHint: "Change une personne, un objet ou une tenue, et garde le reste.",
-    modeTransferHint: "Garde les mouvements et la caméra, et rejoue la scène dans un nouveau lieu.",
+    modeTransferHint:
+      "Refait toute la scène à partir des mouvements : le personnage prend tout le corps, animal ou créature compris. Le décor peut changer un peu.",
     decorRequiredTitle: "Nouveau lieu",
     missingVideo: "Pour lancer : ajoute ton clip.",
     missingCharacter: "Pour lancer : ajoute au moins une image.",
-    missingDecor: "Pour lancer : ajoute la photo du lieu.",
     promptHint: "Dis ce que chaque image remplace. Plusieurs photos du même personnage aident le moteur.",
     keyframes: "Personnage placé sur chaque plan",
     shots: "Tournage et vérification des plans",

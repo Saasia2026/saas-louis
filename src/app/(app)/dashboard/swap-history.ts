@@ -30,7 +30,7 @@ export type SwapHistoryItem = {
   // Modèle Genjutsu et qualité du rendu.
   settings: Required<GenjutsuSettings>;
   fidelity: boolean;
-  // Mouvement transféré dans un nouveau lieu (Motion Transfer).
+  // Scène refaite à partir des mouvements (Motion Transfer).
   transfer: boolean;
   // Consignes libres du créateur.
   prompt: string;
@@ -52,6 +52,7 @@ type HistoryMetadata = {
   quality?: unknown;
   vessel?: boolean;
   decor_image_path?: string;
+  transfer?: boolean;
   instructions?: string;
   swap_parts?: { original?: boolean }[];
   character_image_path?: string;
@@ -134,7 +135,7 @@ export async function listSwapHistory(limit = 24): Promise<SwapHistoryItem[]> {
         settings: genjutsuSettingsOf(g.meta),
         fidelity: g.meta.vessel === true,
         prompt: g.meta.instructions ?? "",
-        transfer: Boolean(g.meta.decor_image_path),
+        transfer: Boolean(g.meta.transfer || g.meta.decor_image_path),
         refs: photoPaths[i].flatMap((p) => ref(p) ?? []),
         decor: ref(g.meta.decor_image_path),
         clip: ref(g.meta.source_video_path),

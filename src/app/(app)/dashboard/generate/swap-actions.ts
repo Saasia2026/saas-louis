@@ -121,6 +121,9 @@ export async function startSwap(input: {
   // reconstruite dans ce décor (Motion Transfer). Absente : le décor du clip
   // est gardé, seuls les personnages changent.
   decorImagePath?: string;
+  // Onglet « Transfert » : toute la scène est refaite à partir des mouvements
+  // (Motion Transfer), avec ou sans photo de lieu.
+  transfer?: boolean;
   // Consignes libres, facultatives : demandes en plus du remplacement
   // (« transforme la chaise en voiture de sport »), dans la langue du
   // créateur. Vides : seuls les références et les champs remplis comptent.
@@ -196,6 +199,7 @@ export async function startSwap(input: {
     }
   }
   const decorImagePath = typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
+  const transfer = input.transfer === true || Boolean(decorImagePath);
   // Sans image dans la case principale, seul le lieu change.
   if (!characters.length && !decorImagePath) return { error: errors.swapFiles };
   if (characters.length > (directMode ? GENJUTSU_MAX_IMAGES : SWAP_MAX_CHARACTERS)) {
@@ -298,6 +302,7 @@ export async function startSwap(input: {
     model,
     quality,
     ...(decorImagePath && { decor_image_path: decorImagePath }),
+    ...(transfer && { transfer: true }),
     ...(instructions && { instructions }),
     ...(directPrompt && { direct_prompt: true }),
     ...(vessel && { vessel: true }),
