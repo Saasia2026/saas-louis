@@ -339,7 +339,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
           ))}
         </ul>
         <p className="mt-4 text-sm text-muted tabular-nums">
-          {fmt(P.eqSeconds, { n: swapMethodSecondsFor(balance).toLocaleString(intl) })}
+          {fmt(P.eqStandard, { n: swapMethodSecondsFor(balance).toLocaleString(intl) })}
         </p>
 
         {!card ? (
