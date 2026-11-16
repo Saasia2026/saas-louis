@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronsLeftRight } from "lucide-react";
 import { useState } from "react";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
@@ -61,32 +62,23 @@ export function TopupPacks({ card, nonce, enabled }: { card: Card; nonce: string
 
         <div className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-end">
           <div className="min-w-0 flex-1">
-            <div className="flex justify-between text-xs font-semibold text-muted tabular-nums sm:text-sm">
+            {/* Repères au-dessus de chaque cran, alignés sur les points. */}
+            <div className="relative mx-[22px] h-5 text-xs font-semibold text-muted tabular-nums sm:text-sm">
               {SLIDER_PACKS.map((p, i) => (
                 <button
                   key={p.id}
                   type="button"
                   onClick={() => setIndex(i)}
-                  className={`transition-colors ${i === index ? "text-text" : "hover:text-text"} ${
-                    i % 2 === 1 && i !== SLIDER_PACKS.length - 1 ? "max-sm:hidden" : ""
+                  style={{ left: `${(i / LAST) * 100}%` }}
+                  className={`absolute top-0 -translate-x-1/2 transition-colors ${i === index ? "text-text" : "hover:text-text"} ${
+                    i % 2 === 1 && i !== LAST ? "max-sm:hidden" : ""
                   }`}
                 >
                   {p.credits / 1000}k
                 </button>
               ))}
             </div>
-            <input
-              type="range"
-              min={0}
-              max={SLIDER_PACKS.length - 1}
-              step={1}
-              value={index}
-              onChange={(e) => setIndex(Number(e.target.value))}
-              aria-label={P.sliderLabel}
-              aria-valuetext={`${n(big.credits)} ${t.common.credits}`}
-              className="mt-3 h-2 w-full cursor-pointer"
-              style={{ accentColor: LIME }}
-            />
+            <Slider index={index} setIndex={setIndex} label={P.sliderLabel} valueText={`${n(big.credits)} ${t.common.credits}`} />
           </div>
           <BuyButton pack={big} card={card} nonce={nonce} enabled={enabled} />
         </div>
@@ -134,6 +126,71 @@ export function TopupPacks({ card, nonce, enabled }: { card: Card; nonce: string
           );
         })}
       </ul>
+    </div>
+  );
+}
+
+const LAST = SLIDER_PACKS.length - 1;
+// Diamètre de la poignée, en px : les crans vont de son centre à gauche à
+// son centre à droite.
+const KNOB = 44;
+
+// Curseur façon Higgsfield : rail épais, remplissage citron jusqu'à la
+// poignée, un point par cran. Un vrai <input type="range"> transparent par
+// dessus garde le clavier, le glisser et l'accessibilité ; sa poignée a la
+// taille de la poignée dessinée, donc les positions coïncident.
+function Slider({
+  index,
+  setIndex,
+  label,
+  valueText,
+}: {
+  index: number;
+  setIndex: (i: number) => void;
+  label: string;
+  valueText: string;
+}) {
+  const at = (i: number) => `calc(${KNOB / 2}px + (100% - ${KNOB}px) * ${i / LAST})`;
+  return (
+    <div className="relative mt-3 h-11 rounded-full bg-surface-3 shadow-[inset_0_1px_3px_rgb(0_0_0/0.35)]">
+      {/* Remplissage jusqu'au bord droit de la poignée. */}
+      <div
+        aria-hidden
+        className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-200 ease-out"
+        style={{
+          width: `calc(${at(index)} + ${KNOB / 2}px)`,
+          background: `linear-gradient(90deg, #8fae22 0%, ${LIME} 100%)`,
+          boxShadow: "0 0 24px -6px rgb(200 240 74 / 0.6)",
+        }}
+      />
+      {SLIDER_PACKS.map((p, i) => (
+        <span
+          key={p.id}
+          aria-hidden
+          className={`absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full transition-colors ${
+            i <= index ? "bg-black/35" : "bg-text/25"
+          }`}
+          style={{ left: at(i) }}
+        />
+      ))}
+      <input
+        type="range"
+        min={0}
+        max={LAST}
+        step={1}
+        value={index}
+        onChange={(e) => setIndex(Number(e.target.value))}
+        aria-label={label}
+        aria-valuetext={valueText}
+        className="peer absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none bg-transparent opacity-0 [&::-moz-range-thumb]:size-11 [&::-webkit-slider-thumb]:size-11 [&::-webkit-slider-thumb]:appearance-none"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute top-0 grid size-11 -translate-x-1/2 place-items-center rounded-full bg-white text-[#141a05] shadow-[0_4px_14px_rgb(0_0_0/0.35)] transition-[left] duration-200 ease-out peer-focus-visible:ring-4 peer-focus-visible:ring-[#c8f04a]/50"
+        style={{ left: at(index) }}
+      >
+        <ChevronsLeftRight className="size-5" strokeWidth={2.5} />
+      </span>
     </div>
   );
 }
