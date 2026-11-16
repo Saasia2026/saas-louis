@@ -1,5 +1,7 @@
 // Packs de crédits vendus par Stripe Checkout, partagés client/serveur.
-// Prix en centimes, sans TVA (micro-entreprise en franchise, art. 293 B du
+// Prix en cents de dollar depuis le 2026-11-16 (avant : euros ; mêmes
+// revenus à ~1,17 $ l'euro, change et frais de conversion de Stripe
+// compris), sans TVA (micro-entreprise en franchise, art. 293 B du
 // CGI). Un crédit coûte ~0,022 € à produire (Genjutsu 0,681 $/s à 28 cr/s,
 // plus les rendus remboursés) ; Stripe prend ~2 % + 0,25 € par paiement et
 // l'URSSAF ~21,2 % du prix : l'équilibre est vers 2,86 € les 100 crédits si
@@ -7,7 +9,7 @@
 // abonnement expirent à la fin de la période payée). Grille à ~20 % net, à
 // reprendre avec du volume ou une remise Higgsfield : ~3,60 € les 100
 // crédits.
-export const CREDIT_CURRENCY = "eur";
+export const CREDIT_CURRENCY = "usd";
 
 // Teinte d'une offre sur les pages (voir TIERS dans app/tier-style.ts).
 export type Tier = "basic" | "pro" | "creator";
@@ -23,20 +25,20 @@ const pack = (credits: number, amount: number, tier: Tier): CreditPack => ({
 
 // Grille du 2026-11-16, sur le modèle de la page de prix de Higgsfield : des
 // recharges de 500 à 4 000 crédits en cartes, et un curseur de 5 000 à
-// 100 000. Le prix des 100 crédits baisse avec la taille, de 2,90 € à
-// 2,75 €. CREDIT_PACKS[0] fixe aussi le prix du paiement à l'usage.
+// 100 000. Le prix des 100 crédits baisse avec la taille, de 3,40 $ à
+// 3,20 $ (2,90 € à 2,75 € avant le passage au dollar). CREDIT_PACKS[0] fixe aussi le prix du paiement à l'usage.
 export const TOPUP_PACKS: readonly CreditPack[] = [
-  pack(500, 1449, "basic"),
-  pack(1000, 2849, "basic"),
-  pack(2000, 5599, "pro"),
-  pack(4000, 11099, "pro"),
+  pack(500, 1699, "basic"),
+  pack(1000, 3299, "basic"),
+  pack(2000, 6499, "pro"),
+  pack(4000, 12899, "pro"),
 ];
 export const SLIDER_PACKS: readonly CreditPack[] = [
-  pack(5000, 13799, "creator"),
+  pack(5000, 15999, "creator"),
   ...[7000, 9000, 11000, 13000, 15000, 17000, 19000, 21000, 23000, 25000].map((credits) =>
-    pack(credits, Math.round(credits * 2.75) - 1, "creator"),
+    pack(credits, Math.round(credits * 3.2) - 1, "creator"),
   ),
-  pack(100000, 274999, "creator"),
+  pack(100000, 319999, "creator"),
 ];
 export const CREDIT_PACKS: readonly CreditPack[] = [...TOPUP_PACKS, ...SLIDER_PACKS];
 
@@ -65,10 +67,10 @@ export type SubscriptionPlan = {
 // mois de crédits d'un coup, ~11 % dessous. Les crédits d'une période (le
 // mois, ou l'année) expirent à sa fin ; ceux des packs jamais.
 export const SUBSCRIPTION_PLANS: readonly SubscriptionPlan[] = [
-  { id: "pro-1k", tier: "pro", credits: 1000, month: 2699, year: 29990 },
-  { id: "creator-3k", tier: "creator", credits: 3000, month: 7999, year: 89990 },
-  { id: "creator-6k", tier: "creator", credits: 6000, month: 15799, year: 177990 },
-  { id: "creator-9k", tier: "creator", credits: 9000, month: 23499, year: 263990 },
+  { id: "pro-1k", tier: "pro", credits: 1000, month: 3199, year: 34990 },
+  { id: "creator-3k", tier: "creator", credits: 3000, month: 9399, year: 104990 },
+  { id: "creator-6k", tier: "creator", credits: 6000, month: 18499, year: 207990 },
+  { id: "creator-9k", tier: "creator", credits: 9000, month: 27499, year: 308990 },
 ];
 
 // Anciens abonnements : plus proposés, encore crédités à chaque facture.
@@ -167,5 +169,7 @@ export function formatPrice(amount: number, intlLocale = "fr-FR") {
   return new Intl.NumberFormat(intlLocale, {
     style: "currency",
     currency: CREDIT_CURRENCY,
+    // « 16,99 $ » plutôt que « 16,99 $US » en français.
+    currencyDisplay: "narrowSymbol",
   }).format(amount / 100);
 }
