@@ -1,54 +1,113 @@
 // Packs de crédits vendus par Stripe Checkout, partagés client/serveur.
 // Prix en centimes, sans TVA (micro-entreprise en franchise, art. 293 B du
-// CGI). Grille de lancement (2026-10-12), en crédits 4 fois plus petits
-// qu'au départ, comme sur le marché : un crédit coûte ~0,022 € à produire
-// (Genjutsu 0,681 $/s à 28 cr/s, plus fiches et rendus remboursés) ; Stripe
-// prend ~2 % + 0,25 € par paiement. Marge ~20 % avant l'URSSAF (~21,2 % du
-// prix) : une offre dont tous les crédits sont utilisés est à l'équilibre ou
-// un peu en perte, la marge vient des crédits non utilisés (ceux d'un
+// CGI). Un crédit coûte ~0,022 € à produire (Genjutsu 0,681 $/s à 28 cr/s,
+// plus les rendus remboursés) ; Stripe prend ~2 % + 0,25 € par paiement et
+// l'URSSAF ~21,2 % du prix : l'équilibre est vers 2,86 € les 100 crédits si
+// tout est consommé. La marge vient des crédits non utilisés (ceux d'un
 // abonnement expirent à la fin de la période payée). Grille à ~20 % net, à
-// reprendre avec du volume ou une remise Higgsfield : packs 244 / 760 / 2568,
-// abonnements 660 / 2140. Le prix par crédit baisse du plus petit au plus
-// grand pack.
+// reprendre avec du volume ou une remise Higgsfield : ~3,60 € les 100
+// crédits.
 export const CREDIT_CURRENCY = "eur";
 
-export const CREDIT_PACKS = [
-  { id: "starter", label: "Basic", credits: 340, amount: 999 },
-  { id: "creator", label: "Pro", credits: 1060, amount: 2999, highlight: true },
-  { id: "studio", label: "Creator", credits: 3600, amount: 9999 },
-] as const;
+// Teinte d'une offre sur les pages (voir TIERS dans app/tier-style.ts).
+export type Tier = "basic" | "pro" | "creator";
 
-// Abonnements (Pro et Creator ; pas de Basic) : ~4 % moins chers au crédit
-// que le pack de la même offre.
-// L'annuel livre les 12 mois de crédits d'un coup, ~10 % sous le prix des
-// mêmes crédits en packs. Les crédits d'une période (le mois, ou l'année)
-// expirent à sa fin ; ceux des packs jamais.
-export const SUBSCRIPTION_PLANS = [
-  { id: "creator", credits: 920, month: 2499, year: 27990, highlight: true },
-  { id: "studio", credits: 3000, month: 7999, year: 89990 },
-] as const;
+export type CreditPack = { id: string; credits: number; amount: number; tier: Tier };
 
-export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];
+const pack = (credits: number, amount: number, tier: Tier): CreditPack => ({
+  id: `c${credits}`,
+  credits,
+  amount,
+  tier,
+});
+
+// Grille du 2026-11-16, sur le modèle de la page de prix de Higgsfield : des
+// recharges de 500 à 4 000 crédits en cartes, et un curseur de 5 000 à
+// 100 000. Le prix des 100 crédits baisse avec la taille, de 2,90 € à
+// 2,75 €. CREDIT_PACKS[0] fixe aussi le prix du paiement à l'usage.
+export const TOPUP_PACKS: readonly CreditPack[] = [
+  pack(500, 1449, "basic"),
+  pack(1000, 2849, "basic"),
+  pack(2000, 5599, "pro"),
+  pack(4000, 11099, "pro"),
+];
+export const SLIDER_PACKS: readonly CreditPack[] = [
+  pack(5000, 13799, "creator"),
+  ...[7000, 9000, 11000, 13000, 15000, 17000, 19000, 21000, 23000, 25000].map((credits) =>
+    pack(credits, Math.round(credits * 2.75) - 1, "creator"),
+  ),
+  pack(100000, 274999, "creator"),
+];
+export const CREDIT_PACKS: readonly CreditPack[] = [...TOPUP_PACKS, ...SLIDER_PACKS];
+
+// Packs de l'ancienne grille : plus en vente, encore reconnus pour créditer
+// un paiement lancé avant le changement.
+const LEGACY_PACKS: readonly CreditPack[] = [
+  { id: "starter", credits: 340, amount: 999, tier: "basic" },
+  { id: "creator", credits: 1060, amount: 2999, tier: "pro" },
+  { id: "studio", credits: 3600, amount: 9999, tier: "creator" },
+];
+
+export function findCreditPack(id: unknown): CreditPack | undefined {
+  return [...CREDIT_PACKS, ...LEGACY_PACKS].find((p) => p.id === id);
+}
+
+export type SubscriptionPlan = {
+  id: string;
+  tier: Exclude<Tier, "basic">;
+  credits: number;
+  month: number;
+  year: number;
+};
+
+// Abonnements : Pro (1 000 crédits par mois) et Creator en trois tailles.
+// ~5 % sous les recharges des mêmes crédits au mois ; l'annuel livre les 12
+// mois de crédits d'un coup, ~11 % dessous. Les crédits d'une période (le
+// mois, ou l'année) expirent à sa fin ; ceux des packs jamais.
+export const SUBSCRIPTION_PLANS: readonly SubscriptionPlan[] = [
+  { id: "pro-1k", tier: "pro", credits: 1000, month: 2699, year: 29990 },
+  { id: "creator-3k", tier: "creator", credits: 3000, month: 7999, year: 89990 },
+  { id: "creator-6k", tier: "creator", credits: 6000, month: 15799, year: 177990 },
+  { id: "creator-9k", tier: "creator", credits: 9000, month: 23499, year: 263990 },
+];
+
+// Anciens abonnements : plus proposés, encore crédités à chaque facture.
+const LEGACY_PLANS: readonly SubscriptionPlan[] = [
+  { id: "creator", tier: "pro", credits: 920, month: 2499, year: 27990 },
+  { id: "studio", tier: "creator", credits: 3000, month: 7999, year: 89990 },
+];
+
 export type BillingInterval = "month" | "year";
 
 export function findSubscriptionPlan(id: unknown): SubscriptionPlan | undefined {
-  return SUBSCRIPTION_PLANS.find((p) => p.id === id);
+  return [...SUBSCRIPTION_PLANS, ...LEGACY_PLANS].find((p) => p.id === id);
 }
 
-// Prix par mois des mêmes crédits achetés en packs de l'offre : la référence
-// des réductions affichées (jamais un prix barré inventé).
+// Prix des mêmes crédits en recharges, au tarif du plus grand pack qui n'en
+// donne pas plus : la référence des réductions affichées sur les
+// abonnements (jamais un prix barré inventé).
+export function topupPrice(credits: number) {
+  const ref = [...CREDIT_PACKS].reverse().find((p) => p.credits <= credits) ?? CREDIT_PACKS[0];
+  return Math.round((ref.amount * credits) / ref.credits);
+}
+
+// Prix par mois des mêmes crédits achetés en recharges.
 export function packMonthlyEquivalent(plan: SubscriptionPlan) {
-  const pack = CREDIT_PACKS.find((p) => p.id === plan.id)!;
-  return Math.round((pack.amount * plan.credits) / pack.credits);
+  return topupPrice(plan.credits);
 }
 
 export function subscriptionMonthly(plan: SubscriptionPlan, interval: BillingInterval) {
   return interval === "year" ? Math.round(plan.year / 12) : plan.month;
 }
 
-// Réduction réelle de l'abonnement face aux packs, en %.
+// Réduction réelle de l'abonnement face aux recharges, en %.
 export function subscriptionOff(plan: SubscriptionPlan, interval: BillingInterval) {
   return Math.round((1 - subscriptionMonthly(plan, interval) / packMonthlyEquivalent(plan)) * 100);
+}
+
+// Économie sur un an face aux mêmes crédits en recharges.
+export function subscriptionYearlySaving(plan: SubscriptionPlan, interval: BillingInterval) {
+  return packMonthlyEquivalent(plan) * 12 - (interval === "year" ? plan.year : plan.month * 12);
 }
 
 // Crédits livrés à chaque paiement de l'abonnement.
@@ -56,11 +115,27 @@ export function planCredits(plan: SubscriptionPlan, interval: BillingInterval) {
   return interval === "year" ? plan.credits * 12 : plan.credits;
 }
 
+// Prix d'un pack au tarif du plus petit : le prix barré des recharges.
+export function packReference(p: CreditPack) {
+  const base = CREDIT_PACKS[0];
+  return Math.round((p.credits * base.amount) / base.credits);
+}
+
+// Réduction réelle d'un pack face au plus petit, en %.
+export function packOff(p: CreditPack) {
+  return Math.round((1 - p.amount / packReference(p)) * 100);
+}
+
+// Prix des 100 crédits d'un pack, en centimes.
+export function per100(p: CreditPack) {
+  return Math.round((p.amount * 100) / p.credits);
+}
+
 // Paiement à l'usage (carte enregistrée) : les crédits qui manquent pour
 // lancer une vidéo ou poser une question sont débités sur la carte au
-// lancement, au prix du crédit du pack Basic. USAGE_MIN_CENTS au moins par
-// débit, pour que les frais fixes de Stripe (~0,25 €) ne mangent pas tout :
-// le surplus reste au solde. Garde-fous par 24 h.
+// lancement, au prix du crédit du plus petit pack. USAGE_MIN_CENTS au moins
+// par débit, pour que les frais fixes de Stripe (~0,25 €) ne mangent pas
+// tout : le surplus reste au solde. Garde-fous par 24 h.
 export const USAGE_MIN_CENTS = 200;
 export const USAGE_DAILY_MAX_CHARGES = 20;
 export const USAGE_DAILY_MAX_CENTS = 20000;
@@ -71,9 +146,6 @@ export function usageCharge(missingCredits: number) {
   const credits = Math.max(Math.ceil(missingCredits), minCredits);
   return { credits, amount: Math.ceil((credits * basic.amount) / basic.credits) };
 }
-
-export type CreditPack = (typeof CREDIT_PACKS)[number];
-export type CreditPackId = CreditPack["id"];
 
 export function creditsPerEuro(pack: CreditPack) {
   return Math.round((pack.credits / pack.amount) * 100);
@@ -88,10 +160,6 @@ export function bonusCredits(pack: CreditPack) {
 export function subscriptionCreditsPerEuro(plan: SubscriptionPlan, interval: BillingInterval) {
   const monthly = subscriptionMonthly(plan, interval);
   return Math.round((plan.credits / monthly) * 100);
-}
-
-export function findCreditPack(id: unknown): CreditPack | undefined {
-  return CREDIT_PACKS.find((p) => p.id === id);
 }
 
 // `intlLocale` : voir INTL_LOCALES (i18n/config.ts).

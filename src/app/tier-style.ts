@@ -3,9 +3,9 @@ import type { CSSProperties } from "react";
 // Teinte de chaque offre (variables --tier-*, plus foncées en thème clair) et
 // force du dégradé de sa carte ; Pro est la plus mise en avant.
 export const TIERS = {
-  starter: { color: "var(--tier-basic)", strength: 14, badge: null },
-  creator: { color: "var(--tier-pro)", strength: 26, badge: "popular" },
-  studio: { color: "var(--tier-creator)", strength: 18, badge: "best" },
+  basic: { color: "var(--tier-basic)", strength: 14, badge: null },
+  pro: { color: "var(--tier-pro)", strength: 26, badge: "popular" },
+  creator: { color: "var(--tier-creator)", strength: 18, badge: "best" },
 } as const;
 
 export function tierCard(color: string, strength: number): CSSProperties {
