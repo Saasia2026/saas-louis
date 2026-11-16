@@ -22,6 +22,9 @@ export const PLAN_LOOK = {
 // Pastille de réduction penchée, rose vif.
 export const HOT_PILL =
   "inline-flex -skew-x-6 items-center gap-1.5 rounded-md bg-[#f2479d] px-2 py-0.5 text-xs font-extrabold italic text-white tabular-nums";
+// Petite pastille rose (choix Mensuel / Annuel).
+export const HOT_PILL_SM =
+  "inline-flex -skew-x-6 items-center rounded bg-[#f2479d] px-1.5 py-px text-[0.625rem] font-extrabold italic text-white tabular-nums";
 // Pastille citron (réduction des recharges).
 export const LIME_PILL =
   "inline-flex -skew-x-6 items-center rounded-md bg-[#c8f04a] px-2 py-0.5 text-xs font-extrabold italic text-[#141a05] tabular-nums";
