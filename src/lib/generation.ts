@@ -10,10 +10,11 @@ export const GENERATIONS_BUCKET = "generations";
 // Alignés avec public.start_swap_generation.
 export const SWAP_INPUTS_BUCKET = "swap-inputs";
 // Moteurs du remplacement :
-// - genjutsu (Higgsfield Genjutsu Object Swap) : 0,681 $ la seconde en 720p.
-//   Il suit les coupes tout seul ; le passage est rendu en séquences de
-//   quelques secondes, toutes en même temps (voir GENJUTSU_BLOCK_SECONDS),
-//   sans nouvel essai automatique : 28 crédits la seconde, 30 s au plus ;
+// - genjutsu (Higgsfield Genjutsu Object Swap) : 0,3446 $ la seconde en 720p
+//   (prix public du 2026-11-16, 0,681 $ avant). Il suit les coupes tout
+//   seul ; le passage est rendu en séquences de quelques secondes, toutes en
+//   même temps (voir GENJUTSU_BLOCK_SECONDS), sans nouvel essai automatique :
+//   21 crédits la seconde, 30 s au plus ;
 // - kling (Kling O3 Pro Edit) : 0,168 $ la seconde, plus l'image clé de
 //   chaque plan (~0,15 $) et les plans refaits après contrôle : 10 crédits
 //   la seconde, 15 s au plus ;
@@ -24,7 +25,7 @@ export const SWAP_INPUTS_BUCKET = "swap-inputs";
 // créateur partent telles quelles chez Higgsfield.
 // Barèmes alignés avec public.start_swap_generation.
 export const SWAP_ENGINES = {
-  genjutsu: { creditsPerSecond: 28, maxSeconds: 30 },
+  genjutsu: { creditsPerSecond: 21, maxSeconds: 30 },
   kling: { creditsPerSecond: 10, maxSeconds: 15 },
   magichour: { creditsPerSecond: 4, maxSeconds: 90 },
 } as const;
@@ -48,8 +49,10 @@ export function isSwapEngine(value: unknown): value is SwapEngine {
 // après Stripe et l'URSSAF aux prix publics (un crédit rapporte ~0,0235 $
 // net). Un essai à 11 (~30 % net) a été retiré le jour même : trop cher pour
 // le client, au-dessus du moteur complet chez Higgsfield. Shinka Max :
-// barème d'origine, à revoir quand le prix réellement débité sur le compte
-// Higgsfield aura été lu (le baisser aux anciens coûts ferait vendre à perte).
+// baissé le 2026-11-17 de 14 / 28 / 68 à 10 / 21 / 50, ~20 % net aux prix
+// publics eux aussi. Ces prix n'ont pas été vérifiés sur une facture du
+// compte : si un rendu Max est débité ~0,68 $ la seconde en 720p au lieu de
+// ~0,34 $, remonter à 28 / 68 (à 21, il se vendrait à perte).
 // Alignés avec public.start_swap_generation.
 export const GENJUTSU_MODELS = ["standard", "max"] as const;
 export type GenjutsuModel = (typeof GENJUTSU_MODELS)[number];
@@ -57,7 +60,7 @@ export const SWAP_QUALITIES = ["480p", "720p", "1080p"] as const;
 export type SwapQuality = (typeof SWAP_QUALITIES)[number];
 export const GENJUTSU_RATES: Record<GenjutsuModel, Record<SwapQuality, number>> = {
   standard: { "480p": 5, "720p": 9, "1080p": 18 },
-  max: { "480p": 14, "720p": 28, "1080p": 68 },
+  max: { "480p": 10, "720p": 21, "1080p": 50 },
 };
 // Shinka par défaut depuis le 2026-11-16 : environ 3 fois moins cher la
 // vidéo pour le client ; Max reste l'option qualité.
