@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { VideoWall } from "@/app/video-wall";
 import { getDictionary } from "@/i18n/server";
 import { SWAP_INPUTS_BUCKET } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
@@ -43,6 +44,8 @@ export default async function InfluencerPage() {
 
   return (
     <div>
+      {/* Fond animé du site : le mur de démos, très pâle, comme au studio. */}
+      <VideoWall />
       <InfluencerHero t={t.influencer} />
       <div className="mt-10">
         <InfluencerWorkspace userId={auth.claims.sub} credits={profile?.credits_remaining ?? 0} initial={initial} />
