@@ -4,6 +4,10 @@
 // du son.
 export type DemoClip = { base: string; ratio: string; sound?: boolean };
 
+// Identifiant court d'une démo, pour les liens partagés (?reel=g-24) et ce
+// que le navigateur retient (j'aime, enregistrées).
+export const clipId = (clip: DemoClip) => clip.base.slice(clip.base.lastIndexOf("/") + 1);
+
 const example = (name: string, ratio: string, sound = false): DemoClip => ({
   base: `/examples/${name}`,
   ratio,

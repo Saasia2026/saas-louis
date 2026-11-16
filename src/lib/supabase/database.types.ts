@@ -12,7 +12,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -154,6 +154,140 @@ export type Database = {
         }
         Relationships: []
       }
+      feed_items: {
+        Row: {
+          active: boolean
+          before_url: string | null
+          caption: string | null
+          category: string
+          created_at: string
+          creator_avatar_url: string | null
+          creator_handle: string | null
+          creator_name: string | null
+          creator_url: string | null
+          has_sound: boolean
+          id: string
+          like_count: number
+          position: number
+          poster_url: string | null
+          ratio: string
+          recreate_count: number
+          reveal_at: number | null
+          rights_note: string | null
+          slug: string
+          source: string
+          tiktok_id: string | null
+          video_url: string | null
+        }
+        Insert: {
+          active?: boolean
+          before_url?: string | null
+          caption?: string | null
+          category?: string
+          created_at?: string
+          creator_avatar_url?: string | null
+          creator_handle?: string | null
+          creator_name?: string | null
+          creator_url?: string | null
+          has_sound?: boolean
+          id?: string
+          like_count?: number
+          position?: number
+          poster_url?: string | null
+          ratio?: string
+          recreate_count?: number
+          reveal_at?: number | null
+          rights_note?: string | null
+          slug: string
+          source: string
+          tiktok_id?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          active?: boolean
+          before_url?: string | null
+          caption?: string | null
+          category?: string
+          created_at?: string
+          creator_avatar_url?: string | null
+          creator_handle?: string | null
+          creator_name?: string | null
+          creator_url?: string | null
+          has_sound?: boolean
+          id?: string
+          like_count?: number
+          position?: number
+          poster_url?: string | null
+          ratio?: string
+          recreate_count?: number
+          reveal_at?: number | null
+          rights_note?: string | null
+          slug?: string
+          source?: string
+          tiktok_id?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      feed_reactions: {
+        Row: {
+          created_at: string
+          item_id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          item_id: string
+          kind: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          item_id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_reactions_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "feed_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feed_scores: {
+        Row: {
+          category: string
+          likes: number
+          recreates: number
+          rewatches: number
+          updated_at: string
+          user_id: string
+          watch_seconds: number
+        }
+        Insert: {
+          category: string
+          likes?: number
+          recreates?: number
+          rewatches?: number
+          updated_at?: string
+          user_id: string
+          watch_seconds?: number
+        }
+        Update: {
+          category?: string
+          likes?: number
+          recreates?: number
+          rewatches?: number
+          updated_at?: string
+          user_id?: string
+          watch_seconds?: number
+        }
+        Relationships: []
+      }
       generation_shots: {
         Row: {
           attempts: number
@@ -244,7 +378,6 @@ export type Database = {
           credits_cost: number
           duration_seconds: number | null
           error: string | null
-          storyboard: Json | null
           id: string
           image_url: string | null
           kind: string
@@ -256,6 +389,7 @@ export type Database = {
           stage: string
           status: string
           storage_path: string | null
+          storyboard: Json | null
           twin_id: string | null
           user_id: string
         }
@@ -264,7 +398,6 @@ export type Database = {
           credits_cost?: number
           duration_seconds?: number | null
           error?: string | null
-          storyboard?: Json | null
           id?: string
           image_url?: string | null
           kind?: string
@@ -276,6 +409,7 @@ export type Database = {
           stage?: string
           status?: string
           storage_path?: string | null
+          storyboard?: Json | null
           twin_id?: string | null
           user_id: string
         }
@@ -284,7 +418,6 @@ export type Database = {
           credits_cost?: number
           duration_seconds?: number | null
           error?: string | null
-          storyboard?: Json | null
           id?: string
           image_url?: string | null
           kind?: string
@@ -296,6 +429,7 @@ export type Database = {
           stage?: string
           status?: string
           storage_path?: string | null
+          storyboard?: Json | null
           twin_id?: string | null
           user_id?: string
         }
@@ -422,6 +556,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          auto_recharge_at: string | null
+          auto_recharge_failed: boolean
+          auto_recharge_pack: string | null
+          auto_recharge_threshold: number
           avatar_url: string | null
           created_at: string
           credits_remaining: number
@@ -433,10 +571,6 @@ export type Database = {
           pay_as_you_go: boolean
           plan: string
           referred_by: string | null
-          auto_recharge_at: string | null
-          auto_recharge_failed: boolean
-          auto_recharge_pack: string | null
-          auto_recharge_threshold: number
           stripe_customer_id: string | null
           subscription_credits: number
           subscription_credits_expire_at: string | null
@@ -444,6 +578,10 @@ export type Database = {
           zernio_profile_id: string | null
         }
         Insert: {
+          auto_recharge_at?: string | null
+          auto_recharge_failed?: boolean
+          auto_recharge_pack?: string | null
+          auto_recharge_threshold?: number
           avatar_url?: string | null
           created_at?: string
           credits_remaining?: number
@@ -455,10 +593,6 @@ export type Database = {
           pay_as_you_go?: boolean
           plan?: string
           referred_by?: string | null
-          auto_recharge_at?: string | null
-          auto_recharge_failed?: boolean
-          auto_recharge_pack?: string | null
-          auto_recharge_threshold?: number
           stripe_customer_id?: string | null
           subscription_credits?: number
           subscription_credits_expire_at?: string | null
@@ -466,6 +600,10 @@ export type Database = {
           zernio_profile_id?: string | null
         }
         Update: {
+          auto_recharge_at?: string | null
+          auto_recharge_failed?: boolean
+          auto_recharge_pack?: string | null
+          auto_recharge_threshold?: number
           avatar_url?: string | null
           created_at?: string
           credits_remaining?: number
@@ -477,11 +615,9 @@ export type Database = {
           pay_as_you_go?: boolean
           plan?: string
           referred_by?: string | null
-          auto_recharge_at?: string | null
-          auto_recharge_failed?: boolean
-          auto_recharge_pack?: string | null
-          auto_recharge_threshold?: number
           stripe_customer_id?: string | null
+          subscription_credits?: number
+          subscription_credits_expire_at?: string | null
           updated_at?: string
           zernio_profile_id?: string | null
         }
@@ -691,7 +827,7 @@ export type Database = {
           created_at?: string
           credits_cost?: number
           hidden?: boolean
-          id?: number
+          id?: never
           role: string
           user_id: string
         }
@@ -700,7 +836,7 @@ export type Database = {
           created_at?: string
           credits_cost?: number
           hidden?: boolean
-          id?: number
+          id?: never
           role?: string
           user_id?: string
         }
@@ -722,13 +858,63 @@ export type Database = {
         }
         Returns: boolean
       }
+      apply_subscription_credits: {
+        Args: {
+          p_amount_total: number
+          p_credits: number
+          p_currency: string
+          p_expires_at: string
+          p_invoice_id: string
+          p_plan_id: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       claim_auto_recharge: {
         Args: { p_needed?: number; p_user_id: string }
         Returns: string
       }
       claim_referral: { Args: { p_code: string }; Returns: boolean }
+      expire_subscription_credits: {
+        Args: { p_user_id?: string }
+        Returns: number
+      }
       fail_generation: { Args: { p_generation_id: string }; Returns: undefined }
       fail_influencer: { Args: { p_id: string }; Returns: undefined }
+      feed_track: {
+        Args: {
+          p_category: string
+          p_likes: number
+          p_recreates: number
+          p_rewatches: number
+          p_watch: number
+        }
+        Returns: undefined
+      }
+      max_video_seconds: { Args: { p_plan: string }; Returns: number }
+      refund_swap_redo: {
+        Args: { p_credits: number; p_generation_id: string }
+        Returns: undefined
+      }
+      refund_viral_question: {
+        Args: { p_message_id: number }
+        Returns: undefined
+      }
+      social_background_tick: { Args: never; Returns: undefined }
+      spend_credits: {
+        Args: { p_cost: number; p_user_id: string }
+        Returns: boolean
+      }
+      start_generation: {
+        Args: {
+          p_duration_seconds?: number
+          p_kind?: string
+          p_metadata?: Json
+          p_prompt: string
+          p_twin_id: string
+        }
+        Returns: string
+      }
       start_influencer: {
         Args: {
           p_credits: number
@@ -737,17 +923,6 @@ export type Database = {
           p_gender: string
           p_kind: string
           p_user_id: string
-        }
-        Returns: string
-      }
-      max_video_seconds: { Args: { p_plan: string }; Returns: number }
-      start_generation: {
-        Args: {
-          p_duration_seconds?: number
-          p_kind?: string
-          p_metadata?: Json
-          p_prompt: string
-          p_twin_id: string | null
         }
         Returns: string
       }
@@ -772,32 +947,11 @@ export type Database = {
         Args: { p_credits: number; p_generation_id: string; p_user_id: string }
         Returns: undefined
       }
-      refund_swap_redo: {
-        Args: { p_credits: number; p_generation_id: string }
-        Returns: undefined
-      }
-      refund_viral_question: {
-        Args: { p_message_id: number }
-        Returns: undefined
-      }
-      apply_subscription_credits: {
-        Args: {
-          p_amount_total: number
-          p_credits: number
-          p_currency: string
-          p_expires_at: string
-          p_invoice_id: string
-          p_plan_id: string
-          p_user_id: string
-        }
-        Returns: boolean
-      }
-      expire_subscription_credits: { Args: { p_user_id?: string }; Returns: number }
-      spend_credits: { Args: { p_cost: number; p_user_id: string }; Returns: boolean }
       start_viral_question: {
         Args: { p_content: string; p_credits: number; p_user_id: string }
         Returns: number
       }
+      swap_background_tick: { Args: never; Returns: undefined }
       use_director_message: { Args: never; Returns: number }
       video_model_credits_per_second: {
         Args: { p_video_model: string }
@@ -895,3 +1049,43 @@ export type TablesUpdate<
       ? U
       : never
     : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
