@@ -9,6 +9,38 @@ import { Modal, ModalClose } from "./media-library";
 // (voir listRestyleStyles).
 export type StudioStyle = { id: string; name: string; previewUrl: string };
 
+// Trois aperçus en éventail, comme des cartes tenues en main : ceux des côtés
+// penchés et en retrait, celui du milieu devant et un peu plus grand. Au
+// survol de la case, l'éventail s'ouvre un peu plus.
+const FAN = [
+  { rest: "-translate-x-[58%] -rotate-[14deg] scale-[0.86]", open: "group-hover:-translate-x-[72%] group-hover:-rotate-[20deg]", z: "z-0" },
+  { rest: "translate-x-[58%] rotate-[14deg] scale-[0.86]", open: "group-hover:translate-x-[72%] group-hover:rotate-[20deg]", z: "z-0" },
+  { rest: "", open: "group-hover:-translate-y-0.5 group-hover:scale-[1.04]", z: "z-10" },
+];
+
+function StyleFan({ styles, front }: { styles: StudioStyle[]; front?: StudioStyle | null }) {
+  // Au milieu, devant : le style choisi, sinon le premier ; deux autres de
+  // chaque côté.
+  const middle = front ?? styles[0];
+  const others = styles.filter((s) => s.id !== middle?.id);
+  const cards = [others[0], others[1], middle];
+  return (
+    <span aria-hidden className="relative flex h-14 w-24 shrink-0 items-center justify-center">
+      {cards.map((s, i) =>
+        s ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={s.id}
+            src={s.previewUrl}
+            alt=""
+            className={`absolute h-14 w-11 rounded-[10px] border-2 border-surface object-cover shadow-[0_6px_16px_-6px_rgb(0_0_0/0.7)] transition-transform duration-300 [transition-timing-function:var(--ease-out)] ${FAN[i].rest} ${FAN[i].open} ${FAN[i].z}`}
+          />
+        ) : null,
+      )}
+    </span>
+  );
+}
+
 // Choix du style (mode Restyle) : une case qui ouvre la grille des styles.
 // Une fois choisi, la case montre son aperçu et son nom.
 export function StylePicker({
@@ -31,14 +63,13 @@ export function StylePicker({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`mt-2 flex w-full items-center gap-3 rounded-2xl border bg-surface-2/50 p-3 text-left transition-colors hover:border-line-strong ${
+        className={`group mt-2 flex w-full items-center gap-3 rounded-2xl border bg-surface-2/50 p-3 text-left transition-colors hover:border-line-strong ${
           value ? "border-line" : "border-dashed border-line-strong"
         }`}
       >
         {value ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={value.previewUrl} alt="" className="size-14 shrink-0 rounded-xl object-cover" />
+            <StyleFan styles={styles.slice(0, 3)} front={value} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">{value.name}</span>
               <span className="block text-xs text-muted">{t.studio.styleChange}</span>
@@ -46,17 +77,7 @@ export function StylePicker({
           </>
         ) : (
           <>
-            <span className="flex shrink-0 -space-x-3">
-              {fan.map((s) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={s.id}
-                  src={s.previewUrl}
-                  alt=""
-                  className="size-12 rounded-xl border-2 border-surface object-cover"
-                />
-              ))}
-            </span>
+            <StyleFan styles={fan} />
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-semibold">{t.studio.styleSelect}</span>
               <span className="block text-xs text-muted">{t.studio.styleHint}</span>
