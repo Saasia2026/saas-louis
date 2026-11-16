@@ -368,6 +368,13 @@ export const fr = {
         after: "Après",
         recreations: "Recréations",
         profile: "Profil de {handle}",
+        tabs: {
+          label: "Catégories du fil",
+          foryou: "Pour toi",
+          trending: "Tendances",
+          shinka: "Shinka",
+          personas: "Personas",
+        },
       },
       recreating: "Préparation du clip…",
       recreateError: "Impossible de reprendre cette vidéo. Réessaie.",

@@ -199,6 +199,11 @@ export const FeedSlide = memo(function FeedSlide({
         <div className="absolute inset-0 overflow-hidden bg-black sm:rounded-xl">
           {!tall && poster && posterImg("absolute inset-0 size-full scale-110 object-cover opacity-80 blur-2xl")}
           {media}
+          {/* Lisibilité des onglets et boutons du haut sur une vidéo claire. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-black/45 to-transparent"
+          />
           <span
             aria-hidden
             className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-linear-to-t from-black/60 to-transparent"

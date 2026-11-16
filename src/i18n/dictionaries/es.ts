@@ -366,6 +366,13 @@ export const es: Dictionary = {
         after: "Después",
         recreations: "Recreaciones",
         profile: "Perfil de {handle}",
+        tabs: {
+          label: "Categorías del feed",
+          foryou: "Para ti",
+          trending: "Tendencias",
+          shinka: "Shinka",
+          personas: "Personas",
+        },
       },
       recreating: "Preparando el clip…",
       recreateError: "No se pudo cargar este vídeo. Inténtalo de nuevo.",

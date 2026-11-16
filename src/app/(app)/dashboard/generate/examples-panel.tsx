@@ -71,7 +71,7 @@ export function ExamplesPanel({
   const mosaic = items.map((item, index) => ({ item, index })).filter(({ index }) => index !== heroIndex);
   // Fil ouvert : sa liste est figée le temps de la visite, pour qu'un
   // chargement de la base n'en décale pas les vidéos.
-  const [session, setSession] = useState<{ items: FeedItem[]; start: number } | null>(null);
+  const [session, setSession] = useState<{ items: FeedItem[]; startSlug: string } | null>(null);
   const [shown, setShown] = useState(MOSAIC_STEP);
   const linkHandled = useRef(false);
   usePauseWhenHidden(root, session !== null);
@@ -86,13 +86,13 @@ export function ExamplesPanel({
     if (index < 0) return;
     const timer = setTimeout(() => {
       linkHandled.current = true;
-      setSession({ items, start: index });
+      setSession({ items, startSlug: items[index].slug });
     }, 0);
     return () => clearTimeout(timer);
   }, [items, ready]);
 
   function open(index: number) {
-    setSession({ items, start: index });
+    setSession({ items, startSlug: items[index].slug });
   }
 
   function close() {
@@ -156,7 +156,7 @@ export function ExamplesPanel({
         </button>
       )}
       {session && (
-        <DemoFeed items={session.items} start={session.start} onClose={close} onRecreate={recreate} />
+        <DemoFeed items={session.items} startSlug={session.startSlug} onClose={close} onRecreate={recreate} />
       )}
     </div>
   );

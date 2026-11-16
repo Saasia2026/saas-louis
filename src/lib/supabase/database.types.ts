@@ -258,6 +258,36 @@ export type Database = {
           },
         ]
       }
+      feed_scores: {
+        Row: {
+          category: string
+          likes: number
+          recreates: number
+          rewatches: number
+          updated_at: string
+          user_id: string
+          watch_seconds: number
+        }
+        Insert: {
+          category: string
+          likes?: number
+          recreates?: number
+          rewatches?: number
+          updated_at?: string
+          user_id: string
+          watch_seconds?: number
+        }
+        Update: {
+          category?: string
+          likes?: number
+          recreates?: number
+          rewatches?: number
+          updated_at?: string
+          user_id?: string
+          watch_seconds?: number
+        }
+        Relationships: []
+      }
       generation_shots: {
         Row: {
           attempts: number
@@ -851,6 +881,16 @@ export type Database = {
       }
       fail_generation: { Args: { p_generation_id: string }; Returns: undefined }
       fail_influencer: { Args: { p_id: string }; Returns: undefined }
+      feed_track: {
+        Args: {
+          p_category: string
+          p_likes: number
+          p_recreates: number
+          p_rewatches: number
+          p_watch: number
+        }
+        Returns: undefined
+      }
       max_video_seconds: { Args: { p_plan: string }; Returns: number }
       refund_swap_redo: {
         Args: { p_credits: number; p_generation_id: string }

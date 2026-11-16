@@ -366,6 +366,13 @@ export const en: Dictionary = {
         after: "After",
         recreations: "Recreations",
         profile: "{handle}'s profile",
+        tabs: {
+          label: "Feed categories",
+          foryou: "For you",
+          trending: "Trending",
+          shinka: "Shinka",
+          personas: "Personas",
+        },
       },
       recreating: "Preparing the clip…",
       recreateError: "This video couldn't be loaded. Try again.",

@@ -6,7 +6,9 @@ import { createPortal } from "react-dom";
 import { inlinePlaybackBlocked } from "@/app/inline-video";
 import { useI18n } from "@/i18n/provider";
 import { BurstHeart } from "./burst-heart";
-import { useFeedReactions, type FeedItem } from "./feed-items";
+import { useFeedReactions, type FeedCategory, type FeedItem } from "./feed-items";
+import { interleave } from "./feed-order";
+import { useFeedScores, type TrackKind } from "./feed-scores";
 import { FeedSlide } from "./feed-slide";
 import { FEED_KEYS, readFlag, readSet, sessionSound, setSessionSound, writeFlag, writeSet } from "./feed-store";
 import type { FeedPlayer } from "./player";
@@ -20,24 +22,100 @@ const PRIME_AFTER_MS = 2500;
 // Une vidéo montée de chaque côté de la courante ; le poster seul un peu plus loin.
 const POSTER_RANGE = 3;
 
-// Fil de démos façon TikTok, en plein écran : une vidéo par écran, qui joue
-// seule tant qu'elle est là, muette jusqu'au premier toucher. Seules la
-// vidéo affichée et ses voisines sont montées (préchargées, avec leur
-// poster), le reste du fil ne pèse rien ; une vidéo TikTok n'a son lecteur
-// que lorsqu'elle est affichée. Clavier : ↑ ↓ (vidéo), ← → (5 s), espace
-// (pause), M (son), L (j'aime), Échap.
+type FeedTab = "foryou" | FeedCategory;
+const TAB_ORDER: FeedTab[] = ["foryou", "trending", "shinka", "personas"];
+
+// Fil de démos façon TikTok : onglets en haut (Pour toi, puis une catégorie
+// par onglet). « Pour toi » commence par la vidéo touchée, puis alterne les
+// catégories en faisant remonter celles que l'on regarde, aime ou recrée le
+// plus ; un onglet de catégorie garde l'ordre de la table. Les onglets sans
+// vidéo ne s'affichent pas. Changer d'onglet repart d'un fil neuf.
 export function DemoFeed({
   items,
-  start,
+  startSlug,
   onClose,
   onRecreate,
 }: {
   items: FeedItem[];
-  start: number;
+  startSlug: string;
   onClose: () => void;
   // Faux si la vidéo n'a pas pu être reprise.
   onRecreate: (item: FeedItem) => Promise<boolean>;
 }) {
+  const { t } = useI18n();
+  const T = t.studio.examples.feed.tabs;
+  const { weights, track } = useFeedScores();
+  const [tab, setTab] = useState<FeedTab>("foryou");
+  // Calculés une fois à l'ouverture : l'ordre ne bouge plus pendant la visite.
+  const [lists] = useState(() => {
+    const first = items.find((item) => item.slug === startSlug) ?? items[0];
+    const byTab: Partial<Record<FeedTab, FeedItem[]>> = {
+      foryou: first ? [first, ...interleave(items, weights, first)] : [],
+    };
+    for (const category of TAB_ORDER.slice(1) as FeedCategory[]) {
+      const own = items.filter((item) => item.category === category);
+      if (own.length) byTab[category] = interleave(own);
+    }
+    return byTab;
+  });
+  const tabs = TAB_ORDER.filter((value) => lists[value]?.length);
+
+  return (
+    <FeedView
+      key={tab}
+      items={lists[tab] ?? []}
+      header={
+        tabs.length > 1 && (
+          <div
+            role="tablist"
+            aria-label={T.label}
+            className="pointer-events-auto flex max-w-full items-center gap-4 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {tabs.map((value) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={value === tab}
+                onClick={() => setTab(value)}
+                className={`relative shrink-0 py-2 text-[15px] font-semibold drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] transition-colors ${
+                  value === tab ? "text-white" : "text-white/60 hover:text-white/85"
+                }`}
+              >
+                {T[value]}
+                {value === tab && <span className="absolute inset-x-1/4 bottom-0 h-0.5 rounded-full bg-white" />}
+              </button>
+            ))}
+          </div>
+        )
+      }
+      onClose={onClose}
+      onRecreate={onRecreate}
+      onTrack={track}
+    />
+  );
+}
+
+// Un fil plein écran : une vidéo par écran, qui joue seule tant qu'elle est
+// là, muette jusqu'au premier toucher. Seules la vidéo affichée et ses
+// voisines sont montées (préchargées, avec leur poster), le reste du fil ne
+// pèse rien ; une vidéo TikTok n'a son lecteur que lorsqu'elle est affichée.
+// Clavier : ↑ ↓ (vidéo), ← → (5 s), espace (pause), M (son), L (j'aime), Échap.
+function FeedView({
+  items,
+  header,
+  onClose,
+  onRecreate,
+  onTrack,
+}: {
+  items: FeedItem[];
+  header: React.ReactNode;
+  onClose: () => void;
+  onRecreate: (item: FeedItem) => Promise<boolean>;
+  // Suivi des goûts par catégorie (voir feed-scores).
+  onTrack: (category: FeedCategory, kind: TrackKind, amount?: number) => void;
+}) {
+  const start = 0;
   const { t, locale } = useI18n();
   const E = t.studio.examples;
   const F = E.feed;
@@ -145,6 +223,26 @@ export function DemoFeed({
     return () => clearTimeout(timer);
   }, [active]);
 
+  // Suivi : chaque seconde de lecture visible compte pour la catégorie de la
+  // vidéo, et un retour en arrière (fin de boucle ou barre ramenée) compte
+  // comme un revisionnage.
+  useEffect(() => {
+    let lastIndex = -1;
+    let lastTime = 0;
+    const timer = setInterval(() => {
+      const index = activeRef.current;
+      const progress = players.current.get(index)?.progress();
+      const playing = players.current.get(index)?.paused === false;
+      if (!progress || !playing || document.visibilityState !== "visible") return;
+      const category = items[index].category;
+      onTrack(category, "watch", 1);
+      if (index === lastIndex && progress.current + 1 < lastTime) onTrack(category, "rewatch", 1);
+      lastIndex = index;
+      lastTime = progress.current;
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [items, onTrack]);
+
   // L'astuce « glisse vers le haut » ne se montre qu'à la première visite.
   useEffect(() => {
     if (!hint) return;
@@ -194,8 +292,9 @@ export function DemoFeed({
       writeSet(FEED_KEYS.likes, next);
       setLikes(next);
       void saveLike(it, want);
+      if (want) onTrack(it.category, "like");
     },
-    [items, likes, saveLike],
+    [items, likes, saveLike, onTrack],
   );
 
   const onLike = useCallback((index: number) => setLike(index), [setLike]);
@@ -296,6 +395,7 @@ export function DemoFeed({
 
   const recreate = useCallback(
     async (index: number) => {
+      onTrack(items[index].category, "recreate");
       setRecreating(true);
       setFailedAt(null);
       const ok = await onRecreate(items[index]);
@@ -307,7 +407,7 @@ export function DemoFeed({
       void saveRecreate(items[index]);
       onClose();
     },
-    [items, onRecreate, onClose, saveRecreate],
+    [items, onRecreate, onClose, saveRecreate, onTrack],
   );
 
   function toggleAuto() {
@@ -470,7 +570,8 @@ export function DemoFeed({
         <button type="button" onClick={onClose} aria-label={t.planning.close} title={t.planning.close} className={ROUND}>
           <X className="size-5" />
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 justify-center">{header}</div>
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={toggleAuto}
@@ -483,13 +584,15 @@ export function DemoFeed({
           </button>
           {(item.hasSound || item.tiktokId) &&
             (sound === null ? (
+              // Libellé dès 640 px ; sur téléphone, l'icône seule laisse la place aux onglets.
               <button
                 type="button"
                 onClick={() => chooseSound(true)}
-                className="pointer-events-auto flex h-10 items-center gap-2 rounded-full bg-black/40 pr-4 pl-3 text-sm font-medium backdrop-blur-sm transition-colors hover:bg-black/60"
+                aria-label={F.tapForSound}
+                className="pointer-events-auto flex size-10 items-center justify-center gap-2 rounded-full bg-black/40 text-sm font-medium backdrop-blur-sm transition-colors hover:bg-black/60 sm:w-auto sm:pr-4 sm:pl-3"
               >
                 <VolumeX className="size-5" />
-                {F.tapForSound}
+                <span className="hidden sm:inline">{F.tapForSound}</span>
               </button>
             ) : (
               <button
