@@ -30,7 +30,6 @@ import type { SwapPreset } from "@/lib/presets";
 import type { SwapHistoryItem } from "../swap-history";
 import { getGeneration, type GenerationView } from "./actions";
 import { ResultStage, StageAction } from "./result-stage";
-import type { DemoClip } from "./demo-clips";
 import { clearDraft, loadDraft, saveDraft, type DraftFile } from "./draft";
 import { ExamplesPanel } from "./examples-panel";
 import { HistoryEmpty, HistoryList } from "./history-list";
@@ -344,10 +343,10 @@ export function Studio({
 
   // Reprendre une démo : son clip entre dans le studio comme s'il venait
   // d'être déposé, il ne reste qu'à ajouter son personnage.
-  async function recreateDemo(clip: DemoClip) {
-    const res = await fetch(`${clip.base}.mp4`).catch(() => null);
+  async function recreateDemo({ url, name }: { url: string; name: string }) {
+    const res = await fetch(url).catch(() => null);
     if (!res?.ok) return false;
-    const file = new File([await res.blob()], `${clip.base.split("/").pop()}.mp4`, { type: "video/mp4" });
+    const file = new File([await res.blob()], `${name}.mp4`, { type: "video/mp4" });
     const previewUrl = URL.createObjectURL(file);
     const [seconds, path] = await Promise.all([
       readDuration(previewUrl),
