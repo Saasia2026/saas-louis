@@ -568,18 +568,6 @@ html {
     animation: none;
   }
 }
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme]) .particle-field {
-    display: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .particle-field {
-    animation: none;
-  }
-}
-
 @utility panel {
   background: var(--surface);
   border: 1px solid var(--line);

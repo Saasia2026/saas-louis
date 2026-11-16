@@ -3,7 +3,7 @@ import Link from "next/link";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { LogoMark } from "@/app/logo-mark";
 import { ThemeToggle } from "@/app/theme-toggle";
-import { ParticleField } from "@/app/particle-field";
+import { VideoWall } from "@/app/video-wall";
 import { getDictionary } from "@/i18n/server";
 import { readRefCode } from "@/lib/referral";
 import { AuthForm } from "./auth-form";
@@ -24,7 +24,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
 
   return (
     <main className="relative isolate flex flex-1 items-stretch">
-      <ParticleField />
+      <VideoWall />
       <div className="absolute top-4 right-4 z-10 flex items-center gap-1">
         <ThemeToggle />
         <LanguageSwitcher />

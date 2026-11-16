@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { Logo } from "@/app/logo";
-import { ParticleField } from "@/app/particle-field";
+import { VideoWall } from "@/app/video-wall";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { getDictionary } from "@/i18n/server";
 import { safeNextPath } from "@/lib/safe-next-path";
@@ -37,7 +37,7 @@ export default async function WelcomePage(props: PageProps<"/welcome">) {
 
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
-      <ParticleField subtle />
+      <VideoWall />
       <header className="topbar-shell z-20">
         <div className="topbar pointer-events-auto mx-auto max-w-7xl gap-3 py-1.5 pr-2 pl-4">
           <Logo href={next} className="min-w-0 shrink" />

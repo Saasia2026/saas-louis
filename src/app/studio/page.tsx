@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { Logo } from "@/app/logo";
-import { ParticleField } from "@/app/particle-field";
+import { VideoWall } from "@/app/video-wall";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { getDictionary } from "@/i18n/server";
 import { higgsfieldEnabled } from "@/lib/higgsfield";
@@ -24,7 +24,7 @@ export default async function GuestStudioPage() {
 
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
-      <ParticleField subtle />
+      <VideoWall />
       <header className="topbar-shell z-20">
         <div className="topbar pointer-events-auto mx-auto max-w-7xl gap-3 py-1.5 pr-2 pl-4">
           <Logo className="min-w-0 shrink" />

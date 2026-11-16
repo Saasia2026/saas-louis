@@ -7,7 +7,6 @@ import { fmt, INTL_LOCALES, plural } from "@/i18n/config";
 import { formatPrice, usageCharge } from "@/lib/credit-packs";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/i18n/provider";
-import { VideoWall } from "@/app/video-wall";
 import { VisibleVideos } from "@/app/visible-videos";
 import {
   DEFAULT_SWAP_QUALITY,
@@ -702,7 +701,6 @@ export function Studio({
   // mobile, l'une sous l'autre.
   return (
     <>
-    <VideoWall />
     {launched && (
       <div className="fixed inset-x-0 top-4 z-50 flex justify-center animate-fade-up pointer-events-none">
         <div className="topbar pointer-events-auto gap-2 px-4 py-2.5 text-sm font-medium">
