@@ -32,6 +32,8 @@ export type SwapHistoryItem = {
   fidelity: boolean;
   // Scène refaite à partir des mouvements (Motion Transfer).
   transfer: boolean;
+  // Clip refait dans un style (Restyle) : le style choisi.
+  restyle?: { id: string; name: string };
   // Consignes libres du créateur.
   prompt: string;
   // Images de référence, dans l'ordre du prompt (@image1…).
@@ -53,6 +55,9 @@ type HistoryMetadata = {
   vessel?: boolean;
   decor_image_path?: string;
   transfer?: boolean;
+  restyle?: boolean;
+  restyle_preset_id?: string;
+  restyle_preset_name?: string;
   instructions?: string;
   swap_parts?: { original?: boolean }[];
   character_image_path?: string;
@@ -136,6 +141,10 @@ export async function listSwapHistory(limit = 24): Promise<SwapHistoryItem[]> {
         fidelity: g.meta.vessel === true,
         prompt: g.meta.instructions ?? "",
         transfer: Boolean(g.meta.transfer || g.meta.decor_image_path),
+        ...(g.meta.restyle &&
+          g.meta.restyle_preset_id && {
+            restyle: { id: g.meta.restyle_preset_id, name: g.meta.restyle_preset_name ?? "" },
+          }),
         refs: photoPaths[i].flatMap((p) => ref(p) ?? []),
         decor: ref(g.meta.decor_image_path),
         clip: ref(g.meta.source_video_path),

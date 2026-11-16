@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight, Move, Replace, Sparkles, Zap, type LucideIcon } from "lucide-react";
+import { Check, ChevronRight, Move, Palette, Replace, Sparkles, Zap, type LucideIcon } from "lucide-react";
 import { Space_Grotesk } from "next/font/google";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -258,34 +258,48 @@ export function ModelCard({
   );
 }
 
-export type StudioMode = "replace" | "transfer";
+export type StudioMode = "replace" | "transfer" | "restyle";
 
-const MODE_PREVIEW: Record<StudioMode, { video: string; icon: LucideIcon }> = {
+// `video` absent : pas encore de rendu à montrer pour ce mode.
+const MODE_PREVIEW: Record<StudioMode, { video?: string; icon: LucideIcon }> = {
   replace: { video: "/examples/genjutsu-cage", icon: Replace },
   transfer: { video: "/examples/genjutsu-danse", icon: Move },
+  restyle: { icon: Palette },
 };
 
-// Les deux modes, côte à côte. Au survol (ou au focus), une carte montre ce
-// que fait le mode, avec un de ses rendus.
+// Les modes, côte à côte (`modes` : ceux proposés, dans l'ordre). Au survol
+// (ou au focus), une carte montre ce que fait le mode, avec un de ses rendus.
 export function ModeTabs({
   value,
   onChange,
   labels,
+  modes = ["replace", "transfer"],
 }: {
   value: StudioMode;
   onChange: (mode: StudioMode) => void;
-  labels: Record<StudioMode, { title: string; hint: string }>;
+  // `short` : libellé de l'onglet quand le titre ne tient pas (trois onglets).
+  labels: Record<StudioMode, { title: string; hint: string; short?: string }>;
+  modes?: StudioMode[];
 }) {
   const [hover, setHover] = useState<StudioMode | null>(null);
+  const count = modes.length;
+  const index = Math.max(0, modes.indexOf(value));
   return (
-    <div role="tablist" className="rail relative grid grid-cols-2 gap-1">
+    <div
+      role="tablist"
+      className="rail relative grid gap-1"
+      style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
+    >
       {/* Fond de l'onglet actif : il glisse d'un onglet à l'autre. */}
       <span
         aria-hidden
-        className="thumb absolute inset-y-1 left-1 w-[calc(50%-0.375rem)] rounded-full transition-transform duration-300 [transition-timing-function:var(--ease-out)]"
-        style={{ transform: value === "transfer" ? "translateX(calc(100% + 0.25rem))" : undefined }}
+        className="thumb absolute inset-y-1 left-1 rounded-full transition-transform duration-300 [transition-timing-function:var(--ease-out)]"
+        style={{
+          width: `calc((100% - 0.5rem - ${count - 1} * 0.25rem) / ${count})`,
+          transform: `translateX(calc(${index} * (100% + 0.25rem)))`,
+        }}
       />
-      {(["replace", "transfer"] as const).map((m) => {
+      {modes.map((m, i) => {
         const { icon: Icon, video } = MODE_PREVIEW[m];
         return (
           <button
@@ -303,23 +317,25 @@ export function ModeTabs({
             }`}
           >
             <Icon className={`size-4 shrink-0 transition-colors ${value === m ? "text-accent-light" : ""}`} />
-            <span className="truncate">{labels[m].title}</span>
+            <span className="truncate">{(count > 2 && labels[m].short) || labels[m].title}</span>
             {hover === m && (
               <span
                 role="tooltip"
-                className={`pointer-events-none absolute top-full z-40 mt-2 w-60 animate-fade-up ${m === "replace" ? "left-0" : "right-0"} overflow-hidden rounded-2xl border border-line-strong bg-surface text-left shadow-[0_20px_50px_-12px_rgb(0_0_0/0.6)]`}
+                className={`pointer-events-none absolute top-full z-40 mt-2 w-60 animate-fade-up ${i === 0 ? "left-0" : "right-0"} overflow-hidden rounded-2xl border border-line-strong bg-surface text-left shadow-[0_20px_50px_-12px_rgb(0_0_0/0.6)]`}
               >
-                <video
-                  src={`${video}.mp4`}
-                  poster={`${video}.jpg`}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  webkit-playsinline=""
-                  aria-hidden
-                  className="aspect-video w-full bg-black object-cover"
-                />
+                {video && (
+                  <video
+                    src={`${video}.mp4`}
+                    poster={`${video}.jpg`}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    webkit-playsinline=""
+                    aria-hidden
+                    className="aspect-video w-full bg-black object-cover"
+                  />
+                )}
                 <span className="block px-3 pt-2.5 pb-3">
                   <span className="block text-sm font-semibold text-text">{labels[m].title}</span>
                   <span className="mt-0.5 block text-xs leading-snug font-normal text-muted">{labels[m].hint}</span>
