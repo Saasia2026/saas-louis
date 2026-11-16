@@ -1,11 +1,11 @@
 "use client";
 
 import { Play } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePauseWhenHidden } from "@/app/pause-hidden";
 import { useI18n } from "@/i18n/provider";
-import { DEMO_CLIPS, type DemoClip } from "./demo-clips";
-import { DemoReels } from "./demo-reels";
+import { clipId, DEMO_CLIPS, type DemoClip } from "./demo-clips";
+import { DemoFeed } from "./feed/feed";
 
 function Clip({ clip, label, onOpen, className = "" }: { clip: DemoClip; label: string; onOpen: () => void; className?: string }) {
   return (
@@ -44,6 +44,23 @@ export function ExamplesPanel({ onRecreate }: { onRecreate: (clip: DemoClip) => 
   const [opened, setOpened] = useState<number | null>(null);
   const [shown, setShown] = useState(MOSAIC_STEP);
   usePauseWhenHidden(root, opened !== null);
+
+  // Lien partagé depuis le fil (?reel=g-24) : la démo s'ouvre directement.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("reel");
+    const index = id ? DEMO_CLIPS.findIndex((clip) => clipId(clip) === id) : -1;
+    if (index < 0) return;
+    const timer = setTimeout(() => setOpened(index), 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  function close() {
+    setOpened(null);
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("reel")) return;
+    url.searchParams.delete("reel");
+    window.history.replaceState(null, "", url);
+  }
 
   return (
     <div ref={root} className="space-y-5">
@@ -86,7 +103,7 @@ export function ExamplesPanel({ onRecreate }: { onRecreate: (clip: DemoClip) => 
         </button>
       )}
       {opened !== null && (
-        <DemoReels clips={DEMO_CLIPS} start={opened} onClose={() => setOpened(null)} onRecreate={onRecreate} />
+        <DemoFeed clips={DEMO_CLIPS} start={opened} onClose={close} onRecreate={onRecreate} />
       )}
     </div>
   );

@@ -16,10 +16,14 @@ export const metadata: Metadata = {
 
 // Studio ouvert sans compte : le visiteur dépose son clip et son personnage,
 // règle son rendu et voit le prix ; la connexion n'arrive qu'au lancement.
-export default async function GuestStudioPage() {
+export default async function GuestStudioPage(props: PageProps<"/studio">) {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
-  if (data?.claims) redirect("/dashboard/generate");
+  if (data?.claims) {
+    // Un lien partagé depuis le fil garde sa démo une fois connecté.
+    const { reel } = await props.searchParams;
+    redirect(typeof reel === "string" ? `/dashboard/generate?reel=${encodeURIComponent(reel)}` : "/dashboard/generate");
+  }
   const t = await getDictionary();
 
   return (

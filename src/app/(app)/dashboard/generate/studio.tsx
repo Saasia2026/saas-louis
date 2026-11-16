@@ -387,6 +387,13 @@ export function Studio({
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  // Lien vers une démo du fil (?reel=…) : l'onglet Exemples l'ouvre.
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("reel")) return;
+    const timer = setTimeout(() => setTab("examples"), 0);
+    return () => clearTimeout(timer);
+  }, []);
+
   // « Réutiliser » depuis Mes vidéos : le rendu demandé est repris une fois.
   const reuseOnOpen = useEffectEvent(async () => {
     const item = history.find((h) => h.id === reuseId);
