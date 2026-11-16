@@ -65,7 +65,8 @@ export function DemoFeed({
       key={tab}
       items={lists[tab] ?? []}
       header={
-        tabs.length > 1 && (
+        // Une seule catégorie : « Pour toi » et elle montreraient la même chose.
+        tabs.length > 2 && (
           <div
             role="tablist"
             aria-label={T.label}
@@ -99,7 +100,7 @@ export function DemoFeed({
 // Un fil plein écran : une vidéo par écran, qui joue seule tant qu'elle est
 // là, muette jusqu'au premier toucher. Seules la vidéo affichée et ses
 // voisines sont montées (préchargées, avec leur poster), le reste du fil ne
-// pèse rien ; une vidéo TikTok n'a son lecteur que lorsqu'elle est affichée.
+// pèse rien.
 // Clavier : ↑ ↓ (vidéo), ← → (5 s), espace (pause), M (son), L (j'aime), Échap.
 function FeedView({
   items,
@@ -331,7 +332,7 @@ function FeedView({
       const first = sessionSound() === null;
       if (first) {
         chooseSound(true);
-        if (items[index].hasSound || items[index].tiktokId) flash(F.soundOnToast);
+        if (items[index].hasSound) flash(F.soundOnToast);
       }
       tapTimer.current = window.setTimeout(() => {
         tapTimer.current = null;
@@ -504,7 +505,6 @@ function FeedView({
       effect: F.effect,
       effectPersonas: F.effectPersonas,
       recreate: F.recreate,
-      recreateOwn: F.recreateOwn,
       recreating: E.recreating,
       recreateError: E.recreateError,
       before: F.before,
@@ -582,7 +582,7 @@ function FeedView({
           >
             <ChevronsDown className="size-5" />
           </button>
-          {(item.hasSound || item.tiktokId) &&
+          {item.hasSound &&
             (sound === null ? (
               // Libellé dès 640 px ; sur téléphone, l'icône seule laisse la place aux onglets.
               <button

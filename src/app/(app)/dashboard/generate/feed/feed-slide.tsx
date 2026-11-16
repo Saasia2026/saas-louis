@@ -1,14 +1,13 @@
 "use client";
-/* eslint-disable @next/next/no-img-element -- posters statiques ou venus de TikTok, sans optimisation */
+/* eslint-disable @next/next/no-img-element -- posters statiques de public/, sans optimisation */
 
-import { Loader2, Play, Repeat2, Sparkles, Video } from "lucide-react";
+import { Loader2, Play, Repeat2, Sparkles } from "lucide-react";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { FeedRail, type RailLabels } from "./feed-rail";
 import type { FeedItem } from "./feed-items";
 import { videoPlayer, type FeedPlayer } from "./player";
 import { ProgressBar } from "./progress-bar";
 import { RevealOverlay } from "./reveal-overlay";
-import { TikTokPlayer } from "./tiktok-player";
 
 // Format au-delà duquel une vidéo n'est plus « verticale » : en dessous elle
 // remplit l'écran (object-cover, rognée sur les bords comme sur TikTok), au-
@@ -24,7 +23,6 @@ export type SlideLabels = RailLabels & {
   effect: string;
   effectPersonas: string;
   recreate: string;
-  recreateOwn: string;
   recreating: string;
   recreateError: string;
   before: string;
@@ -91,8 +89,7 @@ export const FeedSlide = memo(function FeedSlide({
   const video = useRef<HTMLVideoElement | null>(null);
   const pill = useRef<HTMLButtonElement>(null);
   const shine = useRef<HTMLSpanElement>(null);
-  const tiktok = item.source === "tiktok_embed" && item.tiktokId;
-  const tall = tiktok || ratioValue(item.ratio) <= TALL_MAX;
+  const tall = ratioValue(item.ratio) <= TALL_MAX;
   const fit = tall ? "object-cover" : "object-contain";
   const player = useCallback(() => getPlayer(index), [getPlayer, index]);
   const effect = item.category === "shinka" ? labels.effect : item.category === "personas" ? labels.effectPersonas : null;
@@ -103,7 +100,7 @@ export const FeedSlide = memo(function FeedSlide({
         alt=""
         aria-hidden
         loading="lazy"
-        // Miniature TikTok expirée : l'écran reste noir plutôt qu'une image cassée.
+        // Image introuvable : l'écran reste noir plutôt qu'une image cassée.
         onError={(e) => (e.currentTarget.style.visibility = "hidden")}
         className={className}
       />
@@ -129,29 +126,7 @@ export const FeedSlide = memo(function FeedSlide({
   }, [primed]);
 
   let media: React.ReactNode = null;
-  if (tiktok) {
-    media = (
-      <>
-        {/* Sous le lecteur : le créateur, visible tant que TikTok n'a rien affiché. */}
-        <span className="absolute inset-0 flex items-center justify-center text-lg font-semibold text-white/60">
-          {item.creator?.handle}
-        </span>
-        {active ? (
-          <TikTokPlayer
-            id={tiktok}
-            index={index}
-            title={item.creator ? `TikTok ${item.creator.handle}` : "TikTok"}
-            loop={loop}
-            registerPlayer={registerPlayer}
-            onPlayState={onPlayState}
-            onEnded={onEnded}
-          />
-        ) : (
-          poster && posterImg(`absolute inset-0 size-full ${fit}`)
-        )}
-      </>
-    );
-  } else if (near && item.videoUrl) {
+  if (near) {
     media = (
       <>
         <video
@@ -210,7 +185,7 @@ export const FeedSlide = memo(function FeedSlide({
           />
         </div>
 
-        {/* Couche des gestes, au-dessus de tout lecteur (TikTok compris) : un
+        {/* Couche des gestes : un
             toucher (son, puis pause), deux (j'aime). touch-manipulation : le
             double toucher ne zoome pas la page. */}
         <div
@@ -273,8 +248,8 @@ export const FeedSlide = memo(function FeedSlide({
                   aria-hidden
                   className="pointer-events-none absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent opacity-0"
                 />
-                {recreating ? <Loader2 className="animate-spin" /> : tiktok ? <Video /> : <Repeat2 />}
-                {recreating ? labels.recreating : tiktok ? labels.recreateOwn : labels.recreate}
+                {recreating ? <Loader2 className="animate-spin" /> : <Repeat2 />}
+                {recreating ? labels.recreating : labels.recreate}
               </button>
             </div>
 

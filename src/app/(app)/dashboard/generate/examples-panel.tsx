@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @next/next/no-img-element -- miniature TikTok, sans optimisation */
 
 import { Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -8,41 +7,22 @@ import { useI18n } from "@/i18n/provider";
 import { DemoFeed } from "./feed/feed";
 import { useFeedItems, type FeedItem } from "./feed/feed-items";
 
-// Vignette d'une démo : la vidéo quand elle est chez nous, la miniature pour
-// une vidéo TikTok (jamais téléchargée).
 function Clip({ item, label, onOpen, className = "" }: { item: FeedItem; label: string; onOpen: () => void; className?: string }) {
-  const media = `pointer-events-none size-full object-cover ${className}`;
   return (
     <button type="button" onClick={onOpen} aria-label={label} className="block size-full cursor-pointer">
-      {item.videoUrl ? (
-        <video
-          src={item.videoUrl}
-          poster={item.posterUrl ?? undefined}
-          muted
-          loop
-          playsInline
-          webkit-playsinline=""
-          disablePictureInPicture
-          disableRemotePlayback
-          preload="none"
-          aria-hidden
-          className={media}
-        />
-      ) : (
-        <span className="relative flex size-full items-center justify-center bg-neutral-900 px-2 text-center text-sm font-semibold text-white">
-          {item.creator?.handle}
-          {item.posterUrl && (
-            <img
-              src={item.posterUrl}
-              alt=""
-              aria-hidden
-              loading="lazy"
-              onError={(e) => (e.currentTarget.style.visibility = "hidden")}
-              className={`absolute inset-0 ${media}`}
-            />
-          )}
-        </span>
-      )}
+      <video
+        src={item.videoUrl}
+        poster={item.posterUrl ?? undefined}
+        muted
+        loop
+        playsInline
+        webkit-playsinline=""
+        disablePictureInPicture
+        disableRemotePlayback
+        preload="none"
+        aria-hidden
+        className={`pointer-events-none size-full object-cover ${className}`}
+      />
     </button>
   );
 }
@@ -57,18 +37,14 @@ const MOSAIC_STEP = 48;
 export function ExamplesPanel({
   onRecreate,
 }: {
-  // Reprend une vidéo hébergée chez nous dans le studio ; faux en cas d'échec.
+  // Reprend une vidéo du fil dans le studio ; faux en cas d'échec.
   onRecreate: (video: { url: string; name: string }) => Promise<boolean>;
 }) {
   const { t } = useI18n();
   const E = t.studio.examples;
   const root = useRef<HTMLDivElement>(null);
   const { items, ready } = useFeedItems();
-  // En vedette : la première vidéo hébergée chez nous (une vidéo TikTok n'a
-  // pas de lecture en vignette). Le reste fait la mosaïque, dans l'ordre du fil.
-  const heroIndex = Math.max(0, items.findIndex((item) => item.videoUrl));
-  const hero = items[heroIndex];
-  const mosaic = items.map((item, index) => ({ item, index })).filter(({ index }) => index !== heroIndex);
+  const [hero, ...mosaic] = items;
   // Fil ouvert : sa liste est figée le temps de la visite, pour qu'un
   // chargement de la base n'en décale pas les vidéos.
   const [session, setSession] = useState<{ items: FeedItem[]; startSlug: string } | null>(null);
@@ -77,8 +53,7 @@ export function ExamplesPanel({
   usePauseWhenHidden(root, session !== null);
 
   // Lien partagé depuis le fil (?reel=g-24) : la démo s'ouvre directement,
-  // une fois la base lue (une vidéo TikTok n'existe que là, et les j'aime
-  // ont besoin des identifiants de la table).
+  // une fois la base lue (les j'aime ont besoin des identifiants de la table).
   useEffect(() => {
     if (linkHandled.current || !ready) return;
     const slug = new URLSearchParams(window.location.search).get("reel");
@@ -103,13 +78,7 @@ export function ExamplesPanel({
     window.history.replaceState(null, "", url);
   }
 
-  // Une vidéo TikTok ne peut pas être reprise : le studio attend le clip que
-  // l'utilisateur filme lui-même.
-  async function recreate(item: FeedItem) {
-    if (!item.videoUrl) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return true;
-    }
+  function recreate(item: FeedItem) {
     return onRecreate({ url: item.videoUrl, name: item.slug });
   }
 
@@ -126,21 +95,21 @@ export function ExamplesPanel({
         </div>
         {hero && (
           <div className="aspect-video overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding">
-            <Clip item={hero} label={E.open} onOpen={() => open(heroIndex)} />
+            <Clip item={hero} label={E.open} onOpen={() => open(0)} />
           </div>
         )}
       </div>
       <div className="columns-2 gap-3 sm:columns-3 [&>*]:mb-3">
-        {mosaic.slice(0, shown).map(({ item, index }) => (
+        {mosaic.slice(0, shown).map((item, i) => (
           <div
             key={item.slug}
-            style={{ aspectRatio: item.tiktokId ? "9/16" : item.ratio }}
+            style={{ aspectRatio: item.ratio }}
             className="group break-inside-avoid overflow-hidden rounded-xl border border-line bg-black bg-clip-padding"
           >
             <Clip
               item={item}
               label={E.open}
-              onOpen={() => open(index)}
+              onOpen={() => open(i + 1)}
               className="transition-transform duration-500 group-hover:scale-[1.04]"
             />
           </div>
