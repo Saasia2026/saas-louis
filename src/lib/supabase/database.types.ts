@@ -316,6 +316,53 @@ export type Database = {
           },
         ]
       }
+      influencers: {
+        Row: {
+          created_at: string
+          credits_cost: number
+          description: string | null
+          from_photo: boolean
+          gender: string | null
+          id: string
+          image_path: string | null
+          kind: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_cost?: number
+          description?: string | null
+          from_photo?: boolean
+          gender?: string | null
+          id?: string
+          image_path?: string | null
+          kind: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_cost?: number
+          description?: string | null
+          from_photo?: boolean
+          gender?: string | null
+          id?: string
+          image_path?: string | null
+          kind?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "influencers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partners: {
         Row: {
           code: string
@@ -681,6 +728,18 @@ export type Database = {
       }
       claim_referral: { Args: { p_code: string }; Returns: boolean }
       fail_generation: { Args: { p_generation_id: string }; Returns: undefined }
+      fail_influencer: { Args: { p_id: string }; Returns: undefined }
+      start_influencer: {
+        Args: {
+          p_credits: number
+          p_description: string
+          p_from_photo: boolean
+          p_gender: string
+          p_kind: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       max_video_seconds: { Args: { p_plan: string }; Returns: number }
       start_generation: {
         Args: {

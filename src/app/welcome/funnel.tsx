@@ -33,20 +33,33 @@ import {
   type Platform,
   type Target,
 } from "@/lib/onboarding";
+import { InfluencerCreator, type CreatedInfluencer } from "@/app/(app)/dashboard/influencer/creator";
 import { finishOnboarding } from "./actions";
 
-type Step = "goal" | "platforms" | "audience" | "target" | "pace" | "plan";
+type Step = "goal" | "platforms" | "audience" | "target" | "pace" | "create" | "plan";
 
+// Après les questions, la création de l'influenceur (facultative) avant les
+// offres : le nouvel inscrit voit ce qu'il obtient avant de payer.
 function stepsFor(goal: Goal | undefined): Step[] {
   return asksAudience(goal)
-    ? ["goal", "platforms", "audience", "target", "pace", "plan"]
-    : ["goal", "platforms", "pace", "plan"];
+    ? ["goal", "platforms", "audience", "target", "pace", "create", "plan"]
+    : ["goal", "platforms", "pace", "create", "plan"];
 }
 
 // Le pack sans abonnement proposé sous l'offre recommandée.
 const STARTER_PACK = CREDIT_PACKS[0];
 
-export function Funnel({ next, paymentsEnabled }: { next: string; paymentsEnabled: boolean }) {
+export function Funnel({
+  next: initialNext,
+  paymentsEnabled,
+  userId,
+  credits,
+}: {
+  next: string;
+  paymentsEnabled: boolean;
+  userId: string | null;
+  credits: number;
+}) {
   const { t, locale } = useI18n();
   const W = t.welcome;
   const router = useRouter();
@@ -58,6 +71,9 @@ export function Funnel({ next, paymentsEnabled }: { next: string; paymentsEnable
   const [pace, setPace] = useState<Pace>();
   const [billing, setBilling] = useState<BillingInterval>("year");
   const [hasDraft, setHasDraft] = useState(false);
+  const [influencer, setInfluencer] = useState<CreatedInfluencer>();
+  // Influenceur créé : le studio l'ouvre comme personnage.
+  const next = influencer ? `/dashboard/generate?influencer=${influencer.id}` : initialNext;
   const [leaving, startLeaving] = useTransition();
   const saved = useRef(false);
 
@@ -213,8 +229,36 @@ export function Funnel({ next, paymentsEnabled }: { next: string; paymentsEnable
           </Question>
         )}
 
+        {step === "create" && (
+          <div>
+            <h1 className="font-headline text-4xl leading-[0.95] sm:text-5xl">{W.create.question}</h1>
+            <p className="mt-3 text-sm text-muted">{W.create.hint}</p>
+            <div className="mt-8">
+              {userId ? (
+                <InfluencerCreator
+                  userId={userId}
+                  credits={credits}
+                  stacked
+                  onCreated={setInfluencer}
+                  onContinue={() => advance("create")}
+                />
+              ) : null}
+            </div>
+            {!influencer && (
+              <button
+                type="button"
+                onClick={() => advance("create")}
+                className="mt-6 w-full text-center text-sm text-muted hover:text-text hover:underline"
+              >
+                {W.create.skip}
+              </button>
+            )}
+          </div>
+        )}
+
         {step === "plan" && goal && pace && (
           <PlanStep
+            influencer={influencer}
             goal={goal}
             platforms={platforms}
             target={target}
@@ -280,6 +324,7 @@ function Option({
 }
 
 function PlanStep({
+  influencer,
   goal,
   platforms,
   target,
@@ -293,6 +338,7 @@ function PlanStep({
   later,
   leaving,
 }: {
+  influencer?: CreatedInfluencer;
   goal: Goal;
   platforms: Platform[];
   target?: Target;
@@ -323,6 +369,14 @@ function PlanStep({
 
   return (
     <div>
+      {/* L'influenceur créé juste avant : ce que l'offre va faire vivre. */}
+      {influencer && (
+        <div className="mb-8 flex items-center gap-4 rounded-2xl border border-line bg-surface p-2.5 pr-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={influencer.url} alt="" className="aspect-[3/4] w-16 shrink-0 rounded-xl object-cover" />
+          <p className="font-semibold">{W.plan.ready}</p>
+        </div>
+      )}
       <p className="eyebrow">{W.plan.eyebrow}</p>
       <h1 className="mt-3 font-headline text-4xl leading-[0.95] sm:text-5xl">{objective}</h1>
       <p className="mt-4 text-muted">

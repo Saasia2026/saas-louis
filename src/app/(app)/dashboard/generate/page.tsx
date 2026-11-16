@@ -26,8 +26,9 @@ function stalePendingBefore() {
 
 export default async function GeneratePage(props: PageProps<"/dashboard/generate">) {
   // ?v= : remplacement en cours rouvert depuis Mes vidéos ; ?reuse= : rendu à
-  // reprendre dans le studio.
-  const { v, reuse } = await props.searchParams;
+  // reprendre dans le studio ; ?influencer= : personnage créé sur la page
+  // Influenceur IA, posé comme image du personnage.
+  const { v, reuse, influencer } = await props.searchParams;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) {
@@ -59,6 +60,23 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
   // Nouvel inscrit : le tunnel d'accueil d'abord (le projet préparé dans le
   // studio reste gardé dans le navigateur).
   if (profile && !profile.onboarded_at) redirect("/welcome?next=/dashboard/generate");
+
+  // Influenceur choisi : son image, lue avec les droits de l'utilisateur.
+  let startImage: { path: string; previewUrl: string } | undefined;
+  if (typeof influencer === "string") {
+    const { data: row } = await supabase
+      .from("influencers")
+      .select("image_path")
+      .eq("id", influencer)
+      .eq("status", "ready")
+      .maybeSingle();
+    if (row?.image_path) {
+      const { data: signed } = await supabase.storage
+        .from(SWAP_INPUTS_BUCKET)
+        .createSignedUrl(row.image_path, 60 * 60);
+      if (signed?.signedUrl) startImage = { path: row.image_path, previewUrl: signed.signedUrl };
+    }
+  }
 
   // Remplacement encore en cours : il n'avance que suivi, on le reprend donc
   // plutôt que d'afficher un studio vide, même longtemps après (son rendu est
@@ -103,6 +121,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
       userId={auth.claims.sub}
       resume={resume}
       reuseId={typeof reuse === "string" ? reuse : undefined}
+      startImage={startImage}
       credits={profile?.credits_remaining ?? 0}
       payAsYouGo={Boolean(profile?.pay_as_you_go && profile.stripe_customer_id) && !profile?.auto_recharge_failed}
       engines={[

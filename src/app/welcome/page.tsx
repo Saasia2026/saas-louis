@@ -15,6 +15,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: `${t.welcome.title} — TwinPost` };
 }
 
+// La création d'un influenceur, dans le tunnel, attend son image.
+export const maxDuration = 120;
+
 // Tunnel d'accueil d'un nouvel inscrit : quelques questions sur ce qu'il
 // veut faire, puis l'offre qui lui correspond. Il peut le passer (« Plus
 // tard ») ; une fois vu, il ne revient plus.
@@ -27,7 +30,7 @@ export default async function WelcomePage(props: PageProps<"/welcome">) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("onboarded_at")
+    .select("onboarded_at, credits_remaining")
     .eq("id", auth.claims.sub)
     .single();
   if (profile?.onboarded_at) redirect(next);
@@ -45,7 +48,12 @@ export default async function WelcomePage(props: PageProps<"/welcome">) {
         </div>
       </header>
       <main className="relative isolate min-w-0 flex-1 px-4 py-10 sm:px-8 sm:py-16">
-        <Funnel next={next} paymentsEnabled={stripeEnabled()} />
+        <Funnel
+          next={next}
+          paymentsEnabled={stripeEnabled()}
+          userId={auth.claims.sub}
+          credits={profile?.credits_remaining ?? 0}
+        />
       </main>
     </div>
   );

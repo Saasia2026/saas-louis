@@ -159,6 +159,34 @@ export async function createFalSwap(input: {
   return `fal:swap:${request_id}`;
 }
 
+// Influenceur IA : Seedream 5.5 à partir du texte, Seedream 5.0 Pro Edit à
+// partir d'une photo (la 5.5 n'a pas de version édition chez fal). Format
+// 3:4 en 1200 × 1600 : sous le seuil de 2,6 Mpx du prix le plus bas.
+const SEEDREAM_TEXT_ENDPOINT = "bytedance/seedream/v5.5/text-to-image";
+const SEEDREAM_EDIT_ENDPOINT = "bytedance/seedream/v5/pro/edit";
+
+export async function createSeedreamImage(input: { prompt: string; imageUrl?: string }) {
+  const fal = createFal();
+  const common = {
+    prompt: input.prompt,
+    image_size: { width: 1200, height: 1600 },
+    num_images: 1,
+    output_format: "jpeg",
+    enable_safety_checker: true,
+  };
+  try {
+    const { data } = input.imageUrl
+      ? await fal.subscribe(SEEDREAM_EDIT_ENDPOINT, { input: { ...common, image_urls: [input.imageUrl] } })
+      : await fal.subscribe(SEEDREAM_TEXT_ENDPOINT, { input: common });
+    const url = (data as { images?: { url?: string }[] }).images?.[0]?.url;
+    return url ? { url } : { refused: false };
+  } catch (e) {
+    if (!(e instanceof ApiError)) throw e;
+    console.error("seedream", e.status, JSON.stringify(e.body).slice(0, 500));
+    return { refused: isContentRefused(e) };
+  }
+}
+
 // "fal:ref:nano-banana-pro:<id>" (image) ou "fal:swap:<id>" (vidéo).
 function parseFalId(id: string) {
   const parts = id.split(":");

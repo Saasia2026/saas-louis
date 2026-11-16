@@ -80,6 +80,7 @@ export function Studio({
   history = [],
   resume,
   reuseId,
+  startImage,
 }: {
   // null : visiteur sans compte. Il prépare tout ; au lancement, son projet
   // est gardé dans le navigateur et il passe par la connexion (voir draft.ts).
@@ -98,6 +99,9 @@ export function Studio({
   resume?: Active;
   // Rendu à reprendre dans le studio (« Réutiliser » depuis Mes vidéos).
   reuseId?: string;
+  // Influenceur IA choisi : il devient l'image du personnage, même si un
+  // brouillon revient (son clip est gardé).
+  startImage?: { path: string; previewUrl: string };
 }) {
   const router = useRouter();
   const { t, locale } = useI18n();
@@ -259,12 +263,19 @@ export function Studio({
 
   // Projet préparé avant la connexion (ou avant un achat de crédits) : il
   // revient tel quel, ses fichiers envoyés au passage.
+  const startPath = startImage?.path;
+  const startUrl = startImage?.previewUrl;
   useEffect(() => {
     if (!userId || resume) return;
     let cancelled = false;
+    const start = startPath && startUrl ? { path: startPath, previewUrl: startUrl } : null;
     (async () => {
       const draft = await loadDraft();
-      if (!draft || cancelled) return;
+      if (cancelled) return;
+      if (!draft) {
+        if (start) setImages([start]);
+        return;
+      }
       setRestoring(true);
       try {
         const restore = async (d: DraftFile): Promise<SwapFile | null> => {
@@ -287,7 +298,7 @@ export function Studio({
         if (cancelled || !restored || imgs.some((f) => !f)) return;
         const restoredImages = imgs as SwapFile[];
         setVideo(restored);
-        setImages(restoredImages);
+        setImages(start ? [start] : restoredImages);
         setDecorPhoto(decor);
         setMode(draft.mode);
         setModel(draft.model ?? "max");
@@ -319,7 +330,7 @@ export function Studio({
     return () => {
       cancelled = true;
     };
-  }, [userId, resume, supabase]);
+  }, [userId, resume, supabase, startPath, startUrl]);
 
   useEffect(() => {
     if (!video) clearDraft();
