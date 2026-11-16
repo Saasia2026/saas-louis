@@ -258,8 +258,8 @@ export default async function Home() {
           </h2>
           <p className="mt-4 max-w-xl text-[0.9375rem] leading-relaxed text-muted">
             {fmt(L.pricingText, {
-              max: swapMethodRate().toLocaleString(INTL_LOCALES[locale]),
-              hd: swapMethodRate({ quality: "1080p" }).toLocaleString(INTL_LOCALES[locale]),
+              max: swapMethodRate({ model: "max" }).toLocaleString(INTL_LOCALES[locale]),
+              hd: swapMethodRate({ model: "max", quality: "1080p" }).toLocaleString(INTL_LOCALES[locale]),
               std: swapMethodRate({ model: "standard" }).toLocaleString(INTL_LOCALES[locale]),
             })}
           </p>
@@ -285,7 +285,7 @@ export default async function Home() {
                   <p className="mt-6 font-headline text-6xl leading-none">{price(pack.amount)}</p>
                   <p className="mt-2 text-sm font-semibold tabular-nums">{fmt(L.perEuro, { n: creditsPerEuro(pack) })}</p>
                   <p className="mt-1 text-sm text-muted tabular-nums">
-                    {fmt(P.eqSeconds, { n: swapMethodSecondsFor(pack.credits) })}
+                    {fmt(P.eqStandard, { n: swapMethodSecondsFor(pack.credits) })}
                   </p>
                   {bonus > 0 && (
                     <p className="mt-2 text-sm font-bold text-success">{fmt(L.bonusFree, { n: bonus })}</p>

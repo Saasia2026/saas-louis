@@ -185,7 +185,7 @@ function PlanCard({
             {fmt(P.clipsStd, { n: n(swapShortClipsFor(credits, { model: "standard" })), s: SHORT_CLIP_SECONDS })}
           </li>
           <li className="text-muted">
-            {fmt(P.clipsMax, { n: n(swapShortClipsFor(credits)), s: SHORT_CLIP_SECONDS })}
+            {fmt(P.clipsMax, { n: n(swapShortClipsFor(credits, { model: "max" })), s: SHORT_CLIP_SECONDS })}
           </li>
         </ul>
 

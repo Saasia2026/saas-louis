@@ -13,6 +13,7 @@ import {
   GENJUTSU_MIN_SECONDS,
   GENJUTSU_MODELS,
   SWAP_ENGINES,
+  DEFAULT_GENJUTSU_MODEL,
   GENJUTSU_LIGHT_MAX_SECONDS,
   GENJUTSU_MAX_IMAGES,
   STUDIO_QUALITIES,
@@ -114,7 +115,7 @@ export function Studio({
   const [video, setVideo] = useState<SwapFile | null>(null);
   const [images, setImages] = useState<SwapFile[]>([]);
   // Genjutsu (par défaut) ou Genjutsu Max, et qualité du rendu.
-  const [model, setModel] = useState<GenjutsuModel>("standard");
+  const [model, setModel] = useState<GenjutsuModel>(DEFAULT_GENJUTSU_MODEL);
   const [quality, setQuality] = useState<SwapQuality>(DEFAULT_SWAP_QUALITY);
   const settings = { model, quality };
   // Haute fidélité : méthode du mannequin, deux passes, au double du prix.
@@ -299,7 +300,7 @@ export function Studio({
         setImages(start ? [start] : restoredImages);
         setDecorPhoto(decor);
         setMode(draft.mode);
-        setModel(draft.model ?? "max");
+        setModel(draft.model ?? DEFAULT_GENJUTSU_MODEL);
         // Un brouillon en 480p (qualité retirée du studio) repart en 720p.
         setQuality(
           draft.quality && STUDIO_QUALITIES.includes(draft.quality)

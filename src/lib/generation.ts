@@ -53,7 +53,10 @@ export const GENJUTSU_RATES: Record<GenjutsuModel, Record<SwapQuality, number>> 
   standard: { "480p": 3, "720p": 5, "1080p": 9 },
   max: { "480p": 14, "720p": 28, "1080p": 68 },
 };
-export const DEFAULT_GENJUTSU_MODEL: GenjutsuModel = "max";
+// Shinka par défaut depuis le 2026-11-16 : même marge au crédit que Max,
+// mais 5 à 6 fois moins cher la vidéo pour le client ; Max reste l'option
+// qualité.
+export const DEFAULT_GENJUTSU_MODEL: GenjutsuModel = "standard";
 export const DEFAULT_SWAP_QUALITY: SwapQuality = "720p";
 // Qualités proposées au studio ; le 480p ne sert plus qu'aux rendus existants.
 export const STUDIO_QUALITIES: SwapQuality[] = ["720p", "1080p"];
@@ -242,7 +245,7 @@ export function swapCredits(
 export const SHORT_CLIP_SECONDS = 5;
 
 // Vidéos de SHORT_CLIP_SECONDS (720p, un personnage, une passe) qu'un nombre
-// de crédits permet, une fiche par vidéo. Genjutsu Max par défaut.
+// de crédits permet, une fiche par vidéo. Shinka par défaut.
 export function swapShortClipsFor(credits: number, settings: GenjutsuSettings = {}) {
   return Math.max(
     0,
@@ -251,7 +254,7 @@ export function swapShortClipsFor(credits: number, settings: GenjutsuSettings = 
 }
 
 // Secondes de remplacement (720p, un personnage, une passe) qu'un nombre de
-// crédits permet, fiche comprise. Genjutsu Max par défaut.
+// crédits permet, fiche comprise. Shinka par défaut.
 export function swapMethodSecondsFor(credits: number, settings: GenjutsuSettings = {}) {
   return Math.max(0, Math.floor((credits - SWAP_SHEET_CREDITS) / swapMethodRate(settings)));
 }
