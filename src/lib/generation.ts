@@ -44,8 +44,9 @@ export function isSwapEngine(value: unknown): value is SwapEngine {
 // - max : « Genjutsu » chez Higgsfield, affiché « Shinka Max ». Prix publics
 //   du 2026-11-16 : 0,154 / 0,3446 / 0,8346 $ la seconde (0,318 / 0,681 /
 //   1,632 quand le barème a été posé).
-// Shinka : barème relevé le 2026-11-16 pour garder ~20 % net après Stripe et
-// l'URSSAF aux prix publics (un crédit rapporte ~0,0235 $ net). Shinka Max :
+// Shinka : barème relevé le 2026-11-16, en deux fois (5 → 9 → 11 en 720p),
+// pour garder ~30 % net après Stripe et l'URSSAF aux prix publics (un crédit
+// rapporte ~0,0235 $ net), en restant sous Glorify. Shinka Max :
 // barème d'origine, à revoir quand le prix réellement débité sur le compte
 // Higgsfield aura été lu (le baisser aux anciens coûts ferait vendre à perte).
 // Alignés avec public.start_swap_generation.
@@ -54,7 +55,7 @@ export type GenjutsuModel = (typeof GENJUTSU_MODELS)[number];
 export const SWAP_QUALITIES = ["480p", "720p", "1080p"] as const;
 export type SwapQuality = (typeof SWAP_QUALITIES)[number];
 export const GENJUTSU_RATES: Record<GenjutsuModel, Record<SwapQuality, number>> = {
-  standard: { "480p": 5, "720p": 9, "1080p": 18 },
+  standard: { "480p": 6, "720p": 11, "1080p": 22 },
   max: { "480p": 14, "720p": 28, "1080p": 68 },
 };
 // Shinka par défaut depuis le 2026-11-16 : environ 3 fois moins cher la
