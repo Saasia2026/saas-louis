@@ -38,6 +38,9 @@ const FEATURE_MEDIA: (number | null)[] = [2, 6, 11, 18, null];
 // crédits — le même calcul que la page Crédits.
 const MAX_SUBSCRIPTION_OFF = Math.max(...SUBSCRIPTION_PLANS.map((plan) => subscriptionOff(plan, "year")));
 
+// Trois recharges en vitrine ; toute la grille est sur la page Crédits.
+const LANDING_PACKS = ["c1000", "c4000", "c5000"].map((id) => CREDIT_PACKS.find((p) => p.id === id)!);
+
 export default async function Home() {
   const [t, locale, supabase] = await Promise.all([getDictionary(), getLocale(), createClient()]);
   const { data } = await supabase.auth.getClaims();
@@ -261,8 +264,8 @@ export default async function Home() {
             })}
           </p>
           <ul className="mt-10 grid gap-5 lg:grid-cols-3">
-            {CREDIT_PACKS.map((pack, i) => {
-              const tier = TIERS[pack.id];
+            {LANDING_PACKS.map((pack, i) => {
+              const tier = TIERS[pack.tier];
               const featured = tier.badge === "popular";
               const bonus = bonusCredits(pack);
               return (
@@ -272,15 +275,17 @@ export default async function Home() {
                   style={{ ...tierCard(tier.color, featured ? tier.strength + 6 : tier.strength), animationDelay: `${i * 90}ms` }}
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-headline text-4xl leading-none">{P.packs[pack.id]}</h3>
+                    <h3 className="font-headline text-4xl leading-none">
+                      {pack.credits.toLocaleString(INTL_LOCALES[locale])} {t.common.credits}
+                    </h3>
                     {featured && <span className={`${BADGE} bg-accent text-white`}>{L.popular}</span>}
                     {tier.badge === "best" && <span className={`${BADGE} bg-amber-400 text-black`}>{L.bestValue}</span>}
                   </div>
-                  <p className="mt-2 text-sm text-muted">{P.taglines[pack.id]}</p>
+                  <p className="mt-2 text-sm text-muted">{P.taglines[pack.tier]}</p>
                   <p className="mt-6 font-headline text-6xl leading-none">{price(pack.amount)}</p>
                   <p className="mt-2 text-sm font-semibold tabular-nums">{fmt(L.perEuro, { n: creditsPerEuro(pack) })}</p>
                   <p className="mt-1 text-sm text-muted tabular-nums">
-                    {pack.credits} {t.common.credits} {fmt(P.eqSeconds, { n: swapMethodSecondsFor(pack.credits) })}
+                    {fmt(P.eqSeconds, { n: swapMethodSecondsFor(pack.credits) })}
                   </p>
                   {bonus > 0 && (
                     <p className="mt-2 text-sm font-bold text-success">{fmt(L.bonusFree, { n: bonus })}</p>

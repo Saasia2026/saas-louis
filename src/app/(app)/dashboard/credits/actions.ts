@@ -76,7 +76,7 @@ export async function buyCredits(formData: FormData) {
             currency: CREDIT_CURRENCY,
             unit_amount: pack.amount,
             product_data: {
-              name: fmt(t.productName, { credits: pack.credits, label: t.packs[pack.id] }),
+              name: fmt(t.productName, { credits: pack.credits }),
             },
           },
         },
@@ -159,10 +159,7 @@ export async function buyWithSavedCard(formData: FormData) {
     card,
     pack,
     kind: "oneclick",
-    description: fmt(t.creditsPage.productName, {
-      credits: pack.credits,
-      label: t.creditsPage.packs[pack.id],
-    }),
+    description: fmt(t.creditsPage.productName, { credits: pack.credits }),
     returnUrl: `${await origin()}${PAGE}`,
     idempotencyKey: `oneclick-${user.id}-${nonce}`,
   });
@@ -205,7 +202,7 @@ export async function subscribe(formData: FormData) {
             recurring: { interval },
             product_data: {
               name: fmt(S.productName, {
-                label: S.plans[plan.id],
+                label: S.plans[plan.tier],
                 credits: planCredits(plan, interval),
                 period: interval === "year" ? S.perYear : S.perMonth,
               }),

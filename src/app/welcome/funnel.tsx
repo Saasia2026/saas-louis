@@ -357,7 +357,7 @@ function PlanStep({
   const P = t.creditsPage;
   const S = P.subscriptions;
   const plan = recommendedPlan(pace);
-  const tier = TIERS[plan.id];
+  const tier = TIERS[plan.tier];
   const named = platforms.filter((p) => p !== "other").map((p) => W.platforms.options[p]);
   const where = named.length ? new Intl.ListFormat(locale, { type: "conjunction" }).format(named) : "";
 
@@ -388,7 +388,7 @@ function PlanStep({
       <div className="mt-8 rounded-3xl border p-6" style={tierCard(tier.color, tier.strength)}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-headline text-4xl leading-none">{S.plans[plan.id]}</h2>
+            <h2 className="font-headline text-4xl leading-none">{S.plans[plan.tier]}</h2>
             <span className={`${BADGE} bg-accent text-white`}>{W.plan.recommended}</span>
           </div>
           <div className="rail flex gap-1 border border-line text-xs">
@@ -436,7 +436,7 @@ function PlanStep({
           <input type="hidden" name="interval" value={billing} />
           <input type="hidden" name="next" value={next} />
           <button type="submit" disabled={!paymentsEnabled} className="btn btn-accent w-full py-3.5 text-base">
-            {fmt(W.plan.subscribe, { plan: S.plans[plan.id] })}
+            {fmt(W.plan.subscribe, { plan: S.plans[plan.tier] })}
           </button>
         </form>
         <p className="mt-3 text-center text-xs text-faint">{W.plan.cancelAnytime}</p>
