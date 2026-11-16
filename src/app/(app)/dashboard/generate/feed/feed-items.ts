@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 import { clipId, DEMO_CLIPS, type DemoClip } from "../demo-clips";
 
-export type FeedSource = "own" | "partner" | "tiktok_embed";
+export type FeedSource = "own" | "partner";
 export type FeedCategory = "shinka" | "personas" | "trending";
 
 export type FeedItem = {
@@ -13,8 +13,7 @@ export type FeedItem = {
   id: string | null;
   slug: string;
   source: FeedSource;
-  videoUrl: string | null;
-  tiktokId: string | null;
+  videoUrl: string;
   posterUrl: string | null;
   beforeUrl: string | null;
   revealAt: number | null;
@@ -35,7 +34,6 @@ function fromClip(clip: DemoClip): FeedItem {
     slug,
     source: "own",
     videoUrl: `${clip.base}.mp4`,
-    tiktokId: null,
     posterUrl: `${clip.base}.jpg`,
     beforeUrl: pair ? `${clip.base.replace(/-apres$/, "-avant")}.mp4` : null,
     revealAt: pair ? 1.5 : null,
@@ -54,7 +52,7 @@ function fromClip(clip: DemoClip): FeedItem {
 export const STATIC_FEED: FeedItem[] = DEMO_CLIPS.map(fromClip);
 
 const COLUMNS =
-  "id, slug, source, video_url, tiktok_id, poster_url, before_url, reveal_at, ratio, has_sound, creator_handle, creator_name, creator_url, creator_avatar_url, caption, category, like_count, recreate_count";
+  "id, slug, source, video_url, poster_url, before_url, reveal_at, ratio, has_sound, creator_handle, creator_name, creator_url, creator_avatar_url, caption, category, like_count, recreate_count";
 
 type Row = Pick<
   Database["public"]["Tables"]["feed_items"]["Row"],
@@ -62,7 +60,6 @@ type Row = Pick<
   | "slug"
   | "source"
   | "video_url"
-  | "tiktok_id"
   | "poster_url"
   | "before_url"
   | "reveal_at"
@@ -83,8 +80,7 @@ function fromRow(row: Row): FeedItem {
     id: row.id,
     slug: row.slug,
     source: row.source as FeedSource,
-    videoUrl: row.video_url,
-    tiktokId: row.tiktok_id,
+    videoUrl: row.video_url ?? "",
     posterUrl: row.poster_url,
     beforeUrl: row.before_url,
     revealAt: row.reveal_at === null ? null : Number(row.reveal_at),
@@ -110,6 +106,8 @@ export function useFeedItems() {
       .from("feed_items")
       .select(COLUMNS)
       .eq("active", true)
+      // Le fil ne montre que des vidéos hébergées chez nous.
+      .not("video_url", "is", null)
       .order("position")
       .then(({ data, error }) => {
         if (cancelled) return;

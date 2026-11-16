@@ -1,5 +1,4 @@
-// Ce que le fil sait piloter, qu'il s'agisse d'une <video> ou du lecteur
-// TikTok (voir tiktok-player.tsx) : lecture, pause, son, position.
+// Ce que le fil pilote sur la vidéo affichée : lecture, pause, son, position.
 export type FeedPlayer = {
   play(): Promise<void>;
   pause(): void;
