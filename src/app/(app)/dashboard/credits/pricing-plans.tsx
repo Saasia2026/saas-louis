@@ -17,7 +17,7 @@ import {
 } from "@/lib/credit-packs";
 import { SHORT_CLIP_SECONDS, swapShortClipsFor } from "@/lib/generation";
 import { subscribe } from "./actions";
-import { HOT_PILL, LIME, PINK, PLAN_LOOK } from "./pricing-look";
+import { HOT_PILL, HOT_PILL_SM, LIME, PINK, PLAN_LOOK } from "./pricing-look";
 
 const PRO = SUBSCRIPTION_PLANS.filter((p) => p.tier === "pro");
 const CREATOR = SUBSCRIPTION_PLANS.filter((p) => p.tier === "creator");
@@ -36,19 +36,19 @@ export function PricingPlans({ enabled, initialBilling }: { enabled: boolean; in
   return (
     <div>
       <div className="flex justify-center">
-        <div className="rail flex gap-1 border border-line text-sm">
+        <div className="rail flex gap-0.5 border border-line text-xs">
           {(["month", "year"] as const).map((interval) => (
             <button
               key={interval}
               type="button"
               onClick={() => setBilling(interval)}
               aria-pressed={billing === interval}
-              className={`flex items-center gap-2 rounded-full px-4 py-2 font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold transition-colors ${
                 billing === interval ? "bg-text text-bg" : "text-muted hover:text-text"
               }`}
             >
               {interval === "year" ? S.yearly : S.monthly}
-              {interval === "year" && <span className={HOT_PILL}>{fmt(P.off, { pct: MAX_YEARLY_OFF })}</span>}
+              {interval === "year" && <span className={HOT_PILL_SM}>{fmt(P.off, { pct: MAX_YEARLY_OFF })}</span>}
             </button>
           ))}
         </div>
