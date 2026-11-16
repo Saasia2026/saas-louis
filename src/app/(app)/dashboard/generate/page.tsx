@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { SWAP_INPUTS_BUCKET, isAspectRatio } from "@/lib/generation";
-import { higgsfieldEnabled } from "@/lib/higgsfield";
+import { higgsfieldEnabled, studioRestyleStyles } from "@/lib/higgsfield";
 import { magichourEnabled } from "@/lib/magichour";
 import { SWAP_PRESETS } from "@/lib/presets";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -48,13 +48,15 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
     .lt("created_at", stalePendingBefore());
   for (const g of stale ?? []) await admin.rpc("fail_generation", { p_generation_id: g.id });
 
-  const [{ data: profile }, history] = await Promise.all([
+  const [{ data: profile }, history, styles] = await Promise.all([
     supabase
       .from("profiles")
       .select("credits_remaining, stripe_customer_id, pay_as_you_go, auto_recharge_failed, onboarded_at")
       .eq("id", auth.claims.sub)
       .single(),
     listSwapHistory(),
+    // Styles du mode Restyle, gardés dix minutes en mémoire.
+    studioRestyleStyles(),
   ]);
 
   // Nouvel inscrit : le tunnel d'accueil d'abord (le projet préparé dans le
@@ -117,6 +119,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
   return (
     <Studio
       presets={presets}
+      styles={styles}
       history={history}
       userId={auth.claims.sub}
       resume={resume}

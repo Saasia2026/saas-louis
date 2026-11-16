@@ -1,5 +1,5 @@
 import "server-only";
-import type { GenjutsuModel, SwapQuality } from "@/lib/generation";
+import { RESTYLE_MAX_IMAGES, type GenjutsuModel, type SwapQuality } from "@/lib/generation";
 import type { PredictionState } from "@/lib/predictions";
 
 // Higgsfield : Genjutsu, le moteur « qualité maximale » du remplacement de
@@ -366,6 +366,74 @@ export async function createGenjutsuSwap(input: {
       video_url: input.videoUrl,
       image_urls: input.decorUrl ? [...characterUrls, input.decorUrl] : characterUrls,
       resolution,
+    }),
+  });
+  if (!response.ok) throw await failure("création", response);
+  const { request_id } = (await response.json()) as { request_id?: string };
+  if (!request_id) throw new Error("Higgsfield création : réponse sans identifiant");
+  return `hf:swap:${request_id}`;
+}
+
+// Styles de Genjutsu Restyle (« presets » chez Higgsfield) : le catalogue du
+// moment, gardé dix minutes en mémoire. Chaque style a un identifiant, un nom
+// et une image d'aperçu.
+export type RestyleStyle = { id: string; name: string; previewUrl: string };
+const RESTYLE_MODEL = "higgsfield/genjutsu/restyle/v1.0";
+const RESTYLE_STYLES_TTL_MS = 10 * 60_000;
+let restyleStyles: { at: number; items: RestyleStyle[] } | null = null;
+
+export async function listRestyleStyles(): Promise<RestyleStyle[]> {
+  if (restyleStyles && Date.now() - restyleStyles.at < RESTYLE_STYLES_TTL_MS) return restyleStyles.items;
+  const response = await fetch(`${BASE_URL}/models/${RESTYLE_MODEL}/presets`, {
+    headers: headers(),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) throw await failure("styles", response);
+  const body = (await response.json()) as {
+    items?: { id?: unknown; name?: unknown; preview_url?: unknown }[];
+  };
+  const items = (body.items ?? []).flatMap((item) =>
+    typeof item.id === "string" && typeof item.name === "string" && typeof item.preview_url === "string"
+      ? [{ id: item.id, name: item.name, previewUrl: item.preview_url }]
+      : [],
+  );
+  restyleStyles = { at: Date.now(), items };
+  return items;
+}
+
+// Styles proposés au studio : aucun (le mode Restyle est alors caché) si
+// Higgsfield n'est pas configuré ou ne répond pas.
+export async function studioRestyleStyles(): Promise<RestyleStyle[]> {
+  if (!higgsfieldEnabled()) return [];
+  return listRestyleStyles().catch((e) => {
+    console.error("listRestyleStyles", e instanceof Error ? e.message : e);
+    return [];
+  });
+}
+
+// Restyle : le clip entier est refait dans le style choisi, mouvements, cadre
+// et son gardés. Images facultatives : l'apparence des personnages ; sans
+// elles, ceux du clip sont restylés. Le prompt du créateur part tel quel.
+// Vidéo source 4–30 s, facturée à la seconde entamée comme les autres modes.
+export async function createGenjutsuRestyle(input: {
+  videoUrl: string;
+  presetId: string;
+  imageUrls?: string[];
+  prompt?: string;
+  quality?: SwapQuality;
+  webhookUrl?: string;
+}) {
+  const hook = input.webhookUrl ? `?hf_webhook=${encodeURIComponent(input.webhookUrl)}` : "";
+  const response = await fetch(`${BASE_URL}/${RESTYLE_MODEL}${hook}`, {
+    method: "POST",
+    headers: headers(),
+    signal: AbortSignal.timeout(60_000),
+    body: JSON.stringify({
+      prompt: input.prompt?.trim() ?? "",
+      preset_id: input.presetId,
+      video_url: input.videoUrl,
+      image_urls: (input.imageUrls ?? []).slice(0, RESTYLE_MAX_IMAGES),
+      resolution: input.quality ?? "720p",
     }),
   });
   if (!response.ok) throw await failure("création", response);

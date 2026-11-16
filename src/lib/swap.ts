@@ -27,6 +27,7 @@ import {
 } from "@/lib/generation";
 import {
   cancelHiggsfieldRequest,
+  createGenjutsuRestyle,
   createGenjutsuSwap,
   getHiggsfieldPrediction,
   mannequinTarget,
@@ -218,6 +219,11 @@ export type SwapMetadata = {
   // Onglet « Transfert » du studio : Motion Transfer, avec ou sans photo de
   // lieu. Absent avec une photo de lieu : rendus d'avant le 2026-11-15.
   transfer?: boolean;
+  // Onglet « Restyle » : tout le clip est refait dans un style (voir
+  // createGenjutsuRestyle). Le nom du style est gardé pour l'historique.
+  restyle?: boolean;
+  restyle_preset_id?: string;
+  restyle_preset_name?: string;
   // Consignes libres du créateur (genjutsu), dans sa langue.
   instructions?: string;
   // Mode vrac multi-personnage : les consignes sont le prompt principal
@@ -858,7 +864,18 @@ async function advanceParts(
               { urls: metadata.character_urls ?? [sheet.frontUrl], target, object: false },
             ];
             const mannequinPass = Boolean(metadata.vessel && mannequins?.length && !part.vesselUrl);
-            part.predictionId = mannequinPass
+            part.predictionId = metadata.restyle && metadata.restyle_preset_id
+              ? // Restyle : le style choisi, les images telles que déposées
+                // (facultatives) et le prompt du créateur, sans réécriture.
+                await createGenjutsuRestyle({
+                  videoUrl: part.videoUrl!,
+                  presetId: metadata.restyle_preset_id,
+                  imageUrls: people.flatMap((c) => c.urls).filter(Boolean),
+                  prompt: metadata.instructions,
+                  quality: genjutsuSettingsOf(metadata).quality,
+                  webhookUrl,
+                })
+              : mannequinPass
               ? await createGenjutsuSwap({
                   videoUrl: part.videoUrl!,
                   characters: mannequins!.map((m, k) => ({ imageUrls: [m.sheet_url], target: people[k]?.target })),

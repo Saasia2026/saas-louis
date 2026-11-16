@@ -16,6 +16,7 @@ import {
   DEFAULT_GENJUTSU_MODEL,
   GENJUTSU_LIGHT_MAX_SECONDS,
   GENJUTSU_MAX_IMAGES,
+  RESTYLE_MAX_IMAGES,
   STUDIO_QUALITIES,
   SWAP_INPUTS_BUCKET,
   SWAP_MAX_CHARACTERS,
@@ -35,7 +36,18 @@ import { clearDraft, loadDraft, saveDraft, type DraftFile } from "./draft";
 import { ExamplesPanel } from "./examples-panel";
 import { HistoryEmpty, HistoryList } from "./history-list";
 import { cancelSwap, redoSwapShot, startSwap } from "./swap-actions";
-import { MODEL_ICON, ModelBadge, ModelCard, ModeTabs, Option, PanelTabs, SettingRow, Tag } from "./studio-controls";
+import {
+  MODEL_ICON,
+  ModelBadge,
+  ModelCard,
+  ModeTabs,
+  Option,
+  PanelTabs,
+  SettingRow,
+  Tag,
+  type StudioMode,
+} from "./studio-controls";
+import { StylePicker, type StudioStyle } from "./style-picker";
 import { SwapInput, keptSeconds, readDuration, uploadSwapFile, type SwapFile } from "./swap-input";
 
 const POLL_INTERVAL_MS = 5_000;
@@ -76,11 +88,15 @@ export function Studio({
   payAsYouGo = false,
   engines,
   presets = [],
+  styles = [],
   history = [],
   resume,
   reuseId,
   startImage,
 }: {
+  // Styles du mode Restyle (voir listRestyleStyles) ; vide : le mode n'est
+  // pas proposé.
+  styles?: StudioStyle[];
   // null : visiteur sans compte. Il prépare tout ; au lancement, son projet
   // est gardé dans le navigateur et il passe par la connexion (voir draft.ts).
   userId: string | null;
@@ -115,15 +131,22 @@ export function Studio({
   const [video, setVideo] = useState<SwapFile | null>(null);
   const [images, setImages] = useState<SwapFile[]>([]);
   // Genjutsu (par défaut) ou Genjutsu Max, et qualité du rendu.
-  const [model, setModel] = useState<GenjutsuModel>(DEFAULT_GENJUTSU_MODEL);
+  const [chosenModel, setModel] = useState<GenjutsuModel>(DEFAULT_GENJUTSU_MODEL);
   const [quality, setQuality] = useState<SwapQuality>(DEFAULT_SWAP_QUALITY);
-  const settings = { model, quality };
   // Haute fidélité : méthode du mannequin, deux passes, au double du prix.
-  const [fidelity, setFidelity] = useState(false);
-  // Remplacer (Object Swap, le clip est retouché en place) ou transférer le
+  const [chosenFidelity, setFidelity] = useState(false);
+  // Remplacer (Object Swap, le clip est retouché en place), transférer le
   // mouvement (Motion Transfer, toute la scène est refaite : le personnage
-  // prend tout le corps, animal compris).
-  const [mode, setMode] = useState<"replace" | "transfer">("replace");
+  // prend tout le corps, animal compris) ou restyler (tout le clip refait
+  // dans un style, voir createGenjutsuRestyle).
+  const [mode, setMode] = useState<StudioMode>("replace");
+  // Restyle : le style choisi, obligatoire. Ce mode n'existe qu'avec Shinka
+  // Max, en une passe.
+  const [style, setStyle] = useState<StudioStyle | null>(null);
+  const restyle = mode === "restyle";
+  const model: GenjutsuModel = restyle ? "max" : chosenModel;
+  const fidelity = chosenFidelity && !restyle;
+  const settings = { model, quality, restyle };
   // Transfert : photo d'un nouveau lieu, facultative. Sans elle, la scène est
   // refaite d'après le décor du clip.
   const [decorPhoto, setDecorPhoto] = useState<SwapFile | null>(null);
@@ -139,11 +162,15 @@ export function Studio({
   const available = engines.includes(engine);
   const availablePresets = presets.filter((p) => p.people.length <= SWAP_MAX_CHARACTERS);
   // 8 images au plus (limite de Higgsfield) ; plan prêt : une par personne.
-  const maxImages = preset ? preset.people.length : GENJUTSU_MAX_IMAGES;
-  // Sans image, seule la photo du lieu peut suffire (Motion transfer).
-  const imagesReady = preset
-    ? images.length >= preset.people.length
-    : images.length > 0 || (mode === "transfer" && Boolean(decorPhoto));
+  // Restyle : 5 images de personnage au plus, facultatives.
+  const maxImages = preset ? preset.people.length : restyle ? RESTYLE_MAX_IMAGES : GENJUTSU_MAX_IMAGES;
+  // Sans image, seule la photo du lieu peut suffire (Motion transfer) ; en
+  // Restyle, c'est le style qui est obligatoire.
+  const imagesReady = restyle
+    ? Boolean(style)
+    : preset
+      ? images.length >= preset.people.length
+      : images.length > 0 || (mode === "transfer" && Boolean(decorPhoto));
   // Personnages facturés (une fiche chacun) : connus d'avance pour un plan
   // prêt ; sinon au plus un par image, trois au plus. Le serveur débite la
   // distribution retenue, jamais plus que ce prix affiché.
@@ -180,7 +207,21 @@ export function Studio({
     : swapCredits(1, engine, undefined, castCount, settings, false, fidelity);
   const ready = Boolean(video) && imagesReady;
   // Ce qu'il manque pour lancer, affiché au-dessus du bouton.
-  const missing = !video ? t.studio.missingVideo : !imagesReady ? t.studio.missingCharacter : null;
+  const missing = !video
+    ? t.studio.missingVideo
+    : !imagesReady
+      ? restyle
+        ? t.studio.missingStyle
+        : t.studio.missingCharacter
+      : null;
+
+  // Changement de mode. Restyle : pas de plan prêt, 5 images au plus.
+  function changeMode(next: StudioMode) {
+    setMode(next);
+    if (next !== "restyle") return;
+    setPreset(null);
+    setImages((list) => list.slice(0, RESTYLE_MAX_IMAGES));
+  }
   // Connecté mais à court de crédits : « Générer » mène aux packs.
   const short = !guest && ready && credits < gate && !payAsYouGo;
   // Paiement à l'usage : ce que la carte paiera, annoncé avant de lancer.
@@ -252,13 +293,21 @@ export function Studio({
       images: images.map(draftFile),
       decor: decorPhoto && kept(decorPhoto) ? draftFile(decorPhoto) : null,
       mode,
-      model,
+      styleId: style?.id,
+      model: chosenModel,
       quality,
-      fidelity,
+      fidelity: chosenFidelity,
       instructions: prompt,
       length: null,
     });
   }
+
+  // Mode d'un brouillon. Restyle : seulement si le mode est proposé ; le style
+  // revient s'il est encore au catalogue.
+  const restoreMode = useEffectEvent((draftMode: StudioMode, styleId?: string) => {
+    setMode(draftMode === "restyle" && !styles.length ? "replace" : draftMode);
+    setStyle(styles.find((s) => s.id === styleId) ?? null);
+  });
 
   // Projet préparé avant la connexion (ou avant un achat de crédits) : il
   // revient tel quel, ses fichiers envoyés au passage.
@@ -299,7 +348,7 @@ export function Studio({
         setVideo(restored);
         setImages(start ? [start] : restoredImages);
         setDecorPhoto(decor);
-        setMode(draft.mode);
+        restoreMode(draft.mode, draft.styleId);
         setModel(draft.model ?? DEFAULT_GENJUTSU_MODEL);
         // Un brouillon en 480p (qualité retirée du studio) repart en 720p.
         setQuality(
@@ -379,7 +428,10 @@ export function Studio({
     }
     setImages(item.refs.map((r) => ({ path: r.path, previewUrl: r.url })));
     setDecorPhoto(item.decor ? { path: item.decor.path, previewUrl: item.decor.url } : null);
-    setMode(item.transfer ? "transfer" : "replace");
+    // Rendu Restyle : son style revient s'il est encore au catalogue.
+    const itemStyle = item.restyle ? styles.find((s) => s.id === item.restyle!.id) : undefined;
+    setMode(item.restyle && styles.length ? "restyle" : item.transfer ? "transfer" : "replace");
+    setStyle(itemStyle ?? null);
     setModel(item.settings.model);
     setQuality(STUDIO_QUALITIES.includes(item.settings.quality) ? item.settings.quality : DEFAULT_SWAP_QUALITY);
     setFidelity(item.fidelity);
@@ -439,6 +491,7 @@ export function Studio({
         vessel: fidelity,
         transfer: mode === "transfer",
         decorImagePath: mode === "transfer" ? decorPhoto?.path : undefined,
+        ...(restyle && style && { restyle: { presetId: style.id } }),
         instructions: prompt.trim() || undefined,
         // Passage choisi dans la fenêtre de découpe ; sans lui, le clip entier.
         ...(!preset && video.length !== undefined && { start: video.start ?? 0, seconds: video.length }),
@@ -514,8 +567,9 @@ export function Studio({
   const modelName = (m: GenjutsuModel) => (m === "max" ? t.studio.modelMax : t.studio.modelStandard);
   const modelTagline = (m: GenjutsuModel) => (m === "max" ? t.studio.modelMaxTagline : t.studio.modelStandardTagline);
   const rate = (r: number) => fmt(t.studio.perSecond, { rate: r.toLocaleString(locale) });
+  // Restyle n'existe qu'avec Shinka Max.
   const modelOptions = (close: () => void) =>
-    GENJUTSU_MODELS.map((m) => (
+    GENJUTSU_MODELS.filter((m) => !restyle || m === "max").map((m) => (
       <Option
         key={m}
         selected={model === m}
@@ -538,7 +592,7 @@ export function Studio({
             <span className="basis-full">{modelTagline(m)}</span>
           </>
         }
-        aside={rate(swapMethodRate({ model: m, quality }, fidelity))}
+        aside={rate(swapMethodRate({ model: m, quality, restyle }, fidelity))}
       />
     ));
 
@@ -557,10 +611,16 @@ export function Studio({
         </ModelCard>
         <ModeTabs
           value={mode}
-          onChange={setMode}
+          onChange={changeMode}
+          modes={styles.length ? ["replace", "transfer", "restyle"] : ["replace", "transfer"]}
           labels={{
             replace: { title: t.studio.modeReplace, hint: t.studio.modeReplaceHint },
-            transfer: { title: t.studio.modeTransfer, hint: t.studio.modeTransferHint },
+            transfer: {
+              title: t.studio.modeTransfer,
+              hint: t.studio.modeTransferHint,
+              short: t.studio.modeTransferShort,
+            },
+            restyle: { title: t.studio.modeRestyle, hint: t.studio.modeRestyleHint },
           }}
         />
       </div>
@@ -585,7 +645,9 @@ export function Studio({
         onPrompt={setPrompt}
       />
 
-      {availablePresets.length > 0 && (
+      {restyle && <StylePicker styles={styles} value={style} onChange={setStyle} />}
+
+      {availablePresets.length > 0 && !restyle && (
         <div className="px-4 pb-2">
           <p className="text-xs text-faint">{t.studio.presets}</p>
           {/* Cartes verticales (les plans sont en 9:16) : la vidéo zoome
@@ -655,7 +717,7 @@ export function Studio({
                 }}
                 icon={MonitorPlay}
                 title={q}
-                aside={rate(swapMethodRate({ model, quality: q }, fidelity))}
+                aside={rate(swapMethodRate({ model, quality: q, restyle }, fidelity))}
               />
             ))
           }

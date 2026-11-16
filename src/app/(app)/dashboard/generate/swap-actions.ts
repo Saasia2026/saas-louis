@@ -11,6 +11,7 @@ import {
   DEFAULT_GENJUTSU_MODEL,
   DEFAULT_SWAP_QUALITY,
   GENJUTSU_LIGHT_MAX_SECONDS,
+  RESTYLE_MAX_IMAGES,
   genjutsuSettingsOf,
   isGenjutsuModel,
   isSwapQuality,
@@ -26,6 +27,7 @@ import {
   MANNEQUIN_COLORS,
   mannequinSheetPath,
   higgsfieldEnabled,
+  listRestyleStyles,
   uploadToHiggsfield,
   type MannequinFigure,
 } from "@/lib/higgsfield";
@@ -124,6 +126,10 @@ export async function startSwap(input: {
   // Onglet « Transfert » : toute la scène est refaite à partir des mouvements
   // (Motion Transfer), avec ou sans photo de lieu.
   transfer?: boolean;
+  // Onglet « Restyle » : tout le clip est refait dans le style choisi
+  // (toujours avec Shinka Max). Les images deviennent facultatives : sans
+  // elles, les personnages du clip sont restylés.
+  restyle?: { presetId: string };
   // Consignes libres, facultatives : demandes en plus du remplacement
   // (« transforme la chaise en voiture de sport »), dans la langue du
   // créateur. Vides : seuls les références et les champs remplis comptent.
@@ -142,15 +148,23 @@ export async function startSwap(input: {
   if (!userId) return { error: t.common.sessionExpired };
   if (!higgsfieldEnabled()) return { error: errors.startFailed };
   const engine: SwapEngine = "genjutsu";
-  const model = isGenjutsuModel(input.model) ? input.model : DEFAULT_GENJUTSU_MODEL;
+  // Restyle : le style doit être dans le catalogue du moment ; ce mode
+  // n'existe qu'avec Shinka Max, en une passe.
+  const restyleId = typeof input.restyle?.presetId === "string" ? input.restyle.presetId : undefined;
+  const restyle = restyleId !== undefined;
+  const style = restyle
+    ? (await listRestyleStyles().catch(() => [])).find((s) => s.id === restyleId)
+    : undefined;
+  if (restyle && (!style || input.presetId !== undefined)) return { error: errors.restyleStyle };
+  const model = restyle ? "max" : isGenjutsuModel(input.model) ? input.model : DEFAULT_GENJUTSU_MODEL;
   const quality = isSwapQuality(input.quality)
     ? input.quality
     : input.hd === true
       ? "1080p"
       : DEFAULT_SWAP_QUALITY;
   const hd = quality === "1080p";
-  const settings = { model, quality };
-  let vessel = input.vessel === true;
+  const settings = { model, quality, restyle };
+  let vessel = input.vessel === true && !restyle;
 
   // Chemins sous le dossier de l'utilisateur uniquement.
   const own = (p: unknown) =>
@@ -183,7 +197,9 @@ export async function startSwap(input: {
   //   du même personnage.
   const flatPhotos =
     !preset && Array.isArray(input.photos)
-      ? input.photos.filter((p): p is string => typeof p === "string").slice(0, GENJUTSU_MAX_IMAGES)
+      ? input.photos
+          .filter((p): p is string => typeof p === "string")
+          .slice(0, restyle ? RESTYLE_MAX_IMAGES : GENJUTSU_MAX_IMAGES)
       : [];
   const flat = flatPhotos.length > 0;
   // Studio : la vidéo et les images partent dans l'ordre du dépôt (8 au plus).
@@ -198,10 +214,13 @@ export async function startSwap(input: {
       characters = [{ imagePath: flatPhotos[0], extraPaths: flatPhotos.slice(1), target: "", object: false }];
     }
   }
-  const decorImagePath = typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
-  const transfer = input.transfer === true || Boolean(decorImagePath);
-  // Sans image dans la case principale, seul le lieu change.
-  if (!characters.length && !decorImagePath) return { error: errors.swapFiles };
+  // Restyle : ni photo de lieu ni transfert, le style refait toute l'image.
+  const decorImagePath =
+    !restyle && typeof input.decorImagePath === "string" ? input.decorImagePath : undefined;
+  const transfer = !restyle && (input.transfer === true || Boolean(decorImagePath));
+  // Sans image dans la case principale, seul le lieu change ; en Restyle, les
+  // personnages du clip sont restylés.
+  if (!characters.length && !decorImagePath && !restyle) return { error: errors.swapFiles };
   if (characters.length > (directMode ? GENJUTSU_MAX_IMAGES : SWAP_MAX_CHARACTERS)) {
     return { error: fmt(errors.swapTooManyCharacters, { max: SWAP_MAX_CHARACTERS }) };
   }
@@ -303,6 +322,7 @@ export async function startSwap(input: {
     quality,
     ...(decorImagePath && { decor_image_path: decorImagePath }),
     ...(transfer && { transfer: true }),
+    ...(style && { restyle: true, restyle_preset_id: style.id, restyle_preset_name: style.name }),
     ...(instructions && { instructions }),
     ...(directPrompt && { direct_prompt: true }),
     ...(vessel && { vessel: true }),
@@ -336,6 +356,8 @@ export async function startSwap(input: {
       // appelable tant que la migration swap_genjutsu_models n'est pas passée.
       ...(model === "standard" && { p_light: true }),
       ...(quality === "480p" && { p_quality: quality }),
+      // Restyle : son barème est lu dans p_metadata (« restyle »), voir la
+      // migration swap_restyle.
     });
   let { data: generationId, error: rpcError } = await debit();
   // Solde trop bas et paiement à l'usage accepté : la carte paie ce qui manque,

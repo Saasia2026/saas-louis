@@ -71,7 +71,16 @@ export const STUDIO_QUALITIES: SwapQuality[] = ["720p", "1080p"];
 // Genjutsu Light ne lit que les 15 premières secondes de la vidéo reçue.
 export const GENJUTSU_LIGHT_MAX_SECONDS = 15;
 
-export type GenjutsuSettings = { model?: GenjutsuModel; quality?: SwapQuality };
+// Restyle : troisième mode de Genjutsu (Max seulement), toute la vidéo est
+// refaite dans un style choisi. Prix publics de l'API lus le 2026-11-17 :
+// 0,318 / 0,681 / 1,632 $ la seconde en 480p / 720p / 1080p, le double des
+// deux autres modes ; barème à ~20 % net comme eux. 5 images de personnage
+// au plus, facultatives. Aligné avec public.start_swap_generation, qui lit
+// le mode dans les métadonnées du rendu (« restyle »).
+export const RESTYLE_RATES: Record<SwapQuality, number> = { "480p": 19, "720p": 40, "1080p": 96 };
+export const RESTYLE_MAX_IMAGES = 5;
+
+export type GenjutsuSettings = { model?: GenjutsuModel; quality?: SwapQuality; restyle?: boolean };
 
 export function isGenjutsuModel(value: unknown): value is GenjutsuModel {
   return typeof value === "string" && (GENJUTSU_MODELS as readonly string[]).includes(value);
@@ -87,10 +96,12 @@ export function genjutsuSettingsOf(metadata: {
   hd?: boolean;
   quality?: unknown;
   model?: unknown;
+  restyle?: unknown;
 }): Required<GenjutsuSettings> {
   return {
     model: isGenjutsuModel(metadata.model) ? metadata.model : "max",
     quality: isSwapQuality(metadata.quality) ? metadata.quality : metadata.hd ? "1080p" : "720p",
+    restyle: metadata.restyle === true,
   };
 }
 
@@ -106,11 +117,14 @@ export const FACE_PASS_CREDITS_PER_SECOND = SWAP_ENGINES.magichour.creditsPerSec
 export function facePassCredits(seconds: number) {
   return Math.max(1, Math.ceil(seconds * FACE_PASS_CREDITS_PER_SECOND));
 }
-// Crédits par seconde d'un moteur ; genjutsu selon son modèle et sa qualité.
+// Crédits par seconde d'un moteur ; genjutsu selon son modèle et sa qualité,
+// ou au barème de Restyle.
 export function swapRate(engine: SwapEngine, settings: GenjutsuSettings = {}) {
-  return engine === "genjutsu"
-    ? GENJUTSU_RATES[settings.model ?? DEFAULT_GENJUTSU_MODEL][settings.quality ?? DEFAULT_SWAP_QUALITY]
-    : SWAP_ENGINES[engine].creditsPerSecond;
+  if (engine !== "genjutsu") return SWAP_ENGINES[engine].creditsPerSecond;
+  const quality = settings.quality ?? DEFAULT_SWAP_QUALITY;
+  return settings.restyle
+    ? RESTYLE_RATES[quality]
+    : GENJUTSU_RATES[settings.model ?? DEFAULT_GENJUTSU_MODEL][quality];
 }
 
 // Crédits par seconde d'un remplacement : une passe Genjutsu par défaut ; en

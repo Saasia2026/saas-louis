@@ -13,7 +13,9 @@ export type StudioDraft = {
   // Anciens brouillons : images rangées personnage par personnage.
   characters?: { image: DraftFile; extras: DraftFile[]; target: string }[];
   decor: DraftFile | null;
-  mode: "replace" | "transfer";
+  mode: "replace" | "transfer" | "restyle";
+  // Mode Restyle : identifiant du style choisi.
+  styleId?: string;
   // Anciens brouillons : `hd` seul (1080p ou 720p, Genjutsu Max).
   hd?: boolean;
   model?: GenjutsuModel;

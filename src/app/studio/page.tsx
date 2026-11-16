@@ -6,7 +6,7 @@ import { Logo } from "@/app/logo";
 import { VideoWall } from "@/app/video-wall";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { getDictionary } from "@/i18n/server";
-import { higgsfieldEnabled } from "@/lib/higgsfield";
+import { higgsfieldEnabled, studioRestyleStyles } from "@/lib/higgsfield";
 import { createClient } from "@/lib/supabase/server";
 import { Studio } from "../(app)/dashboard/generate/studio";
 
@@ -24,7 +24,7 @@ export default async function GuestStudioPage(props: PageProps<"/studio">) {
     const { reel } = await props.searchParams;
     redirect(typeof reel === "string" ? `/dashboard/generate?reel=${encodeURIComponent(reel)}` : "/dashboard/generate");
   }
-  const t = await getDictionary();
+  const [t, styles] = await Promise.all([getDictionary(), studioRestyleStyles()]);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
@@ -45,7 +45,12 @@ export default async function GuestStudioPage(props: PageProps<"/studio">) {
       </header>
       <main className="relative isolate min-w-0 flex-1 overflow-x-clip px-4 py-6 sm:px-8 sm:py-10">
         <div className="mx-auto max-w-7xl">
-          <Studio userId={null} credits={0} engines={higgsfieldEnabled() ? ["genjutsu"] : []} />
+          <Studio
+            userId={null}
+            credits={0}
+            engines={higgsfieldEnabled() ? ["genjutsu"] : []}
+            styles={styles}
+          />
         </div>
       </main>
     </div>

@@ -153,7 +153,12 @@ function Details({ item, onReuse }: { item: SwapHistoryItem; onReuse?: (item: Sw
     <div className="panel flex min-w-0 flex-col gap-4 p-5">
       <span className="inline-flex items-center gap-2 self-start rounded-full bg-accent-soft px-3.5 py-1.5 text-sm font-semibold text-accent-light">
         <Sparkles className="size-4" />
-        {item.settings.model === "max" ? S.modelMax : S.modelStandard} · {item.transfer ? S.modeTransfer : S.modeReplace}
+        {item.settings.model === "max" ? S.modelMax : S.modelStandard} ·{" "}
+        {item.restyle
+          ? `${S.modeRestyle}${item.restyle.name ? ` · ${item.restyle.name}` : ""}`
+          : item.transfer
+            ? S.modeTransfer
+            : S.modeReplace}
       </span>
 
       <PromptText prompt={item.prompt} />
