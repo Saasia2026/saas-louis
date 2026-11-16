@@ -39,10 +39,34 @@ const option = (name) => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 
+class OembedError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
+
 async function oembed(url) {
-  const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
-  if (!res.ok) throw new Error(`oEmbed TikTok a répondu ${res.status} pour ${url}`);
+  const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`).catch((e) => {
+    throw new OembedError(`TikTok injoignable depuis ce réseau (${e.cause?.code ?? e.message})`, 0);
+  });
+  if (!res.ok) throw new OembedError(`oEmbed TikTok a répondu ${res.status} pour ${url}`, res.status);
   return res.json();
+}
+
+// TikTok injoignable : le créateur et l'identifiant sont repris du lien lui-même
+// (https://www.tiktok.com/@compte/video/123…), sans miniature ni titre.
+function fromLink(url) {
+  const match = String(url).match(/tiktok\.com\/@([^/?#]+)\/video\/(\d+)/);
+  if (!match) return null;
+  return {
+    author_unique_id: match[1],
+    author_url: `https://www.tiktok.com/@${match[1]}`,
+    author_name: null,
+    title: null,
+    thumbnail_url: null,
+    embed_product_id: match[2],
+  };
 }
 
 // Identifiant de la vidéo : donné par l'oEmbed, sinon lu dans le lien.
@@ -59,7 +83,15 @@ function creator(data) {
 }
 
 async function add(link) {
-  const data = await oembed(link);
+  let data;
+  try {
+    data = await oembed(link);
+  } catch (e) {
+    data = e.status === 0 ? fromLink(link) : null;
+    if (!data) throw e;
+    console.warn(`${e.message} : créateur et identifiant repris du lien, sans miniature ni titre.`);
+    console.warn("Relance --refresh depuis un réseau qui joint TikTok pour les compléter.");
+  }
   const id = videoId(link, data);
   if (!id) throw new Error("Identifiant de vidéo introuvable dans la réponse oEmbed.");
   const category = option("--category") ?? "trending";
@@ -111,7 +143,12 @@ async function refresh() {
         .eq("id", row.id);
       console.log(`${row.slug} : ${updateError ? updateError.message : "à jour"}`);
     } catch (e) {
-      // Vidéo supprimée ou rendue privée : on la retire du fil.
+      // Vidéo supprimée ou rendue privée (TikTok répond 400 ou 404) : on la
+      // retire du fil. Un réseau qui ne joint pas TikTok ne retire rien.
+      if (e.status !== 400 && e.status !== 404) {
+        console.log(`${row.slug} : inchangée (${e.message})`);
+        continue;
+      }
       await db.from("feed_items").update({ active: false }).eq("id", row.id);
       console.log(`${row.slug} : retirée du fil (${e.message})`);
     }

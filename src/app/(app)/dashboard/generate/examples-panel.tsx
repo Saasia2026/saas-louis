@@ -29,16 +29,19 @@ function Clip({ item, label, onOpen, className = "" }: { item: FeedItem; label: 
           className={media}
         />
       ) : (
-        item.posterUrl && (
-          <img
-            src={item.posterUrl}
-            alt=""
-            aria-hidden
-            loading="lazy"
-            onError={(e) => (e.currentTarget.style.visibility = "hidden")}
-            className={media}
-          />
-        )
+        <span className="relative flex size-full items-center justify-center bg-neutral-900 px-2 text-center text-sm font-semibold text-white">
+          {item.creator?.handle}
+          {item.posterUrl && (
+            <img
+              src={item.posterUrl}
+              alt=""
+              aria-hidden
+              loading="lazy"
+              onError={(e) => (e.currentTarget.style.visibility = "hidden")}
+              className={`absolute inset-0 ${media}`}
+            />
+          )}
+        </span>
       )}
     </button>
   );
@@ -61,7 +64,11 @@ export function ExamplesPanel({
   const E = t.studio.examples;
   const root = useRef<HTMLDivElement>(null);
   const { items, ready } = useFeedItems();
-  const [hero, ...mosaic] = items;
+  // En vedette : la première vidéo hébergée chez nous (une vidéo TikTok n'a
+  // pas de lecture en vignette). Le reste fait la mosaïque, dans l'ordre du fil.
+  const heroIndex = Math.max(0, items.findIndex((item) => item.videoUrl));
+  const hero = items[heroIndex];
+  const mosaic = items.map((item, index) => ({ item, index })).filter(({ index }) => index !== heroIndex);
   // Fil ouvert : sa liste est figée le temps de la visite, pour qu'un
   // chargement de la base n'en décale pas les vidéos.
   const [session, setSession] = useState<{ items: FeedItem[]; start: number } | null>(null);
@@ -119,12 +126,12 @@ export function ExamplesPanel({
         </div>
         {hero && (
           <div className="aspect-video overflow-hidden rounded-2xl border border-line bg-black bg-clip-padding">
-            <Clip item={hero} label={E.open} onOpen={() => open(0)} />
+            <Clip item={hero} label={E.open} onOpen={() => open(heroIndex)} />
           </div>
         )}
       </div>
       <div className="columns-2 gap-3 sm:columns-3 [&>*]:mb-3">
-        {mosaic.slice(0, shown).map((item, i) => (
+        {mosaic.slice(0, shown).map(({ item, index }) => (
           <div
             key={item.slug}
             style={{ aspectRatio: item.tiktokId ? "9/16" : item.ratio }}
@@ -133,7 +140,7 @@ export function ExamplesPanel({
             <Clip
               item={item}
               label={E.open}
-              onOpen={() => open(i + 1)}
+              onOpen={() => open(index)}
               className="transition-transform duration-500 group-hover:scale-[1.04]"
             />
           </div>

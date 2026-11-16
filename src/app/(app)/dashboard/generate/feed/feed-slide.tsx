@@ -130,18 +130,26 @@ export const FeedSlide = memo(function FeedSlide({
 
   let media: React.ReactNode = null;
   if (tiktok) {
-    media = active ? (
-      <TikTokPlayer
-        id={tiktok}
-        index={index}
-        title={item.creator ? `TikTok ${item.creator.handle}` : "TikTok"}
-        loop={loop}
-        registerPlayer={registerPlayer}
-        onPlayState={onPlayState}
-        onEnded={onEnded}
-      />
-    ) : (
-      poster && posterImg(`absolute inset-0 size-full ${fit}`)
+    media = (
+      <>
+        {/* Sous le lecteur : le créateur, visible tant que TikTok n'a rien affiché. */}
+        <span className="absolute inset-0 flex items-center justify-center text-lg font-semibold text-white/60">
+          {item.creator?.handle}
+        </span>
+        {active ? (
+          <TikTokPlayer
+            id={tiktok}
+            index={index}
+            title={item.creator ? `TikTok ${item.creator.handle}` : "TikTok"}
+            loop={loop}
+            registerPlayer={registerPlayer}
+            onPlayState={onPlayState}
+            onEnded={onEnded}
+          />
+        ) : (
+          poster && posterImg(`absolute inset-0 size-full ${fit}`)
+        )}
+      </>
     );
   } else if (near && item.videoUrl) {
     media = (
