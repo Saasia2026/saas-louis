@@ -80,9 +80,6 @@ export const DEMO_CLIPS: DemoClip[] = [
   gallery(83, "16/9", true),
   gallery(84, "16/9", true),
   gallery(89, "9/16", true),
-  gallery(92, "9/16", true),
-  gallery(93, "3/4", true),
-  gallery(97, "4/3", true),
   gallery(98, "9/16", true),
   gallery(1),
   gallery(2, "3/4"),
@@ -144,5 +141,4 @@ export const DEMO_CLIPS: DemoClip[] = [
   demo(22),
   demo(23),
   example("chien", "16/9", true),
-  example("ours", "16/9", true),
 ];
