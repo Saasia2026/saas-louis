@@ -38,24 +38,27 @@ export function isSwapEngine(value: unknown): value is SwapEngine {
 
 // Deux modèles Genjutsu chez Higgsfield, nommés autrement sur le site :
 // - standard : « Genjutsu Light » chez Higgsfield (sorti le 2026-10-20),
-//   affiché « Shinka ». 0,05 / 0,10 / 0,20 $ la seconde en 480p / 720p /
-//   1080p, 15 s au plus par requête ;
-// - max : « Genjutsu » chez Higgsfield, affiché « Shinka Max ». 0,318 /
-//   0,681 / 1,632 $ la seconde.
-// Crédits la seconde au même coût par crédit que le barème d'origine
-// (0,681 $ = 28 crédits, soit ~0,0243 $ le crédit), arrondis au-dessus.
+//   affiché « Shinka ». Prix publics de l'API lus le 2026-11-16 : 0,0739 /
+//   0,1471 / 0,2936 $ la seconde en 480p / 720p / 1080p (0,05 / 0,10 / 0,20
+//   au lancement), 15 s au plus par requête ;
+// - max : « Genjutsu » chez Higgsfield, affiché « Shinka Max ». Prix publics
+//   du 2026-11-16 : 0,154 / 0,3446 / 0,8346 $ la seconde (0,318 / 0,681 /
+//   1,632 quand le barème a été posé).
+// Shinka : barème relevé le 2026-11-16 pour garder ~20 % net après Stripe et
+// l'URSSAF aux prix publics (un crédit rapporte ~0,0235 $ net). Shinka Max :
+// barème d'origine, à revoir quand le prix réellement débité sur le compte
+// Higgsfield aura été lu (le baisser aux anciens coûts ferait vendre à perte).
 // Alignés avec public.start_swap_generation.
 export const GENJUTSU_MODELS = ["standard", "max"] as const;
 export type GenjutsuModel = (typeof GENJUTSU_MODELS)[number];
 export const SWAP_QUALITIES = ["480p", "720p", "1080p"] as const;
 export type SwapQuality = (typeof SWAP_QUALITIES)[number];
 export const GENJUTSU_RATES: Record<GenjutsuModel, Record<SwapQuality, number>> = {
-  standard: { "480p": 3, "720p": 5, "1080p": 9 },
+  standard: { "480p": 5, "720p": 9, "1080p": 18 },
   max: { "480p": 14, "720p": 28, "1080p": 68 },
 };
-// Shinka par défaut depuis le 2026-11-16 : même marge au crédit que Max,
-// mais 5 à 6 fois moins cher la vidéo pour le client ; Max reste l'option
-// qualité.
+// Shinka par défaut depuis le 2026-11-16 : environ 3 fois moins cher la
+// vidéo pour le client ; Max reste l'option qualité.
 export const DEFAULT_GENJUTSU_MODEL: GenjutsuModel = "standard";
 export const DEFAULT_SWAP_QUALITY: SwapQuality = "720p";
 // Qualités proposées au studio ; le 480p ne sert plus qu'aux rendus existants.
