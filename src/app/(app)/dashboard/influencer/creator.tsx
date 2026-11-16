@@ -58,6 +58,14 @@ export function InfluencerCreator({
   const [pending, startGenerating] = useTransition();
   const [elapsed, setElapsed] = useState(0);
   const fileInput = useRef<HTMLInputElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+
+  // Sur téléphone, la création lancée amène l'image à l'écran.
+  useEffect(() => {
+    if (pending && window.matchMedia("(max-width: 1023px)").matches) {
+      panel.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [pending]);
 
   const cost = influencerCredits(Boolean(photo));
   const short = credits < cost;
@@ -110,8 +118,9 @@ export function InfluencerCreator({
     });
   }
 
+  // min-w-0 : la ligne d'exemples défilante ne doit pas élargir la colonne.
   const controls = (
-    <div className="space-y-7">
+    <div className="min-w-0 space-y-7">
       {/* Type de personnage, en vignettes. */}
       <section>
         <h2 className="label">{I.type}</h2>
@@ -388,11 +397,13 @@ export function InfluencerCreator({
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start">
       {controls}
-      <div className="panel p-3 lg:sticky lg:top-24">
-        {frame}
-        <div className="px-1 pt-4 pb-1">{result ? resultActions : generateButton}</div>
+      {/* Sur téléphone, le cadre n'apparaît qu'une fois la création lancée :
+          avant, il ne ferait que répéter la vignette choisie. */}
+      <div ref={panel} className="panel mx-auto w-full max-w-[22rem] scroll-mt-24 p-3 lg:sticky lg:top-24 lg:max-w-none">
+        <div className={result || pending ? "mb-4" : "mb-4 hidden lg:block"}>{frame}</div>
+        <div className="px-1 pb-1">{result ? resultActions : generateButton}</div>
       </div>
     </div>
   );
