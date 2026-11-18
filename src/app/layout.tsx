@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Archivo, Inter } from "next/font/google";
 import { cookies } from "next/headers";
@@ -70,6 +71,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col font-sans">
         <I18nProvider locale={locale}>{children}</I18nProvider>
+        {/* Vercel Web Analytics : visites, provenance (référents, utm_source
+            des liens de bio), sans cookie. */}
+        <Analytics />
       </body>
     </html>
   );
