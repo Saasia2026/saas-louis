@@ -58,12 +58,11 @@ export function StylePicker({
   const fan = styles.slice(0, 3);
 
   return (
-    <div className="px-4 pb-2">
-      <p className="text-xs text-faint">{t.studio.styleLabel}</p>
+    <div className="rounded-[1.25rem] bg-surface-2/60">
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`group mt-2 flex w-full items-center gap-3 rounded-2xl border bg-surface-2/50 p-3 text-left transition-colors hover:border-line-strong ${
+        className={`group flex w-full items-center gap-3 rounded-[1.25rem] border p-3 text-left transition-colors hover:border-line-strong ${
           value ? "border-line" : "border-dashed border-line-strong"
         }`}
       >

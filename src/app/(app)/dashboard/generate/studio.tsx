@@ -643,9 +643,9 @@ export function Studio({
         showDecor={mode === "transfer"}
         prompt={prompt}
         onPrompt={setPrompt}
-      />
-
-      {restyle && <StylePicker styles={styles} value={style} onChange={setStyle} />}
+      >
+        {restyle && <StylePicker styles={styles} value={style} onChange={setStyle} />}
+      </SwapInput>
 
       {availablePresets.length > 0 && !restyle && (
         <div className="px-4 pb-2">

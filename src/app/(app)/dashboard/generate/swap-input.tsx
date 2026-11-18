@@ -164,6 +164,7 @@ export function SwapInput({
   onPrompt,
   presetPeople,
   canTrim = true,
+  children,
 }: {
   // null : visiteur sans compte, rien n'est envoyé avant sa connexion.
   userId: string | null;
@@ -185,6 +186,7 @@ export function SwapInput({
   presetPeople?: string[];
   // Faux pour un plan prêt : son passage est fixé.
   canTrim?: boolean;
+  children?: React.ReactNode;
 }) {
   const [supabase] = useState(createClient);
   const { t, locale } = useI18n();
@@ -543,6 +545,8 @@ export function SwapInput({
           )}
         </div>
       )}
+
+      {children}
 
       {error && <p className="text-xs text-danger">{error}</p>}
 
