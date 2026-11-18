@@ -4,6 +4,7 @@ import {
   Clock,
   Download,
   Film,
+  Gauge,
   Ghost,
   Layers,
   MonitorPlay,
@@ -197,6 +198,12 @@ function Details({ item, onReuse }: { item: SwapHistoryItem; onReuse?: (item: Sw
           <Link href={`/dashboard/generate?reuse=${item.id}`} title={S.reuseHint} className={reuseClass}>
             <RefreshCw />
             {S.reuse}
+          </Link>
+        )}
+        {!item.running && (
+          <Link href={`/dashboard/viral?video=${item.id}`} title={t.viral.analyzeHint} className="btn btn-secondary">
+            <Gauge />
+            {t.viral.analyzeShort}
           </Link>
         )}
         <span className="ml-auto" />

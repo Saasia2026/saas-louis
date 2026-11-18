@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, Clapperboard, Coins, Film, ScanFace, type LucideIcon } from "lucide-react";
+import { CalendarClock, Clapperboard, Coins, Film, Gauge, ScanFace, type LucideIcon } from "lucide-react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef } from "react";
@@ -8,12 +8,13 @@ import { useI18n } from "@/i18n/provider";
 
 const NAV_LINKS: {
   href: string;
-  key: "studio" | "influencer" | "videos" | "planning" | "credits";
+  key: "studio" | "influencer" | "videos" | "viral" | "planning" | "credits";
   icon: LucideIcon;
 }[] = [
   { href: "/dashboard/generate", key: "studio", icon: Clapperboard },
   { href: "/dashboard/influencer", key: "influencer", icon: ScanFace },
   { href: "/dashboard/videos", key: "videos", icon: Film },
+  { href: "/dashboard/viral", key: "viral", icon: Gauge },
   { href: "/dashboard/planning", key: "planning", icon: CalendarClock },
   { href: "/dashboard/credits", key: "credits", icon: Coins },
 ];
@@ -105,7 +106,7 @@ function TabIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean }) 
   );
 }
 
-// Barre d'onglets du bas (téléphone) : les cinq entrées toujours visibles,
+// Barre d'onglets du bas (téléphone) : les six entrées toujours visibles,
 // à portée de pouce, au-dessus de la zone du geste d'accueil.
 export function BottomNav() {
   const isActive = useActive();
