@@ -13,7 +13,6 @@ import {
   per100,
   type CreditPack,
 } from "@/lib/credit-packs";
-import { SHORT_CLIP_SECONDS, swapShortClipsFor } from "@/lib/generation";
 import { buyCredits, buyWithSavedCard } from "./actions";
 import { LIME, LIME_PILL } from "./pricing-look";
 
@@ -33,8 +32,6 @@ export function TopupPacks({ card, nonce, enabled }: { card: Card; nonce: string
   const n = (x: number) => x.toLocaleString(intl);
   const [index, setIndex] = useState(0);
   const big = SLIDER_PACKS[index];
-  const clips = (p: CreditPack) =>
-    fmt(P.clipsStd, { n: n(swapShortClipsFor(p.credits, { model: "standard" })), s: SHORT_CLIP_SECONDS });
 
   return (
     <div className="space-y-5">
@@ -49,7 +46,6 @@ export function TopupPacks({ card, nonce, enabled }: { card: Card; nonce: string
               <span className="rounded-md border border-line-strong bg-surface-2 px-2 py-0.5 text-xs font-bold">{P.bestValue}</span>
               {packOff(big) > 0 && <span className={LIME_PILL}>{fmt(P.off, { pct: packOff(big) })}</span>}
             </div>
-            <p className="mt-2 text-[0.9375rem] text-muted tabular-nums">{clips(big)}</p>
           </div>
           <div className="text-right">
             <p className="flex items-baseline justify-end gap-3">
@@ -109,8 +105,7 @@ export function TopupPacks({ card, nonce, enabled }: { card: Card; nonce: string
                 </h3>
                 {off > 0 && <span className={LIME_PILL}>{fmt(P.off, { pct: off })}</span>}
               </div>
-              <p className="mt-2 text-[0.9375rem] text-muted tabular-nums">{clips(pack)}</p>
-              <div className="mt-10 flex flex-wrap items-end justify-between gap-4 sm:mt-auto sm:pt-12">
+              <div className="mt-8 flex flex-wrap items-end justify-between gap-4 sm:mt-auto sm:pt-10">
                 <div>
                   <p className="flex items-baseline gap-2.5">
                     <span className="font-headline text-3xl leading-none tabular-nums">{price(pack.amount)}</span>

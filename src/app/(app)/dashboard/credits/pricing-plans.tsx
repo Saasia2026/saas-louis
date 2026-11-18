@@ -15,7 +15,6 @@ import {
   type BillingInterval,
   type SubscriptionPlan,
 } from "@/lib/credit-packs";
-import { SHORT_CLIP_SECONDS, swapShortClipsFor } from "@/lib/generation";
 import { subscribe } from "./actions";
 import { HOT_PILL, HOT_PILL_SM, LIME, PINK, PLAN_LOOK } from "./pricing-look";
 
@@ -170,7 +169,6 @@ function PlanCard({
         </div>
       </div>
 
-      {/* Les crédits et ce qu'ils donnent, en arbre comme chez Higgsfield. */}
       <div className="px-2 pt-6">
         <p className="flex items-center gap-3 text-lg">
           <span className="grid size-6 place-items-center rounded-full" style={{ background: dot }}>
@@ -180,16 +178,8 @@ function PlanCard({
             {fmt(billing === "year" ? S.creditsPerYear : S.creditsPerMonth, { credits: n(credits) })}
           </span>
         </p>
-        <ul className="mt-2 ml-3 space-y-2 border-l-2 pl-5 text-[0.9375rem] tabular-nums" style={{ borderColor: dot }}>
-          <li>
-            {fmt(P.clipsStd, { n: n(swapShortClipsFor(credits, { model: "standard" })), s: SHORT_CLIP_SECONDS })}
-          </li>
-          <li className="text-muted">
-            {fmt(P.clipsMax, { n: n(swapShortClipsFor(credits, { model: "max" })), s: SHORT_CLIP_SECONDS })}
-          </li>
-        </ul>
 
-        <div className="mt-6 border-t border-line pt-5">
+        <div className="mt-5">
           <p className="text-sm text-muted">{P.included}</p>
           <ul className="mt-3 space-y-2.5 text-[0.9375rem]">
             {P.features.map((line) => (

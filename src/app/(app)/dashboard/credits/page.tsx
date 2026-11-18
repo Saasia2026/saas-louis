@@ -9,7 +9,6 @@ import {
   USAGE_MIN_CENTS,
   type BillingInterval,
 } from "@/lib/credit-packs";
-import { swapMethodSecondsFor } from "@/lib/generation";
 import {
   activeSubscription,
   createStripe,
@@ -338,10 +337,6 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
             </li>
           ))}
         </ul>
-        <p className="mt-4 text-sm text-muted tabular-nums">
-          {fmt(P.eqStandard, { n: swapMethodSecondsFor(balance).toLocaleString(intl) })}
-        </p>
-
         {!card ? (
           <div className="mt-7">
             <form action={addCard}>
