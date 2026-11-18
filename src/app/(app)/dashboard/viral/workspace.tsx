@@ -1,6 +1,6 @@
 "use client";
 
-import { Gauge, LoaderCircle, Plus, Upload } from "lucide-react";
+import { Gauge, LoaderCircle, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -9,6 +9,7 @@ import { useI18n } from "@/i18n/provider";
 import type { AspectRatio } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/client";
 import { VIRALITY_CREDITS, VIRALITY_MAX_SECONDS, type ViralityAnalysis } from "@/lib/virality";
+import { CameraGlyph, GlassBubble } from "../generate/bubble-icons";
 import { uploadSwapFile } from "../generate/swap-input";
 import { analyzeVideo } from "./actions";
 import { ScoreRing, ViralReport } from "./report";
@@ -143,9 +144,15 @@ export function ViralWorkspace({
                 type="button"
                 disabled={uploading || pending}
                 onClick={() => fileInput.current?.click()}
-                className="flex flex-col items-center gap-3 rounded-2xl px-10 py-12 text-muted transition-colors hover:text-text"
+                className="group flex flex-col items-center gap-3 rounded-2xl px-10 py-12 text-muted transition-colors hover:text-text"
               >
-                {uploading ? <LoaderCircle className="size-8 animate-spin" /> : <Upload className="size-8" />}
+                <GlassBubble className="size-20 group-hover:scale-105">
+                  {uploading ? (
+                    <LoaderCircle className="size-8 animate-spin text-white/80" />
+                  ) : (
+                    <CameraGlyph className="size-9" />
+                  )}
+                </GlassBubble>
                 <span className="text-base font-semibold text-text">{uploading ? V.uploading : V.upload}</span>
                 <span className="text-sm">{fmt(V.uploadHint, { max: VIRALITY_MAX_SECONDS })}</span>
               </button>
