@@ -198,6 +198,13 @@ export const es: Dictionary = {
     back: "Atrás",
     close: "Cerrar",
     continue: "Continuar",
+    intro: {
+      eyebrow: "Bienvenido a TwinPost",
+      title: "Tu personaje. Cualquier vídeo.",
+      text: "Tú grabas, tu personaje actúa: mismos gestos, mismo decorado, mismo sonido. Unas preguntas y te preparamos tu plan para petarlo en redes.",
+      start: "Vamos",
+      meta: "1 minuto · {n} créditos de regalo para crear tu influencer",
+    },
     goal: {
       question: "¿Qué quieres hacer con tus vídeos?",
       options: {
@@ -209,22 +216,36 @@ export const es: Dictionary = {
       },
     },
     platforms: {
-      question: "¿Dónde publicas?",
+      question: "¿Dónde vas a triunfar?",
       hint: "Puedes elegir varias.",
       options: { tiktok: "TikTok", instagram: "Instagram Reels", youtube: "YouTube Shorts", other: "En otro sitio, o todavía no" },
     },
     audience: {
-      question: "¿Cuántos seguidores tienes hoy?",
+      question: "¿De cuántos seguidores partes?",
       options: { "0": "Empiezo (menos de 1000)", "1k": "De 1000 a 10 000", "10k": "De 10 000 a 100 000", "100k": "Más de 100 000" },
     },
     target: {
-      question: "¿Tu objetivo de seguidores?",
+      question: "¿Y a cuántos apuntas?",
       options: { "1k": "1000 seguidores", "10k": "10 000 seguidores", "100k": "100 000 seguidores", "1m": "1 millón de seguidores" },
     },
     pace: {
-      question: "¿Con qué ritmo quieres publicar?",
+      question: "¿Con qué ritmo vas a publicar?",
       options: { weekly: "1 vídeo por semana", few: "3 vídeos por semana", daily: "1 vídeo al día", multi: "Varios vídeos al día" },
       perMonth: "≈ {n} vídeos al mes",
+    },
+    building: {
+      title: "Preparamos tu plan",
+      done: "Tu plan está listo",
+      goal: "Objetivo",
+      where: "Redes",
+      pace: "Ritmo",
+      offer: "Oferta recomendada",
+    },
+    create: {
+      question: "Crea la estrella de tus vídeos",
+      done: "Tu estrella está lista.",
+      hint: "Con tus {n} créditos de regalo: elige un estilo, genera, y tu influencer llega en 20 segundos.",
+      skip: "Saltar este paso",
     },
     plan: {
       eyebrow: "Tu plan",
@@ -240,7 +261,11 @@ export const es: Dictionary = {
       pace: "{pace}, unos {n} vídeos de 15 s al mes.",
       tip: "En TikTok y Reels, la constancia ayuda a que te descubran: 3 vídeos por semana es un buen ritmo para empezar.",
       recommended: "Para ti",
+      unlock: "Lo que desbloqueas",
       covers: "≈ {n} vídeos de 15 s al mes con Shinka, o {max} con Shinka Max",
+      unlockSwap: "Tu personaje en cualquier clip: gestos, decorado y sonido intactos",
+      unlockEngines: "Shinka y Shinka Max, hasta 1080p",
+      unlockSchedule: "Publicación programada en TikTok, Instagram y YouTube",
       subscribe: "Empezar con {plan}",
       cancelAnytime: "Cancelable en cualquier momento desde la página Créditos.",
       noCommitment: "Sin suscripción: {credits} créditos por {price}",
@@ -248,12 +273,7 @@ export const es: Dictionary = {
       draftKept: "Tu proyecto está guardado: te espera en el estudio.",
       allOffers: "Ver todas las ofertas",
       later: "Más tarde",
-      ready: "Tu influencer está listo: ponlo en tu primer vídeo.",
-    },
-    create: {
-      question: "Crea tu influencer",
-      hint: "Con tus créditos de regalo. Luego podrás ponerlo en cualquier vídeo.",
-      skip: "Saltar este paso",
+      ready: "Lista para su primer vídeo",
     },
   },
 
