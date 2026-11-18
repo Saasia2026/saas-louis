@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useState } from "react";
 import { useI18n } from "@/i18n/provider";
 import { Modal, ModalClose } from "./media-library";
@@ -41,16 +41,18 @@ function StyleFan({ styles, front }: { styles: StudioStyle[]; front?: StudioStyl
   );
 }
 
-// Choix du style (mode Restyle) : une case qui ouvre la grille des styles.
-// Une fois choisi, la case montre son aperçu et son nom.
+// Choix du style : une case qui ouvre la grille des styles, comme sur
+// Higgsfield. Visible dans tous les modes. `onClear` retire le style.
 export function StylePicker({
   styles,
   value,
   onChange,
+  onClear,
 }: {
   styles: StudioStyle[];
   value: StudioStyle | null;
   onChange: (style: StudioStyle) => void;
+  onClear?: () => void;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -73,6 +75,18 @@ export function StylePicker({
               <span className="block truncate text-sm font-semibold">{value.name}</span>
               <span className="block text-xs text-muted">{t.studio.styleChange}</span>
             </span>
+            {onClear && (
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label="Remove style"
+                onClick={(e) => { e.stopPropagation(); onClear(); }}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); onClear(); } }}
+                className="grid size-7 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-surface-3 hover:text-text"
+              >
+                <X className="size-4" />
+              </span>
+            )}
           </>
         ) : (
           <>

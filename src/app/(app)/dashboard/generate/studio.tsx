@@ -135,15 +135,15 @@ export function Studio({
   const [quality, setQuality] = useState<SwapQuality>(DEFAULT_SWAP_QUALITY);
   // Haute fidélité : méthode du mannequin, deux passes, au double du prix.
   const [chosenFidelity, setFidelity] = useState(false);
-  // Remplacer (Object Swap, le clip est retouché en place), transférer le
+  // Remplacer (Object Swap, le clip est retouché en place) ou transférer le
   // mouvement (Motion Transfer, toute la scène est refaite : le personnage
-  // prend tout le corps, animal compris) ou restyler (tout le clip refait
-  // dans un style, voir createGenjutsuRestyle).
+  // prend tout le corps, animal compris).
   const [mode, setMode] = useState<StudioMode>("replace");
-  // Restyle : le style choisi, obligatoire. Ce mode n'existe qu'avec Shinka
-  // Max, en une passe.
+  // Style optionnel (Restyle) : disponible dans tous les modes. Quand un
+  // style est choisi, le rendu passe en mode restyle côté API (Shinka Max,
+  // une passe).
   const [style, setStyle] = useState<StudioStyle | null>(null);
-  const restyle = mode === "restyle";
+  const restyle = Boolean(style);
   const model: GenjutsuModel = restyle ? "max" : chosenModel;
   const fidelity = chosenFidelity && !restyle;
   const settings = { model, quality, restyle };
@@ -165,9 +165,9 @@ export function Studio({
   // Restyle : 5 images de personnage au plus, facultatives.
   const maxImages = preset ? preset.people.length : restyle ? RESTYLE_MAX_IMAGES : GENJUTSU_MAX_IMAGES;
   // Sans image, seule la photo du lieu peut suffire (Motion transfer) ; en
-  // Restyle, c'est le style qui est obligatoire.
+  // Restyle (style choisi), les images sont facultatives.
   const imagesReady = restyle
-    ? Boolean(style)
+    ? true
     : preset
       ? images.length >= preset.people.length
       : images.length > 0 || (mode === "transfer" && Boolean(decorPhoto));
@@ -210,17 +210,11 @@ export function Studio({
   const missing = !video
     ? t.studio.missingVideo
     : !imagesReady
-      ? restyle
-        ? t.studio.missingStyle
-        : t.studio.missingCharacter
+      ? t.studio.missingCharacter
       : null;
 
-  // Changement de mode. Restyle : pas de plan prêt, 5 images au plus.
   function changeMode(next: StudioMode) {
     setMode(next);
-    if (next !== "restyle") return;
-    setPreset(null);
-    setImages((list) => list.slice(0, RESTYLE_MAX_IMAGES));
   }
   // Connecté mais à court de crédits : « Générer » mène aux packs.
   const short = !guest && ready && credits < gate && !payAsYouGo;
@@ -305,7 +299,7 @@ export function Studio({
   // Mode d'un brouillon. Restyle : seulement si le mode est proposé ; le style
   // revient s'il est encore au catalogue.
   const restoreMode = useEffectEvent((draftMode: StudioMode, styleId?: string) => {
-    setMode(draftMode === "restyle" && !styles.length ? "replace" : draftMode);
+    setMode(draftMode === "restyle" ? "replace" : draftMode);
     setStyle(styles.find((s) => s.id === styleId) ?? null);
   });
 
@@ -430,7 +424,7 @@ export function Studio({
     setDecorPhoto(item.decor ? { path: item.decor.path, previewUrl: item.decor.url } : null);
     // Rendu Restyle : son style revient s'il est encore au catalogue.
     const itemStyle = item.restyle ? styles.find((s) => s.id === item.restyle!.id) : undefined;
-    setMode(item.restyle && styles.length ? "restyle" : item.transfer ? "transfer" : "replace");
+    setMode(item.transfer ? "transfer" : "replace");
     setStyle(itemStyle ?? null);
     setModel(item.settings.model);
     setQuality(STUDIO_QUALITIES.includes(item.settings.quality) ? item.settings.quality : DEFAULT_SWAP_QUALITY);
@@ -612,7 +606,6 @@ export function Studio({
         <ModeTabs
           value={mode}
           onChange={changeMode}
-          modes={styles.length ? ["replace", "transfer", "restyle"] : ["replace", "transfer"]}
           labels={{
             replace: { title: t.studio.modeReplace, hint: t.studio.modeReplaceHint },
             transfer: {
@@ -644,10 +637,12 @@ export function Studio({
         prompt={prompt}
         onPrompt={setPrompt}
       >
-        {restyle && <StylePicker styles={styles} value={style} onChange={setStyle} />}
+        {styles.length > 0 && (
+          <StylePicker styles={styles} value={style} onChange={setStyle} onClear={() => setStyle(null)} />
+        )}
       </SwapInput>
 
-      {availablePresets.length > 0 && !restyle && (
+      {availablePresets.length > 0 && (
         <div className="px-4 pb-2">
           <p className="text-xs text-faint">{t.studio.presets}</p>
           {/* Cartes verticales (les plans sont en 9:16) : la vidéo zoome
