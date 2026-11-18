@@ -393,6 +393,24 @@ export async function splitIntoParts(
 ) {
   // Magic Hour suit les coupes tout seul et prend le passage entier.
   if (engine === "magichour") return [{ start: 0, seconds }] satisfies SwapPart[];
+  const cuts = await detectCuts(url, start, seconds);
+
+  const bounds = [0, ...cuts, seconds];
+  if (engine === "genjutsu") return groupIntoBlocks(bounds, maxBlockSeconds);
+  return bounds.slice(1).flatMap((end, i): SwapPart[] => {
+    const length = end - bounds[i];
+    const count = Math.ceil(length / PART_MAX_SECONDS);
+    return Array.from({ length: count }, (_, k) => ({
+      start: bounds[i] + (k * length) / count,
+      seconds: length / count,
+    }));
+  });
+}
+
+// Changements de plan du passage [start, start + seconds] d'un clip, en
+// secondes depuis le début du passage (voir CUT_MIN_SCORE).
+export async function detectCuts(url: string, start: number, seconds: number) {
+  if (!ffmpegPath) throw new Error("ffmpeg indisponible sur cette plateforme");
   const { stderr } = await execFileAsync(
     ffmpegPath!,
     [
@@ -415,7 +433,7 @@ export async function splitIntoParts(
     const score = line.match(/lavfi\.scene_score=([\d.]+)/);
     if (score) scores.push({ time, score: Number(score[1]) });
   }
-  const cuts = scores
+  return scores
     .filter(({ time: t, score }) => {
       if (score < CUT_MIN_SCORE || t < 0.3 || t > seconds - 0.3) return false;
       const around = scores.filter((o) => o.time !== t && Math.abs(o.time - t) <= CUT_WINDOW_SECONDS);
@@ -423,17 +441,6 @@ export async function splitIntoParts(
       return score >= CUT_PEAK_RATIO * mean && around.every((o) => o.score <= score);
     })
     .map((c) => c.time);
-
-  const bounds = [0, ...cuts, seconds];
-  if (engine === "genjutsu") return groupIntoBlocks(bounds, maxBlockSeconds);
-  return bounds.slice(1).flatMap((end, i): SwapPart[] => {
-    const length = end - bounds[i];
-    const count = Math.ceil(length / PART_MAX_SECONDS);
-    return Array.from({ length: count }, (_, k) => ({
-      start: bounds[i] + (k * length) / count,
-      seconds: length / count,
-    }));
-  });
 }
 
 // Séquences Genjutsu : plans courts regroupés en séquences d'au plus

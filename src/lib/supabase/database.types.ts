@@ -842,6 +842,60 @@ export type Database = {
         }
         Relationships: []
       }
+      virality_analyses: {
+        Row: {
+          created_at: string
+          credits_cost: number
+          facts: Json | null
+          generation_id: string | null
+          id: string
+          report: Json | null
+          seconds: number | null
+          status: string
+          user_id: string
+          video_path: string | null
+        }
+        Insert: {
+          created_at?: string
+          credits_cost?: number
+          facts?: Json | null
+          generation_id?: string | null
+          id?: string
+          report?: Json | null
+          seconds?: number | null
+          status?: string
+          user_id: string
+          video_path?: string | null
+        }
+        Update: {
+          created_at?: string
+          credits_cost?: number
+          facts?: Json | null
+          generation_id?: string | null
+          id?: string
+          report?: Json | null
+          seconds?: number | null
+          status?: string
+          user_id?: string
+          video_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "virality_analyses_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "generations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "virality_analyses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -881,6 +935,7 @@ export type Database = {
       }
       fail_generation: { Args: { p_generation_id: string }; Returns: undefined }
       fail_influencer: { Args: { p_id: string }; Returns: undefined }
+      fail_virality_analysis: { Args: { p_id: string }; Returns: undefined }
       feed_track: {
         Args: {
           p_category: string
@@ -946,6 +1001,16 @@ export type Database = {
       start_swap_redo: {
         Args: { p_credits: number; p_generation_id: string; p_user_id: string }
         Returns: undefined
+      }
+      start_virality_analysis: {
+        Args: {
+          p_credits: number
+          p_generation_id: string
+          p_seconds: number
+          p_user_id: string
+          p_video_path: string
+        }
+        Returns: string
       }
       start_viral_question: {
         Args: { p_content: string; p_credits: number; p_user_id: string }
