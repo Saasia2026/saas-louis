@@ -1,12 +1,17 @@
 "use client";
 
-import { Check, ChevronLeft, ChevronRight, Copy, ExternalLink, SendHorizontal, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, ExternalLink, Plus, SendHorizontal, X } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type RefObject } from "react";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
+import { createClient } from "@/lib/supabase/client";
 import type { TikTokAnalysis } from "@/lib/tiktok-analysis";
 import type { TrendPick } from "@/lib/trends";
+import { VIRALITY_CREDITS, VIRALITY_MAX_SECONDS, type ViralityReport } from "@/lib/virality";
+import { analyzeVideo } from "../dashboard/viral/actions";
+import { uploadSwapFile } from "../dashboard/generate/swap-input";
 import { analyzeTikTok, applyRhythm, askBot, type BotId, type BotTurn } from "./actions";
 import { BOTS_EVENT, botsEnabled, setBotsEnabled } from "./bots-state";
 import { Ghost, Skull } from "./creatures";
@@ -73,35 +78,88 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function Chat({ bot, turns, setTurns }: { bot: BotId; turns: BotTurn[]; setTurns: (t: BotTurn[]) => void }) {
+// Un message de la discussion ; une vidéo envoyée garde son aperçu, et la
+// réponse à une analyse garde le lien vers le rapport complet.
+type ChatTurn = BotTurn & { video?: string; report?: boolean };
+
+// Rapport de viralité résumé en texte : affiché dans la bulle, et relu par
+// le bot dans la suite de la discussion.
+function reportText(r: ViralityReport, B: { score: string; fixes: string; caption: string }) {
+  const fixes = r.fixes.slice(0, 3).map((f) => `- ${f.title} : ${f.detail}`);
+  return [`${B.score} : ${r.score}/100. ${r.verdict}`, fixes.length ? `${B.fixes} :\n${fixes.join("\n")}` : "", r.caption ? `${B.caption} : ${r.caption}` : ""]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function Chat({ bot, userId, turns, setTurns }: { bot: BotId; userId: string; turns: ChatTurn[]; setTurns: (t: ChatTurn[]) => void }) {
   const { t } = useI18n();
   const B = t.bots;
+  const V = t.viral;
+  const router = useRouter();
+  const [supabase] = useState(createClient);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [left, setLeft] = useState<number | null>(null);
   const [pending, start] = useTransition();
   const end = useRef<HTMLDivElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const Face = bot === "scout" ? Ghost : Skull;
 
   useEffect(() => {
     end.current?.scrollIntoView({ block: "end" });
   }, [turns, pending]);
 
+  const ask = (next: ChatTurn[]) =>
+    askBot(
+      bot,
+      next.map(({ role, text }) => ({ role, text })),
+    );
+
   const send = (text: string) => {
     const q = text.trim();
     if (!q || pending) return;
-    const next: BotTurn[] = [...turns, { role: "user", text: q }];
+    const next: ChatTurn[] = [...turns, { role: "user", text: q }];
     setTurns(next);
     setDraft("");
     setError(null);
     start(async () => {
-      const reply = await askBot(bot, next);
+      const reply = await ask(next);
       if (reply.ok) {
         setTurns([...next, { role: "assistant", text: reply.text }]);
         setLeft(reply.left);
       } else {
         setError(reply.error === "limit" ? B.errorLimit : B.errorFailed);
       }
+    });
+  };
+
+  // Vidéo envoyée : déposée comme sur la page Viralité, puis analysée
+  // (VIRALITY_CREDITS crédits) ; la note et les corrections reviennent ici.
+  const sendVideo = (file: File | undefined) => {
+    if (!file || pending) return;
+    setError(null);
+    if (!file.type.startsWith("video/") && !/\.(mp4|m4v|mov|qt|webm)$/i.test(file.name)) {
+      setError(V.errors.format);
+      return;
+    }
+    const question = draft.trim() || B.attachAsk;
+    const next: ChatTurn[] = [...turns, { role: "user", text: question, video: URL.createObjectURL(file) }];
+    setTurns(next);
+    setDraft("");
+    start(async () => {
+      const path = await uploadSwapFile(supabase, userId, file);
+      if (!path) {
+        setError(V.errors.upload);
+        return;
+      }
+      const res = await analyzeVideo({ path });
+      if (!res.ok) {
+        setError(fmt(V.errors[res.error], { max: VIRALITY_MAX_SECONDS }));
+        return;
+      }
+      setTurns([...next, { role: "assistant", text: reportText(res.analysis.report, B), report: true }]);
+      // Solde de la barre du haut.
+      router.refresh();
     });
   };
 
@@ -121,24 +179,33 @@ function Chat({ bot, turns, setTurns }: { bot: BotId; turns: BotTurn[]; setTurns
           </>
         )}
         {turns.map((m, i) => (
-          <div key={i} className={m.role === "user" ? "flex justify-end" : "flex items-start gap-2"}>
+          <div key={i} className={m.role === "user" ? "flex flex-col items-end gap-1.5" : "flex items-start gap-2"}>
             {m.role === "assistant" && <Face className="mt-0.5 size-7 shrink-0" />}
-            <p
+            {m.video && <video src={m.video} muted playsInline controls className="max-h-56 max-w-[60%] rounded-2xl bg-black" />}
+            <div
               className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-line ${
                 m.role === "user" ? "bg-accent text-white" : "bg-surface-2"
               }`}
             >
               {m.text}
-            </p>
+              {m.report && (
+                <Link href="/dashboard/viral" className="mt-2 block font-semibold text-accent-light hover:underline">
+                  {B.fullReport}
+                </Link>
+              )}
+            </div>
           </div>
         ))}
         {pending && (
           <div className="flex items-center gap-2">
             <Face className="size-7 shrink-0" />
-            <span className="flex gap-1 rounded-2xl bg-surface-2 px-3 py-3" aria-hidden>
-              {[0, 1, 2].map((d) => (
-                <span key={d} className="size-1.5 animate-pulse rounded-full bg-muted" style={{ animationDelay: `${d * 150}ms` }} />
-              ))}
+            <span className="flex items-center gap-2 rounded-2xl bg-surface-2 px-3 py-2.5">
+              <span className="flex gap-1" aria-hidden>
+                {[0, 1, 2].map((d) => (
+                  <span key={d} className="size-1.5 animate-pulse rounded-full bg-muted" style={{ animationDelay: `${d * 150}ms` }} />
+                ))}
+              </span>
+              {turns.at(-1)?.video && <span className="text-xs text-muted">{B.analyzingVideo}</span>}
             </span>
           </div>
         )}
@@ -152,7 +219,27 @@ function Chat({ bot, turns, setTurns }: { bot: BotId; turns: BotTurn[]; setTurns
         }}
         className="border-t border-line p-3"
       >
+        <input
+          ref={fileInput}
+          type="file"
+          accept="video/*"
+          className="hidden"
+          onChange={(e) => {
+            sendVideo(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
         <div className="flex items-end gap-2">
+          <button
+            type="button"
+            onClick={() => fileInput.current?.click()}
+            disabled={pending}
+            className="btn btn-ghost size-10 shrink-0 p-0"
+            title={fmt(B.attach, { credits: VIRALITY_CREDITS })}
+          >
+            <Plus className="size-5" />
+            <span className="sr-only">{fmt(B.attach, { credits: VIRALITY_CREDITS })}</span>
+          </button>
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -172,7 +259,10 @@ function Chat({ bot, turns, setTurns }: { bot: BotId; turns: BotTurn[]; setTurns
             <span className="sr-only">{B.send}</span>
           </button>
         </div>
-        {left !== null && <p className="mt-1.5 text-xs text-faint">{fmt(B.left, { n: left })}</p>}
+        <p className="mt-1.5 text-xs text-faint">
+          {left !== null ? `${fmt(B.left, { n: left })} · ` : ""}
+          {fmt(B.attachHint, { credits: VIRALITY_CREDITS })}
+        </p>
       </form>
     </div>
   );
@@ -422,14 +512,14 @@ function HookPanel({ picks, index, setIndex, showVideo }: { picks: TrendPick[]; 
   );
 }
 
-function Aquarium({ picks, account }: { picks: TrendPick[]; account: TikTokAnalysis | null }) {
+function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick[]; account: TikTokAnalysis | null }) {
   const { t, locale } = useI18n();
   const B = t.bots;
   const num = useCompact(locale);
   const [panel, setPanel] = useState<Panel | null>(null);
   const [bubble, setBubble] = useState<{ bot: BotId; pick: number } | null>(null);
   const [pick, setPick] = useState(0);
-  const [chats, setChats] = useState<Record<BotId, BotTurn[]>>({ scout: [], hook: [] });
+  const [chats, setChats] = useState<Record<BotId, ChatTurn[]>>({ scout: [], hook: [] });
 
   const wrap: Record<BotId, RefObject<HTMLDivElement | null>> = { scout: useRef(null), hook: useRef(null) };
   const body: Record<BotId, RefObject<HTMLDivElement | null>> = { scout: useRef(null), hook: useRef(null) };
@@ -733,7 +823,7 @@ function Aquarium({ picks, account }: { picks: TrendPick[]; account: TikTokAnaly
           ) : panel.tab === "hook" ? (
             <HookPanel picks={picks} index={pick} setIndex={setPick} showVideo={() => setPanel({ bot: "scout", tab: "video" })} />
           ) : (
-            <Chat bot={panel.bot} turns={chats[panel.bot]} setTurns={(turns) => setChats((c) => ({ ...c, [panel.bot]: turns }))} />
+            <Chat bot={panel.bot} userId={userId} turns={chats[panel.bot]} setTurns={(turns) => setChats((c) => ({ ...c, [panel.bot]: turns }))} />
           )}
 
           <footer className="border-t border-line px-4 py-2 text-right">
@@ -747,7 +837,7 @@ function Aquarium({ picks, account }: { picks: TrendPick[]; account: TikTokAnaly
   );
 }
 
-export function BotsAquarium({ picks, account }: { picks: TrendPick[]; account: TikTokAnalysis | null }) {
+export function BotsAquarium({ userId, picks, account }: { userId: string; picks: TrendPick[]; account: TikTokAnalysis | null }) {
   // Rien au rendu serveur : le choix « désactivés » est dans le navigateur.
   const [on, setOn] = useState<boolean | null>(null);
   useEffect(() => {
@@ -756,5 +846,5 @@ export function BotsAquarium({ picks, account }: { picks: TrendPick[]; account: 
     window.addEventListener(BOTS_EVENT, sync);
     return () => window.removeEventListener(BOTS_EVENT, sync);
   }, []);
-  return on ? <Aquarium picks={picks} account={account} /> : null;
+  return on ? <Aquarium userId={userId} picks={picks} account={account} /> : null;
 }
