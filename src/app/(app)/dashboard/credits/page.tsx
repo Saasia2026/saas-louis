@@ -20,10 +20,13 @@ import {
 } from "@/lib/stripe";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
+import { GENJUTSU_RATES } from "@/lib/generation";
+import { CANCEL_REASONS, RETENTION_OFF_PERCENT } from "@/lib/retention";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { createClient } from "@/lib/supabase/server";
 import { BADGE, tierCard } from "@/app/tier-style";
 import {
+  acceptRetentionOffer,
   addCard,
   cancelSubscription,
   openBillingPortal,
@@ -123,6 +126,8 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
     notice = { ok: true, text: P.notices.removed };
   } else if (params.canceled) {
     notice = { ok: true, text: P.notices.canceled };
+  } else if (params.offer) {
+    notice = { ok: true, text: fmt(P.notices.offer, { pct: RETENTION_OFF_PERCENT }) };
   } else if (params.resumed) {
     notice = { ok: true, text: P.notices.resumed };
   } else if (typeof params.error === "string") {
@@ -162,7 +167,6 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
   // payée et peut être annulée. Paiement en échec : elle est immédiate.
   const subscriptionPaid = subscription?.status === "active" || subscription?.status === "trialing";
   const canCancel = Boolean(subscription) && (!subscription?.ending || !subscriptionPaid);
-  const confirmCancel = params.cancel === "1" && canCancel;
   const subscribedPlan = subscription ? findSubscriptionPlan(subscription.planId) : undefined;
   // Clé à usage unique de l'achat en un clic (voir buyWithSavedCard).
   const nonce = crypto.randomUUID();
@@ -174,6 +178,28 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
   const expiring = Math.min(balance, profile?.subscription_credits ?? 0);
   const expiresAt = profile?.subscription_credits_expire_at;
   const usagePer100 = price(usageCharge(100).amount);
+
+  // Parcours de résiliation (?cancel=1 puis ?cancel=2, voir lib/retention.ts).
+  // Crédits d'abonnement restants, leur valeur au prix de la formule et les
+  // secondes de vidéo Shinka 720p qu'ils représentent.
+  const R = S.retention;
+  const keptCredits = subscriptionPaid ? expiring : 0;
+  const keptValue = subscribedPlan
+    ? Math.round(
+        (keptCredits *
+          (subscription?.interval === "year" ? subscribedPlan.year / 12 : subscribedPlan.month)) /
+          subscribedPlan.credits,
+      )
+    : 0;
+  const keptSeconds = Math.floor(keptCredits / GENJUTSU_RATES.standard["720p"]);
+  const offerEligible =
+    subscription?.status === "active" &&
+    subscription.interval === "month" &&
+    !subscription.ending &&
+    !subscription.retentionOfferUsed;
+  const requestedStep = canCancel ? (params.cancel === "1" ? 1 : params.cancel === "2" ? 2 : 0) : 0;
+  // Rien à rappeler ni à proposer : directement la confirmation.
+  const cancelStep = requestedStep === 1 && keptCredits === 0 && !offerEligible ? 2 : requestedStep;
 
   return (
     <div>
@@ -266,7 +292,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
               </div>
             </div>
             {/* Résilier : un petit lien discret sous la ligne, pas un bouton. */}
-            {canCancel && !confirmCancel && (
+            {canCancel && cancelStep === 0 && (
               <p className="mt-3 text-right">
                 <Link href="?cancel=1" scroll={false} className="text-xs text-faint hover:text-muted hover:underline">
                   {S.cancel}
@@ -274,8 +300,66 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
               </p>
             )}
 
-            {/* Résiliation : une confirmation qui dit quand elle prend effet. */}
-            {confirmCancel && (
+            {/* Résiliation, 1re étape : les crédits déjà payés qui seraient
+                perdus, et l'offre de fidélité. « Continuer la résiliation »
+                reste aussi visible que l'offre (voir lib/retention.ts). */}
+            {cancelStep === 1 && (
+              <div className="mt-5 border-t border-line pt-5">
+                <p className="font-semibold">{R.title}</p>
+                {keptCredits > 0 && expiresAt && (
+                  <>
+                    <p className="mt-1 max-w-xl text-sm text-muted">
+                      {fmt(R.lose, { date: dateOf(Date.parse(expiresAt) / 1000) })}
+                    </p>
+                    <div className="mt-4 grid max-w-xl grid-cols-3 divide-x divide-line rounded-2xl border border-line bg-surface-2 py-4 text-center">
+                      <div className="px-2">
+                        <p className="font-headline text-3xl leading-none tabular-nums">{keptCredits.toLocaleString(intl)}</p>
+                        <p className="mt-1.5 text-xs text-muted">{R.credits}</p>
+                      </div>
+                      <div className="px-2">
+                        <p className="font-headline text-3xl leading-none tabular-nums">{price(keptValue)}</p>
+                        <p className="mt-1.5 text-xs text-muted">{R.paid}</p>
+                      </div>
+                      <div className="px-2">
+                        <p className="font-headline text-3xl leading-none tabular-nums">
+                          {keptSeconds.toLocaleString(intl)} s
+                        </p>
+                        <p className="mt-1.5 text-xs text-muted">{R.video}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {offerEligible && subscribedPlan && (
+                  <div className="mt-4 max-w-xl rounded-2xl border border-accent/40 bg-accent-soft p-4">
+                    <p className="font-semibold">{fmt(R.offerTitle, { pct: RETENTION_OFF_PERCENT })}</p>
+                    <p className="mt-1 text-sm text-muted">
+                      {fmt(R.offerText, {
+                        price: price(Math.round(subscribedPlan.month * (1 - RETENTION_OFF_PERCENT / 100))),
+                        full: price(subscribedPlan.month),
+                        credits: subscribedPlan.credits.toLocaleString(intl),
+                      })}
+                    </p>
+                    <form action={acceptRetentionOffer} className="mt-3">
+                      <button type="submit" className="btn btn-accent">
+                        {R.offerTake}
+                      </button>
+                    </form>
+                  </div>
+                )}
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <Link href="/dashboard/credits" scroll={false} className="btn btn-secondary">
+                    {S.cancelKeep}
+                  </Link>
+                  <Link href="?cancel=2" scroll={false} className="btn btn-ghost">
+                    {R.continue}
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Résiliation, 2e étape : la confirmation, qui dit quand elle prend
+                effet, avec une raison facultative. */}
+            {cancelStep === 2 && (
               <div className="mt-5 border-t border-line pt-5">
                 <p className="font-semibold">{S.cancelTitle}</p>
                 <p className="mt-1 max-w-xl text-sm text-muted">
@@ -283,16 +367,27 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                     ? fmt(S.cancelAtEnd, { date: dateOf(subscription.renewsAt) })
                     : S.cancelNow}
                 </p>
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <form action={cancelSubscription}>
+                <form action={cancelSubscription} className="mt-4">
+                  <fieldset>
+                    <legend className="text-sm text-muted">{R.reason}</legend>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {CANCEL_REASONS.map((reason) => (
+                        <label key={reason} className="chip cursor-pointer has-[:checked]:border-accent has-[:checked]:text-text">
+                          <input type="radio" name="reason" value={reason} className="sr-only" />
+                          {R.reasons[reason]}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
                     <button type="submit" className="btn btn-secondary">
                       {S.cancelConfirm}
                     </button>
-                  </form>
-                  <Link href="/dashboard/credits" scroll={false} className="btn btn-ghost">
-                    {S.cancelKeep}
-                  </Link>
-                </div>
+                    <Link href="/dashboard/credits" scroll={false} className="btn btn-ghost">
+                      {S.cancelKeep}
+                    </Link>
+                  </div>
+                </form>
               </div>
             )}
           </div>

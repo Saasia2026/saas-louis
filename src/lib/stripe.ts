@@ -86,6 +86,9 @@ export type ActiveSubscription = {
   // Prochain paiement, ou date d'arrêt si l'abonnement est résilié.
   renewsAt: number | null;
   cancelAtPeriodEnd: boolean;
+  // Offre de fidélité déjà proposée et prise (voir acceptRetentionOffer) :
+  // une seule fois par abonnement.
+  retentionOfferUsed: boolean;
   // Résilié : il s'arrête à `renewsAt`, que l'arrêt vienne du site
   // (cancel_at_period_end) ou de l'espace client Stripe (cancel_at).
   ending: boolean;
@@ -111,6 +114,7 @@ export async function activeSubscription(
     status: sub.status,
     renewsAt: sub.cancel_at ?? item?.current_period_end ?? null,
     cancelAtPeriodEnd: sub.cancel_at_period_end,
+    retentionOfferUsed: sub.metadata.retention_offer === "used",
     ending: sub.cancel_at_period_end || sub.cancel_at !== null,
   };
 }

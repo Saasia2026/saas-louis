@@ -19,6 +19,7 @@ import {
   savedCard,
   stripeEnabled,
 } from "@/lib/stripe";
+import { isCancelReason, RETENTION_COUPON_ID, RETENTION_OFF_PERCENT } from "@/lib/retention";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -258,23 +259,59 @@ async function ownSubscription(userId: string) {
 // période payée, les crédits restent jusque-là et « Reprendre » l'annule.
 // Paiement en échec : rien n'est payé pour la période en cours, il s'arrête
 // tout de suite et Stripe ne retente plus la carte.
-export async function cancelSubscription() {
+// La raison choisie (facultative) part chez Stripe, dans les détails de la
+// résiliation.
+export async function cancelSubscription(formData?: FormData) {
   if (!stripeEnabled()) redirect(`${PAGE}?error=unavailable`);
   const user = await currentUser();
+  const reason = formData?.get("reason");
+  const details = isCancelReason(reason) ? { cancellation_details: { feedback: reason } } : {};
   let target = PAGE;
   try {
     const sub = await ownSubscription(user.id);
     if (sub) {
       const stripe = createStripe();
       if (sub.status !== "active" && sub.status !== "trialing") {
-        await stripe.subscriptions.cancel(sub.id);
+        await stripe.subscriptions.cancel(sub.id, details);
       } else if (!sub.ending) {
-        await stripe.subscriptions.update(sub.id, { cancel_at_period_end: true });
+        await stripe.subscriptions.update(sub.id, { cancel_at_period_end: true, ...details });
       }
       target = `${PAGE}?canceled=1`;
     }
   } catch (e) {
     console.error("cancelSubscription", e instanceof Error ? e.message : e);
+    target = `${PAGE}?error=cancel`;
+  }
+  redirect(target);
+}
+
+// Offre de fidélité du parcours de résiliation : remise sur la prochaine
+// facture d'un abonnement mensuel à jour, une seule fois par abonnement.
+// Le coupon est créé chez Stripe à sa première utilisation.
+export async function acceptRetentionOffer() {
+  if (!stripeEnabled()) redirect(`${PAGE}?error=unavailable`);
+  const user = await currentUser();
+  let target = PAGE;
+  try {
+    const sub = await ownSubscription(user.id);
+    if (sub && sub.interval === "month" && sub.status === "active" && !sub.ending && !sub.retentionOfferUsed) {
+      const stripe = createStripe();
+      await stripe.coupons.retrieve(RETENTION_COUPON_ID).catch(() =>
+        stripe.coupons.create({
+          id: RETENTION_COUPON_ID,
+          percent_off: RETENTION_OFF_PERCENT,
+          duration: "once",
+          name: `Fidélité -${RETENTION_OFF_PERCENT} %`,
+        }),
+      );
+      await stripe.subscriptions.update(sub.id, {
+        discounts: [{ coupon: RETENTION_COUPON_ID }],
+        metadata: { retention_offer: "used" },
+      });
+      target = `${PAGE}?offer=1`;
+    }
+  } catch (e) {
+    console.error("acceptRetentionOffer", e instanceof Error ? e.message : e);
     target = `${PAGE}?error=cancel`;
   }
   redirect(target);
