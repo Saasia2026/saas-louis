@@ -235,7 +235,6 @@
   --animate-grow: grow 2.8s var(--ease-out) infinite;
   --animate-feature-progress: feature-progress 6s linear forwards;
   --animate-demo-drop: demo-drop 0.6s var(--ease-out) 0.35s both;
-  --animate-bot-float: bot-float 3.6s ease-in-out infinite;
 
   /* translate (et non transform) : l'effet de survol "lift" reste actif
      une fois l'apparition terminée. */
@@ -247,16 +246,6 @@
     to {
       opacity: 1;
       translate: none;
-    }
-  }
-  /* Bots du studio : flottent doucement en place. */
-  @keyframes bot-float {
-    0%,
-    100% {
-      translate: 0 0;
-    }
-    50% {
-      translate: 0 -5px;
     }
   }
   @keyframes aurora {
