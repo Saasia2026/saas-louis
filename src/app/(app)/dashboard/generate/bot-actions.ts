@@ -1,10 +1,18 @@
 "use server";
 
 import Anthropic from "@anthropic-ai/sdk";
+import { revalidatePath } from "next/cache";
 import type { Locale } from "@/i18n/config";
 import { getLocale } from "@/i18n/server";
+import { DEFAULT_PLAN } from "@/lib/posting-plan";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  analyzeTikTokAccount,
+  latestTikTokAnalysis,
+  normalizeHandle,
+  type TikTokAnalysis,
+} from "@/lib/tiktok-analysis";
 import { listTrendPicks, type TrendPick } from "@/lib/trends";
 
 export type BotId = "scout" | "hook";
@@ -32,16 +40,21 @@ const PERSONAS: Record<BotId, string> = {
   hook: `You are Hook, the hook and script advisor inside TwinPost's studio. You write opening lines, on-screen text, captions and short scripts for the creator's next AI influencer or AI character video, built for the first 3 seconds and for comments and shares. Today's viral videos (list below) are your references.`,
 };
 
-function system(bot: BotId, locale: Locale, picks: TrendPick[]) {
+function system(bot: BotId, locale: Locale, picks: TrendPick[], account: TikTokAnalysis | null) {
   const list = picks.length
     ? picks.map((p, i) => `${i + 1}. @${p.author}, ${p.views} views. Caption: ${p.caption}. Why it works: ${p.why}. Hook idea: ${p.hook}`).join("\n")
     : "No selection today.";
+  const own = account
+    ? `The creator's own TikTok account, @${account.handle}, reviewed on ${account.createdAt.slice(0, 10)}: ${account.stats.followers} followers, median ${account.stats.medianViews} views, ${account.stats.engagement}% engagement, ${account.stats.postsPerWeek} posts a week. Summary: ${account.report.summary} Keep: ${account.report.keep.join(" / ")} Stop: ${account.report.stop.join(" / ")} Use this to tailor your advice.`
+    : "The creator has not had their TikTok account reviewed yet; Scout's \"My account\" tab can do it.";
   return `${PERSONAS[bot]}
 
 ${APP}
 
 Today's viral videos:
 ${list}
+
+${own}
 
 Rules:
 - Reply in ${LANGUAGE[locale]}, addressing the creator informally (tu in French and Spanish), like a friendly expert advisor.
@@ -79,14 +92,14 @@ export async function askBot(bot: BotId, turns: BotTurn[]): Promise<BotReply> {
 
   const locale = await getLocale();
   try {
-    const picks = await listTrendPicks(locale);
+    const [picks, account] = await Promise.all([listTrendPicks(locale), latestTikTokAnalysis().catch(() => null)]);
     const response = await new Anthropic().beta.messages.create({
       model: "claude-opus-5-5",
       max_tokens: 4000,
       output_config: { effort: "low" },
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
-      system: system(bot, locale, picks),
+      system: system(bot, locale, picks, account),
       messages: clean,
     });
     if (response.stop_reason === "refusal") return { ok: false, error: "failed" };
@@ -101,4 +114,91 @@ export async function askBot(bot: BotId, turns: BotTurn[]): Promise<BotReply> {
     console.error("askBot", bot, e instanceof Error ? e.message : e);
     return { ok: false, error: "failed" };
   }
+}
+
+// --- Analyse du compte TikTok (onglet « Mon compte » de Scout) ----------
+
+export type AnalyzeResult =
+  | { ok: true; analysis: TikTokAnalysis }
+  | { ok: false; error: "auth" | "handle" | "limit" | "notFound" | "failed"; nextAt?: string };
+
+// Environ 0,12 $ d'Apify et quelques centimes de Claude : une analyse
+// réussie par utilisateur et par 24 h.
+const ANALYSIS_EVERY_MS = 24 * 3_600_000;
+
+export async function analyzeTikTok(input: string): Promise<AnalyzeResult> {
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  const userId = auth?.claims?.sub;
+  if (!userId) return { ok: false, error: "auth" };
+  const handle = normalizeHandle(typeof input === "string" ? input : "");
+  if (!handle) return { ok: false, error: "handle" };
+
+  const admin = createAdminClient();
+  const { data: last } = await admin
+    .from("tiktok_analyses")
+    .select("created_at")
+    .eq("user_id", userId)
+    .eq("status", "ready")
+    .gte("created_at", new Date(Date.now() - ANALYSIS_EVERY_MS).toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (last) {
+    return { ok: false, error: "limit", nextAt: new Date(Date.parse(last.created_at) + ANALYSIS_EVERY_MS).toISOString() };
+  }
+
+  const { data: plan } = await admin.from("posting_plans").select("timezone").eq("user_id", userId).maybeSingle();
+  const timezone = plan?.timezone ?? DEFAULT_PLAN.timezone;
+  try {
+    const result = await analyzeTikTokAccount(handle, timezone, await getLocale());
+    if (!result) return { ok: false, error: "notFound" };
+    const { data: row, error } = await admin
+      .from("tiktok_analyses")
+      .insert({ user_id: userId, handle, status: "ready", stats: result.stats, report: result.report })
+      .select("id, created_at")
+      .single();
+    if (error) throw error;
+    return { ok: true, analysis: { id: row.id, handle, createdAt: row.created_at, ...result } };
+  } catch (e) {
+    console.error("analyzeTikTok", handle, e instanceof Error ? e.message : e);
+    await admin.from("tiktok_analyses").insert({ user_id: userId, handle, status: "failed" });
+    return { ok: false, error: "failed" };
+  }
+}
+
+// Reporte le rythme conseillé dans le Planning, sans toucher aux comptes
+// choisis, au fuseau ni aux alertes déjà réglés.
+export async function applyRhythm(analysisId: string): Promise<{ ok: boolean }> {
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  const userId = auth?.claims?.sub;
+  if (!userId || typeof analysisId !== "string") return { ok: false };
+  const { data: analysis } = await supabase.from("tiktok_analyses").select("report").eq("id", analysisId).maybeSingle();
+  const rhythm = (analysis?.report as { rhythm?: { weekdays?: number[]; times?: string[] } } | null)?.rhythm;
+  if (!rhythm?.weekdays?.length || !rhythm.times?.length) return { ok: false };
+
+  const admin = createAdminClient();
+  const { data: plan } = await admin
+    .from("posting_plans")
+    .select("timezone, account_ids, alert_days, alert_email")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const { error } = await admin.from("posting_plans").upsert({
+    user_id: userId,
+    weekdays: rhythm.weekdays,
+    times: rhythm.times,
+    timezone: plan?.timezone ?? DEFAULT_PLAN.timezone,
+    account_ids: plan?.account_ids ?? [],
+    alert_days: plan?.alert_days ?? DEFAULT_PLAN.alertDays,
+    alert_email: plan?.alert_email ?? DEFAULT_PLAN.alertEmail,
+    locale: await getLocale(),
+    updated_at: new Date().toISOString(),
+  });
+  if (error) {
+    console.error("applyRhythm", error.message);
+    return { ok: false };
+  }
+  revalidatePath("/dashboard/planning");
+  return { ok: true };
 }

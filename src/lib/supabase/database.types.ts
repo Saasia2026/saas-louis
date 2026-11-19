@@ -863,6 +863,36 @@ export type Database = {
         }
         Relationships: []
       }
+      tiktok_analyses: {
+        Row: {
+          created_at: string
+          handle: string
+          id: string
+          report: Json | null
+          stats: Json | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          handle: string
+          id?: string
+          report?: Json | null
+          stats?: Json | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          handle?: string
+          id?: string
+          report?: Json | null
+          stats?: Json | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trend_picks: {
         Row: {
           author: string

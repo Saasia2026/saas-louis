@@ -1,11 +1,13 @@
 "use client";
 
 import { Check, Copy, ExternalLink, SendHorizontal, X } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
+import type { TikTokAnalysis } from "@/lib/tiktok-analysis";
 import type { TrendPick } from "@/lib/trends";
-import { askBot, type BotId, type BotTurn } from "./bot-actions";
+import { analyzeTikTok, applyRhythm, askBot, type BotId, type BotTurn } from "./bot-actions";
 
 // Deux conseillers flottants en bas à droite du studio : Scout (les vidéos
 // d'influenceurs IA qui cartonnent aujourd'hui) et Hook (les accroches).
@@ -161,11 +163,163 @@ function Chat({ bot, turns, setTurns }: { bot: BotId; turns: BotTurn[]; setTurns
   );
 }
 
-export function StudioBots({ picks, day }: { picks: TrendPick[]; day: string }) {
+// Onglet « Mon compte » de Scout : analyse des 30 dernières vidéos TikTok.
+function AccountPanel({ initial }: { initial: TikTokAnalysis | null }) {
+  const { t, locale } = useI18n();
+  const A = t.bots.account;
+  const intl = INTL_LOCALES[locale];
+  const [analysis, setAnalysis] = useState(initial);
+  const [editing, setEditing] = useState(!initial);
+  const [handle, setHandle] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [applied, setApplied] = useState<"ok" | "failed" | null>(null);
+  const [pending, start] = useTransition();
+  const [applying, startApply] = useTransition();
+  const num = (n: number) => new Intl.NumberFormat(intl, { notation: "compact", maximumFractionDigits: 1 }).format(n);
+  const date = (iso: string, withTime = false) =>
+    new Intl.DateTimeFormat(intl, withTime ? { dateStyle: "medium", timeStyle: "short" } : { dateStyle: "medium" }).format(new Date(iso));
+  // 4 janvier 1970 = dimanche (0).
+  const weekday = (d: number) => new Intl.DateTimeFormat(intl, { weekday: "long", timeZone: "UTC" }).format(new Date(Date.UTC(1970, 0, 4 + d)));
+
+  const run = () => {
+    setError(null);
+    setApplied(null);
+    start(async () => {
+      const r = await analyzeTikTok(handle);
+      if (r.ok) {
+        setAnalysis(r.analysis);
+        setEditing(false);
+      } else {
+        setError(
+          r.error === "handle"
+            ? A.errorHandle
+            : r.error === "notFound"
+              ? A.errorNotFound
+              : r.error === "limit" && r.nextAt
+                ? fmt(A.errorLimit, { date: date(r.nextAt, true) })
+                : A.errorFailed,
+        );
+      }
+    });
+  };
+
+  if (editing || !analysis) {
+    return (
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+        <p className="text-sm text-muted">{A.intro}</p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            run();
+          }}
+          className="space-y-2"
+        >
+          <input
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            placeholder={A.placeholder}
+            disabled={pending}
+            className="h-11 w-full rounded-xl border border-line bg-surface-2 px-3 text-sm placeholder:text-faint focus:border-accent focus:outline-none"
+          />
+          <button type="submit" disabled={!handle.trim() || pending} className="btn btn-accent w-full">
+            {pending ? A.analyzing : A.analyze}
+          </button>
+        </form>
+        <p className="text-xs text-faint">{A.limitNote}</p>
+        {error && <p className="text-sm text-danger">{error}</p>}
+      </div>
+    );
+  }
+
+  const { stats, report } = analysis;
+  const facts = [
+    [num(stats.followers), A.followers],
+    [num(stats.medianViews), A.medianViews],
+    [`${stats.engagement} %`, A.engagement],
+    [String(stats.postsPerWeek), A.perWeek],
+  ];
+  const section = (title: string, items: string[]) =>
+    items.length > 0 && (
+      <div>
+        <p className="text-xs font-semibold tracking-wide text-muted uppercase">{title}</p>
+        <ul className="mt-1.5 space-y-1.5 text-sm">
+          {items.map((item) => (
+            <li key={item} className="flex gap-2">
+              <span className="mt-2 size-1 shrink-0 rounded-full bg-muted" aria-hidden />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+
+  return (
+    <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="truncate font-semibold">@{analysis.handle}</p>
+        <p className="shrink-0 text-xs text-faint">{fmt(A.analyzedOn, { date: date(analysis.createdAt) })}</p>
+      </div>
+      <div className="grid grid-cols-4 gap-1 rounded-2xl border border-line bg-surface-2 py-2.5 text-center">
+        {facts.map(([value, label]) => (
+          <div key={label} className="px-1">
+            <p className="text-sm font-semibold tabular-nums">{value}</p>
+            <p className="mt-0.5 text-[0.6875rem] leading-tight text-muted">{label}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 rounded-2xl border border-line p-3">
+        <p className="font-headline text-3xl leading-none tabular-nums">{report.potential.score}</p>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold tracking-wide text-muted uppercase">{A.potential}</p>
+          <p className="text-sm">{report.potential.note}</p>
+        </div>
+      </div>
+      <p className="text-sm">{report.summary}</p>
+      {section(A.keep, report.keep)}
+      {section(A.stop, report.stop)}
+      {section(A.next, report.nextVideos)}
+      <div className="rounded-2xl border border-line bg-surface-2 p-3">
+        <p className="text-xs font-semibold tracking-wide text-muted uppercase">{A.rhythm}</p>
+        <p className="mt-1 text-sm font-semibold">
+          {report.rhythm.weekdays.map(weekday).join(", ")} · {report.rhythm.times.join(", ")}
+        </p>
+        <p className="mt-1 text-sm text-muted">{report.rhythm.reason}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={applying || applied === "ok"}
+            onClick={() =>
+              startApply(async () => {
+                const r = await applyRhythm(analysis.id);
+                setApplied(r.ok ? "ok" : "failed");
+              })
+            }
+            className="btn btn-accent"
+          >
+            {applied === "ok" ? <Check className="size-4" /> : null}
+            {A.apply}
+          </button>
+          {applied === "ok" && (
+            <Link href="/dashboard/planning" className="text-sm font-medium text-accent-light hover:underline">
+              {A.openPlanning}
+            </Link>
+          )}
+        </div>
+        {applied === "ok" && <p className="mt-2 text-xs text-success">{A.applied}</p>}
+        {applied === "failed" && <p className="mt-2 text-xs text-danger">{A.applyFailed}</p>}
+      </div>
+      <button type="button" onClick={() => setEditing(true)} className="text-sm text-muted hover:text-text hover:underline">
+        {A.again}
+      </button>
+    </div>
+  );
+}
+
+export function StudioBots({ picks, day, account }: { picks: TrendPick[]; day: string; account: TikTokAnalysis | null }) {
   const { t, locale } = useI18n();
   const B = t.bots;
   const [open, setOpen] = useState<BotId | null>(null);
-  const [tab, setTab] = useState<"list" | "chat">("list");
+  const [tab, setTab] = useState<"list" | "account" | "chat">("list");
   const [teaser, setTeaser] = useState(false);
   const [chats, setChats] = useState<Record<BotId, BotTurn[]>>({ scout: [], hook: [] });
   const seenKey = `twinpost-bots-seen-${day}`;
@@ -223,7 +377,7 @@ export function StudioBots({ picks, day }: { picks: TrendPick[]; day: string }) 
             </button>
           </header>
           <div className="flex gap-1 border-b border-line px-3 py-2">
-            {(["list", "chat"] as const).map((k) => (
+            {(open === "scout" ? (["list", "account", "chat"] as const) : (["list", "chat"] as const)).map((k) => (
               <button
                 key={k}
                 type="button"
@@ -233,12 +387,14 @@ export function StudioBots({ picks, day }: { picks: TrendPick[]; day: string }) 
                   tab === k ? "bg-surface-3 text-text" : "text-muted hover:text-text"
                 }`}
               >
-                {k === "list" ? B[open].tab : B.chatTab}
+                {k === "list" ? B[open].tab : k === "account" ? B.accountTab : B.chatTab}
               </button>
             ))}
           </div>
 
-          {tab === "chat" ? (
+          {tab === "account" && open === "scout" ? (
+            <AccountPanel initial={account} />
+          ) : tab === "chat" ? (
             <Chat bot={open} turns={chats[open]} setTurns={(turns) => setChats((c) => ({ ...c, [open]: turns }))} />
           ) : !picks.length ? (
             <p className="p-4 text-sm text-muted">{B.empty}</p>
