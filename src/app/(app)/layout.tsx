@@ -120,7 +120,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="relative isolate min-w-0 flex-1 overflow-x-clip px-4 pt-6 pb-28 sm:px-8 sm:pt-10 md:pb-10">
         <div className="mx-auto max-w-7xl">{children}</div>
       </main>
-      <BotsAquarium picks={picks} account={account} />
+      <BotsAquarium userId={data.claims.sub} picks={picks} account={account} />
     </div>
   );
 }
