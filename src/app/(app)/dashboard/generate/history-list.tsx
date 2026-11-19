@@ -30,6 +30,7 @@ import { PlayerBar, usePlayer } from "@/app/video-player";
 import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import type { AspectRatio } from "@/lib/generation";
+import { askBotsToAnalyze } from "../../bots/bots-state";
 import { CopyButton, PromptText, RefStrip } from "../generation-details";
 import type { SwapHistoryItem } from "../swap-history";
 import { DeleteButton } from "../videos/delete-button";
@@ -201,10 +202,15 @@ function Details({ item, onReuse }: { item: SwapHistoryItem; onReuse?: (item: Sw
           </Link>
         )}
         {!item.running && (
-          <Link href={`/dashboard/viral?video=${item.id}`} title={t.viral.analyzeHint} className="btn btn-secondary">
+          <button
+            type="button"
+            onClick={() => askBotsToAnalyze(item.id, item.mediaUrl)}
+            title={t.viral.analyzeHint}
+            className="btn btn-secondary"
+          >
             <Gauge />
             {t.viral.analyzeShort}
-          </Link>
+          </button>
         )}
         <span className="ml-auto" />
         {item.prompt.trim() && <CopyButton text={item.prompt} label={S.copyPrompt} className="size-9" />}
