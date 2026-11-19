@@ -31,7 +31,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const displayName = profile?.full_name || profile?.email || "";
   const credits = profile?.credits_remaining ?? 0;
   const numberFormat = new Intl.NumberFormat(INTL_LOCALES[locale]);
-  const creditsLabel = numberFormat.format(credits);
+  // Au-delà de 100 000, le solde s'abrège (« 1,2 M ») pour tenir dans la
+  // barre ; le nombre exact reste dans l'infobulle.
+  const compactBalance = credits >= 100_000;
+  const creditsLabel = compactBalance
+    ? new Intl.NumberFormat(INTL_LOCALES[locale], { notation: "compact", maximumFractionDigits: 1 }).format(credits)
+    : numberFormat.format(credits);
   // Ce que le solde représente : secondes de vidéo en 720p (une passe), en
   // minutes au-delà de deux.
   const videoSeconds = Math.floor(credits / swapMethodRate());
@@ -59,7 +64,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
             {/* Solde en grand (sa durée de vidéo en infobulle), avec la recharge. */}
-            <div title={videoLabel} className="flex items-center gap-2 rounded-full bg-surface-2 py-1 pr-1 pl-3.5">
+            <div
+              title={compactBalance ? `${numberFormat.format(credits)} ${t.common.credits} · ${videoLabel}` : videoLabel}
+              className="flex items-center gap-2 rounded-full bg-surface-2 py-1 pr-1 pl-3.5"
+            >
               <Coins className="size-4 shrink-0 text-accent-light" />
               <span className="min-w-0">
                 <span className="block max-w-[9rem] truncate font-headline text-lg leading-none tabular-nums sm:max-w-none">

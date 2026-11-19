@@ -25,7 +25,8 @@ function useActive() {
 }
 
 // Navigation de la barre du haut (écrans larges) : une icône et le nom par
-// entrée (le nom à partir des écrans larges, l'explication en infobulle).
+// entrée (le nom à partir de 1280 px : en dessous, les six noms débordent
+// sous le solde ; l'explication en infobulle).
 // La pastille de l'entrée active glisse de l'une à l'autre ; les entrées
 // n'ayant pas la même largeur, elle est mesurée sur la page.
 export function MainNav() {
@@ -78,12 +79,12 @@ export function MainNav() {
             href={href}
             title={t.shell.navHint[key]}
             aria-current={active ? "page" : undefined}
-            className={`relative flex items-center gap-2 rounded-full px-3 py-2 transition-colors lg:px-3.5 ${
+            className={`relative flex items-center gap-2 rounded-full px-3 py-2 transition-colors xl:px-3.5 ${
               active ? "text-text" : "text-muted hover:text-text"
             }`}
           >
             <Icon className={`size-4 shrink-0 transition-colors ${active ? "text-accent-light" : ""}`} />
-            <span className="hidden text-sm font-medium whitespace-nowrap lg:inline">{t.shell.nav[key]}</span>
+            <span className="hidden text-sm font-medium whitespace-nowrap xl:inline">{t.shell.nav[key]}</span>
           </Link>
         );
       })}
