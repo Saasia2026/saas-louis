@@ -19,7 +19,7 @@ import {
   savedCard,
   stripeEnabled,
 } from "@/lib/stripe";
-import { isCancelReason, RETENTION_COUPON_ID, RETENTION_OFF_PERCENT } from "@/lib/retention";
+import { isCancelReason, isPauseMonths, RETENTION_COUPON_ID, RETENTION_OFF_PERCENT } from "@/lib/retention";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -265,7 +265,11 @@ export async function cancelSubscription(formData?: FormData) {
   if (!stripeEnabled()) redirect(`${PAGE}?error=unavailable`);
   const user = await currentUser();
   const reason = formData?.get("reason");
-  const details = isCancelReason(reason) ? { cancellation_details: { feedback: reason } } : {};
+  const comment = String(formData?.get("comment") ?? "").trim().slice(0, 500) || undefined;
+  const feedback = isCancelReason(reason) ? reason : undefined;
+  const details = feedback || comment
+    ? { cancellation_details: { ...(feedback && { feedback }), ...(comment && { comment }) } }
+    : {};
   let target = PAGE;
   try {
     const sub = await ownSubscription(user.id);
@@ -280,6 +284,32 @@ export async function cancelSubscription(formData?: FormData) {
     }
   } catch (e) {
     console.error("cancelSubscription", e instanceof Error ? e.message : e);
+    target = `${PAGE}?error=cancel`;
+  }
+  redirect(target);
+}
+
+// Pause de l'abonnement : Stripe cesse de facturer pendant 1 ou 2 mois,
+// puis reprend automatiquement. Les crédits existants restent utilisables.
+export async function pauseSubscription(formData: FormData) {
+  if (!stripeEnabled()) redirect(`${PAGE}?error=unavailable`);
+  const user = await currentUser();
+  const months = Number(formData.get("months"));
+  if (!isPauseMonths(months)) redirect(`${PAGE}?error=unavailable`);
+  let target = PAGE;
+  try {
+    const sub = await ownSubscription(user.id);
+    if (sub && sub.status === "active" && !sub.ending) {
+      const resumesAt = new Date();
+      resumesAt.setMonth(resumesAt.getMonth() + months);
+      await createStripe().subscriptions.update(sub.id, {
+        pause_collection: { behavior: "void", resumes_at: Math.floor(resumesAt.getTime() / 1000) },
+        metadata: { pause_months: String(months) },
+      });
+      target = `${PAGE}?paused=${months}`;
+    }
+  } catch (e) {
+    console.error("pauseSubscription", e instanceof Error ? e.message : e);
     target = `${PAGE}?error=cancel`;
   }
   redirect(target);
