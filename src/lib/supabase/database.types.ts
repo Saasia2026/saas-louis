@@ -842,6 +842,90 @@ export type Database = {
         }
         Relationships: []
       }
+      bot_messages: {
+        Row: {
+          bot: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          bot: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          bot?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trend_picks: {
+        Row: {
+          author: string
+          caption: string
+          created_at: string
+          day: string
+          followers: number | null
+          hook: Json
+          how: Json
+          id: string
+          likes: number | null
+          platform: string
+          posted_at: string | null
+          rank: number
+          seconds: number | null
+          shares: number | null
+          url: string
+          video_id: string
+          views: number
+          why: Json
+        }
+        Insert: {
+          author: string
+          caption?: string
+          created_at?: string
+          day: string
+          followers?: number | null
+          hook: Json
+          how: Json
+          id?: string
+          likes?: number | null
+          platform?: string
+          posted_at?: string | null
+          rank: number
+          seconds?: number | null
+          shares?: number | null
+          url: string
+          video_id: string
+          views: number
+          why: Json
+        }
+        Update: {
+          author?: string
+          caption?: string
+          created_at?: string
+          day?: string
+          followers?: number | null
+          hook?: Json
+          how?: Json
+          id?: string
+          likes?: number | null
+          platform?: string
+          posted_at?: string | null
+          rank?: number
+          seconds?: number | null
+          shares?: number | null
+          url?: string
+          video_id?: string
+          views?: number
+          why?: Json
+        }
+        Relationships: []
+      }
       virality_analyses: {
         Row: {
           created_at: string
