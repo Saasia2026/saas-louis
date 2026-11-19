@@ -133,6 +133,13 @@ const ReportSchema = z.object({
 
 const LANGUAGE: Record<Locale, string> = { fr: "French", en: "English", es: "Spanish" };
 
+// Noms affichés sur le site, pour que le bilan parle comme l'interface.
+const FEATURE_NAMES: Record<Locale, string> = {
+  fr: `"Remplacer", "Transférer le mouvement", "Influenceur IA", "Viralité", "Planning"`,
+  en: `"Replace", "Motion transfer", "AI influencer", "Virality", "Schedule"`,
+  es: `"Reemplazar", "Transferir el movimiento", "Influencer IA", "Viralidad", "Planificación"`,
+};
+
 const SYSTEM = `You are Scout, the growth advisor inside TwinPost, a web app where creators replace a person in a real clip with any character from a photo ("Replace"), rebuild a scene from a clip's movements ("Motion transfer"), create AI influencer characters, review a clip's virality and schedule posts. You review a creator's TikTok account from the numbers of their latest videos and tell them, like a sharp, honest coach, what to keep, what to stop and what to make next.
 
 Ground every claim in the data you are given (views against the account's median, engagement, shares, posting days and hours, duration, captions). You cannot see the videos: never invent visual details. Compare videos with each other rather than with the whole of TikTok. Be concrete and short.
@@ -185,7 +192,7 @@ export async function analyzeTikTokAccount(handle: string, timezone: string, loc
     `Account: @${handle}, ${stats.followers} followers, time zone ${timezone}.`,
     `Latest ${videos.length} videos, newest first. Median views: ${medianViews}. Median engagement: ${stats.engagement}%. Pace: ${stats.postsPerWeek} posts per week.`,
     lines.join("\n"),
-    `Write every text field in ${LANGUAGE[locale]}.`,
+    `Write every text field in ${LANGUAGE[locale]}. Name TwinPost's modes and pages exactly as the site shows them in ${LANGUAGE[locale]}: ${FEATURE_NAMES[locale]}.`,
   ].join("\n\n");
 
   const response = await new Anthropic().beta.messages.parse({
