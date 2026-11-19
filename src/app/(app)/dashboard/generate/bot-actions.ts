@@ -18,6 +18,13 @@ const MAX_CHARS = 800;
 
 const LANGUAGE: Record<Locale, string> = { fr: "French", en: "English", es: "Spanish" };
 
+// Noms affichés sur le site, pour que les bots parlent comme l'interface.
+const FEATURE_NAMES: Record<Locale, string> = {
+  fr: `"Remplacer", "Transférer le mouvement", "Choisir un style", "Influenceur IA", "Viralité", "Planning", "Mes vidéos"`,
+  en: `"Replace", "Motion transfer", "Choose a style", "AI influencer", "Virality", "Schedule", "My videos"`,
+  es: `"Reemplazar", "Transferir el movimiento", "Elegir un estilo", "Influencer IA", "Viralidad", "Planificación", "Mis vídeos"`,
+};
+
 const APP = `TwinPost is a web app for creators. In the studio, "Replace" swaps a person (or an object, an outfit) in a real clip of 4.5 to 15 seconds with any character from one or more photos, keeping gestures, camera, set and sound. "Motion transfer" rebuilds the whole scene from the clip's movements, so animals and creatures work too. A style picker restyles the whole video (anime, 3D, clay…). The "AI influencer" page creates a character in one image, which the user then sends to the studio. "Virality" reviews a clip before posting, "Schedule" plans posts on TikTok, Instagram, YouTube and Facebook.`;
 
 const PERSONAS: Record<BotId, string> = {
@@ -38,6 +45,7 @@ ${list}
 
 Rules:
 - Reply in ${LANGUAGE[locale]}, addressing the creator informally (tu in French and Spanish), like a friendly expert advisor.
+- Name TwinPost's modes and pages exactly as the site shows them in ${LANGUAGE[locale]}: ${FEATURE_NAMES[locale]}.
 - Keep it short: at most 120 words, plain text, short lines or a few "-" bullets, no headings, no markdown bold.
 - Be concrete: give lines they can copy, footage they can film, the TwinPost mode to use.
 - Only promise what TwinPost does. Never name or recommend another AI tool or app.
