@@ -4,16 +4,15 @@
 // visible que l'offre : en France, la résiliation doit rester simple
 // (lien « Résilier », « Continuer », « Confirmer »), sans obstacle caché.
 
-// Remise sur la prochaine facture d'un abonnement mensuel, une seule fois
-// par abonnement. Les crédits du mois restent entiers (fulfillInvoice ne
-// regarde pas le montant) : à 20 %, un mois entièrement consommé se vend
-// à peu près à prix coûtant ; la marge revient au mois suivant, au plein
-// tarif.
 export const RETENTION_OFF_PERCENT = 20;
 export const RETENTION_COUPON_ID = `retention-${RETENTION_OFF_PERCENT}-once`;
 
-// Raisons proposées à la confirmation, transmises à Stripe
-// (cancellation_details.feedback) : visibles dans le tableau de bord Stripe.
+export const PAUSE_MONTHS = [1, 2] as const;
+export type PauseMonths = (typeof PAUSE_MONTHS)[number];
+export function isPauseMonths(v: unknown): v is PauseMonths {
+  return v === 1 || v === 2;
+}
+
 export const CANCEL_REASONS = ["too_expensive", "unused", "low_quality", "missing_features", "other"] as const;
 export type CancelReason = (typeof CANCEL_REASONS)[number];
 

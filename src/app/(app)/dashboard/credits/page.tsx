@@ -21,7 +21,7 @@ import {
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { GENJUTSU_RATES } from "@/lib/generation";
-import { CANCEL_REASONS, RETENTION_OFF_PERCENT } from "@/lib/retention";
+import { CANCEL_REASONS, PAUSE_MONTHS, RETENTION_OFF_PERCENT } from "@/lib/retention";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { createClient } from "@/lib/supabase/server";
 import { BADGE, tierCard } from "@/app/tier-style";
@@ -30,6 +30,7 @@ import {
   addCard,
   cancelSubscription,
   openBillingPortal,
+  pauseSubscription,
   removeCard,
   resumeSubscription,
   savePayAsYouGo,
@@ -128,6 +129,8 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
     notice = { ok: true, text: P.notices.canceled };
   } else if (params.offer) {
     notice = { ok: true, text: fmt(P.notices.offer, { pct: RETENTION_OFF_PERCENT }) };
+  } else if (params.paused) {
+    notice = { ok: true, text: fmt(P.notices.paused, { months: String(params.paused) }) };
   } else if (params.resumed) {
     notice = { ok: true, text: P.notices.resumed };
   } else if (typeof params.error === "string") {
@@ -300,9 +303,8 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
               </p>
             )}
 
-            {/* Résiliation, 1re étape : les crédits déjà payés qui seraient
-                perdus, et l'offre de fidélité. « Continuer la résiliation »
-                reste aussi visible que l'offre (voir lib/retention.ts). */}
+            {/* Résiliation, 1re étape : crédits perdus, offres pour rester
+                (pause, remise) et « Continuer la résiliation » visible. */}
             {cancelStep === 1 && (
               <div className="mt-5 border-t border-line pt-5">
                 <p className="font-semibold">{R.title}</p>
@@ -329,8 +331,28 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                     </div>
                   </>
                 )}
+
+                {/* Pause : garder l'abonnement mais suspendre la facturation. */}
+                {offerEligible && (
+                  <div className="mt-4 max-w-xl rounded-2xl border border-line bg-surface-2 p-4">
+                    <p className="font-semibold">{R.pauseTitle}</p>
+                    <p className="mt-1 text-sm text-muted">{R.pauseText}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {PAUSE_MONTHS.map((m) => (
+                        <form key={m} action={pauseSubscription}>
+                          <input type="hidden" name="months" value={m} />
+                          <button type="submit" className="btn btn-secondary">
+                            {fmt(R.pauseBtn, { n: m })}
+                          </button>
+                        </form>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Remise sur le prochain mois. */}
                 {offerEligible && subscribedPlan && (
-                  <div className="mt-4 max-w-xl rounded-2xl border border-accent/40 bg-accent-soft p-4">
+                  <div className="mt-3 max-w-xl rounded-2xl border border-accent/40 bg-accent-soft p-4">
                     <p className="font-semibold">{fmt(R.offerTitle, { pct: RETENTION_OFF_PERCENT })}</p>
                     <p className="mt-1 text-sm text-muted">
                       {fmt(R.offerText, {
@@ -379,6 +401,13 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                       ))}
                     </div>
                   </fieldset>
+                  <textarea
+                    name="comment"
+                    rows={3}
+                    maxLength={500}
+                    placeholder={R.commentPlaceholder}
+                    className="mt-3 w-full max-w-xl resize-none rounded-xl border border-line bg-surface-2 px-3 py-2 text-sm placeholder:text-faint focus:border-accent focus:outline-none"
+                  />
                   <div className="mt-4 flex flex-wrap items-center gap-2">
                     <button type="submit" className="btn btn-secondary">
                       {S.cancelConfirm}
