@@ -51,7 +51,3 @@ export type ViralityAnalysis = {
   videoUrl: string;
   date: string;
 };
-
-export function scoreTone(score: number) {
-  return score >= 70 ? "good" : score >= 45 ? "mid" : "low";
-}

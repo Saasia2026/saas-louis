@@ -10,11 +10,11 @@ import { createClient } from "@/lib/supabase/client";
 import type { TikTokAnalysis } from "@/lib/tiktok-analysis";
 import type { TrendPick } from "@/lib/trends";
 import { VIRALITY_CREDITS, VIRALITY_MAX_SECONDS, type ViralityReport } from "@/lib/virality";
-import { analyzeVideo } from "../dashboard/viral/actions";
 import { uploadSwapFile } from "../dashboard/generate/swap-input";
 import { analyzeTikTok, applyRhythm, askBot, type BotId, type BotTurn } from "./actions";
-import { BOTS_EVENT, botsEnabled, setBotsEnabled } from "./bots-state";
+import { BOTS_ANALYZE_EVENT, BOTS_EVENT, botsEnabled, setBotsEnabled, takeAnalyzeRequest, type AnalyzeRequest } from "./bots-state";
 import { Ghost, Skull } from "./creatures";
+import { analyzeVideo } from "./virality-actions";
 
 // Les bots nagent sur tout l'écran comme des poissons dans un aquarium :
 // Scout (le fantôme) montre les vidéos qui cartonnent, Hook (la tête de
@@ -80,7 +80,7 @@ function CopyButton({ text }: { text: string }) {
 
 // Un message de la discussion ; une vidéo envoyée garde son aperçu, et la
 // réponse à une analyse garde le lien vers le rapport complet.
-type ChatTurn = BotTurn & { video?: string; report?: boolean };
+type ChatTurn = BotTurn & { video?: string };
 
 // Rapport de viralité résumé en texte : affiché dans la bulle, et relu par
 // le bot dans la suite de la discussion.
@@ -91,7 +91,19 @@ function reportText(r: ViralityReport, B: { score: string; fixes: string; captio
     .join("\n\n");
 }
 
-function Chat({ bot, userId, turns, setTurns }: { bot: BotId; userId: string; turns: ChatTurn[]; setTurns: (t: ChatTurn[]) => void }) {
+function Chat({
+  bot,
+  userId,
+  turns,
+  setTurns,
+  request,
+}: {
+  bot: BotId;
+  userId: string;
+  turns: ChatTurn[];
+  setTurns: (t: ChatTurn[]) => void;
+  request?: AnalyzeRequest | null;
+}) {
   const { t } = useI18n();
   const B = t.bots;
   const V = t.viral;
@@ -157,11 +169,32 @@ function Chat({ bot, userId, turns, setTurns }: { bot: BotId; userId: string; tu
         setError(fmt(V.errors[res.error], { max: VIRALITY_MAX_SECONDS }));
         return;
       }
-      setTurns([...next, { role: "assistant", text: reportText(res.analysis.report, B), report: true }]);
+      setTurns([...next, { role: "assistant", text: reportText(res.analysis.report, B) }]);
       // Solde de la barre du haut.
       router.refresh();
     });
   };
+
+  // « Analyser » d'un rendu (studio, Mes vidéos) : même analyse, sans dépôt.
+  const handled = useRef(0);
+  useEffect(() => {
+    if (!request || request.nonce === handled.current) return;
+    handled.current = request.nonce;
+    const next: ChatTurn[] = [...turns, { role: "user", text: B.attachAsk, video: request.url }];
+    setTurns(next);
+    setError(null);
+    start(async () => {
+      const res = await analyzeVideo({ generationId: request.generationId });
+      if (!res.ok) {
+        setError(fmt(V.errors[res.error], { max: VIRALITY_MAX_SECONDS }));
+        return;
+      }
+      setTurns([...next, { role: "assistant", text: reportText(res.analysis.report, B) }]);
+      router.refresh();
+    });
+    // Une seule fois par demande (nonce) ; l'historique courant est lu au moment de la demande.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -188,11 +221,6 @@ function Chat({ bot, userId, turns, setTurns }: { bot: BotId; userId: string; tu
               }`}
             >
               {m.text}
-              {m.report && (
-                <Link href="/dashboard/viral" className="mt-2 block font-semibold text-accent-light hover:underline">
-                  {B.fullReport}
-                </Link>
-              )}
             </div>
           </div>
         ))}
@@ -520,6 +548,21 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
   const [bubble, setBubble] = useState<{ bot: BotId; pick: number } | null>(null);
   const [pick, setPick] = useState(0);
   const [chats, setChats] = useState<Record<BotId, ChatTurn[]>>({ scout: [], hook: [] });
+  const [request, setRequest] = useState<AnalyzeRequest | null>(null);
+
+  // « Analyser » d'un rendu : Hook ouvre sa discussion et lance l'analyse.
+  useEffect(() => {
+    const take = () => {
+      const r = takeAnalyzeRequest();
+      if (!r) return;
+      setBubble(null);
+      setPanel({ bot: "hook", tab: "chat" });
+      setRequest(r);
+    };
+    take();
+    window.addEventListener(BOTS_ANALYZE_EVENT, take);
+    return () => window.removeEventListener(BOTS_ANALYZE_EVENT, take);
+  }, []);
 
   const wrap: Record<BotId, RefObject<HTMLDivElement | null>> = { scout: useRef(null), hook: useRef(null) };
   const body: Record<BotId, RefObject<HTMLDivElement | null>> = { scout: useRef(null), hook: useRef(null) };
@@ -823,7 +866,13 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
           ) : panel.tab === "hook" ? (
             <HookPanel picks={picks} index={pick} setIndex={setPick} showVideo={() => setPanel({ bot: "scout", tab: "video" })} />
           ) : (
-            <Chat bot={panel.bot} userId={userId} turns={chats[panel.bot]} setTurns={(turns) => setChats((c) => ({ ...c, [panel.bot]: turns }))} />
+            <Chat
+              bot={panel.bot}
+              userId={userId}
+              turns={chats[panel.bot]}
+              setTurns={(turns) => setChats((c) => ({ ...c, [panel.bot]: turns }))}
+              request={panel.bot === "hook" ? request : null}
+            />
           )}
 
           <footer className="border-t border-line px-4 py-2 text-right">

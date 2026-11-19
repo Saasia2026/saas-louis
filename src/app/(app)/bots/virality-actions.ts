@@ -5,13 +5,12 @@ import { getLocale } from "@/i18n/server";
 import { GENERATIONS_BUCKET, SWAP_INPUTS_BUCKET } from "@/lib/generation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { probeVideo, trimClip } from "@/lib/swap";
+import { probeVideo } from "@/lib/swap";
 import {
   VIRALITY_CREDITS,
   VIRALITY_MAX_SECONDS,
   VIRALITY_MIN_SECONDS,
   type ViralityAnalysis,
-  type ViralityReport,
 } from "@/lib/virality";
 import { analyzeClip } from "@/lib/virality-analysis";
 
@@ -58,8 +57,9 @@ async function clipUrl(userId: string, source: { generationId?: unknown; path?: 
   return data?.signedUrl ? { url: data.signedUrl, generationId: null, path } : null;
 }
 
-// Analyse un clip : crédits débités, rapport rangé ; en cas d'échec, les
-// crédits sont rendus.
+// Analyse de viralité d'un clip, demandée aux bots (bouton « + » de la
+// discussion, ou « Analyser » d'un rendu) : crédits débités, rapport rangé ;
+// en cas d'échec, les crédits sont rendus.
 export async function analyzeVideo(source: { generationId?: unknown; path?: unknown }): Promise<AnalyzeResult> {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "auth" };
@@ -109,41 +109,5 @@ export async function analyzeVideo(source: { generationId?: unknown; path?: unkn
     console.error("analyzeVideo", e instanceof Error ? e.message : e);
     await admin.rpc("fail_virality_analysis", { p_id: id });
     return { ok: false, error: "failed" };
-  }
-}
-
-export type KeepResult = { ok: true; path: string; url: string } | { ok: false };
-
-// Coupe le clip analysé au passage conseillé (rapport, champ « keep ») et
-// range la nouvelle version dans les dépôts de l'utilisateur.
-export async function keepSuggestedPart(analysisId: unknown): Promise<KeepResult> {
-  const userId = await currentUserId();
-  if (!userId || typeof analysisId !== "string") return { ok: false };
-  const admin = createAdminClient();
-  const { data: row } = await admin
-    .from("virality_analyses")
-    .select("generation_id, video_path, report")
-    .eq("id", analysisId)
-    .eq("user_id", userId)
-    .eq("status", "ready")
-    .maybeSingle();
-  const keep = (row?.report as ViralityReport | null)?.keep;
-  if (!row || !keep) return { ok: false };
-  const clip = await clipUrl(userId, { generationId: row.generation_id ?? undefined, path: row.video_path ?? undefined });
-  if (!clip) return { ok: false };
-
-  try {
-    const probe = await probeVideo(clip.url);
-    const { data } = await trimClip(clip.url, keep.start, keep.end - keep.start, probe?.hdr);
-    const path = `${userId}/${crypto.randomUUID()}.mp4`;
-    const { error } = await admin.storage.from(SWAP_INPUTS_BUCKET).upload(path, data, { contentType: "video/mp4" });
-    if (error) throw new Error(error.message);
-    const { data: signed } = await admin.storage.from(SWAP_INPUTS_BUCKET).createSignedUrl(path, SIGNED_URL_TTL_SECONDS, {
-      download: `twinpost-${analysisId.slice(0, 8)}-coupe.mp4`,
-    });
-    return signed?.signedUrl ? { ok: true, path, url: signed.signedUrl } : { ok: false };
-  } catch (e) {
-    console.error("keepSuggestedPart", e instanceof Error ? e.message : e);
-    return { ok: false };
   }
 }

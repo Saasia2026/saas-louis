@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
     "/api/swap/webhook": ["./node_modules/ffmpeg-static/ffmpeg*"],
     "/api/swap/tick": ["./node_modules/ffmpeg-static/ffmpeg*"],
   },
+  // La page Viralité est remplacée par les bots (bouton « + » de leur
+  // discussion, « Analyser » d'un rendu).
+  async redirects() {
+    return [{ source: "/dashboard/viral", destination: "/dashboard/generate", permanent: false }];
+  },
 };
 
 export default nextConfig;
