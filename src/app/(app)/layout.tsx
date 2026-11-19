@@ -10,7 +10,15 @@ import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { swapMethodRate } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
+import { latestTikTokAnalysis } from "@/lib/tiktok-analysis";
+import { listTrendPicks } from "@/lib/trends";
+import { BotsAquarium } from "./bots/aquarium";
+import { BotsToggle } from "./bots/bots-toggle";
 import { BottomNav, MainNav } from "./nav-links";
+
+// Les bots tournent sur toutes les pages : l'analyse d'un compte TikTok
+// (server action) prend environ 30 s.
+export const maxDuration = 300;
 
 // Espace connecté. Le proxy redirige déjà, mais on revérifie ici :
 // le proxy n'est qu'une vérification optimiste.
@@ -28,6 +36,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .single();
 
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
+  // Bots : sélection du jour et dernière analyse du compte TikTok.
+  const [picks, account] = await Promise.all([
+    listTrendPicks(locale).catch(() => []),
+    latestTikTokAnalysis().catch(() => null),
+  ]);
   const displayName = profile?.full_name || profile?.email || "";
   const credits = profile?.credits_remaining ?? 0;
   const numberFormat = new Intl.NumberFormat(INTL_LOCALES[locale]);
@@ -81,6 +94,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </div>
 
             <div className="flex items-center">
+              <BotsToggle />
               <ThemeToggle />
               <LanguageSwitcher />
             </div>
@@ -106,6 +120,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="relative isolate min-w-0 flex-1 overflow-x-clip px-4 pt-6 pb-28 sm:px-8 sm:pt-10 md:pb-10">
         <div className="mx-auto max-w-7xl">{children}</div>
       </main>
+      <BotsAquarium picks={picks} account={account} />
     </div>
   );
 }
