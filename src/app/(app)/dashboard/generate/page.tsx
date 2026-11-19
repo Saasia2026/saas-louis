@@ -6,6 +6,7 @@ import { magichourEnabled } from "@/lib/magichour";
 import { SWAP_PRESETS } from "@/lib/presets";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { latestTikTokAnalysis } from "@/lib/tiktok-analysis";
 import { listTrendPicks } from "@/lib/trends";
 import { getLocale } from "@/i18n/server";
 import { listSwapHistory } from "../swap-history";
@@ -51,7 +52,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
     .lt("created_at", stalePendingBefore());
   for (const g of stale ?? []) await admin.rpc("fail_generation", { p_generation_id: g.id });
 
-  const [{ data: profile }, history, styles, picks] = await Promise.all([
+  const [{ data: profile }, history, styles, picks, account] = await Promise.all([
     supabase
       .from("profiles")
       .select("credits_remaining, stripe_customer_id, pay_as_you_go, auto_recharge_failed, onboarded_at")
@@ -62,6 +63,8 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
     studioRestyleStyles(),
     // Sélection du jour des bots ; sans la table ou sans sélection, rien.
     getLocale().then(listTrendPicks).catch(() => []),
+    // Dernière analyse du compte TikTok (onglet « Mon compte » de Scout).
+    latestTikTokAnalysis().catch(() => null),
   ]);
 
   // Nouvel inscrit : le tunnel d'accueil d'abord (le projet préparé dans le
@@ -139,7 +142,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
         ...(magichourEnabled() ? (["magichour"] as const) : []),
       ]}
     />
-    <StudioBots picks={picks} day={new Date().toISOString().slice(0, 10)} />
+    <StudioBots picks={picks} account={account} day={new Date().toISOString().slice(0, 10)} />
     </>
   );
 }
