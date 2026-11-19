@@ -55,10 +55,11 @@ export async function listTrendPicks(locale: Locale): Promise<TrendPick[]> {
 // --- Récolte quotidienne -------------------------------------------------
 
 // 4 hashtags x 10 vidéos = 40 résultats à 0,0037 $ : environ 0,15 $ par jour,
-// sous les 5 $ mensuels offerts par Apify. Plafond de dépense par passage.
+// sous les 5 $ mensuels offerts par Apify. Plafond de dépense par passage :
+// Apify refuse moins de 0,50 $.
 const HASHTAGS = ["aiinfluencer", "virtualinfluencer", "aiinfluencers", "aivlog"];
 const PER_HASHTAG = 10;
-const MAX_CHARGE_USD = 0.25;
+const MAX_CHARGE_USD = 0.5;
 const MAX_AGE_DAYS = 120;
 const MIN_VIEWS = 30_000;
 const CANDIDATES = 25;
