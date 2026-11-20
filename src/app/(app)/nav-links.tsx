@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n/provider";
 import b from "./bottom-nav.module.css";
+import sn from "./side-nav.module.css";
 
 const NAV_LINKS: {
   href: string;
@@ -92,30 +93,41 @@ export function MainNav() {
   );
 }
 
-// Menu latéral (grands écrans), comme les studios de création : une entrée
-// par page, l'icône et le nom, l'entrée active surlignée.
+// Menu latéral (grands écrans), au style de la landing : le nom en toutes
+// lettres, les pages en grands noms numérotés, la page ouverte dans une
+// pastille blanche qui glisse jusqu'à l'entrée cliquée.
 export function SideNav() {
   const isActive = useActive();
   const { t } = useI18n();
+  const activeIndex = NAV_LINKS.findIndex((l) => isActive(l.href));
+  const [clicked, setClicked] = useState<number | null>(null);
+  const current = clicked !== null && clicked !== activeIndex ? clicked : activeIndex;
   return (
-    <nav className="flex flex-col gap-1">
-      {NAV_LINKS.map(({ href, key, icon: Icon }) => {
-        const active = isActive(href);
-        return (
+    <aside className={sn.aside}>
+      <Link href="/dashboard" className={sn.brand}>
+        TwinPost
+      </Link>
+      <nav className={sn.nav}>
+        <span
+          aria-hidden
+          className={sn.thumb}
+          style={{ transform: `translateY(${Math.max(0, current) * 100}%)`, opacity: current < 0 ? 0 : 1 }}
+        />
+        {NAV_LINKS.map(({ href, key }, i) => (
           <Link
             key={href}
             href={href}
-            aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] font-semibold transition-colors ${
-              active ? "bg-white/10 text-text" : "text-muted hover:bg-white/5 hover:text-text"
-            }`}
+            onClick={() => setClicked(i)}
+            aria-current={i === activeIndex ? "page" : undefined}
+            title={t.shell.navHint[key]}
+            className={`${sn.item} ${i === current ? sn.active : ""}`}
           >
-            <Icon className="size-5 shrink-0" />
+            <span className={sn.num}>{String(i + 1).padStart(2, "0")}</span>
             {t.shell.nav[key]}
           </Link>
-        );
-      })}
-    </nav>
+        ))}
+      </nav>
+    </aside>
   );
 }
 

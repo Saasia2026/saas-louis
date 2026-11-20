@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/login/actions";
 import { LanguageSwitcher } from "@/app/language-switcher";
-import { Logo } from "@/app/logo";
 import { OfferPopup } from "@/app/offer-popup";
 import { offersFor } from "@/app/offers";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
@@ -63,15 +62,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // vidéos et des cartes de verre.
     <div className="video-page flex min-h-dvh min-w-0 flex-1 flex-col overflow-x-clip bg-bg">
       {/* Menu latéral sur grand écran : le logo et les pages. */}
-      <aside
-        className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col gap-8 border-r border-line px-3 py-5 lg:flex"
-        style={{ background: "rgb(10 10 14 / 0.82)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
-      >
-        <div className="px-3">
-          <Logo href="/dashboard" />
-        </div>
-        <SideNav />
-      </aside>
+      <SideNav />
 
       <div className="flex min-w-0 flex-1 flex-col lg:pl-60">
       {/* Barre du haut, sans bandeau : le nom, le solde, la langue et la

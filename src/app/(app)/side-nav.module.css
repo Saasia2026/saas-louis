@@ -1,0 +1,100 @@
+/* Menu latéral (grands écrans), au style de la landing : le nom en toutes
+   lettres, les pages en grands noms numérotés comme la frise de la landing,
+   la page ouverte dans une pastille blanche qui glisse d'une entrée à
+   l'autre. */
+
+.aside {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 30;
+  display: none;
+  width: 15rem;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding: 1.6rem 1rem;
+  border-right: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(10 10 14 / 0.85);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+@media (min-width: 1024px) {
+  .aside {
+    display: flex;
+  }
+}
+
+.brand {
+  padding: 0 0.85rem;
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 900;
+  font-stretch: 125%;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.nav {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3rem;
+  border-radius: 999px;
+  background: #fff;
+  transition:
+    transform 0.55s cubic-bezier(0.77, 0, 0.18, 1),
+    opacity 0.3s;
+}
+
+.item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  height: 3rem;
+  padding: 0 0.85rem;
+  align-content: center;
+  flex-wrap: wrap;
+  color: rgb(255 255 255 / 0.55);
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 800;
+  font-stretch: 90%;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  transition: color 0.35s 0.08s;
+}
+
+.item:hover {
+  color: #fff;
+}
+
+.num {
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-stretch: 100%;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.active,
+.active:hover {
+  color: #0c0c10;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thumb {
+    transition: none;
+  }
+}
