@@ -159,6 +159,14 @@ export const fr = {
     startFree: "Créer mon compte",
   },
 
+  offers: {
+    label: "Offre",
+    close: "Fermer",
+    signupTitle: "Ton compte, tes crédits offerts.",
+    subsTitle: "Moins cher, en abonnement.",
+    packTitle: "{credits} crédits, +{bonus} offerts.",
+  },
+
   login: {
     welcome: "Bienvenue dans le studio",
     tagline: "Mets ton personnage dans n'importe quelle vidéo.",

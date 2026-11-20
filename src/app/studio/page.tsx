@@ -3,8 +3,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { Logo } from "@/app/logo";
+import { OfferPopup } from "@/app/offer-popup";
+import { offersFor } from "@/app/offers";
 import { ThemeToggle } from "@/app/theme-toggle";
-import { getDictionary } from "@/i18n/server";
+import { getDictionary, getLocale } from "@/i18n/server";
 import { higgsfieldEnabled, studioRestyleStyles } from "@/lib/higgsfield";
 import { createClient } from "@/lib/supabase/server";
 import { Studio } from "../(app)/dashboard/generate/studio";
@@ -23,7 +25,7 @@ export default async function GuestStudioPage(props: PageProps<"/studio">) {
     const { reel } = await props.searchParams;
     redirect(typeof reel === "string" ? `/dashboard/generate?reel=${encodeURIComponent(reel)}` : "/dashboard/generate");
   }
-  const [t, styles] = await Promise.all([getDictionary(), studioRestyleStyles()]);
+  const [t, locale, styles] = await Promise.all([getDictionary(), getLocale(), studioRestyleStyles()]);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
@@ -51,6 +53,7 @@ export default async function GuestStudioPage(props: PageProps<"/studio">) {
           />
         </div>
       </main>
+      <OfferPopup offers={offersFor(t, locale, false)} />
     </div>
   );
 }

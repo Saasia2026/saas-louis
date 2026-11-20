@@ -1,4 +1,6 @@
 import { Landing, type LandingPack } from "@/app/landing";
+import { OfferPopup } from "@/app/offer-popup";
+import { offersFor } from "@/app/offers";
 import { TIERS } from "@/app/tier-style";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
@@ -48,44 +50,50 @@ export default async function Home() {
   });
 
   return (
-    <Landing
-      loggedIn={loggedIn}
-      studioHref={studioHref}
-      startHref={startHref}
-      creditsHref={loggedIn ? "/dashboard/credits" : "/login"}
-      packs={packs}
-      copy={{
-        home: L.home,
-        examples: L.examples,
-        howItWorks: L.howItWorks,
-        pricing: L.pricing,
-        signIn: t.login.signIn,
-        start: loggedIn ? L.studioShort : L.start,
-        eyebrow: L.eyebrow,
-        titleTop: L.titleTop,
-        titleBottom: L.titleBottom,
-        heroText: L.heroText,
-        ctaFirst: loggedIn ? L.openStudio : L.ctaFirst,
-        seeExamples: L.seeExamples,
-        perks: L.perks,
-        examplesTop,
-        examplesBottom,
-        examplesText: L.featureList[1].text,
-        compareBefore: L.compareBefore,
-        compareAfter: L.compareAfter,
-        featuresTop,
-        featuresBottom,
-        steps: L.steps.map((step) => ({ title: step.title, text: firstSentence(step.text) })),
-        finalTop: L.finalTitleTop,
-        finalBottom: L.finalTitleBottom,
-        popular: L.popular,
-        subsBefore,
-        subsOff: fmt(t.creditsPage.off, { pct: MAX_SUBSCRIPTION_OFF }),
-        subsAfter,
-        allPrices: L.allPrices,
-        terms: t.terms.link,
-        nextScreen: L.nextScreen,
-      }}
-    />
+    <>
+      <Landing
+        loggedIn={loggedIn}
+        studioHref={studioHref}
+        startHref={startHref}
+        creditsHref={loggedIn ? "/dashboard/credits" : "/login"}
+        packs={packs}
+        copy={{
+          home: L.home,
+          examples: L.examples,
+          howItWorks: L.howItWorks,
+          pricing: L.pricing,
+          signIn: t.login.signIn,
+          start: loggedIn ? L.studioShort : L.start,
+          eyebrow: L.eyebrow,
+          titleTop: L.titleTop,
+          titleBottom: L.titleBottom,
+          heroText: L.heroText,
+          ctaFirst: loggedIn ? L.openStudio : L.ctaFirst,
+          seeExamples: L.seeExamples,
+          perks: L.perks,
+          examplesTop,
+          examplesBottom,
+          examplesText: L.featureList[1].text,
+          compareBefore: L.compareBefore,
+          compareAfter: L.compareAfter,
+          featuresTop,
+          featuresBottom,
+          steps: L.steps.map((step) => ({
+            title: step.title,
+            text: firstSentence(step.text),
+          })),
+          finalTop: L.finalTitleTop,
+          finalBottom: L.finalTitleBottom,
+          popular: L.popular,
+          subsBefore,
+          subsOff: fmt(t.creditsPage.off, { pct: MAX_SUBSCRIPTION_OFF }),
+          subsAfter,
+          allPrices: L.allPrices,
+          terms: t.terms.link,
+          nextScreen: L.nextScreen,
+        }}
+      />
+      <OfferPopup offers={offersFor(t, locale, loggedIn)} side="right" landing />
+    </>
   );
 }

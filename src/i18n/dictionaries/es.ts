@@ -157,6 +157,14 @@ export const es: Dictionary = {
     startFree: "Crear mi cuenta",
   },
 
+  offers: {
+    label: "Oferta",
+    close: "Cerrar",
+    signupTitle: "Tu cuenta, créditos de regalo.",
+    subsTitle: "Más barato, con suscripción.",
+    packTitle: "{credits} créditos, +{bonus} de regalo.",
+  },
+
   login: {
     welcome: "Bienvenido al estudio",
     tagline: "Pon a tu personaje en cualquier vídeo.",
