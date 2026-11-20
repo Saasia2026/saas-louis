@@ -13,12 +13,12 @@ import { VIRALITY_CREDITS, VIRALITY_MAX_SECONDS, type ViralityReport } from "@/l
 import { uploadSwapFile } from "../dashboard/generate/swap-input";
 import { analyzeTikTok, applyRhythm, askBot, type BotId, type BotTurn } from "./actions";
 import { BOTS_ANALYZE_EVENT, BOTS_EVENT, botsEnabled, setBotsEnabled, takeAnalyzeRequest, type AnalyzeRequest } from "./bots-state";
-import { Ghost, Skull } from "./creatures";
+import { HookFace, ScoutFace } from "./creatures";
 import { analyzeVideo } from "./virality-actions";
 
 // Les bots nagent sur tout l'écran comme des poissons dans un aquarium :
-// Scout (le fantôme) montre les vidéos qui cartonnent, Hook (la tête de
-// mort) propose quoi dire. Leurs petites bulles s'ouvrent au clic sur la
+// Scout (bulle blanche) montre les vidéos qui cartonnent, Hook (bulle violette)
+// propose quoi dire. Leurs petites bulles s'ouvrent au clic sur la
 // fenêtre complète. Désactivables, choix gardé dans le navigateur.
 
 const BOTS: BotId[] = ["scout", "hook"];
@@ -115,7 +115,7 @@ function Chat({
   const [pending, start] = useTransition();
   const end = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const Face = bot === "scout" ? Ghost : Skull;
+  const Face = bot === "scout" ? ScoutFace : HookFace;
 
   useEffect(() => {
     end.current?.scrollIntoView({ block: "end" });
@@ -213,7 +213,7 @@ function Chat({
         )}
         {turns.map((m, i) => (
           <div key={i} className={m.role === "user" ? "flex flex-col items-end gap-1.5" : "flex items-start gap-2"}>
-            {m.role === "assistant" && <Face className="mt-0.5 size-7 shrink-0" />}
+            {m.role === "assistant" && <Face still className="mt-0.5 size-7 shrink-0" />}
             {m.video && <video src={m.video} muted playsInline controls className="max-h-56 max-w-[60%] rounded-2xl bg-black" />}
             <div
               className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-line ${
@@ -226,7 +226,7 @@ function Chat({
         ))}
         {pending && (
           <div className="flex items-center gap-2">
-            <Face className="size-7 shrink-0" />
+            <Face still className="size-7 shrink-0" />
             <span className="flex items-center gap-2 rounded-2xl bg-surface-2 px-3 py-2.5">
               <span className="flex gap-1" aria-hidden>
                 {[0, 1, 2].map((d) => (
@@ -765,7 +765,7 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
   return (
     <>
       {BOTS.map((bot) => {
-        const Face = bot === "scout" ? Ghost : Skull;
+        const Face = bot === "scout" ? ScoutFace : HookFace;
         return (
           <div
             key={bot}
@@ -782,7 +782,7 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
               className="pointer-events-auto block size-[52px] cursor-pointer drop-shadow-[0_10px_14px_rgb(0_0_0/0.35)] transition-[filter] hover:drop-shadow-[0_12px_18px_rgb(0_0_0/0.45)] md:size-16"
             >
               <div ref={body[bot]} className="size-full will-change-transform">
-                <Face eyesRef={eyes[bot]} className="size-full" />
+                <Face eyesRef={eyes[bot]} talking={bubble?.bot === bot} className="size-full" />
               </div>
               <span className="sr-only">{fmt(B.open, { name: B[bot].name })}</span>
             </button>
@@ -833,7 +833,7 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
             style={{ right: panel.bot === "scout" ? "5.4rem" : "1.6rem" }}
           />
           <header className="flex items-center gap-3 border-b border-line px-4 py-3">
-            {panel.bot === "scout" ? <Ghost className="size-9" /> : <Skull className="size-9" />}
+            {panel.bot === "scout" ? <ScoutFace className="size-9 shrink-0" /> : <HookFace className="size-9 shrink-0" />}
             <div className="min-w-0 flex-1">
               <p className="leading-tight font-semibold">{B[panel.bot].name}</p>
               <p className="text-xs text-muted">{B[panel.bot].role}</p>

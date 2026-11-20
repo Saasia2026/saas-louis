@@ -1055,6 +1055,13 @@ html {
   }
 }
 
+/* Bots (creatures.tsx) : la bulle hoche la tête quand le bot parle. */
+@keyframes bot-nod {
+  50% {
+    transform: translateY(-6%) rotate(-4deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
