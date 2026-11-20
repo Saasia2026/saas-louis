@@ -1,29 +1,25 @@
-/* Barre de lecture du lecteur maison, au style du site : une pilule de verre,
-   un bouton lecture blanc et rond, la piste blanche avec son curseur, les
+/* Barre de lecture du lecteur maison, au style du site : pas de cadre
+   autour ; les commandes se posent sur l'image, sur un léger dégradé sombre
+   en bas de la vidéo. Bouton lecture blanc et rond, piste fine et blanche,
    temps en chiffres alignés, son et plein écran en petites icônes. */
 
 .bar {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.35rem 0.6rem 0.35rem 0.35rem;
-  border: 1px solid rgb(255 255 255 / 0.14);
-  border-radius: 999px;
-  background: rgb(18 18 24 / 0.6);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  gap: 0.7rem;
   color: #fff;
 }
 
-/* Sur l'image (vignettes) : posée en bas, sans fond plein. */
+/* Sur l'image : posée en bas, sur un dégradé qui sort du noir. */
 .overlay {
   position: absolute;
-  left: 0.5rem;
-  right: 0.5rem;
-  bottom: 0.5rem;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 10;
-  gap: 0.4rem;
-  padding: 0.25rem 0.45rem 0.25rem 0.25rem;
+  gap: 0.55rem;
+  padding: 3rem 0.9rem 0.85rem;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.72), rgb(0 0 0 / 0.35) 55%, transparent);
 }
 
 .play {
@@ -48,28 +44,30 @@
 }
 
 .overlay .play {
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 2.2rem;
+  height: 2.2rem;
 }
 
 .overlay .play svg {
-  width: 0.8rem;
-  height: 0.8rem;
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 .time {
   flex: none;
-  min-width: 2.4rem;
+  min-width: 2.2rem;
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   text-align: center;
-  color: rgb(255 255 255 / 0.85);
+  color: #fff;
+  text-shadow: 0 1px 4px rgb(0 0 0 / 0.5);
 }
 
 .overlay .time {
   min-width: 2rem;
-  font-size: 0.7rem;
+  font-size: 0.76rem;
 }
 
 /* Piste : large zone de toucher, trait fin, remplissage et curseur blancs. */
@@ -87,14 +85,14 @@
 .rail {
   position: relative;
   width: 100%;
-  height: 4px;
-  border-radius: 4px;
-  background: rgb(255 255 255 / 0.18);
+  height: 3px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.28);
   transition: height 0.15s;
 }
 
 .track:hover .rail {
-  height: 6px;
+  height: 5px;
 }
 
 .fill {
@@ -107,8 +105,8 @@
 .knob {
   position: absolute;
   top: 50%;
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 0.7rem;
+  height: 0.7rem;
   border-radius: 999px;
   background: #fff;
   box-shadow: 0 1px 6px rgb(0 0 0 / 0.45);
@@ -128,7 +126,8 @@
   width: 2rem;
   height: 2rem;
   border-radius: 999px;
-  color: rgb(255 255 255 / 0.75);
+  color: rgb(255 255 255 / 0.85);
+  filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.5));
   transition:
     background 0.2s,
     color 0.2s;
