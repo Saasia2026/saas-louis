@@ -35,7 +35,7 @@ import {
   resumeSubscription,
   savePayAsYouGo,
 } from "./actions";
-import { PINK } from "./pricing-look";
+import { TitleLines } from "@/app/title-lines";
 import { PricingPlans } from "./pricing-plans";
 import { TopupPacks } from "./topup-packs";
 
@@ -46,13 +46,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const ERRORS = ["unavailable", "checkout", "card", "nocard", "portal", "subscribed", "cancel"] as const;
 
-// Quadrillage du bandeau, éclairé en rose au centre.
-const GRID_BG = {
-  backgroundImage:
-    "linear-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.07) 1px, transparent 1px)",
-  backgroundSize: "72px 72px",
-  maskImage: "radial-gradient(ellipse 70% 90% at 50% 40%, black 30%, transparent 85%)",
-};
+// Voile du bandeau, sur la vidéo de fond : sombre en bas pour lire le solde.
+const HERO_VEIL = "linear-gradient(to bottom, rgb(0 0 0 / 0.35), rgb(0 0 0 / 0.25) 40%, rgb(0 0 0 / 0.78))";
 
 export default async function CreditsPage(props: PageProps<"/dashboard/credits">) {
   const params = await props.searchParams;
@@ -206,23 +201,23 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
 
   return (
     <div>
-      {/* Bandeau : quadrillage éclairé en rose, titre lumineux, solde. Fond
-          sombre dans les deux thèmes. */}
+      {/* Bandeau sur une vidéo, comme la landing : titre en deux temps,
+          solde dans une carte de verre. Sombre dans les deux thèmes. */}
       <section className="relative isolate overflow-hidden rounded-[2rem] border border-white/10 bg-[#0b0a0e] px-5 py-14 text-center text-white sm:py-20">
-        <div aria-hidden className="absolute inset-0 -z-10" style={GRID_BG} />
-        <div
+        <video
+          src="/demos/demo-21.mp4"
+          poster="/demos/demo-21.jpg"
+          muted
+          loop
+          autoPlay
+          playsInline
           aria-hidden
-          className="absolute inset-0 -z-10"
-          style={{
-            background: `radial-gradient(ellipse 45% 55% at 50% 38%, color-mix(in oklab, ${PINK} 55%, transparent) 0%, transparent 70%)`,
-          }}
+          className="pointer-events-none absolute inset-0 -z-20 size-full object-cover"
         />
+        <div aria-hidden className="absolute inset-0 -z-10" style={{ background: HERO_VEIL }} />
         <p className="text-sm font-semibold tracking-wide text-white/60">{P.title}</p>
-        <h1
-          className="mx-auto mt-3 max-w-4xl font-headline text-5xl leading-[0.92] text-[#fff0f7] uppercase sm:text-7xl"
-          style={{ textShadow: `0 0 18px ${PINK}, 0 0 48px color-mix(in oklab, ${PINK} 70%, transparent)` }}
-        >
-          {P.heroTitle}
+        <h1 className="mx-auto mt-3 max-w-4xl font-headline text-5xl leading-[0.95] text-white sm:text-7xl">
+          <TitleLines text={P.heroTitle} />
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-[0.9375rem] text-white/70">{P.heroText}</p>
         <div className="mt-8 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-2xl border border-white/15 bg-black/40 px-5 py-3 backdrop-blur">

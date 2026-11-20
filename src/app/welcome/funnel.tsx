@@ -36,6 +36,7 @@ import {
 } from "@/lib/onboarding";
 import { InfluencerCreator, type CreatedInfluencer } from "@/app/(app)/dashboard/influencer/creator";
 import { finishOnboarding } from "./actions";
+import { TitleLines } from "@/app/title-lines";
 
 type Step = "intro" | "goal" | "platforms" | "audience" | "target" | "pace" | "building" | "create" | "plan";
 
@@ -363,7 +364,9 @@ function IntroStep({ credits, onStart }: { credits: number; onStart: () => void 
     <div className="grid items-center gap-10 md:grid-cols-[minmax(0,1fr)_auto]">
       <div>
         <p className="eyebrow">{W.intro.eyebrow}</p>
-        <h1 className="text-gradient mt-4 font-headline text-[2.9rem] leading-[0.9] sm:text-7xl">{W.intro.title}</h1>
+        <h1 className="text-gradient mt-4 font-headline text-[2.9rem] leading-[0.92] sm:text-7xl">
+          <TitleLines text={W.intro.title} />
+        </h1>
         <p className="mt-5 max-w-md text-muted sm:text-lg">{W.intro.text}</p>
         <button type="button" onClick={onStart} className="btn btn-accent mt-8 w-full py-4 text-lg sm:w-auto sm:px-10">
           {W.intro.start}

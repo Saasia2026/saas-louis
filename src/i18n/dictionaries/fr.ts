@@ -165,6 +165,12 @@ export const fr = {
     signupTitle: "Ton compte, tes crédits offerts.",
     subsTitle: "Moins cher, en abonnement.",
     packTitle: "{credits} crédits, +{bonus} offerts.",
+    packFigure: "crédits offerts",
+    bestKicker: "Notre meilleure offre",
+    savingTitle: "Jusqu'à {amount} économisés, chaque année.",
+    savingText: "{plan} en annuel : {credits} crédits par mois, face aux mêmes crédits en recharges.",
+    savingCta: "Voir l'abonnement annuel",
+    later: "Plus tard",
   },
 
   login: {

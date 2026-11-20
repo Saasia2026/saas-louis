@@ -163,6 +163,12 @@ export const en: Dictionary = {
     signupTitle: "Your account, free credits included.",
     subsTitle: "Cheaper, with a subscription.",
     packTitle: "{credits} credits, +{bonus} free.",
+    packFigure: "free credits",
+    bestKicker: "Our best deal",
+    savingTitle: "Save up to {amount}, every year.",
+    savingText: "{plan}, billed yearly: {credits} credits a month, versus the same credits as top-ups.",
+    savingCta: "See the yearly plan",
+    later: "Later",
   },
 
   login: {

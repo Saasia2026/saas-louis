@@ -163,6 +163,12 @@ export const es: Dictionary = {
     signupTitle: "Tu cuenta, créditos de regalo.",
     subsTitle: "Más barato, con suscripción.",
     packTitle: "{credits} créditos, +{bonus} de regalo.",
+    packFigure: "créditos de regalo",
+    bestKicker: "Nuestra mejor oferta",
+    savingTitle: "Ahorra hasta {amount}, cada año.",
+    savingText: "{plan} anual: {credits} créditos al mes, frente a los mismos créditos en recargas.",
+    savingCta: "Ver el plan anual",
+    later: "Más tarde",
   },
 
   login: {

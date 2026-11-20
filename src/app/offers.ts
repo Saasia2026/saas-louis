@@ -1,14 +1,31 @@
 import "server-only";
 import { fmt, INTL_LOCALES, type Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
-import { CREDIT_PACKS, SUBSCRIPTION_PLANS, bonusCredits, creditsPerEuro, formatPrice, subscriptionOff } from "@/lib/credit-packs";
+import {
+  CREDIT_PACKS,
+  SUBSCRIPTION_PLANS,
+  bonusCredits,
+  creditsPerEuro,
+  formatPrice,
+  subscriptionOff,
+  subscriptionYearlySaving,
+} from "@/lib/credit-packs";
 
 // Offres des pop-ups : uniquement de vraies offres, calculées depuis la grille
-// de prix (jamais de faux prix barrés).
+// de prix (jamais de faux prix barrés). Rangées de la moins forte à la plus
+// forte : chaque page en montre une plus alléchante que la précédente, chacune
+// dans un format différent (petite carte, affiche, fenêtre au centre).
+export type OfferLook = "card" | "poster" | "spotlight";
+
 export type Offer = {
   id: string;
+  look: OfferLook;
+  kicker?: string;
   title: string;
   text: string;
+  // Gros chiffre de l'affiche et de la fenêtre au centre.
+  figure?: string;
+  figureLabel?: string;
   cta: string;
   href: string;
   video: string;
@@ -16,41 +33,74 @@ export type Offer = {
 
 const MAX_SUBSCRIPTION_OFF = Math.max(...SUBSCRIPTION_PLANS.map((plan) => subscriptionOff(plan, "year")));
 
-// Recharge mise en avant : celle qui offre le plus de crédits en plus.
-const BONUS_PACK = [...CREDIT_PACKS].sort((a, b) => bonusCredits(b) - bonusCredits(a))[0];
+// Recharge mise en avant : celle qui offre le plus de crédits en plus parmi
+// les tailles courantes (jusqu'à 5 000 crédits, comme sur la landing).
+const BONUS_PACK = CREDIT_PACKS.filter((p) => p.credits <= 5000).sort((a, b) => bonusCredits(b) - bonusCredits(a))[0];
+
+// Abonnement annuel qui fait économiser le plus sur un an.
+const BEST_PLAN = [...SUBSCRIPTION_PLANS].sort((a, b) => subscriptionYearlySaving(b, "year") - subscriptionYearlySaving(a, "year"))[0];
 
 export function offersFor(t: Dictionary, locale: Locale, loggedIn: boolean): Offer[] {
   const intl = INTL_LOCALES[locale];
+  const O = t.offers;
   const credits = loggedIn ? "/dashboard/credits" : "/login?next=/dashboard/credits";
-  const subs = {
-    id: "subs",
-    title: t.offers.subsTitle,
-    text: fmt(t.landing.pricingSubs, { off: fmt(t.creditsPage.off, { pct: MAX_SUBSCRIPTION_OFF }) }),
-    cta: t.landing.allPrices,
-    href: credits,
-    video: "/demos/demo-17",
-  };
-  const bonus = bonusCredits(BONUS_PACK);
-  const pack = {
-    id: `pack-${BONUS_PACK.id}`,
-    title: fmt(t.offers.packTitle, { credits: BONUS_PACK.credits.toLocaleString(intl), bonus: bonus.toLocaleString(intl) }),
-    text: `${formatPrice(BONUS_PACK.amount, intl)} · ${fmt(t.landing.perEuro, { n: creditsPerEuro(BONUS_PACK) })}`,
-    cta: t.landing.allPrices,
-    href: credits,
-    video: "/demos/demo-09",
-  };
-  if (!loggedIn) {
-    return [
-      {
+  const yearly = loggedIn ? "/dashboard/credits?billing=year" : "/login?next=/dashboard/credits";
+
+  const first: Offer = loggedIn
+    ? {
+        id: "subs",
+        look: "card",
+        title: O.subsTitle,
+        text: fmt(t.landing.pricingSubs, { off: fmt(t.creditsPage.off, { pct: MAX_SUBSCRIPTION_OFF }) }),
+        cta: t.landing.allPrices,
+        href: credits,
+        video: "/demos/demo-17",
+      }
+    : {
         id: "signup",
-        title: t.offers.signupTitle,
+        look: "card",
+        title: O.signupTitle,
         text: t.login.freeCredits,
         cta: t.login.submitSignUp,
         href: "/login",
         video: "/demos/demo-21",
-      },
-      subs,
-    ];
+      };
+
+  const offers: Offer[] = [first];
+
+  const bonus = bonusCredits(BONUS_PACK);
+  if (bonus > 0) {
+    offers.push({
+      id: `pack-${BONUS_PACK.id}`,
+      look: "poster",
+      title: fmt(O.packTitle, { credits: BONUS_PACK.credits.toLocaleString(intl), bonus: bonus.toLocaleString(intl) }),
+      text: `${formatPrice(BONUS_PACK.amount, intl)} · ${fmt(t.landing.perEuro, { n: creditsPerEuro(BONUS_PACK) })}`,
+      figure: `+${bonus.toLocaleString(intl)}`,
+      figureLabel: O.packFigure,
+      cta: t.landing.allPrices,
+      href: credits,
+      video: "/demos/demo-09",
+    });
   }
-  return bonus > 0 ? [subs, pack] : [subs];
+
+  const saving = subscriptionYearlySaving(BEST_PLAN, "year");
+  if (saving > 0) {
+    const amount = formatPrice(saving, intl);
+    offers.push({
+      id: `saving-${BEST_PLAN.id}`,
+      look: "spotlight",
+      kicker: O.bestKicker,
+      title: fmt(O.savingTitle, { amount }),
+      text: fmt(O.savingText, {
+        plan: `${t.creditsPage.subscriptions.plans[BEST_PLAN.tier]} ${BEST_PLAN.credits.toLocaleString(intl)}`,
+        credits: BEST_PLAN.credits.toLocaleString(intl),
+      }),
+      figure: fmt(t.creditsPage.off, { pct: subscriptionOff(BEST_PLAN, "year") }),
+      cta: O.savingCta,
+      href: yearly,
+      video: "/demos/demo-20",
+    });
+  }
+
+  return offers;
 }

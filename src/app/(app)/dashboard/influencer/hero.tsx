@@ -3,6 +3,7 @@ import { PhoneFrame } from "@/app/phone-frame";
 import { fmt } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { INFLUENCER_CREDITS, INFLUENCER_PRESETS, presetImage } from "@/lib/influencer";
+import { TitleLines } from "@/app/title-lines";
 
 // Exemples de la mosaïque, colonne par colonne.
 const COLUMNS = [
@@ -20,7 +21,9 @@ export function InfluencerHero({ t }: { t: Dictionary["influencer"] }) {
     <header className="grid animate-fade-up grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-line pb-8 sm:gap-8 sm:pb-10 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_auto]">
       <div>
         <p className="eyebrow">{t.eyebrow}</p>
-        <h1 className="text-gradient mt-3 font-headline text-[2.2rem] leading-[0.92] sm:mt-4 sm:text-6xl">{t.title}</h1>
+        <h1 className="text-gradient mt-3 font-headline text-[2.2rem] leading-[0.92] sm:mt-4 sm:text-6xl">
+          <TitleLines text={t.title} />
+        </h1>
         <p className="mt-3 max-w-md text-sm text-muted sm:mt-4 sm:text-base">{t.intro}</p>
         <ul className="mt-4 flex flex-wrap gap-1.5 text-[0.6875rem] font-medium sm:mt-6 sm:gap-2 sm:text-xs">
           {[
