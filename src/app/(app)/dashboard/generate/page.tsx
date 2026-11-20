@@ -1,3 +1,4 @@
+import { StudioStage } from "@/app/studio-stage";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { SWAP_INPUTS_BUCKET, isAspectRatio } from "@/lib/generation";
@@ -117,6 +118,7 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
   });
 
   return (
+    <StudioStage>
     <Studio
       presets={presets}
       styles={styles}
@@ -133,5 +135,6 @@ export default async function GeneratePage(props: PageProps<"/dashboard/generate
         ...(magichourEnabled() ? (["magichour"] as const) : []),
       ]}
     />
+    </StudioStage>
   );
 }

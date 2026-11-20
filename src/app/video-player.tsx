@@ -1,8 +1,9 @@
 "use client";
 
-import { Maximize, Pause, Play, Volume2, VolumeX, type LucideIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Maximize, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n/provider";
+import pb from "./player.module.css";
 
 function clock(seconds: number) {
   const s = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
@@ -18,6 +19,16 @@ export function usePlayer({ muted: startMuted = true }: { muted?: boolean } = {}
   const [muted, setMuted] = useState(startMuted);
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState(0);
+
+  // Vidéo déjà chargée avant que le lecteur n'écoute ses événements (page
+  // rendue côté serveur, cache) : on relit son état dès qu'elle est branchée.
+  const attach = useCallback((v: HTMLVideoElement | null) => {
+    ref.current = v;
+    if (!v) return;
+    if (v.readyState >= 2) setReady(true);
+    if (Number.isFinite(v.duration) && v.duration > 0) setDuration(v.duration);
+    if (!v.paused) setPlaying(true);
+  }, []);
 
   // timeupdate ne tombe que quelques fois par seconde : la barre suit l'image.
   useEffect(() => {
@@ -63,13 +74,18 @@ export function usePlayer({ muted: startMuted = true }: { muted?: boolean } = {}
     fullscreen,
     toggleMuted: () => setMuted((m) => !m),
     videoProps: {
-      ref,
+      ref: attach,
       muted,
       onClick: toggle,
       onLoadedData: () => setReady(true),
+      onCanPlay: () => setReady(true),
       onLoadedMetadata: (e: React.SyntheticEvent<HTMLVideoElement>) => {
         const d = e.currentTarget.duration;
         setDuration(Number.isFinite(d) ? d : 0);
+      },
+      onDurationChange: (e: React.SyntheticEvent<HTMLVideoElement>) => {
+        const d = e.currentTarget.duration;
+        if (Number.isFinite(d) && d > 0) setDuration(d);
       },
       onPlay: () => setPlaying(true),
       onPause: () => setPlaying(false),
@@ -80,13 +96,15 @@ export function usePlayer({ muted: startMuted = true }: { muted?: boolean } = {}
 
 export type Player = ReturnType<typeof usePlayer>;
 
-// Barre de lecture sous la vidéo : rien ne recouvre l'image. compact pour les
-// vignettes étroites (temps écoulé seul).
+// Barre de lecture, au style du site : une pilule de verre avec le bouton
+// lecture blanc, la piste et son curseur, les temps, le son et le plein
+// écran. Sous la vidéo par défaut ; `overlay` la pose en bas de l'image
+// (vignettes) ; `compact` n'affiche que le temps écoulé.
 export function PlayerBar({ player, compact = false, overlay = false }: { player: Player; compact?: boolean; overlay?: boolean }) {
   const { t } = useI18n();
   const P = t.studio.player;
   const { time, duration, playing, muted } = player;
-  const progress = duration ? (time / duration) * 100 : 0;
+  const progress = duration ? Math.min(100, (time / duration) * 100) : 0;
 
   const seekFromPointer = (event: React.PointerEvent<HTMLDivElement>) => {
     const box = event.currentTarget.getBoundingClientRect();
@@ -94,10 +112,11 @@ export function PlayerBar({ player, compact = false, overlay = false }: { player
   };
 
   return (
-    <div
-      className={overlay ? "absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/60 to-transparent px-3 pb-2 pt-6" : ""}
-      onClick={overlay ? (e) => e.stopPropagation() : undefined}
-    >
+    <div className={`${pb.bar} ${overlay ? pb.overlay : ""}`} onClick={overlay ? (e) => e.stopPropagation() : undefined}>
+      <button type="button" onClick={player.toggle} aria-label={playing ? P.pause : P.play} title={playing ? P.pause : P.play} className={pb.play}>
+        {playing ? <Pause className="fill-current" /> : <Play className="translate-x-px fill-current" />}
+      </button>
+      <span className={pb.time}>{clock(time)}</span>
       <div
         role="slider"
         tabIndex={0}
@@ -119,69 +138,23 @@ export function PlayerBar({ player, compact = false, overlay = false }: { player
           else return;
           e.preventDefault();
         }}
-        className="group flex h-5 cursor-pointer touch-none items-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className={pb.track}
       >
-        <div className="relative h-[3px] w-full rounded-full bg-white/[0.08] transition-[height] duration-150 group-hover:h-1.5">
-          <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-accent to-accent-2" style={{ width: `${progress}%` }} />
-          <span
-            className="pointer-events-none absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-text shadow-sm opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-            style={{ left: `${progress}%` }}
-          />
+        <div className={pb.rail}>
+          <div className={pb.fill} style={{ width: `${progress}%` }} />
+          <span className={pb.knob} style={{ left: `${progress}%` }} />
         </div>
       </div>
-      <div className={`flex items-center text-muted ${compact ? "" : "gap-0.5"}`}>
-        <PlayerButton
-          icon={playing ? Pause : Play}
-          label={playing ? P.pause : P.play}
-          onClick={player.toggle}
-          compact={compact}
-        />
-        <PlayerButton
-          icon={muted ? VolumeX : Volume2}
-          label={muted ? P.unmute : P.mute}
-          onClick={player.toggleMuted}
-          compact={compact}
-        />
-        <span className={`font-medium tabular-nums ${compact ? "ml-0.5 text-[0.6875rem]" : "ml-1.5 text-[0.8125rem]"}`}>
-          {compact ? clock(time) : `${clock(time)} / ${clock(duration)}`}
-        </span>
-        <PlayerButton
-          icon={Maximize}
-          label={P.fullscreen}
-          onClick={player.fullscreen}
-          compact={compact}
-          className="ml-auto"
-        />
-      </div>
+      {!compact && <span className={pb.time}>{clock(duration)}</span>}
+      <button type="button" onClick={player.toggleMuted} aria-label={muted ? P.unmute : P.mute} title={muted ? P.unmute : P.mute} className={pb.icon}>
+        {muted ? <VolumeX /> : <Volume2 />}
+      </button>
+      {!compact && (
+        <button type="button" onClick={player.fullscreen} aria-label={P.fullscreen} title={P.fullscreen} className={pb.icon}>
+          <Maximize />
+        </button>
+      )}
     </div>
-  );
-}
-
-function PlayerButton({
-  icon: Icon,
-  label,
-  onClick,
-  compact,
-  className = "",
-}: {
-  icon: LucideIcon;
-  label: string;
-  onClick: () => void;
-  compact: boolean;
-  className?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={`flex shrink-0 items-center justify-center rounded-full transition-colors hover:bg-white/[0.08] hover:text-text ${
-        compact ? "size-7" : "size-9"
-      } ${className}`}
-    >
-      <Icon className={compact ? "size-3.5" : "size-4"} />
-    </button>
   );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronLeft, ChevronRight, Copy, ExternalLink, Plus, SendHorizontal, X } from "lucide-react";
+import { ArrowUp, ArrowUpRight, Check, ChevronLeft, ChevronRight, Copy, ExternalLink, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type RefObject } from "react";
@@ -13,12 +13,13 @@ import { VIRALITY_CREDITS, VIRALITY_MAX_SECONDS, type ViralityReport } from "@/l
 import { uploadSwapFile } from "../dashboard/generate/swap-input";
 import { analyzeTikTok, applyRhythm, askBot, type BotId, type BotTurn } from "./actions";
 import { BOTS_ANALYZE_EVENT, BOTS_EVENT, botsEnabled, setBotsEnabled, takeAnalyzeRequest, type AnalyzeRequest } from "./bots-state";
-import { Ghost, Skull } from "./creatures";
+import s from "./bots.module.css";
+import { BOT_VIDEO, HookFace, ScoutFace } from "./creatures";
 import { analyzeVideo } from "./virality-actions";
 
 // Les bots nagent sur tout l'écran comme des poissons dans un aquarium :
-// Scout (le fantôme) montre les vidéos qui cartonnent, Hook (la tête de
-// mort) propose quoi dire. Leurs petites bulles s'ouvrent au clic sur la
+// Scout (bulle blanche) montre les vidéos qui cartonnent, Hook (bulle au contour voilé)
+// propose quoi dire. Leurs petites bulles s'ouvrent au clic sur la
 // fenêtre complète. Désactivables, choix gardé dans le navigateur.
 
 const BOTS: BotId[] = ["scout", "hook"];
@@ -115,7 +116,7 @@ function Chat({
   const [pending, start] = useTransition();
   const end = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const Face = bot === "scout" ? Ghost : Skull;
+  const Face = bot === "scout" ? ScoutFace : HookFace;
 
   useEffect(() => {
     end.current?.scrollIntoView({ block: "end" });
@@ -198,46 +199,47 @@ function Chat({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
+      <div className={s.thread}>
         {turns.length === 0 && (
           <>
-            <p className="text-sm text-muted">{bot === "scout" ? B.chatIntroScout : B.chatIntroHook}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {(bot === "scout" ? B.startersScout : B.startersHook).map((s) => (
-                <button key={s} type="button" onClick={() => send(s)} className="chip cursor-pointer hover:text-text">
-                  {s}
+            <p className={s.intro}>{bot === "scout" ? B.chatIntroScout : B.chatIntroHook}</p>
+            <div className={s.starters}>
+              {(bot === "scout" ? B.startersScout : B.startersHook).map((q) => (
+                <button key={q} type="button" onClick={() => send(q)} className={s.starter}>
+                  {q}
+                  <ArrowUpRight />
                 </button>
               ))}
             </div>
           </>
         )}
-        {turns.map((m, i) => (
-          <div key={i} className={m.role === "user" ? "flex flex-col items-end gap-1.5" : "flex items-start gap-2"}>
-            {m.role === "assistant" && <Face className="mt-0.5 size-7 shrink-0" />}
-            {m.video && <video src={m.video} muted playsInline controls className="max-h-56 max-w-[60%] rounded-2xl bg-black" />}
-            <div
-              className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-line ${
-                m.role === "user" ? "bg-accent text-white" : "bg-surface-2"
-              }`}
-            >
-              {m.text}
+        {turns.map((m, i) =>
+          m.role === "user" ? (
+            <div key={i} className={s.me}>
+              {m.video && <video src={m.video} muted playsInline controls className={s.clip} />}
+              <div className={s.msgMe}>{m.text}</div>
             </div>
-          </div>
-        ))}
+          ) : (
+            <div key={i} className={s.bot}>
+              <Face still className="mt-0.5 size-7 shrink-0" />
+              <div className={s.msgBot}>{m.text}</div>
+            </div>
+          ),
+        )}
         {pending && (
-          <div className="flex items-center gap-2">
-            <Face className="size-7 shrink-0" />
-            <span className="flex items-center gap-2 rounded-2xl bg-surface-2 px-3 py-2.5">
-              <span className="flex gap-1" aria-hidden>
-                {[0, 1, 2].map((d) => (
-                  <span key={d} className="size-1.5 animate-pulse rounded-full bg-muted" style={{ animationDelay: `${d * 150}ms` }} />
-                ))}
+          <div className={s.bot}>
+            <Face still className="size-7 shrink-0" />
+            <span className={`${s.msgBot} ${s.typing}`}>
+              <span className={s.dots} aria-hidden>
+                <i />
+                <i />
+                <i />
               </span>
-              {turns.at(-1)?.video && <span className="text-xs text-muted">{B.analyzingVideo}</span>}
+              {turns.at(-1)?.video && <span className="text-xs">{B.analyzingVideo}</span>}
             </span>
           </div>
         )}
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && <p className={s.error}>{error}</p>}
         <div ref={end} />
       </div>
       <form
@@ -245,7 +247,7 @@ function Chat({
           e.preventDefault();
           send(draft);
         }}
-        className="border-t border-line p-3"
+        className={s.composer}
       >
         <input
           ref={fileInput}
@@ -257,12 +259,12 @@ function Chat({
             e.target.value = "";
           }}
         />
-        <div className="flex items-end gap-2">
+        <div className={s.bar}>
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
             disabled={pending}
-            className="btn btn-ghost size-10 shrink-0 p-0"
+            className={s.icon}
             title={fmt(B.attach, { credits: VIRALITY_CREDITS })}
           >
             <Plus className="size-5" />
@@ -280,14 +282,13 @@ function Chat({
             rows={1}
             maxLength={800}
             placeholder={B.placeholder}
-            className="max-h-28 min-h-10 flex-1 resize-none rounded-xl border border-line bg-surface-2 px-3 py-2 text-sm placeholder:text-faint focus:border-accent focus:outline-none"
           />
-          <button type="submit" disabled={!draft.trim() || pending} className="btn btn-accent size-10 shrink-0 p-0" title={B.send}>
-            <SendHorizontal className="size-4" />
+          <button type="submit" disabled={!draft.trim() || pending} className={s.send} title={B.send}>
+            <ArrowUp className="size-4" />
             <span className="sr-only">{B.send}</span>
           </button>
         </div>
-        <p className="mt-1.5 text-xs text-faint">
+        <p className={s.hint}>
           {left !== null ? `${fmt(B.left, { n: left })} · ` : ""}
           {fmt(B.attachHint, { credits: VIRALITY_CREDITS })}
         </p>
@@ -374,7 +375,7 @@ function AccountPanel({ initial }: { initial: TikTokAnalysis | null }) {
   const section = (title: string, items: string[]) =>
     items.length > 0 && (
       <div>
-        <p className="text-xs font-semibold tracking-wide text-muted uppercase">{title}</p>
+        <p className="eyebrow">{title}</p>
         <ul className="mt-1.5 space-y-1.5 text-sm">
           {items.map((item) => (
             <li key={item} className="flex gap-2">
@@ -403,7 +404,7 @@ function AccountPanel({ initial }: { initial: TikTokAnalysis | null }) {
       <div className="flex items-center gap-3 rounded-2xl border border-line p-3">
         <p className="font-headline text-3xl leading-none tabular-nums">{report.potential.score}</p>
         <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-wide text-muted uppercase">{A.potential}</p>
+          <p className="eyebrow">{A.potential}</p>
           <p className="text-sm">{report.potential.note}</p>
         </div>
       </div>
@@ -412,7 +413,7 @@ function AccountPanel({ initial }: { initial: TikTokAnalysis | null }) {
       {section(A.stop, report.stop)}
       {section(A.next, report.nextVideos)}
       <div className="rounded-2xl border border-line bg-surface-2 p-3">
-        <p className="text-xs font-semibold tracking-wide text-muted uppercase">{A.rhythm}</p>
+        <p className="eyebrow">{A.rhythm}</p>
         <p className="mt-1 text-sm font-semibold">
           {report.rhythm.weekdays.map(weekday).join(", ")} · {report.rhythm.times.join(", ")}
         </p>
@@ -505,18 +506,18 @@ function HookPanel({ picks, index, setIndex, showVideo }: { picks: TrendPick[]; 
   return (
     <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
       <div className="rounded-2xl border border-line bg-surface-2 p-3">
-        <p className="text-xs font-semibold tracking-wide text-muted uppercase">{B.sayThis}</p>
+        <p className="eyebrow">{B.sayThis}</p>
         <div className="mt-1 flex items-start gap-2">
           <p className="min-w-0 flex-1 text-base font-semibold">« {p.hook} »</p>
           <CopyButton text={p.hook} />
         </div>
       </div>
       <div>
-        <p className="text-xs font-semibold tracking-wide text-muted uppercase">{B.why}</p>
+        <p className="eyebrow">{B.why}</p>
         <p className="mt-1 text-sm">{p.why}</p>
       </div>
       <div>
-        <p className="text-xs font-semibold tracking-wide text-muted uppercase">{B.how}</p>
+        <p className="eyebrow">{B.how}</p>
         <p className="mt-1 text-sm">{p.how}</p>
       </div>
       <button type="button" onClick={showVideo} className="btn btn-secondary w-full">
@@ -524,7 +525,7 @@ function HookPanel({ picks, index, setIndex, showVideo }: { picks: TrendPick[]; 
       </button>
       {picks.length > 1 && (
         <div>
-          <p className="text-xs font-semibold tracking-wide text-muted uppercase">{B.otherHooks}</p>
+          <p className="eyebrow">{B.otherHooks}</p>
           <div className="mt-1.5 space-y-1.5">
             {picks.map((o, i) =>
               i === index || !o.hook ? null : (
@@ -655,12 +656,10 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
         m.x = clamp(m.x + m.vx * dt, b.minX, b.maxX);
         m.y = clamp(m.y + m.vy * dt, b.minY, b.maxY);
 
-        if (Math.abs(m.vx) > 5) m.faceTarget = Math.sign(m.vx);
-        m.face += (m.faceTarget - m.face) * Math.min(1, dt * 4);
-        const flip = Math.abs(m.face) < 0.2 ? 0.2 * Math.sign(m.face || 1) : m.face;
+        // Ni retournement en miroir ni bascule : une bulle vidéo qui se
+        // retourne semble tourner sur elle-même. Elle flotte et respire.
         const bob = reduced ? 0 : Math.sin(t * 1.7 + m.phase) * (parked ? 2 : 6);
         const breath = reduced ? 1 : 1 + 0.03 * Math.sin(t * 2.6 + m.phase);
-        const tilt = clamp(m.vx * 0.25, -10, 10);
 
         const cx = m.x + b.s / 2;
         const cy = m.y + bob + b.s / 2;
@@ -674,7 +673,6 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
           lx = (m.vx / SPEED) * 2.4;
           ly = (m.vy / SPEED) * 1.8;
         }
-        lx *= Math.sign(flip);
         m.lx += (lx - m.lx) * Math.min(1, dt * 6);
         m.ly += (ly - m.ly) * Math.min(1, dt * 6);
         if (now > m.blinkAt) {
@@ -686,7 +684,7 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
         const w = wrap[bot].current;
         if (w) w.style.transform = `translate3d(${m.x.toFixed(1)}px, ${(m.y + bob).toFixed(1)}px, 0)`;
         const bd = body[bot].current;
-        if (bd) bd.style.transform = `rotate(${tilt.toFixed(2)}deg) scale(${(flip * breath).toFixed(3)}, ${(1 / breath).toFixed(3)})`;
+        if (bd) bd.style.transform = `scale(${breath.toFixed(3)}, ${(1 / breath).toFixed(3)})`;
         const e = eyes[bot].current;
         if (e) e.style.transform = `translate(${m.lx.toFixed(2)}px, ${m.ly.toFixed(2)}px) scaleY(${open})`;
 
@@ -765,7 +763,7 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
   return (
     <>
       {BOTS.map((bot) => {
-        const Face = bot === "scout" ? Ghost : Skull;
+        const Face = bot === "scout" ? ScoutFace : HookFace;
         return (
           <div
             key={bot}
@@ -782,7 +780,7 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
               className="pointer-events-auto block size-[52px] cursor-pointer drop-shadow-[0_10px_14px_rgb(0_0_0/0.35)] transition-[filter] hover:drop-shadow-[0_12px_18px_rgb(0_0_0/0.45)] md:size-16"
             >
               <div ref={body[bot]} className="size-full will-change-transform">
-                <Face eyesRef={eyes[bot]} className="size-full" />
+                <Face eyesRef={eyes[bot]} talking={bubble?.bot === bot} className="size-full" />
               </div>
               <span className="sr-only">{fmt(B.open, { name: B[bot].name })}</span>
             </button>
@@ -793,67 +791,47 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
       {bubble && bubblePick && !panel && (
         <div
           ref={bubbleEl}
-          className="group pointer-events-auto fixed top-0 left-0 z-40 w-max max-w-[15rem] animate-fade-up rounded-2xl border-2 border-line-strong bg-surface shadow-[0_14px_34px_-12px_rgb(0_0_0/0.5)]"
+          className={`${s.say} pointer-events-auto fixed top-0 left-0 z-40 w-max max-w-[15rem] animate-fade-up`}
           style={{ transform: "translate3d(-400px, -400px, 0)" }}
         >
           <button type="button" onClick={() => open(bubble.bot, bubble.pick)} className="block w-full px-3 py-2 pr-7 text-left">
             {bubble.bot === "scout" ? (
               <>
                 <span className="block text-sm font-semibold">{fmt(B.watchThis, { views: num(bubblePick.views) })}</span>
-                <span className="block truncate text-xs text-muted">@{bubblePick.author}</span>
+                <span className="block truncate text-xs text-white/60">@{bubblePick.author}</span>
               </>
             ) : (
               <>
-                <span className="block text-[0.6875rem] font-semibold tracking-wide text-muted uppercase">{B.sayThis}</span>
+                <span className="block text-xs text-white/60">{B.sayThis}</span>
                 <span className="line-clamp-2 block text-sm font-medium">« {bubblePick.hook} »</span>
               </>
             )}
           </button>
-          <button type="button" onClick={() => setBubble(null)} className="absolute top-1.5 right-1.5 p-0.5 text-faint hover:text-text" title={B.dismiss}>
+          <button type="button" onClick={() => setBubble(null)} className="absolute top-1.5 right-1.5 p-0.5 text-white/50 hover:text-white" title={B.dismiss}>
             <X className="size-3.5" />
             <span className="sr-only">{B.dismiss}</span>
           </button>
-          <span
-            ref={tailEl}
-            aria-hidden
-            className="absolute size-3.5 rotate-45 border-line-strong bg-surface group-data-[side=above]:-bottom-[9px] group-data-[side=above]:border-r-2 group-data-[side=above]:border-b-2 group-data-[side=below]:-top-[9px] group-data-[side=below]:border-t-2 group-data-[side=below]:border-l-2"
-          />
+          <span ref={tailEl} aria-hidden className={s.sayTail} />
         </div>
       )}
 
       {panel && (
-        <section
-          role="dialog"
-          aria-label={B[panel.bot].name}
-          className="fixed right-4 bottom-[calc(5.75rem+3.75rem+env(safe-area-inset-bottom))] z-40 flex h-[min(44rem,calc(100dvh-14rem))] w-[min(24rem,calc(100vw-2rem))] animate-fade-up flex-col rounded-3xl border-2 border-line-strong bg-surface shadow-[0_24px_60px_-12px_rgb(0_0_0/0.55)] md:right-6 md:bottom-[calc(1rem+4.75rem)] md:h-[min(44rem,calc(100dvh-11rem))]"
-        >
-          <span
-            aria-hidden
-            className="absolute -bottom-[10px] size-4 rotate-45 border-r-2 border-b-2 border-line-strong bg-surface"
-            style={{ right: panel.bot === "scout" ? "5.4rem" : "1.6rem" }}
-          />
-          <header className="flex items-center gap-3 border-b border-line px-4 py-3">
-            {panel.bot === "scout" ? <Ghost className="size-9" /> : <Skull className="size-9" />}
-            <div className="min-w-0 flex-1">
-              <p className="leading-tight font-semibold">{B[panel.bot].name}</p>
-              <p className="text-xs text-muted">{B[panel.bot].role}</p>
+        <section role="dialog" aria-label={B[panel.bot].name} className={`video-page ${s.panel}`}>
+          <header className={s.head}>
+            <video key={panel.bot} src={`${BOT_VIDEO[panel.bot]}.mp4`} poster={`${BOT_VIDEO[panel.bot]}.jpg`} muted loop autoPlay playsInline aria-hidden />
+            {panel.bot === "scout" ? <ScoutFace className="size-14 shrink-0" /> : <HookFace className="size-14 shrink-0" />}
+            <div className="min-w-0 flex-1 pb-0.5">
+              <p className={s.name}>{B[panel.bot].name}</p>
+              <p className={s.role}>{B[panel.bot].role}</p>
             </div>
-            <button type="button" onClick={() => setPanel(null)} className="btn btn-ghost size-8 p-0" title={B.close}>
+            <button type="button" onClick={() => setPanel(null)} className={s.close} title={B.close}>
               <X className="size-4" />
               <span className="sr-only">{B.close}</span>
             </button>
           </header>
-          <div className="flex gap-1 border-b border-line px-3 py-2">
+          <div className={s.tabs}>
             {tabs.map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setPanel({ ...panel, tab: k })}
-                aria-pressed={panel.tab === k}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                  panel.tab === k ? "bg-surface-3 text-text" : "text-muted hover:text-text"
-                }`}
-              >
+              <button key={k} type="button" onClick={() => setPanel({ ...panel, tab: k })} aria-pressed={panel.tab === k}>
                 {tabLabel(k)}
               </button>
             ))}
@@ -875,8 +853,8 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
             />
           )}
 
-          <footer className="border-t border-line px-4 py-2 text-right">
-            <button type="button" onClick={() => setBotsEnabled(false)} className="text-xs text-faint hover:text-text hover:underline">
+          <footer className={s.foot}>
+            <button type="button" onClick={() => setBotsEnabled(false)}>
               {B.disable}
             </button>
           </footer>

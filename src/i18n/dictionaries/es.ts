@@ -73,6 +73,10 @@ export const es: Dictionary = {
     openStudio: "Abrir el estudio",
     studioShort: "Studio",
     start: "Empezar",
+    home: "Inicio",
+    seeExamples: "Ver ejemplos",
+    nextScreen: "Pantalla siguiente",
+    allPrices: "Todas las ofertas",
     eyebrow: "El estudio premium · motor Shinka",
     titleTop: "Tu personaje.",
     titleBottom: "En el vídeo.",
@@ -151,6 +155,27 @@ export const es: Dictionary = {
     finalTitleTop: "Tu próximo vídeo",
     finalTitleBottom: "empieza con un clip.",
     startFree: "Crear mi cuenta",
+  },
+
+  offerBar: {
+    chip: "Oferta anual",
+    text: "Plan anual: hasta {off} en tus créditos.",
+    short: "Anual: hasta {off}",
+    cta: "Ver la oferta",
+    close: "Ocultar la oferta",
+  },
+  offers: {
+    label: "Oferta",
+    close: "Cerrar",
+    signupTitle: "Tu cuenta, créditos de regalo.",
+    subsTitle: "Más barato, con suscripción.",
+    packTitle: "{credits} créditos, +{bonus} de regalo.",
+    packFigure: "créditos de regalo",
+    bestKicker: "Nuestra mejor oferta",
+    savingTitle: "Ahorra hasta {amount}, cada año.",
+    savingText: "{plan} anual: {credits} créditos al mes, frente a los mismos créditos en recargas.",
+    savingCta: "Ver el plan anual",
+    later: "Más tarde",
   },
 
   login: {
@@ -278,6 +303,11 @@ export const es: Dictionary = {
   },
 
   influencer: {
+    headline: "Crea tu influencer, en una imagen.",
+    tabExamples: "Ejemplos",
+    tabMine: "Mis influencers",
+    createCircle: "Crear un influencer",
+    mineEmpty: "Tus influencers aparecerán aquí.",
     eyebrow: "Personajes",
     title: "Influencer IA",
     intro: "Crea tu personaje en una imagen y ponlo en cualquier vídeo desde el estudio.",
@@ -431,6 +461,15 @@ export const es: Dictionary = {
   },
 
   studio: {
+    yourPrompt: "Tu prompt",
+    references: "Tus referencias",
+    makingEyebrow: "En producción",
+    makingTop: "Tu personaje",
+    makingBottom: "entra en escena.",
+    doneEyebrow: "Listo",
+    doneTop: "Tu vídeo",
+    doneBottom: "está listo.",
+    elapsed: "transcurridos",
     createTitle: "Crear un vídeo",
     poweredByLabel: "Motor",
     modelLabel: "Modelo",
@@ -633,6 +672,14 @@ export const es: Dictionary = {
     tooLong: "Está tardando más de lo previsto. Vuelve en unos minutos: el vídeo estará en Mis vídeos.",
   },
 
+  notFound: {
+    eyebrow: "Error 404",
+    titleTop: "Aquí no hay nada.",
+    titleBottom: "La escena se cortó.",
+    text: "Esta página no existe, o ya no existe.",
+    home: "Volver al inicio",
+    studio: "Abrir el estudio",
+  },
   terms: {
     eyebrow: "Condiciones",
     title: "Condiciones de uso",

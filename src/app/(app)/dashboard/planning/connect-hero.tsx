@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 import { getDictionary } from "@/i18n/server";
 import { SOCIAL_PLATFORMS, type SocialPlatform } from "@/lib/zernio";
+import { TitleLines } from "@/app/title-lines";
 import { connectAccount } from "./actions";
 import { PlatformBadge } from "./platform-badge";
 
@@ -11,13 +12,30 @@ const PREVIEW: { poster: string; day: number; platform: SocialPlatform; tilt: st
   { poster: "/showcase/courtyard.jpg", day: 5, platform: "youtube", tilt: "rotate-6 translate-y-3" },
 ];
 
-// Accueil du planning tant qu'aucun réseau n'est connecté.
+// Voile sombre à gauche pour le texte, la vidéo se voit à droite.
+const VEIL = "linear-gradient(to right, rgb(8 8 12 / 0.94), rgb(8 8 12 / 0.75) 50%, rgb(8 8 12 / 0.4))";
+
+// Accueil du planning tant qu'aucun réseau n'est connecté : sur une vidéo,
+// comme les autres bandeaux.
 export async function ConnectHero() {
   const P = (await getDictionary()).planning;
   return (
-    <section className="panel mt-8 grid animate-fade-up items-center gap-8 overflow-hidden p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <section className="video-page relative isolate mt-8 grid animate-fade-up items-center gap-8 overflow-hidden rounded-[2rem] border border-white/10 bg-black p-6 sm:p-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <video
+        src="/demos/demo-19.mp4"
+        poster="/demos/demo-19.jpg"
+        muted
+        loop
+        autoPlay
+        playsInline
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-20 size-full object-cover"
+      />
+      <div aria-hidden className="absolute inset-0 -z-10" style={{ background: VEIL }} />
       <div>
-        <h2 className="font-headline text-[clamp(2.5rem,5vw,4rem)] leading-[0.88]">{P.heroTitle}</h2>
+        <h2 className="font-headline text-5xl leading-[0.95] sm:text-6xl">
+          <TitleLines text={P.heroTitle} />
+        </h2>
         <p className="mt-4 max-w-lg text-[0.9375rem] leading-relaxed text-muted">{P.heroText}</p>
         <div className="mt-7 grid max-w-lg grid-cols-2 gap-2.5">
           {SOCIAL_PLATFORMS.map((platform) => (

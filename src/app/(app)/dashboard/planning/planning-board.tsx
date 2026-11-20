@@ -43,8 +43,8 @@ const PLATFORMS: SocialPlatform[] = ["tiktok", "instagram", "youtube", "facebook
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
 
 const STATUS_STYLE: Record<BoardPost["status"], string> = {
-  scheduled: "bg-accent text-white",
-  publishing: "bg-accent text-white",
+  scheduled: "bg-text text-bg",
+  publishing: "bg-text text-bg",
   published: "bg-emerald-500 text-white",
   partial: "bg-amber-400 text-black",
   failed: "bg-rose-600 text-white",
@@ -186,7 +186,7 @@ export function PlanningBoard({
           return (
             <div key={key} className="flex flex-col gap-2">
               <p className="flex items-baseline gap-1.5 px-0.5">
-                <span className="text-xs font-semibold text-muted uppercase">{weekday}</span>
+                <span className="text-xs font-semibold text-muted first-letter:uppercase">{weekday}</span>
                 <span className={`font-headline text-xl leading-none ${slots.length ? "text-text" : "text-faint"}`}>
                   {day}
                 </span>
@@ -201,10 +201,10 @@ export function PlanningBoard({
                       type="button"
                       disabled={!enabled}
                       onClick={() => setPicking(entry.at)}
-                      className="group flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface-2/50 text-sm transition-[border-color,background-color,translate] duration-200 hover:-translate-y-0.5 hover:border-accent/50 hover:bg-surface-2 disabled:pointer-events-none disabled:opacity-50"
+                      className="group flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface-2/50 text-sm transition-[border-color,background-color,translate] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:bg-surface-2 disabled:pointer-events-none disabled:opacity-50"
                     >
                       <span className="text-xs font-semibold text-muted tabular-nums">{timeOf(entry.at)}</span>
-                      <span className="flex size-9 items-center justify-center rounded-full bg-gradient-to-b from-accent-2 to-accent text-white transition-transform group-hover:scale-105">
+                      <span className="flex size-9 items-center justify-center rounded-full bg-text text-bg transition-transform group-hover:scale-105">
                         <Plus className="size-4" />
                       </span>
                       <span className="font-medium">{P.addVideo}</span>
@@ -376,7 +376,7 @@ function SlotForm({
               webkit-playsinline=""
               disablePictureInPicture
               disableRemotePlayback
-              className="aspect-[9/16] w-full rounded-xl border-2 border-transparent bg-black object-cover transition-colors peer-checked:border-accent"
+              className="aspect-[9/16] w-full rounded-xl border-2 border-transparent bg-black object-cover transition-colors peer-checked:border-text"
             />
             <span className="mt-1 block truncate text-[0.6875rem] text-faint">{v.date}</span>
           </label>
@@ -390,7 +390,7 @@ function SlotForm({
         {usable.map((a) => (
           <label
             key={a.id}
-            className="flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface-2/60 py-1 pr-3 pl-1 text-sm has-[:checked]:border-accent/60 has-[:checked]:bg-accent-soft"
+            className="flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface-2/60 py-1 pr-3 pl-1 text-sm has-[:checked]:border-text/60 has-[:checked]:bg-accent-soft"
           >
             <input type="checkbox" name="account" value={a.id} defaultChecked={checked(a.id)} className="sr-only" />
             <PlatformBadge platform={a.platform} className="size-6" />@{a.username}
@@ -421,7 +421,7 @@ function RhythmEditor({
   const { t } = useI18n();
   const P = t.planning;
   const pill =
-    "flex cursor-pointer items-center justify-center rounded-full border border-line bg-surface-2/60 px-3 py-1.5 text-sm font-medium text-muted transition-colors has-[:checked]:border-accent/60 has-[:checked]:bg-accent-soft has-[:checked]:text-text";
+    "flex cursor-pointer items-center justify-center rounded-full border border-line bg-surface-2/60 px-3 py-1.5 text-sm font-medium text-muted transition-colors has-[:checked]:border-text/60 has-[:checked]:bg-accent-soft has-[:checked]:text-text";
   const timeInputs = Array.from({ length: MAX_PLAN_TIMES }, (_, i) => plan.times[i] ?? "");
   return (
     <form action={savePlan} className="panel mt-4 grid animate-fade-up gap-5 p-5 md:grid-cols-2">
@@ -488,7 +488,7 @@ function RhythmEditor({
           <span className="relative inline-flex shrink-0">
             <input type="checkbox" name="alertEmail" defaultChecked={plan.alertEmail} className="peer sr-only" />
             <span className="h-6 w-11 rounded-full border border-line-strong bg-surface-3 transition-colors peer-checked:border-transparent peer-checked:bg-accent peer-focus-visible:ring-2 peer-focus-visible:ring-accent/50" />
-            <span className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
+            <span className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5 peer-checked:bg-black" />
           </span>
           {P.alertEmail}
         </label>

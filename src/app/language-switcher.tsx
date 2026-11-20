@@ -52,11 +52,13 @@ export function LanguageSwitcher({ up = false }: { up?: boolean }) {
                   router.refresh();
                 });
               }}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-3"
+              aria-current={l === locale}
+              className={`flex w-full items-center gap-3 rounded-full px-3.5 py-2 text-left text-sm transition-colors ${
+                l === locale ? "bg-white font-semibold text-black" : "hover:bg-white/10"
+              }`}
             >
-              <span className="w-6 text-xs font-semibold text-muted uppercase">{l}</span>
               <span className="flex-1">{LOCALE_NAMES[l]}</span>
-              {l === locale && <Check className="size-4 text-accent-light" />}
+              {l === locale && <Check className="size-4" />}
             </button>
           ))}
         </div>

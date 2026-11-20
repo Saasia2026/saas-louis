@@ -75,6 +75,10 @@ export const fr = {
     openStudio: "Ouvrir le studio",
     studioShort: "Studio",
     start: "Commencer",
+    home: "Accueil",
+    seeExamples: "Voir les exemples",
+    nextScreen: "Écran suivant",
+    allPrices: "Toutes les offres",
     eyebrow: "Le studio premium · moteur Shinka",
     titleTop: "Ton personnage.",
     titleBottom: "Dans la vidéo.",
@@ -153,6 +157,27 @@ export const fr = {
     finalTitleTop: "Ta prochaine vidéo",
     finalTitleBottom: "commence par un clip.",
     startFree: "Créer mon compte",
+  },
+
+  offerBar: {
+    chip: "Offre annuelle",
+    text: "Abonnement annuel : jusqu'à {off} sur tes crédits.",
+    short: "Annuel : jusqu'à {off}",
+    cta: "Voir l'offre",
+    close: "Masquer l'offre",
+  },
+  offers: {
+    label: "Offre",
+    close: "Fermer",
+    signupTitle: "Ton compte, tes crédits offerts.",
+    subsTitle: "Moins cher, en abonnement.",
+    packTitle: "{credits} crédits, +{bonus} offerts.",
+    packFigure: "crédits offerts",
+    bestKicker: "Notre meilleure offre",
+    savingTitle: "Jusqu'à {amount} économisés, chaque année.",
+    savingText: "{plan} en annuel : {credits} crédits par mois, face aux mêmes crédits en recharges.",
+    savingCta: "Voir l'abonnement annuel",
+    later: "Plus tard",
   },
 
   login: {
@@ -280,6 +305,11 @@ export const fr = {
   },
 
   influencer: {
+    headline: "Crée ton influenceur, en une image.",
+    tabExamples: "Exemples",
+    tabMine: "Mes influenceurs",
+    createCircle: "Créer un influenceur",
+    mineEmpty: "Tes influenceurs apparaîtront ici.",
     eyebrow: "Personnages",
     title: "Influenceur IA",
     intro: "Crée ton personnage en une image, puis mets-le dans n'importe quelle vidéo depuis le studio.",
@@ -433,6 +463,15 @@ export const fr = {
   },
 
   studio: {
+    yourPrompt: "Ton prompt",
+    references: "Tes références",
+    makingEyebrow: "En fabrication",
+    makingTop: "Ton personnage",
+    makingBottom: "entre en scène.",
+    doneEyebrow: "Terminé",
+    doneTop: "Ta vidéo",
+    doneBottom: "est prête.",
+    elapsed: "écoulées",
     createTitle: "Créer une vidéo",
     poweredByLabel: "Moteur",
     modelLabel: "Modèle",
@@ -635,6 +674,14 @@ export const fr = {
     tooLong: "C'est plus long que prévu. Reviens dans quelques minutes : la vidéo sera dans Mes vidéos.",
   },
 
+  notFound: {
+    eyebrow: "Erreur 404",
+    titleTop: "Rien ici.",
+    titleBottom: "La scène a été coupée.",
+    text: "Cette page n'existe pas ou n'existe plus.",
+    home: "Retour à l'accueil",
+    studio: "Ouvrir le studio",
+  },
   terms: {
     eyebrow: "Conditions",
     title: "Conditions d'utilisation",

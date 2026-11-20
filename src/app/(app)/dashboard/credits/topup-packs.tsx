@@ -14,7 +14,7 @@ import {
   type CreditPack,
 } from "@/lib/credit-packs";
 import { buyCredits, buyWithSavedCard } from "./actions";
-import { LIME, LIME_PILL } from "./pricing-look";
+import c from "./credits.module.css";
 
 type Card = { brand: string; last4: string } | null;
 
@@ -36,37 +36,39 @@ export function TopupPacks({ card, nonce, enabled }: { card: Card; nonce: string
   return (
     <div className="space-y-5">
       {/* Grand format au curseur. */}
-      <div className="rounded-[1.75rem] border border-line bg-surface p-6 sm:p-8">
+      <div className={c.big}>
+        <video src="/demos/demo-11.mp4" poster="/demos/demo-11.jpg" muted loop autoPlay playsInline aria-hidden />
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h3 className="font-headline text-4xl leading-none tabular-nums sm:text-5xl">
-                {n(big.credits)} {t.common.credits}
-              </h3>
-              <span className="rounded-md border border-line-strong bg-surface-2 px-2 py-0.5 text-xs font-bold">{P.bestValue}</span>
-              {packOff(big) > 0 && <span className={LIME_PILL}>{fmt(P.off, { pct: packOff(big) })}</span>}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`${c.badge} ${c.badgeSolid}`}>{P.bestValue}</span>
+              {packOff(big) > 0 && <span className={c.badge}>{fmt(P.off, { pct: packOff(big) })}</span>}
             </div>
+            <h3 className={`${c.bigTitle} mt-3`}>
+              {n(big.credits)} <em>{t.common.credits}</em>
+            </h3>
           </div>
           <div className="text-right">
             <p className="flex items-baseline justify-end gap-3">
-              <span className="font-headline text-2xl text-faint line-through decoration-2">{price(packReference(big))}</span>
-              <span className="font-headline text-4xl leading-none tabular-nums sm:text-5xl">{price(big.amount)}</span>
+              <span className={c.ref}>{price(packReference(big))}</span>
+              <span className={c.bigPrice}>{price(big.amount)}</span>
             </p>
-            <p className="mt-2 text-sm text-muted tabular-nums">{fmt(P.per100, { price: price(per100(big)) })}</p>
+            <p className={`${c.muted} mt-2 text-sm tabular-nums`}>{fmt(P.per100, { price: price(per100(big)) })}</p>
           </div>
         </div>
 
         <div className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-end">
           <div className="min-w-0 flex-1">
             {/* Repères au-dessus de chaque cran, alignés sur les points. */}
-            <div className="relative mx-[22px] h-5 text-xs font-semibold text-muted tabular-nums sm:text-sm">
+            <div className={`${c.ticks} relative mx-[22px] h-5 text-xs font-semibold tabular-nums sm:text-sm`}>
               {SLIDER_PACKS.map((p, i) => (
                 <button
                   key={p.id}
                   type="button"
                   onClick={() => setIndex(i)}
+                  aria-current={i === index}
                   style={{ left: `${(i / LAST) * 100}%` }}
-                  className={`absolute top-0 -translate-x-1/2 transition-colors ${i === index ? "text-text" : "hover:text-text"} ${
+                  className={`absolute top-0 -translate-x-1/2 ${
                     i % 2 === 1 && i !== LAST ? "max-sm:hidden" : ""
                   }`}
                 >
@@ -76,7 +78,7 @@ export function TopupPacks({ card, nonce, enabled }: { card: Card; nonce: string
             </div>
             <Slider index={index} setIndex={setIndex} label={P.sliderLabel} valueText={`${n(big.credits)} ${t.common.credits}`} />
           </div>
-          <BuyButton pack={big} card={card} nonce={nonce} enabled={enabled} />
+          <BuyButton pack={big} card={card} nonce={nonce} enabled={enabled} light />
         </div>
       </div>
 
@@ -88,34 +90,31 @@ export function TopupPacks({ card, nonce, enabled }: { card: Card; nonce: string
           return (
             <li
               key={pack.id}
-              className={`flex flex-col rounded-[1.75rem] border p-6 sm:p-7 ${featured ? "border-[#c8f04a]/50" : "border-line bg-surface"}`}
-              style={
-                featured
-                  ? {
-                      background:
-                        "linear-gradient(180deg, color-mix(in oklab, #c8f04a 10%, var(--surface)) 0%, color-mix(in oklab, #c8f04a 28%, var(--surface)) 100%)",
-                      boxShadow: "0 0 0 1px rgb(200 240 74 / 0.25), 0 20px 60px -30px rgb(200 240 74 / 0.6)",
-                    }
-                  : undefined
-              }
+              className={`flex flex-col rounded-[1.75rem] border p-6 transition-transform duration-300 hover:-translate-y-1 sm:p-7 ${
+                featured ? "border-transparent bg-text text-bg" : "border-line bg-surface"
+              }`}
             >
               <div className="flex flex-wrap items-center gap-2.5">
                 <h3 className="font-headline text-3xl leading-none tabular-nums sm:text-4xl">
-                  {n(pack.credits)} {t.common.credits}
+                  {n(pack.credits)} <span className="text-shine text-inherit">{t.common.credits}</span>
                 </h3>
-                {off > 0 && <span className={LIME_PILL}>{fmt(P.off, { pct: off })}</span>}
+                {off > 0 && (
+                  <span className={`rounded-full border px-2 py-0.5 text-xs font-bold tabular-nums ${featured ? "border-bg/30" : "border-line-strong"}`}>
+                    {fmt(P.off, { pct: off })}
+                  </span>
+                )}
               </div>
               <div className="mt-8 flex flex-wrap items-end justify-between gap-4 sm:mt-auto sm:pt-10">
                 <div>
                   <p className="flex items-baseline gap-2.5">
                     <span className="font-headline text-3xl leading-none tabular-nums">{price(pack.amount)}</span>
                     {off > 0 && (
-                      <span className="font-headline text-xl text-faint line-through decoration-2">{price(packReference(pack))}</span>
+                      <span className="font-headline text-xl line-through decoration-2 opacity-45">{price(packReference(pack))}</span>
                     )}
                   </p>
-                  <p className="mt-1.5 text-sm text-muted tabular-nums">{fmt(P.per100, { price: price(per100(pack)) })}</p>
+                  <p className="mt-1.5 text-sm tabular-nums opacity-65">{fmt(P.per100, { price: price(per100(pack)) })}</p>
                 </div>
-                <BuyButton pack={pack} card={card} nonce={nonce} enabled={enabled} />
+                <BuyButton pack={pack} card={card} nonce={nonce} enabled={enabled} inverted={featured} />
               </div>
             </li>
           );
@@ -147,25 +146,15 @@ function Slider({
 }) {
   const at = (i: number) => `calc(${KNOB / 2}px + (100% - ${KNOB}px) * ${i / LAST})`;
   return (
-    <div className="relative mt-3 h-11 rounded-full bg-surface-3 shadow-[inset_0_1px_3px_rgb(0_0_0/0.35)]">
+    <div className={c.track}>
       {/* Remplissage jusqu'au bord droit de la poignée. */}
-      <div
-        aria-hidden
-        className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-200 ease-out"
-        style={{
-          width: `calc(${at(index)} + ${KNOB / 2}px)`,
-          background: `linear-gradient(90deg, #8fae22 0%, ${LIME} 100%)`,
-          boxShadow: "0 0 24px -6px rgb(200 240 74 / 0.6)",
-        }}
-      />
+      <div aria-hidden className={c.fill} style={{ width: `calc(${at(index)} + ${KNOB / 2}px)` }} />
       {SLIDER_PACKS.map((p, i) => (
         <span
           key={p.id}
           aria-hidden
-          className={`absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full transition-colors ${
-            i <= index ? "bg-black/35" : "bg-text/25"
-          }`}
-          style={{ left: at(i) }}
+          className={c.notch}
+          style={{ left: at(i), background: i <= index ? "rgb(12 12 16 / 0.35)" : "rgb(255 255 255 / 0.3)" }}
         />
       ))}
       <input
@@ -179,11 +168,7 @@ function Slider({
         aria-valuetext={valueText}
         className="peer absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none bg-transparent opacity-0 [&::-moz-range-thumb]:size-11 [&::-webkit-slider-thumb]:size-11 [&::-webkit-slider-thumb]:appearance-none"
       />
-      <span
-        aria-hidden
-        className="pointer-events-none absolute top-0 grid size-11 -translate-x-1/2 place-items-center rounded-full bg-white text-[#141a05] shadow-[0_4px_14px_rgb(0_0_0/0.35)] transition-[left] duration-200 ease-out peer-focus-visible:ring-4 peer-focus-visible:ring-[#c8f04a]/50"
-        style={{ left: at(index) }}
-      >
+      <span aria-hidden className={c.knob} style={{ left: at(index) }}>
         <ChevronsLeftRight className="size-5" strokeWidth={2.5} />
       </span>
     </div>
@@ -191,12 +176,31 @@ function Slider({
 }
 
 // Achat : en un clic avec la carte enregistrée, sinon page de paiement Stripe.
-function BuyButton({ pack, card, nonce, enabled }: { pack: CreditPack; card: Card; nonce: string; enabled: boolean }) {
+// `light` : sur la carte sombre de la grande recharge ; `inverted` : sur la
+// carte claire mise en avant.
+function BuyButton({
+  pack,
+  card,
+  nonce,
+  enabled,
+  light = false,
+  inverted = false,
+}: {
+  pack: CreditPack;
+  card: Card;
+  nonce: string;
+  enabled: boolean;
+  light?: boolean;
+  inverted?: boolean;
+}) {
   const { t } = useI18n();
   const P = t.creditsPage;
   const brand = card ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : "";
-  const cls =
-    "btn shrink-0 rounded-full border border-line-strong bg-surface-2 px-6 py-3 text-base font-semibold hover:bg-surface-3";
+  const cls = light
+    ? c.buyLight
+    : inverted
+      ? "btn shrink-0 bg-bg px-6 py-3 text-base text-text hover:opacity-90"
+      : "btn btn-accent shrink-0 px-6 py-3 text-base";
   if (!card) {
     return (
       <form action={buyCredits}>
@@ -218,7 +222,7 @@ function BuyButton({ pack, card, nonce, enabled }: { pack: CreditPack; card: Car
       </form>
       <form action={buyCredits}>
         <input type="hidden" name="pack" value={pack.id} />
-        <button type="submit" disabled={!enabled} className="text-xs text-muted hover:text-text">
+        <button type="submit" disabled={!enabled} className={light ? c.otherLight : "text-xs opacity-65 hover:opacity-100"}>
           {P.otherCard}
         </button>
       </form>

@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { BackdropPhoto } from "@/app/backdrop-photo";
 import { LanguageSwitcher } from "@/app/language-switcher";
-import { Logo } from "@/app/logo";
-import { VideoWall } from "@/app/video-wall";
-import { ThemeToggle } from "@/app/theme-toggle";
 import { getDictionary } from "@/i18n/server";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { stripeEnabled } from "@/lib/stripe";
@@ -20,7 +19,8 @@ export const maxDuration = 120;
 
 // Tunnel d'accueil d'un nouvel inscrit : quelques questions sur ce qu'il
 // veut faire, puis l'offre qui lui correspond. Il peut le passer (« Plus
-// tard ») ; une fois vu, il ne revient plus.
+// tard ») ; une fois vu, il ne revient plus. Posé sur une vidéo plein cadre,
+// comme la landing et la connexion.
 export default async function WelcomePage(props: PageProps<"/welcome">) {
   const { next: nextParam } = await props.searchParams;
   const next = safeNextPath(nextParam, "/dashboard/generate");
@@ -36,18 +36,15 @@ export default async function WelcomePage(props: PageProps<"/welcome">) {
   if (profile?.onboarded_at) redirect(next);
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
-      <VideoWall />
-      <header className="topbar-shell z-20">
-        <div className="topbar pointer-events-auto mx-auto max-w-7xl gap-3 py-1.5 pr-2 pl-4">
-          <Logo href={next} className="min-w-0 shrink" />
-          <div className="ml-auto flex shrink-0 items-center">
-            <ThemeToggle />
-            <LanguageSwitcher />
-          </div>
-        </div>
+    <div className="video-page relative isolate flex min-h-dvh min-w-0 flex-1 flex-col overflow-x-clip">
+      <BackdropPhoto src="/photos/shelves.jpg" focus="50% 20%" />
+      <header className="flex items-center justify-between px-5 pt-5 sm:px-8 lg:px-12" style={{ paddingTop: "calc(1.25rem + env(safe-area-inset-top))" }}>
+        <Link href={next} className="font-wide text-[0.95rem] tracking-wide uppercase">
+          TwinPost
+        </Link>
+        <LanguageSwitcher />
       </header>
-      <main className="relative isolate min-w-0 flex-1 px-4 py-10 sm:px-8 sm:py-16">
+      <main className="relative min-w-0 flex-1 px-5 py-8 sm:px-8 sm:py-12 lg:px-12">
         <Funnel
           next={next}
           paymentsEnabled={stripeEnabled()}

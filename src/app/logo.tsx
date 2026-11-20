@@ -1,26 +1,29 @@
 import Link from "next/link";
-import { LogoMark } from "./logo-mark";
 
+// Logo du site : le nom seul, en capitales larges et blanches, comme dans le
+// menu latéral et sur la landing. Plus de pictogramme.
 export function Logo({
   href = "/",
   className = "",
-  compact = false,
 }: {
   href?: string;
   className?: string;
-  // Barre chargée : le nom n'apparaît qu'à partir des écrans moyens.
   compact?: boolean;
 }) {
   return (
-    <Link href={href} aria-label="TwinPost" className={`group inline-flex items-center gap-2 ${className}`}>
-      <LogoMark className="size-8 shrink-0" />
-      <span
-        className={`hidden font-wide text-[0.95rem] uppercase tracking-tight ${
-          compact ? "sm:inline" : "min-[360px]:inline"
-        }`}
-      >
-        TwinPost
-      </span>
+    <Link
+      href={href}
+      aria-label="TwinPost"
+      className={`inline-flex items-center text-white uppercase ${className}`}
+      style={{
+        fontFamily: 'var(--font-archivo), "Helvetica Neue", Arial, sans-serif',
+        fontWeight: 900,
+        fontStretch: "125%",
+        fontSize: "1rem",
+        letterSpacing: "0.02em",
+      }}
+    >
+      TwinPost
     </Link>
   );
 }

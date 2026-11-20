@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CirclePlay, Coins, Download, Film, History, Loader2, MonitorPlay, RefreshCw, TriangleAlert, WandSparkles, X } from "lucide-react";
+import { CalendarClock, Check, CirclePlay, Coins, Download, Film, History, Loader2, MonitorPlay, RefreshCw, Sparkles, TriangleAlert, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fmt, INTL_LOCALES, plural } from "@/i18n/config";
@@ -31,7 +31,7 @@ import {
 import type { SwapPreset } from "@/lib/presets";
 import type { SwapHistoryItem } from "../swap-history";
 import { getGeneration, type GenerationView } from "./actions";
-import { ResultStage, StageAction } from "./result-stage";
+import { ResultStage } from "./result-stage";
 import { clearDraft, loadDraft, saveDraft, type DraftFile } from "./draft";
 import { ExamplesPanel } from "./examples-panel";
 import { HistoryEmpty, HistoryList } from "./history-list";
@@ -49,6 +49,11 @@ import {
 } from "./studio-controls";
 import { StylePicker, type StudioStyle } from "./style-picker";
 import { SwapInput, keptSeconds, readDuration, uploadSwapFile, type SwapFile } from "./swap-input";
+import { askBotsToAnalyze } from "../../bots/bots-state";
+import Link from "next/link";
+import { PromptText, RefStrip } from "../generation-details";
+import R from "./result.module.css";
+import L from "./studio-layout.module.css";
 
 const POLL_INTERVAL_MS = 5_000;
 // Durée annoncée d'un rendu. Les séquences se rendent en même temps (quelques
@@ -596,13 +601,10 @@ export function Studio({
         e.preventDefault();
         launch();
       }}
-      className="composer overflow-hidden"
+      className={`composer overflow-hidden ${L.composer}`}
     >
-      <div className="space-y-3 px-4 pt-4">
+      <div className={L.tabs}>
         <h1 className="sr-only">{t.studio.createTitle}</h1>
-        <ModelCard name={modelName(model)} tagline={modelTagline(model)} changeLabel={t.studio.changeModel}>
-          {modelOptions}
-        </ModelCard>
         <ModeTabs
           value={mode}
           onChange={changeMode}
@@ -617,6 +619,8 @@ export function Studio({
           }}
         />
       </div>
+      <div className={L.body}>
+      <div className="min-w-0">
       <SwapInput
         userId={userId}
         video={video}
@@ -685,10 +689,36 @@ export function Studio({
           </VisibleVideos>
         </div>
       )}
+      </div>
+      <div className={L.engine}>
+        <ModelCard name={modelName(model)} tagline={modelTagline(model)} changeLabel={t.studio.changeModel}>
+          {modelOptions}
+        </ModelCard>
+      </div>
+      </div>
 
-      {/* Réglages : une ligne par choix, son menu s'ouvre à côté du panneau ;
-          chaque option affiche son tarif, qui suit les autres réglages. */}
-      <div className="space-y-2 px-4 pt-2 pb-4">
+      {/* Messages avant le lancement, au-dessus de la barre du bas. */}
+      <div className={`${L.notes} space-y-1.5 pt-3`}>
+        {restoring && <p className="text-xs text-muted">{t.studio.restoring}</p>}
+        {video && imagesReady && short && (
+          <p className="text-xs text-danger">{fmt(t.studio.notEnoughCredits, { n: gate - credits })}</p>
+        )}
+        {byCard && (
+          <p className="text-xs text-muted">
+            {fmt(t.studio.payByCard, {
+              n: gate - credits,
+              price: formatPrice(usageCharge(gate - credits).amount, INTL_LOCALES[locale]),
+            })}
+          </p>
+        )}
+        {durationKnown && seconds > 15 && <p className="text-xs text-warning">{t.studio.longClipWarning}</p>}
+        {missing && !restoring && <p className="text-xs text-muted">{missing}</p>}
+      </div>
+
+      {/* Barre du bas : réglages (leur menu affiche les tarifs) et le
+          bouton, prix compris. */}
+      <div className={L.foot}>
+        <div className={L.setting}>
         <SettingRow
           label={t.studio.modelLabel}
           value={
@@ -700,6 +730,8 @@ export function Studio({
         >
           {modelOptions}
         </SettingRow>
+        </div>
+        <div className={L.setting}>
         <SettingRow label={t.studio.qualityLabel} value={quality}>
           {(close) =>
             STUDIO_QUALITIES.map((q) => (
@@ -717,23 +749,8 @@ export function Studio({
             ))
           }
         </SettingRow>
-      </div>
-
-      <div className="border-t border-line px-4 pt-3 pb-4">
-        {restoring && <p className="mb-3 text-xs text-muted">{t.studio.restoring}</p>}
-        {video && imagesReady && short && (
-          <p className="mb-3 text-xs text-danger">{fmt(t.studio.notEnoughCredits, { n: gate - credits })}</p>
-        )}
-        {byCard && (
-          <p className="mb-3 text-xs text-muted">
-            {fmt(t.studio.payByCard, {
-              n: gate - credits,
-              price: formatPrice(usageCharge(gate - credits).amount, INTL_LOCALES[locale]),
-            })}
-          </p>
-        )}
-        {durationKnown && seconds > 15 && <p className="mb-3 text-xs text-warning">{t.studio.longClipWarning}</p>}
-        {missing && !restoring && <p className="mb-3 text-xs text-muted">{missing}</p>}
+        </div>
+        <div className={L.launch}>
         {/* Le prix est dans le bouton : rien d'autre à lire avant de lancer. */}
         <button
           type="submit"
@@ -741,7 +758,7 @@ export function Studio({
           title={
             video ? fmt(t.studio.costFrom, { cost, credits: plural(cost, t.common.credit, t.common.credits) }) : undefined
           }
-          className="btn btn-accent w-full py-3.5 text-base"
+          className="btn btn-accent"
         >
           {launching ? <Loader2 className="animate-spin" /> : <WandSparkles />}
           {t.studio.launch}
@@ -752,6 +769,7 @@ export function Studio({
             </span>
           )}
         </button>
+        </div>
       </div>
     </form>
   );
@@ -760,31 +778,34 @@ export function Studio({
   const shownId = phase.kind === "generating" || phase.kind === "done" ? phase.id : null;
   const pastItems = history.filter((item) => item.id !== shownId);
 
-  // Deux colonnes : la création à gauche (fixe au défilement), le rendu en
-  // cours puis les onglets à droite (historique, exemples, démo). Sur
-  // mobile, l'une sous l'autre.
+  // Le générateur, large et centré ; dessous, sur toute la largeur, le rendu
+  // en cours puis les onglets (historique, exemples, démo).
   return (
     <>
     {launched && (
       <div className="fixed inset-x-0 top-4 z-50 flex justify-center animate-fade-up pointer-events-none">
-        <div className="topbar pointer-events-auto gap-2 px-4 py-2.5 text-sm font-medium">
-          <Check className="size-4 text-accent" />
+        <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-[0_20px_50px_-15px_rgb(0_0_0/0.7)]">
+          <Check className="size-4" />
           {t.studio.launched}
         </div>
       </div>
     )}
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
-      <aside className="relative z-20 animate-fade-up lg:sticky lg:top-24 lg:-mx-3 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:px-3 lg:pb-3 lg:[scrollbar-width:none]">
-        {composer}
-      </aside>
+    <div className={L.page}>
+      <div className="relative z-20 animate-fade-up">{composer}</div>
 
-      <section ref={resultEnd} className="min-w-0 scroll-mt-24 space-y-3">
+      <section ref={resultEnd} className={`${L.below} scroll-mt-24 space-y-3`}>
         {started && (
           <Result
             phase={phase}
             credits={credits}
             sourcePreview={video?.previewUrl}
             characterPreview={images[0]?.previewUrl}
+            prompt={prompt}
+            references={{
+              clip: video ? { path: video.path, url: video.previewUrl } : undefined,
+              refs: images.map((img) => ({ path: img.path, url: img.previewUrl })),
+              decor: decorPhoto ? { path: decorPhoto.path, url: decorPhoto.previewUrl } : undefined,
+            }}
             onReset={() => setPhase({ kind: "idle" })}
             onRedo={redo}
             onCancel={cancel}
@@ -828,6 +849,8 @@ function Result({
   credits,
   sourcePreview,
   characterPreview,
+  prompt = "",
+  references,
   onReset,
   onRedo,
   onCancel,
@@ -835,195 +858,265 @@ function Result({
   phase: Exclude<Phase, { kind: "idle" }>;
   credits: number;
   // Aperçus locaux (blob:) du clip et du personnage en cours : pendant le
-  // rendu, le clip joue tamisé sous la ligne de scan et la photo du
-  // personnage annonce ce qui est en train de naître. Absents à la reprise
-  // d'un rendu après rechargement de la page.
+  // rendu, le clip joue tamisé et la photo du personnage annonce ce qui est
+  // en train de naître. Absents à la reprise d'un rendu après rechargement.
   sourcePreview?: string;
   characterPreview?: string;
+  // Ce qui a servi au rendu, affiché une fois la vidéo prête : le prompt
+  // et les références (clip, images, lieu).
+  prompt?: string;
+  references?: Pick<SwapHistoryItem, "clip" | "refs" | "decor">;
   onReset: () => void;
   // Refait une séquence d'un remplacement terminé.
   onRedo: (index: number) => void;
   onCancel: () => Promise<void>;
 }) {
   const { t } = useI18n();
-  const aspectRatio = phase.kind === "error" ? "9:16" : phase.job.aspectRatio;
   const [cancelling, setCancelling] = useState(false);
-  // Pas pendant le montage : trop tard, la vidéo arrive.
-  const cancellable =
-    phase.kind === "generating" && Boolean(phase.id) && phase.view?.stage !== "assembling";
 
-  const actions = (
-    <>
-      {phase.kind === "done" && (
-        <StageAction icon={Download} label={t.studio.download} href={phase.view.downloadUrl ?? phase.view.mediaUrl} />
-      )}
-      {cancellable && (
-        <StageAction
-          icon={X}
-          label={t.studio.cancel}
-          disabled={cancelling}
-          onClick={async () => {
-            setCancelling(true);
-            await onCancel().finally(() => setCancelling(false));
-          }}
-        />
-      )}
-      {phase.kind !== "generating" && <StageAction icon={RefreshCw} label={t.studio.newVideo} onClick={onReset} />}
-    </>
-  );
-
-  return (
-    <section className="panel animate-fade-up overflow-hidden">
-      {phase.kind === "error" ? (
-        <div className="flex flex-col items-center gap-4 p-6">
-          <div
-            role="alert"
-            className="my-4 flex max-w-md items-start gap-3 rounded-2xl bg-danger/10 px-4 py-3 text-sm text-danger"
-          >
+  // Scène du rendu, au style de la landing : l'image à gauche, à droite le
+  // titre en deux temps, la fabrication (chrono, étapes) puis les actions.
+  if (phase.kind === "error") {
+    return (
+      <section className={`${R.card} animate-fade-up`}>
+        <div className="flex flex-col items-start gap-5 p-6 sm:p-8">
+          <div role="alert" className="flex max-w-xl items-start gap-3 rounded-2xl bg-danger/10 px-4 py-3 text-sm text-danger">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" />
             <p>{phase.message}</p>
           </div>
-          <button type="button" onClick={onReset} className="btn btn-secondary">
+          <button type="button" onClick={onReset} className="btn btn-accent">
             <RefreshCw />
             {t.studio.newVideo}
           </button>
         </div>
-      ) : (
-        <ResultStage
-          // Nouvelle scène par rendu : le fondu rejoue pour chaque vidéo.
-          key={phase.id}
-          aspectRatio={aspectRatio}
-          mediaUrl={phase.kind === "done" ? phase.view.mediaUrl : undefined}
-          backdrop={sourcePreview}
-          actions={actions}
-          overlay={
-            phase.kind === "generating" && (
-              <div className="relative flex w-full flex-col items-center gap-3 px-5 text-center text-sm">
-                {characterPreview ? (
-                  // Aperçu local (blob:) : pas d'optimisation Next.
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={characterPreview}
-                    alt=""
-                    className="size-14 rounded-xl border border-white/25 object-cover shadow-[0_12px_32px_-8px_rgb(0_0_0/0.8)]"
-                  />
-                ) : (
-                  <span className="size-9 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
-                )}
-                <ProgressLabel phase={phase} />
-              </div>
-            )
-          }
-        />
-      )}
+      </section>
+    );
+  }
 
-      {phase.kind === "done" && phase.view.unreplaced > 0 && (
-        <p className="border-t border-line px-4 py-3 text-sm text-amber-300">
-          {fmt(t.studio.incomplete, {
-            done: phase.view.shotsTotal - phase.view.unreplaced,
-            total: phase.view.shotsTotal,
-          })}
-        </p>
-      )}
+  const making = phase.kind === "generating";
+  // Pas pendant le montage : trop tard, la vidéo arrive.
+  const cancellable = making && Boolean(phase.id) && phase.view?.stage !== "assembling";
+  // Ambiance : la vidéo (ou le clip pendant la fabrication), très floue,
+  // éclaire toute la carte.
+  const ambient = phase.kind === "done" ? phase.view.mediaUrl : sourcePreview;
+  const settings = phase.kind === "done" ? phase.view.settings : undefined;
 
-      {phase.kind === "done" && phase.view.notice && (
-        <p className="border-t border-line px-4 py-3 text-sm text-amber-300">{phase.view.notice}</p>
+  return (
+    <section className={`${R.card} animate-fade-up`}>
+      {ambient && (
+        <video key={ambient} src={ambient} muted loop autoPlay playsInline aria-hidden className={R.ambient} />
       )}
-
-      {phase.kind === "done" && phase.view.parts.length > 1 && (
-        <div className="border-t border-line px-4 py-3">
-          <p className="mb-2 text-xs text-muted">
-            {phase.view.engine === "genjutsu" ? t.studio.redoSequenceTitle : t.studio.redoTitle}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {phase.view.parts.map((part, i) => {
-              const sequence = phase.view.engine === "genjutsu";
-              const cost = swapShotCredits(
-                part.seconds,
-                phase.view.engine,
-                phase.view.settings,
-                phase.view.face,
-              );
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  disabled={credits < cost}
-                  onClick={() => onRedo(i)}
-                  title={fmt(sequence ? t.studio.redoSequence : t.studio.redo, {
-                    n: i + 1,
-                    cost,
-                    credits: plural(cost, t.common.credit, t.common.credits),
-                  })}
-                  className={`chip ${part.flagged ? "border-amber-500/60 text-amber-300" : ""}`}
-                >
-                  {fmt(sequence ? t.studio.sequence : t.studio.shot, { n: i + 1 })} ·{" "}
-                  {part.start.toFixed(1)}–
-                  {(part.start + part.seconds).toFixed(1)} s
-                  {part.flagged && ` · ${part.reason ?? t.studio.shotFlagged}`}
-                </button>
-              );
-            })}
-          </div>
+      <span aria-hidden className={R.veil} />
+      <div className={R.grid}>
+        <div className="min-w-0">
+          <ResultStage
+            // Nouvelle scène par rendu : le fondu rejoue pour chaque vidéo.
+            key={phase.id}
+            aspectRatio={phase.job.aspectRatio}
+            mediaUrl={phase.kind === "done" ? phase.view.mediaUrl : undefined}
+            backdrop={sourcePreview}
+            overlay={
+              making && (
+                <div className={R.making}>
+                  {characterPreview && (
+                    // Aperçu local (blob:) : pas d'optimisation Next.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={characterPreview} alt="" className={R.portrait} />
+                  )}
+                  <span aria-hidden className={R.scan} />
+                </div>
+              )
+            }
+          />
         </div>
-      )}
 
+        <aside className={R.side}>
+          <div>
+            <p className="eyebrow">{making ? t.studio.makingEyebrow : t.studio.doneEyebrow}</p>
+            <h2 className={`${R.title} mt-3`}>
+              {making ? t.studio.makingTop : t.studio.doneTop} <em>{making ? t.studio.makingBottom : t.studio.doneBottom}</em>
+            </h2>
+          </div>
+
+          {making ? (
+            <Process phase={phase} />
+          ) : (
+            <>
+              <ul className={R.facts}>
+                <li>{fmt(t.videos.seconds, { seconds: phase.job.durationSeconds })}</li>
+                {settings?.quality && <li>{settings.quality}</li>}
+                <li>{phase.job.aspectRatio}</li>
+                {settings?.model && <li>{settings.model === "max" ? t.studio.modelMax : t.studio.modelStandard}</li>}
+              </ul>
+              {phase.view.unreplaced > 0 && (
+                <p className={R.note}>
+                  {fmt(t.studio.incomplete, {
+                    done: phase.view.shotsTotal - phase.view.unreplaced,
+                    total: phase.view.shotsTotal,
+                  })}
+                </p>
+              )}
+              {phase.view.notice && <p className={R.note}>{phase.view.notice}</p>}
+              <div className={R.block}>
+                <p className={R.label}>{t.studio.yourPrompt}</p>
+                <PromptText prompt={prompt} />
+              </div>
+              {references && (references.clip || references.refs.length > 0 || references.decor) && (
+                <div className={R.block}>
+                  <p className={R.label}>{t.studio.references}</p>
+                  <RefStrip item={references} />
+                </div>
+              )}
+              {phase.view.parts.length > 1 && (
+                <details className={R.redo}>
+                  <summary>{phase.view.engine === "genjutsu" ? t.studio.redoSequenceTitle : t.studio.redoTitle}</summary>
+                  {phase.view.parts.map((part, i) => {
+                    const sequence = phase.view.engine === "genjutsu";
+                    const cost = swapShotCredits(part.seconds, phase.view.engine, phase.view.settings, phase.view.face);
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        disabled={credits < cost}
+                        onClick={() => onRedo(i)}
+                        title={fmt(sequence ? t.studio.redoSequence : t.studio.redo, {
+                          n: i + 1,
+                          cost,
+                          credits: plural(cost, t.common.credit, t.common.credits),
+                        })}
+                        className={part.flagged ? R.flagged : undefined}
+                      >
+                        <span className="min-w-0 truncate">
+                          {fmt(sequence ? t.studio.sequence : t.studio.shot, { n: i + 1 })} · {part.start.toFixed(1)}–
+                          {(part.start + part.seconds).toFixed(1)} s{part.flagged && ` · ${part.reason ?? t.studio.shotFlagged}`}
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1 tabular-nums opacity-70">
+                          <RefreshCw className="size-3.5" />
+                          {cost}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </details>
+              )}
+            </>
+          )}
+
+          <div className={R.actions}>
+            {phase.kind === "done" && (
+              <>
+                <a href={phase.view.downloadUrl ?? phase.view.mediaUrl} className="btn btn-accent">
+                  <Download />
+                  {t.studio.download}
+                </a>
+                <div className={R.pair}>
+                  <button
+                    type="button"
+                    onClick={() => askBotsToAnalyze(phase.id, phase.view.mediaUrl)}
+                    title={t.viral.analyzeHint}
+                    className="btn btn-secondary"
+                  >
+                    <Sparkles />
+                    {t.viral.analyzeShort}
+                  </button>
+                  <Link href="/dashboard/planning" title={t.shell.navHint.planning} className="btn btn-secondary">
+                    <CalendarClock />
+                    {t.shell.nav.planning}
+                  </Link>
+                </div>
+              </>
+            )}
+            {cancellable && (
+              <button
+                type="button"
+                disabled={cancelling}
+                onClick={async () => {
+                  setCancelling(true);
+                  await onCancel().finally(() => setCancelling(false));
+                }}
+                className="btn btn-secondary"
+              >
+                <X />
+                {t.studio.cancel}
+              </button>
+            )}
+            {!making && (
+              <button type="button" onClick={onReset} className="btn btn-ghost">
+                <RefreshCw />
+                {t.studio.newVideo}
+              </button>
+            )}
+          </div>
+        </aside>
+      </div>
     </section>
   );
 }
 
-function ProgressLabel({ phase }: { phase: Extract<Phase, { kind: "generating" }> }) {
+// Fabrication en cours : un chrono, une barre (remplie quand l'avancée est
+// connue, sinon un trait qui court), le délai annoncé, et les quatre étapes
+// qui se cochent l'une après l'autre.
+function Process({ phase }: { phase: Extract<Phase, { kind: "generating" }> }) {
   const { t } = useI18n();
   const view = phase.view;
   // Passé le délai annoncé depuis que le créateur regarde ce rendu, on le dit
   // plutôt que de répéter la même estimation.
   const minutes = genjutsuMinutes(phase.job.durationSeconds) * (phase.job.vessel ? 2 : 1);
-  const [late, setLate] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
-    const timer = setTimeout(() => setLate(true), minutes * 60_000);
-    return () => clearTimeout(timer);
-  }, [minutes]);
-  if (view?.stage === "assembling") return <span>{t.studio.assembling}</span>;
+    const start = Date.now();
+    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [phase.id]);
+  const late = elapsed > minutes * 60;
+  const assembling = view?.stage === "assembling";
 
-  // Kling : images clés des plans, puis vidéo et contrôle de chacun.
-  if (view && view.engine === "kling" && view.shotsTotal > 0) {
+  // Avancée connue : images clés puis plans (Kling), ou séquences (Shinka).
+  let progress: number | null = null;
+  let label = t.studio.swapping;
+  if (assembling) {
+    label = t.studio.assembling;
+  } else if (view && view.engine === "kling" && view.shotsTotal > 0) {
     const keyframes = view.framesDone < view.shotsTotal;
     const done = keyframes ? view.framesDone : view.shotsDone;
-    const progress = (done / view.shotsTotal / 2 + (keyframes ? 0 : 0.5)) * 100;
-    return (
-      <span className="w-full">
-        {keyframes ? t.studio.keyframes : t.studio.shots} · {done}/{view.shotsTotal}
-        <span className="mt-3 block h-1 overflow-hidden rounded-full bg-surface-3">
-          <span
-            className="block h-full rounded-full bg-accent transition-all duration-700"
-            style={{ width: `${Math.max(progress, 4)}%` }}
-          />
-        </span>
-        <span className="mt-2 block text-xs text-muted">{t.studio.progressHint}</span>
-      </span>
-    );
+    progress = (done / view.shotsTotal / 2 + (keyframes ? 0 : 0.5)) * 100;
+    label = `${keyframes ? t.studio.keyframes : t.studio.shots} · ${done}/${view.shotsTotal}`;
+  } else if (view?.engine === "genjutsu" && view.shotsTotal > 1) {
+    progress = (view.shotsDone / view.shotsTotal) * 100;
+    label = `${t.studio.sequences} · ${view.shotsDone}/${view.shotsTotal}`;
   }
+  const hint = late ? t.studio.lateHint : view?.engine === "genjutsu" ? fmt(t.studio.genjutsuHint, { minutes }) : t.studio.progressHint;
+  const clock = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
 
-  // Les séquences se rendent toutes en même temps.
-  const sequences = view?.engine === "genjutsu" && view.shotsTotal > 1;
+  // Étapes : images et mouvements sont prêts au lancement ; le remplacement
+  // tourne jusqu'au montage, qui tourne jusqu'à la vidéo finie.
+  const steps = t.landing.mockSteps;
+  const state = (i: number) => (i < 2 ? "done" : i === 2 ? (assembling ? "done" : "now") : assembling ? "now" : "todo");
+
   return (
-    <span className="w-full">
-      {sequences ? `${t.studio.sequences} · ${view.shotsDone}/${view.shotsTotal}` : t.studio.swapping}
-      {sequences && (
-        <span className="mt-3 block h-1 overflow-hidden rounded-full bg-surface-3">
-          <span
-            className="block h-full rounded-full bg-accent transition-all duration-700"
-            style={{ width: `${Math.max((view.shotsDone / view.shotsTotal) * 100, 4)}%` }}
-          />
-        </span>
-      )}
-      <span className="mt-2 block text-xs text-muted">
-        {late
-          ? t.studio.lateHint
-          : view?.engine === "genjutsu"
-            ? fmt(t.studio.genjutsuHint, { minutes })
-            : t.studio.progressHint}
-      </span>
-    </span>
+    <div className="grid gap-4">
+      <div>
+        <p className={R.clock}>
+          <b>{clock}</b>
+          <span>{t.studio.elapsed}</span>
+        </p>
+        <p className="mt-1 text-sm font-medium">{label}</p>
+      </div>
+      <div className={R.bar}>
+        {progress === null ? <span className={R.run} /> : <span className={R.fill} style={{ width: `${Math.max(progress, 4)}%` }} />}
+      </div>
+      <p className={R.hint}>{hint}</p>
+      <ol className={R.steps}>
+        {steps.map((step, i) => {
+          const st = state(i);
+          return (
+            <li key={step} className={`${R.step} ${st === "done" ? R.done : st === "now" ? R.now : ""}`}>
+              <span className={R.dot}>{st === "done" ? <Check /> : i + 1}</span>
+              {step}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }

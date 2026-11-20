@@ -6,9 +6,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { buyCredits, subscribe } from "@/app/(app)/dashboard/credits/actions";
 import { loadDraft } from "@/app/(app)/dashboard/generate/draft";
-import { PhoneFrame } from "@/app/phone-frame";
-import { BADGE, OFF_BADGE_SM, TIERS, tierCard } from "@/app/tier-style";
-import { VideoWall } from "@/app/video-wall";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -36,6 +33,8 @@ import {
 } from "@/lib/onboarding";
 import { InfluencerCreator, type CreatedInfluencer } from "@/app/(app)/dashboard/influencer/creator";
 import { finishOnboarding } from "./actions";
+import { TitleLines } from "@/app/title-lines";
+import F from "./funnel.module.css";
 
 type Step = "intro" | "goal" | "platforms" | "audience" | "target" | "pace" | "building" | "create" | "plan";
 
@@ -143,26 +142,36 @@ export function Funnel({
 
   return (
     <div className={`mx-auto w-full ${WIDE.includes(step) ? "max-w-5xl" : "max-w-xl"}`}>
-      {/* Retour à la question précédente ; sur les offres, une croix pour
-          fermer et aller sur le site sans choisir. */}
-      <div className="flex h-9 items-center justify-between">
-        {index > 0 && step !== "building" ? (
-          <button type="button" onClick={back} className="btn btn-ghost size-9 p-0">
-            <ChevronLeft />
-            <span className="sr-only">{W.back}</span>
-          </button>
-        ) : (
-          <span />
-        )}
-        {step === "plan" && (
-          <button type="button" onClick={later} disabled={leaving} title={W.close} className="btn btn-ghost size-9 p-0">
-            <X />
-            <span className="sr-only">{W.close}</span>
-          </button>
-        )}
-      </div>
+      {/* Retour à la question précédente, l'avancée en chiffres et en trait ;
+          sur les offres, une croix pour fermer et aller sur le site. */}
+      {step !== "intro" && (
+        <div className={F.top}>
+          {index > 0 && step !== "building" ? (
+            <button type="button" onClick={back} className={F.round}>
+              <ChevronLeft />
+              <span className="sr-only">{W.back}</span>
+            </button>
+          ) : (
+            <span className={F.roundSpacer} />
+          )}
+          <span className={F.count}>
+            {String(index + 1).padStart(2, "0")} <i>/ {String(steps.length).padStart(2, "0")}</i>
+          </span>
+          <span className={F.track}>
+            <span style={{ width: `${((index + 1) / steps.length) * 100}%` }} />
+          </span>
+          {step === "plan" ? (
+            <button type="button" onClick={later} disabled={leaving} title={W.close} className={F.round}>
+              <X />
+              <span className="sr-only">{W.close}</span>
+            </button>
+          ) : (
+            <span className={F.roundSpacer} />
+          )}
+        </div>
+      )}
 
-      <div key={step} className="mt-6 animate-fade-up">
+      <div key={step} className={`animate-fade-up ${WIDE.includes(step) ? "" : F.card}`}>
         {step === "intro" && <IntroStep credits={credits} onStart={() => go("goal")} />}
 
         {step === "goal" && (
@@ -260,9 +269,7 @@ export function Funnel({
 
         {step === "create" && (
           <div>
-            <h1 className="font-headline text-4xl leading-[0.95] sm:text-5xl">
-              {influencer ? W.create.done : W.create.question}
-            </h1>
+            <h1 className={F.title}>{influencer ? W.create.done : W.create.question}</h1>
             <p className="mt-3 text-sm text-muted">{fmt(W.create.hint, { n: credits })}</p>
             <div className="mt-8">
               {userId ? (
@@ -279,7 +286,7 @@ export function Funnel({
               <button
                 type="button"
                 onClick={() => advance("create")}
-                className="mt-6 w-full text-center text-sm text-muted hover:text-text hover:underline"
+                className={F.skip}
               >
                 {W.create.skip}
               </button>
@@ -312,9 +319,9 @@ export function Funnel({
 function Question({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <h1 className="font-headline text-4xl leading-[0.95] sm:text-5xl">{title}</h1>
+      <h1 className={F.title}>{title}</h1>
       {hint && <p className="mt-3 text-sm text-muted">{hint}</p>}
-      <div className="mt-8 space-y-2.5">{children}</div>
+      <div className={F.options}>{children}</div>
     </div>
   );
 }
@@ -335,21 +342,13 @@ function Option({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 text-left transition-colors ${
-        selected ? "border-accent bg-accent-soft" : "border-line bg-surface hover:border-line-strong"
-      }`}
+      className={`${F.option} ${selected ? F.selected : ""}`}
     >
       <span className="min-w-0">
-        <span className="block font-semibold">{label}</span>
-        {hint && <span className="mt-0.5 block text-sm text-muted">{hint}</span>}
+        <span className={F.optionLabel}>{label}</span>
+        {hint && <span className={F.optionHint}>{hint}</span>}
       </span>
-      <span
-        className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${
-          selected ? "border-accent bg-accent text-white" : "border-line-strong"
-        }`}
-      >
-        {selected && <Check className="size-3.5" />}
-      </span>
+      <span className={F.tick}>{selected && <Check />}</span>
     </button>
   );
 }
@@ -360,20 +359,17 @@ function IntroStep({ credits, onStart }: { credits: number; onStart: () => void 
   const { t } = useI18n();
   const W = t.welcome;
   return (
-    <div className="grid items-center gap-10 md:grid-cols-[minmax(0,1fr)_auto]">
-      <div>
-        <p className="eyebrow">{W.intro.eyebrow}</p>
-        <h1 className="text-gradient mt-4 font-headline text-[2.9rem] leading-[0.9] sm:text-7xl">{W.intro.title}</h1>
-        <p className="mt-5 max-w-md text-muted sm:text-lg">{W.intro.text}</p>
-        <button type="button" onClick={onStart} className="btn btn-accent mt-8 w-full py-4 text-lg sm:w-auto sm:px-10">
-          {W.intro.start}
-          <ArrowRight />
-        </button>
-        <p className="mt-3 text-sm text-muted">{fmt(W.intro.meta, { n: credits })}</p>
-      </div>
-      <PhoneFrame className="mx-auto w-[12rem] sm:w-[15rem]">
-        <VideoWall phone />
-      </PhoneFrame>
+    <div className={F.intro}>
+      <p className="eyebrow">{W.intro.eyebrow}</p>
+      <h1 className={F.hero}>
+        <TitleLines text={W.intro.title} />
+      </h1>
+      <p className="mt-5 max-w-md text-muted sm:text-lg">{W.intro.text}</p>
+      <button type="button" onClick={onStart} className="btn btn-accent mt-8 w-full py-4 text-lg sm:w-auto sm:px-10">
+        {W.intro.start}
+        <ArrowRight />
+      </button>
+      <p className="mt-3 text-sm text-muted">{fmt(W.intro.meta, { n: credits })}</p>
     </div>
   );
 }
@@ -402,33 +398,23 @@ function BuildingStep({ lines, onDone }: { lines: { label: string; value: string
   return (
     <div>
       <div className="flex items-center gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-white">
-          {done ? <Check className="size-5" /> : <LoaderCircle className="size-5 animate-spin" />}
-        </span>
-        <h1 className="font-headline text-4xl leading-[0.95] sm:text-5xl">{done ? W.building.done : W.building.title}</h1>
+        <span className={F.spinner}>{done ? <Check /> : <LoaderCircle className="animate-spin" />}</span>
+        <h1 className={F.title}>{done ? W.building.done : W.building.title}</h1>
       </div>
-      <ul className="mt-8 space-y-2.5">
+      <ul className={F.lines}>
         {lines.map((line, i) => (
-          <li
-            key={line.label}
-            className={`flex items-center justify-between gap-4 rounded-2xl border px-4 py-3.5 transition-all duration-500 ${
-              i < shown ? "translate-y-0 border-accent/40 bg-accent-soft opacity-100" : "translate-y-2 border-line bg-surface opacity-0"
-            }`}
-          >
-            <span className="text-sm text-muted">{line.label}</span>
-            <span className="flex items-center gap-2 text-right font-semibold">
+          <li key={line.label} className={i < shown ? F.lineIn : ""}>
+            <span>{line.label}</span>
+            <b>
               {line.value}
-              <Check className="size-4 shrink-0 text-accent-light" />
-            </span>
+              <Check />
+            </b>
           </li>
         ))}
       </ul>
       {/* Progression du plan. */}
-      <div className="mt-8 h-1.5 overflow-hidden rounded-full bg-surface-3">
-        <div
-          className="h-full rounded-full bg-accent transition-[width] duration-500"
-          style={{ width: `${(Math.min(shown, lines.length) / Math.max(1, lines.length)) * 100}%` }}
-        />
+      <div className={F.bar}>
+        <span style={{ width: `${(Math.min(shown, lines.length) / Math.max(1, lines.length)) * 100}%` }} />
       </div>
     </div>
   );
@@ -468,7 +454,6 @@ function PlanStep({
   const P = t.creditsPage;
   const S = P.subscriptions;
   const plan = recommendedPlan(pace);
-  const tier = TIERS[plan.tier];
   const named = platforms.filter((p) => p !== "other").map((p) => W.platforms.options[p]);
   const where = named.length ? new Intl.ListFormat(locale, { type: "conjunction" }).format(named) : "";
 
@@ -508,59 +493,55 @@ function PlanStep({
       <div className="grid items-start gap-8 md:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] md:gap-12">
         {/* Ce que l'offre fait vivre : son influenceur, ou les démos. */}
         <div className="mx-auto w-full max-w-[16rem] md:sticky md:top-24 md:max-w-none">
-          {influencer ? (
-            <div className="relative aspect-[3/4] overflow-hidden rounded-3xl border border-line bg-surface-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={influencer.url} alt="" className="absolute inset-0 size-full object-cover" />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-16">
-                <p className="font-headline text-2xl leading-none text-white">{W.plan.ready}</p>
-              </div>
-            </div>
-          ) : (
-            <PhoneFrame className="mx-auto w-[12rem] md:w-[16rem]">
-              <VideoWall phone />
-            </PhoneFrame>
-          )}
+          <div className={F.visual}>
+            {influencer ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={influencer.url} alt="" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src="/photos/tongue.jpg" alt="" />
+            )}
+            {influencer && <p>{W.plan.ready}</p>}
+          </div>
         </div>
 
         <div className="min-w-0">
           <p className="eyebrow">{W.plan.eyebrow}</p>
-          <h1 className="mt-3 font-headline text-4xl leading-[0.95] sm:text-5xl">{objective}</h1>
+          <h1 className={`mt-4 ${F.title}`}>{objective}</h1>
           <p className="mt-4 text-muted">
             {fmt(W.plan.pace, { pace: W.pace.options[pace], n: PACE_VIDEOS[pace] })}
           </p>
           {asksAudience(goal) && pace === "weekly" && <p className="mt-2 text-sm text-muted">{W.plan.tip}</p>}
 
           {/* L'offre qui couvre ce rythme, et tout ce qu'elle débloque. */}
-          <div className="mt-8 rounded-3xl border p-6" style={tierCard(tier.color, tier.strength)}>
+          <div className={`mt-8 ${F.offer}`}>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <h2 className="font-headline text-4xl leading-none">{planName}</h2>
-                <span className={`${BADGE} bg-accent text-white`}>{W.plan.recommended}</span>
+                <span className={F.chip}>{W.plan.recommended}</span>
               </div>
-              <div className="rail flex gap-1 border border-line text-xs">
+              <div className={F.billing}>
                 {(["month", "year"] as const).map((interval) => (
                   <button
                     key={interval}
                     type="button"
                     onClick={() => setBilling(interval)}
-                    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 font-semibold transition-colors ${
-                      billing === interval ? "bg-accent text-white" : "text-muted hover:text-text"
-                    }`}
+                    aria-pressed={billing === interval}
+                    className={billing === interval ? F.billingOn : ""}
                   >
                     {interval === "year" ? S.yearly : S.monthly}
-                    {interval === "year" && <span className={OFF_BADGE_SM}>{fmt(P.off, { pct: subscriptionOff(plan, "year") })}</span>}
+                    {interval === "year" && <small>{fmt(P.off, { pct: subscriptionOff(plan, "year") })}</small>}
                   </button>
                 ))}
               </div>
             </div>
 
-            <p className="mt-6 text-xs font-semibold tracking-wide text-muted uppercase">{W.plan.unlock}</p>
-            <ul className="mt-3 space-y-2.5 text-sm">
+            <p className="eyebrow mt-6">{W.plan.unlock}</p>
+            <ul className={F.unlocks}>
               {unlocks.map((line) => (
-                <li key={line} className="flex items-start gap-2.5">
-                  <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-accent text-white">
-                    <Check className="size-3" />
+                <li key={line}>
+                  <span>
+                    <Check />
                   </span>
                   {line}
                 </li>
@@ -570,7 +551,7 @@ function PlanStep({
             <div className="mt-6 flex flex-wrap items-baseline gap-x-2">
               <span className="font-headline text-5xl leading-none">{monthly}</span>
               <span className="text-sm text-muted">/ {S.perMonth}</span>
-              {pct > 0 && <span className="text-sm font-semibold text-success">{fmt(P.off, { pct })}</span>}
+              {pct > 0 && <span className={F.chip}>{fmt(P.off, { pct })}</span>}
             </div>
             {billing === "year" && <p className="mt-1 text-xs text-muted">{fmt(P.billedYearly, { price: price(plan.year) })}</p>}
 
@@ -581,7 +562,7 @@ function PlanStep({
           {/* Sans abonnement : le plus petit pack. */}
           <form
             action={buyCredits}
-            className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3"
+            className={`mt-4 ${F.pack}`}
           >
             <input type="hidden" name="pack" value={STARTER_PACK.id} />
             <input type="hidden" name="next" value={next} />
@@ -610,7 +591,7 @@ function PlanStep({
       </div>
 
       {/* Téléphone : le prix et le bouton toujours à portée de pouce. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+      <div className={F.dock}>
         <div className="mx-auto flex max-w-xl items-center gap-3">
           <div className="shrink-0">
             <p className="font-headline text-2xl leading-none">{monthly}</p>

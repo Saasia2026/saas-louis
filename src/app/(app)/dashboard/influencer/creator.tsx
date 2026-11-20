@@ -26,19 +26,27 @@ export type CreatedInfluencer = { id: string; path: string; url: string };
 
 // Création d'un influenceur : type, genre, détails, photo de départ, puis
 // l'image. `stacked` : une seule colonne (tunnel d'accueil) ; `onContinue`
-// remplace alors « Utiliser dans le studio ».
+// remplace alors « Utiliser dans le studio ». `preset` / `onPresetChange` :
+// exemple choisi depuis la page (portraits) ; `hideExamples` masque alors
+// la bande d'exemples du générateur.
 export function InfluencerCreator({
   userId,
   credits: initialCredits,
   stacked = false,
   onCreated,
   onContinue,
+  preset: presetProp,
+  onPresetChange,
+  hideExamples = false,
 }: {
   userId: string;
   credits: number;
   stacked?: boolean;
   onCreated?: (influencer: CreatedInfluencer) => void;
   onContinue?: (influencer: CreatedInfluencer) => void;
+  preset?: string | null;
+  onPresetChange?: (preset: string | null) => void;
+  hideExamples?: boolean;
 }) {
   const { t } = useI18n();
   const I = t.influencer;
@@ -46,7 +54,9 @@ export function InfluencerCreator({
   const [supabase] = useState(createClient);
   const [kind, setKind] = useState<InfluencerKind>("natural");
   // Exemple choisi : il remplace le type et le genre.
-  const [preset, setPreset] = useState<string | null>(null);
+  const [presetState, setPresetState] = useState<string | null>(null);
+  const preset = presetProp !== undefined ? presetProp : presetState;
+  const setPreset = onPresetChange ?? setPresetState;
   const [gender, setGender] = useState<InfluencerGender>("woman");
   const [description, setDescription] = useState("");
   const [photo, setPhoto] = useState<{ path: string; previewUrl: string } | null>(null);
@@ -123,7 +133,7 @@ export function InfluencerCreator({
     <div className="min-w-0 space-y-7">
       {/* Type de personnage, en vignettes. */}
       <section>
-        <h2 className="label">{I.type}</h2>
+        <h2 className="eyebrow">{I.type}</h2>
         <div className={`mt-3 grid gap-2.5 ${stacked ? "grid-cols-3" : "grid-cols-3 sm:grid-cols-6"}`}>
           {INFLUENCER_KINDS.map((k) => {
             const selected = !preset && kind === k;
@@ -137,7 +147,7 @@ export function InfluencerCreator({
                 }}
                 aria-pressed={selected}
                 className={`group relative aspect-[3/4] overflow-hidden rounded-2xl border bg-surface-2 text-left transition-[border-color,transform] duration-200 active:scale-[0.98] ${
-                  selected ? "border-accent" : "border-line hover:border-line-strong"
+                  selected ? "border-text ring-2 ring-text" : "border-line hover:border-line-strong"
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -152,7 +162,7 @@ export function InfluencerCreator({
                   {I.kinds[k]}
                 </span>
                 {selected && (
-                  <span className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full bg-accent text-white">
+                  <span className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full bg-text text-bg">
                     <Check className="size-3.5" />
                   </span>
                 )}
@@ -163,8 +173,8 @@ export function InfluencerCreator({
       </section>
 
       {/* Exemples prêts, à faire défiler : un clic, et on part de ce style. */}
-      <section>
-        <h2 className="label">{I.examples}</h2>
+      <section className={hideExamples ? "hidden" : ""}>
+        <h2 className="eyebrow">{I.examples}</h2>
         <div className="-mx-1 mt-3 flex snap-x gap-2.5 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
           {INFLUENCER_PRESETS.map((p) => {
             const selected = preset === p.id;
@@ -176,13 +186,13 @@ export function InfluencerCreator({
                 aria-pressed={selected}
                 aria-label={I.example}
                 className={`relative aspect-[3/4] w-24 shrink-0 snap-start overflow-hidden rounded-2xl border bg-white transition-[border-color,transform] duration-200 active:scale-[0.98] sm:w-28 ${
-                  selected ? "border-accent" : "border-line hover:border-line-strong"
+                  selected ? "border-text ring-2 ring-text" : "border-line hover:border-line-strong"
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={presetImage(p.id)} alt="" className="absolute inset-0 size-full object-cover" />
                 {selected && (
-                  <span className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-accent text-white">
+                  <span className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-text text-bg">
                     <Check className="size-3.5" />
                   </span>
                 )}
@@ -194,7 +204,7 @@ export function InfluencerCreator({
 
       {/* Genre (un exemple a déjà le sien). */}
       <section className={preset ? "hidden" : ""}>
-        <h2 className="label">{I.gender}</h2>
+        <h2 className="eyebrow">{I.gender}</h2>
         <div className="rail mt-3 inline-flex gap-1 border border-line text-sm">
           {INFLUENCER_GENDERS.map((g) => (
             <button
@@ -203,7 +213,7 @@ export function InfluencerCreator({
               onClick={() => setGender(g)}
               aria-pressed={gender === g}
               className={`rounded-full px-4 py-1.5 font-semibold transition-colors ${
-                gender === g ? "bg-accent text-white" : "text-muted hover:text-text"
+                gender === g ? "bg-text text-bg" : "text-muted hover:text-text"
               }`}
             >
               {I.genders[g]}
@@ -214,7 +224,7 @@ export function InfluencerCreator({
 
       {/* Détails libres. */}
       <section>
-        <label htmlFor="influencer-details" className="label">
+        <label htmlFor="influencer-details" className="eyebrow">
           {I.details} <span className="font-normal normal-case text-faint">· {I.optional}</span>
         </label>
         <textarea
@@ -229,7 +239,7 @@ export function InfluencerCreator({
 
       {/* Photo de départ. */}
       <section>
-        <h2 className="label">
+        <h2 className="eyebrow">
           {I.photo} <span className="font-normal normal-case text-faint">· {I.optional}</span>
         </h2>
         <input
@@ -265,7 +275,7 @@ export function InfluencerCreator({
             type="button"
             onClick={() => fileInput.current?.click()}
             disabled={uploading}
-            className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-dashed border-line-strong bg-surface px-4 py-3.5 text-left transition-colors hover:border-accent"
+            className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-dashed border-line-strong bg-surface px-4 py-3.5 text-left transition-colors hover:border-text"
           >
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-surface-3">
               {uploading ? <LoaderCircle className="size-5 animate-spin" /> : <ImagePlus className="size-5" />}
@@ -290,7 +300,7 @@ export function InfluencerCreator({
       >
         {pending ? <LoaderCircle className="animate-spin" /> : null}
         {pending ? I.creating : I.generate}
-        {!pending && <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs tabular-nums">{fmt(I.cost, { n: cost })}</span>}
+        {!pending && <span className="ml-1 rounded-full bg-bg/20 px-2 py-0.5 text-xs tabular-nums">{fmt(I.cost, { n: cost })}</span>}
       </button>
       <p className="mt-2 text-center text-xs text-muted tabular-nums">{fmt(I.balance, { n: credits })}</p>
       {(short || missing > 0) && (

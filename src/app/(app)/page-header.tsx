@@ -1,3 +1,5 @@
+import { TitleLines } from "@/app/title-lines";
+
 export function PageHeader({
   eyebrow,
   title,
@@ -13,7 +15,7 @@ export function PageHeader({
       <div>
         <p className="eyebrow">{eyebrow}</p>
         <h1 className="text-gradient mt-4 font-headline text-[2.4rem] leading-[0.92] sm:text-5xl">
-          {title}
+          <TitleLines text={title} />
         </h1>
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}

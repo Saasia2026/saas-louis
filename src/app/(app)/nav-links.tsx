@@ -1,10 +1,12 @@
 "use client";
 
 import { CalendarClock, Clapperboard, Coins, Film, ScanFace, type LucideIcon } from "lucide-react";
-import Link, { useLinkStatus } from "next/link";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n/provider";
+import b from "./bottom-nav.module.css";
+import sn from "./side-nav.module.css";
 
 const NAV_LINKS: {
   href: string;
@@ -65,9 +67,9 @@ export function MainNav() {
       <span
         ref={pill}
         aria-hidden
-        className="absolute inset-y-0 left-0 rounded-full bg-surface-3 opacity-0 transition-[transform,width,opacity] duration-300 [transition-timing-function:var(--ease-out)]"
+        className="absolute inset-y-0 left-0 rounded-full bg-white opacity-0 transition-[transform,width,opacity] duration-300 [transition-timing-function:var(--ease-out)]"
       />
-      {NAV_LINKS.map(({ href, key, icon: Icon }, i) => {
+      {NAV_LINKS.map(({ href, key }, i) => {
         const active = i === activeIndex;
         return (
           <Link
@@ -78,12 +80,12 @@ export function MainNav() {
             href={href}
             title={t.shell.navHint[key]}
             aria-current={active ? "page" : undefined}
-            className={`relative flex items-center gap-2 rounded-full px-3 py-2 transition-colors xl:px-3.5 ${
-              active ? "text-text" : "text-muted hover:text-text"
+            className={`relative flex items-center rounded-full px-3 py-2 transition-colors duration-300 ${
+              active ? "text-black" : "text-muted hover:text-text"
             }`}
           >
-            <Icon className={`size-4 shrink-0 transition-colors ${active ? "text-accent-light" : ""}`} />
-            <span className="hidden text-sm font-medium whitespace-nowrap xl:inline">{t.shell.nav[key]}</span>
+            {/* Comme la barre du bas : les noms seuls, sans icône. */}
+            <span className="text-sm font-semibold whitespace-nowrap">{t.shell.nav[key]}</span>
           </Link>
         );
       })}
@@ -91,47 +93,81 @@ export function MainNav() {
   );
 }
 
-// Pastille d'un onglet du bas : allumée pour la page ouverte, et dès le
-// toucher pour celle qui se charge.
-function TabIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean }) {
-  const { pending } = useLinkStatus();
-  return (
-    <span
-      className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors duration-100 ${
-        active || pending ? "bg-accent/20 text-accent-light" : ""
-      }`}
-    >
-      <Icon className="size-[1.125rem]" />
-    </span>
-  );
-}
-
-// Barre d'onglets du bas (téléphone) : les six entrées toujours visibles,
-// à portée de pouce, au-dessus de la zone du geste d'accueil.
-export function BottomNav() {
+// Menu latéral (grands écrans), au style de la landing : le nom en toutes
+// lettres, les pages en grands noms numérotés, la page ouverte dans une
+// pastille blanche qui glisse jusqu'à l'entrée cliquée.
+export function SideNav() {
   const isActive = useActive();
   const { t } = useI18n();
+  const activeIndex = NAV_LINKS.findIndex((l) => isActive(l.href));
+  const [clicked, setClicked] = useState<number | null>(null);
+  const current = clicked !== null && clicked !== activeIndex ? clicked : activeIndex;
   return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-30 grid border-t border-line bg-bg pb-[env(safe-area-inset-bottom)] md:hidden"
-      style={{ gridTemplateColumns: `repeat(${NAV_LINKS.length}, minmax(0, 1fr))` }}
-    >
-      {NAV_LINKS.map(({ href, key, icon: Icon }) => {
-        const active = isActive(href);
-        return (
+    <aside className={sn.aside}>
+      <Link href="/dashboard" className={sn.brand}>
+        TwinPost
+      </Link>
+      <nav className={sn.nav}>
+        <span
+          aria-hidden
+          className={sn.thumb}
+          style={{ transform: `translateY(${Math.max(0, current) * 100}%)`, opacity: current < 0 ? 0 : 1 }}
+        />
+        {NAV_LINKS.map(({ href, key }, i) => (
           <Link
             key={href}
             href={href}
-            aria-current={active ? "page" : undefined}
-            className={`flex min-w-0 flex-col items-center gap-1 px-1 pt-2 pb-1.5 text-[0.6875rem] font-medium ${
-              active ? "text-text" : "text-muted"
-            }`}
+            onClick={() => setClicked(i)}
+            aria-current={i === activeIndex ? "page" : undefined}
+            title={t.shell.navHint[key]}
+            className={`${sn.item} ${i === current ? sn.active : ""}`}
           >
-            <TabIcon icon={Icon} active={active} />
-            <span className="max-w-full truncate">{t.shell.nav[key]}</span>
+            <span className={sn.num}>{String(i + 1).padStart(2, "0")}</span>
+            {t.shell.nav[key]}
           </Link>
-        );
-      })}
-    </nav>
+        ))}
+      </nav>
+    </aside>
+  );
+}
+
+// Barre d'onglets du bas (téléphone) : une pilule de verre flottante, les
+// cinq pages à portée de pouce, en toutes lettres (sans icônes). La pastille blanche de la page ouverte
+// glisse jusqu'à l'onglet touché dès le toucher, avec la courbe de la
+// landing, puis la page suit.
+export function BottomNav() {
+  const isActive = useActive();
+  const { t } = useI18n();
+  const activeIndex = NAV_LINKS.findIndex((l) => isActive(l.href));
+  const [tapped, setTapped] = useState<number | null>(null);
+  // Une fois la page arrivée, c'est elle qui fait foi.
+  const current = tapped !== null && tapped !== activeIndex ? tapped : activeIndex;
+  const n = NAV_LINKS.length;
+
+  return (
+    <div className={`${b.wrap} md:hidden`}>
+      <nav className={b.bar} style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+        <span
+          aria-hidden
+          className={b.thumb}
+          style={{
+            width: `calc((100% - 10px) / ${n})`,
+            transform: `translateX(${Math.max(0, current) * 100}%)`,
+            opacity: current < 0 ? 0 : 1,
+          }}
+        />
+        {NAV_LINKS.map(({ href, key }, i) => (
+          <Link
+            key={href}
+            href={href}
+            onClick={() => setTapped(i)}
+            aria-current={i === activeIndex ? "page" : undefined}
+            className={`${b.item} ${i === current ? b.active : ""}`}
+          >
+            <span>{t.shell.nav[key]}</span>
+          </Link>
+        ))}
+      </nav>
+    </div>
   );
 }

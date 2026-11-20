@@ -267,7 +267,7 @@ export function TrimDialog({
                 onKeyDown={(e) => nudge("start", e)}
                 className="absolute inset-y-0 left-0 flex w-3.5 cursor-ew-resize items-center justify-center rounded-l-lg bg-accent outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
-                <span className="h-5 w-0.5 rounded-full bg-white/90" />
+                <span className="h-5 w-0.5 rounded-full bg-black/70" />
               </span>
               <span
                 {...slider(S.trimEnd, range.end)}
@@ -277,7 +277,7 @@ export function TrimDialog({
                 onKeyDown={(e) => nudge("end", e)}
                 className="absolute inset-y-0 right-0 flex w-3.5 cursor-ew-resize items-center justify-center rounded-r-lg bg-accent outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
-                <span className="h-5 w-0.5 rounded-full bg-white/90" />
+                <span className="h-5 w-0.5 rounded-full bg-black/70" />
               </span>
             </div>
             <span

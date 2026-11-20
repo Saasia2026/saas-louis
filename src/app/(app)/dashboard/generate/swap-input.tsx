@@ -649,7 +649,7 @@ function VideoCard({
             aria-label={trimLabel}
             title={trimLabel}
             onClick={onTrim}
-            className="absolute right-2.5 bottom-2.5 flex size-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-colors hover:bg-accent"
+            className="absolute right-2.5 bottom-2.5 flex size-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-colors hover:bg-white hover:text-black"
           >
             <Scissors className="size-4" />
           </button>
@@ -781,7 +781,7 @@ function PromptBox({
           }`}
         >
           <span
-            className={`inline-block size-4.5 rounded-full bg-white shadow-sm transition-transform ${
+            className={`inline-block size-4.5 rounded-full shadow-sm transition ${open ? "bg-black" : "bg-white"} ${
               open ? "translate-x-[1.375rem]" : "translate-x-[0.1875rem]"
             }`}
           />

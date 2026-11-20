@@ -1,0 +1,457 @@
+/* Pop-up d'offre : carte en verre sombre, un rendu vidéo en haut, titre en
+   deux temps (gras puis italique), bouton blanc. Sur téléphone, carte
+   compacte en haut de l'écran pour ne pas cacher les boutons du bas. */
+
+.card {
+  position: fixed;
+  z-index: 45;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  width: 21rem;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 1.4rem;
+  background: rgb(14 14 20 / 0.92);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  box-shadow: 0 30px 70px -24px rgb(0 0 0 / 0.7);
+  color: #fff;
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+  animation: enter 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.left {
+  left: 1.25rem;
+}
+
+.right {
+  right: clamp(18px, 3.2vw, 48px);
+}
+
+/* Sur la landing : au-dessus de la frise du bas. */
+.landing {
+  bottom: calc(7.5rem + env(safe-area-inset-bottom));
+}
+
+.leaving {
+  animation: leave 0.35s ease-in both;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+}
+
+@keyframes leave {
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+.media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #111;
+}
+
+.media video,
+.media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 45%, rgb(14 14 20 / 0.9));
+}
+
+.tag {
+  position: absolute;
+  z-index: 1;
+  left: 0.85rem;
+  top: 0.85rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #0c0c10;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.close {
+  position: absolute;
+  z-index: 2;
+  top: 0.65rem;
+  right: 0.65rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  border-radius: 999px;
+  background: rgb(14 14 20 / 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.close:hover {
+  background: rgb(255 255 255 / 0.2);
+}
+
+.close svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.body {
+  padding: 0.25rem 1.1rem 1.1rem;
+}
+
+.title {
+  font-weight: 800;
+  font-stretch: 88%;
+  letter-spacing: -0.02em;
+  font-size: 1.55rem;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.title em {
+  display: block;
+  font-family: var(--font-instrument), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+  letter-spacing: -0.01em;
+}
+
+.text {
+  margin-top: 0.55rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: rgb(255 255 255 / 0.72);
+}
+
+.cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #0c0c10;
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-decoration: none;
+  transition: transform 0.25s cubic-bezier(0.77, 0, 0.18, 1);
+}
+
+.cta:hover {
+  transform: translateY(-2px);
+}
+
+.cta svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Téléphone : bandeau compact sous la barre du haut. */
+@media (max-width: 760px) {
+  .card {
+    top: calc(4.25rem + var(--offer-bar, 0px) + env(safe-area-inset-top));
+    bottom: auto;
+    left: 0.75rem;
+    right: 0.75rem;
+    width: auto;
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    align-items: center;
+    border-radius: 1.1rem;
+  }
+
+  .media {
+    aspect-ratio: auto;
+    align-self: stretch;
+    min-height: 5.5rem;
+  }
+
+  .media::after,
+  .tag {
+    display: none;
+  }
+
+  .body {
+    padding: 0.7rem 2.6rem 0.7rem 0.85rem;
+  }
+
+  .title {
+    font-size: 1.05rem;
+  }
+
+  .title em {
+    display: inline;
+  }
+
+  .text {
+    display: none;
+  }
+
+  .cta {
+    display: inline-flex;
+    margin-top: 0.45rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.78rem;
+  }
+
+  .close {
+    top: 50%;
+    right: 0.55rem;
+    transform: translateY(-50%);
+  }
+}
+
+/* ---- 2 · Affiche : la vidéo remplit la carte, gros chiffre en italique ---- */
+.poster {
+  width: 18.5rem;
+  aspect-ratio: 3 / 4.1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.poster .media {
+  position: absolute;
+  inset: 0;
+  aspect-ratio: auto;
+}
+
+.poster .media::after {
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0.25), transparent 30%, rgb(10 10 14 / 0.94) 78%);
+}
+
+.poster > .tag {
+  position: absolute;
+}
+
+.poster .body {
+  position: relative;
+  padding: 1.1rem;
+}
+
+.figure {
+  font-family: var(--font-instrument), Georgia, serif;
+  font-style: italic;
+  font-size: 4.4rem;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+}
+
+.figure span {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-style: normal;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: rgb(255 255 255 / 0.8);
+}
+
+.poster .title {
+  margin-top: 0.75rem;
+  font-size: 1.25rem;
+}
+
+/* ---- 3 · Fenêtre au centre : fond assombri, vidéo plein cadre ---- */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(4 4 8 / 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fade 0.4s ease-out both;
+}
+
+.backdrop.leaving {
+  animation: fadeOut 0.35s ease-in both;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+  }
+}
+
+.spotlight {
+  position: relative;
+  isolation: isolate;
+  width: min(34rem, 100%);
+  min-height: min(32rem, calc(100dvh - 2rem));
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 1.75rem;
+  background: #0c0c10;
+  box-shadow: 0 40px 100px -30px rgb(0 0 0 / 0.8);
+  color: #fff;
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+  animation: enter 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.spotlight > video,
+.spotlight > img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0.3), transparent 28%, rgb(8 8 12 / 0.92) 70%);
+}
+
+.spotlight > .tag {
+  left: 1.25rem;
+  top: 1.25rem;
+}
+
+.spotBody {
+  padding: 1.75rem;
+}
+
+.bigFigure {
+  font-family: var(--font-instrument), Georgia, serif;
+  font-style: italic;
+  font-size: clamp(3.6rem, 12vw, 6.2rem);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+}
+
+.spotlight .title {
+  margin-top: 0.75rem;
+  font-size: clamp(1.5rem, 4.5vw, 2rem);
+}
+
+.spotlight .text {
+  max-width: 38ch;
+  font-size: 0.92rem;
+}
+
+.spotActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.spotActions .cta {
+  margin-top: 0;
+  padding: 0.95rem 1.5rem;
+}
+
+.later {
+  border: 0;
+  background: none;
+  color: rgb(255 255 255 / 0.7);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.later:hover {
+  color: #fff;
+}
+
+/* Téléphone : l'affiche devient un bandeau compact avec le gros chiffre. */
+@media (max-width: 760px) {
+  .poster {
+    aspect-ratio: auto;
+    display: grid;
+  }
+
+  .poster .media {
+    position: relative;
+    inset: auto;
+  }
+
+  .poster > .tag {
+    display: none;
+  }
+
+  .poster .body {
+    padding: 0.7rem 2.6rem 0.7rem 0.85rem;
+  }
+
+  .figure {
+    font-size: 1.9rem;
+  }
+
+  .figure span {
+    display: inline;
+    margin-left: 0.3rem;
+    font-size: 0.72rem;
+  }
+
+  .poster .title {
+    display: none;
+  }
+
+  .spotlight > .tag {
+    display: inline-block;
+  }
+
+  .spotlight .close {
+    top: 0.75rem;
+    right: 0.75rem;
+    transform: none;
+  }
+
+  .spotlight .text {
+    display: block;
+  }
+
+  .spotBody {
+    padding: 1.25rem;
+  }
+
+  .spotActions .cta {
+    width: 100%;
+  }
+
+  .later {
+    width: 100%;
+    text-align: center;
+  }
+}
