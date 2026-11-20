@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { getDictionary } from "@/i18n/server";
 import { SWAP_INPUTS_BUCKET } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
-import { InfluencerHero } from "./hero";
 import { InfluencerWorkspace } from "./workspace";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,7 +17,6 @@ export default async function InfluencerPage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) redirect("/login?next=/dashboard/influencer");
-  const t = await getDictionary();
 
   const [{ data: profile }, { data: rows }] = await Promise.all([
     supabase.from("profiles").select("credits_remaining").eq("id", auth.claims.sub).single(),
@@ -43,10 +41,7 @@ export default async function InfluencerPage() {
 
   return (
     <div>
-      <InfluencerHero t={t.influencer} />
-      <div className="mt-10">
-        <InfluencerWorkspace userId={auth.claims.sub} credits={profile?.credits_remaining ?? 0} initial={initial} />
-      </div>
+      <InfluencerWorkspace userId={auth.claims.sub} credits={profile?.credits_remaining ?? 0} initial={initial} />
     </div>
   );
 }

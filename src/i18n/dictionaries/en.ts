@@ -296,6 +296,11 @@ export const en: Dictionary = {
   },
 
   influencer: {
+    headline: "Create your influencer, in one image.",
+    tabExamples: "Examples",
+    tabMine: "My influencers",
+    createCircle: "Create an influencer",
+    mineEmpty: "Your influencers will show up here.",
     eyebrow: "Characters",
     title: "AI influencer",
     intro: "Create your character in one image, then put it in any video from the studio.",

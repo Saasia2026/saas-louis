@@ -298,6 +298,11 @@ export const fr = {
   },
 
   influencer: {
+    headline: "Crée ton influenceur, en une image.",
+    tabExamples: "Exemples",
+    tabMine: "Mes influenceurs",
+    createCircle: "Créer un influenceur",
+    mineEmpty: "Tes influenceurs apparaîtront ici.",
     eyebrow: "Personnages",
     title: "Influenceur IA",
     intro: "Crée ton personnage en une image, puis mets-le dans n'importe quelle vidéo depuis le studio.",

@@ -26,19 +26,27 @@ export type CreatedInfluencer = { id: string; path: string; url: string };
 
 // Création d'un influenceur : type, genre, détails, photo de départ, puis
 // l'image. `stacked` : une seule colonne (tunnel d'accueil) ; `onContinue`
-// remplace alors « Utiliser dans le studio ».
+// remplace alors « Utiliser dans le studio ». `preset` / `onPresetChange` :
+// exemple choisi depuis la page (portraits) ; `hideExamples` masque alors
+// la bande d'exemples du générateur.
 export function InfluencerCreator({
   userId,
   credits: initialCredits,
   stacked = false,
   onCreated,
   onContinue,
+  preset: presetProp,
+  onPresetChange,
+  hideExamples = false,
 }: {
   userId: string;
   credits: number;
   stacked?: boolean;
   onCreated?: (influencer: CreatedInfluencer) => void;
   onContinue?: (influencer: CreatedInfluencer) => void;
+  preset?: string | null;
+  onPresetChange?: (preset: string | null) => void;
+  hideExamples?: boolean;
 }) {
   const { t } = useI18n();
   const I = t.influencer;
@@ -46,7 +54,9 @@ export function InfluencerCreator({
   const [supabase] = useState(createClient);
   const [kind, setKind] = useState<InfluencerKind>("natural");
   // Exemple choisi : il remplace le type et le genre.
-  const [preset, setPreset] = useState<string | null>(null);
+  const [presetState, setPresetState] = useState<string | null>(null);
+  const preset = presetProp !== undefined ? presetProp : presetState;
+  const setPreset = onPresetChange ?? setPresetState;
   const [gender, setGender] = useState<InfluencerGender>("woman");
   const [description, setDescription] = useState("");
   const [photo, setPhoto] = useState<{ path: string; previewUrl: string } | null>(null);
@@ -163,7 +173,7 @@ export function InfluencerCreator({
       </section>
 
       {/* Exemples prêts, à faire défiler : un clic, et on part de ce style. */}
-      <section>
+      <section className={hideExamples ? "hidden" : ""}>
         <h2 className="eyebrow">{I.examples}</h2>
         <div className="-mx-1 mt-3 flex snap-x gap-2.5 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
           {INFLUENCER_PRESETS.map((p) => {
