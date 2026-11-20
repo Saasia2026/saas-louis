@@ -1,7 +1,8 @@
 // Démos du studio (public/examples, public/demos et public/showcase), avec leur
 // format. La première ouvre l'onglet Exemples, les autres font la mosaïque, et
 // toutes se retrouvent dans le fil façon reels. `sound` : seules certaines ont
-// du son.
+// du son. Écartées : g-06, g-101 et g-106 (logo TikTok, carton de marque,
+// capture de l'appli TikTok).
 export type DemoClip = { base: string; ratio: string; sound?: boolean };
 
 // Identifiant court d'une démo, pour les liens partagés (?reel=g-24) et ce
@@ -31,7 +32,6 @@ export const DEMO_CLIPS: DemoClip[] = [
   gallery(28, "9/16", true),
   gallery(29, "9/16", true),
   gallery(100, "9/16", true),
-  gallery(101, "9/16", true),
   gallery(32, "9/16", true),
   gallery(33, "9/16", true),
   gallery(102, "9/16", true),
@@ -45,7 +45,6 @@ export const DEMO_CLIPS: DemoClip[] = [
   gallery(42, "652/1416", true),
   gallery(43, "9/16", true),
   gallery(105, "9/16", true),
-  gallery(106, "9/16", true),
   gallery(46, "9/16", true),
   gallery(47, "9/16", true),
   gallery(48, "9/16", true),
@@ -86,7 +85,6 @@ export const DEMO_CLIPS: DemoClip[] = [
   gallery(3),
   gallery(4),
   gallery(5),
-  gallery(6),
   gallery(7),
   gallery(9),
   gallery(11),

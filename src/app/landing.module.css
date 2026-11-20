@@ -267,7 +267,9 @@
   font-stretch: 88%;
   letter-spacing: -0.025em;
   line-height: 0.94;
-  font-size: clamp(2.6rem, 7vw, 7.4rem);
+  /* Limitée aussi par la hauteur : sur un écran bas, le titre ne monte
+     jamais jusqu'au menu. */
+  font-size: min(clamp(2.6rem, 7vw, 7.4rem), 12.5vh);
   text-wrap: balance;
 }
 
@@ -988,4 +990,56 @@
 .lang :global(.btn):hover {
   color: var(--white);
   background: rgb(255 255 255 / 0.12);
+}
+
+/* Écran 4 : le titre puis les cartes, dans une seule colonne centrée entre
+   le haut et la frise, pour qu'ils ne se chevauchent jamais ; le titre
+   rétrécit aussi avec la hauteur de l'écran. */
+.s3 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 4vh, 44px);
+  padding: calc(clamp(120px, 15vh, 160px) + var(--top)) var(--m) calc(128px + var(--bot));
+}
+
+.s3 .inner,
+.s3 .packs {
+  position: static;
+  transform: none;
+}
+
+.s3 .inner {
+  width: 100%;
+}
+
+.s3 .packs {
+  width: min(100%, 980px);
+}
+
+.s3 .titleSm {
+  font-size: min(clamp(2.4rem, 5.4vw, 5.6rem), 8.5vh);
+}
+
+.s3 .kicker {
+  margin-bottom: clamp(8px, 2vh, 20px);
+}
+
+@media (max-width: 760px) {
+  .s3 {
+    justify-content: flex-end;
+    padding: calc(96px + var(--top)) var(--m) calc(96px + var(--bot));
+  }
+
+  .s3 .titleSm {
+    font-size: min(2.6rem, 7vh);
+  }
+}
+
+/* Écran bas : le compteur d'écran céderait sa place au titre. */
+@media (max-height: 700px) {
+  .count {
+    display: none;
+  }
 }

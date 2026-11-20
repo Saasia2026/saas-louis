@@ -96,6 +96,10 @@ function fromRow(row: Row): FeedItem {
   };
 }
 
+// Vidéos retirées du site (logo TikTok, carton de marque, capture de
+// l'appli) : écartées même si la table les garde actives.
+const REMOVED = new Set(["g-06", "g-101", "g-106"]);
+
 // Les vidéos du fil : la liste du code d'abord, puis la table feed_items.
 // `ready` : la base a répondu (ou échoué), la liste ne bougera plus.
 export function useFeedItems() {
@@ -112,7 +116,7 @@ export function useFeedItems() {
       .then(({ data, error }) => {
         if (cancelled) return;
         setFeed((current) => ({
-          items: error || !data?.length ? current.items : (data as Row[]).map(fromRow),
+          items: error || !data?.length ? current.items : (data as Row[]).filter((row) => !REMOVED.has(row.slug)).map(fromRow),
           ready: true,
         }));
       });
