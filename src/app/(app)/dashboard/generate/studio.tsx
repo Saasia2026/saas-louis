@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CirclePlay, Coins, Download, Film, History, Loader2, MonitorPlay, RefreshCw, TriangleAlert, WandSparkles, X } from "lucide-react";
+import { CalendarClock, Check, CirclePlay, Coins, Download, Film, History, Loader2, MonitorPlay, RefreshCw, Sparkles, TriangleAlert, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fmt, INTL_LOCALES, plural } from "@/i18n/config";
@@ -49,6 +49,8 @@ import {
 } from "./studio-controls";
 import { StylePicker, type StudioStyle } from "./style-picker";
 import { SwapInput, keptSeconds, readDuration, uploadSwapFile, type SwapFile } from "./swap-input";
+import { askBotsToAnalyze } from "../../bots/bots-state";
+import Link from "next/link";
 import R from "./result.module.css";
 import L from "./studio-layout.module.css";
 
@@ -881,9 +883,17 @@ function Result({
   const making = phase.kind === "generating";
   // Pas pendant le montage : trop tard, la vidéo arrive.
   const cancellable = making && Boolean(phase.id) && phase.view?.stage !== "assembling";
+  // Ambiance : la vidéo (ou le clip pendant la fabrication), très floue,
+  // éclaire toute la carte.
+  const ambient = phase.kind === "done" ? phase.view.mediaUrl : sourcePreview;
+  const settings = phase.kind === "done" ? phase.view.settings : undefined;
 
   return (
     <section className={`${R.card} animate-fade-up`}>
+      {ambient && (
+        <video key={ambient} src={ambient} muted loop autoPlay playsInline aria-hidden className={R.ambient} />
+      )}
+      <span aria-hidden className={R.veil} />
       <div className={R.grid}>
         <div className="min-w-0">
           <ResultStage
@@ -919,6 +929,12 @@ function Result({
             <Process phase={phase} />
           ) : (
             <>
+              <ul className={R.facts}>
+                <li>{fmt(t.videos.seconds, { seconds: phase.job.durationSeconds })}</li>
+                {settings?.quality && <li>{settings.quality}</li>}
+                <li>{phase.job.aspectRatio}</li>
+                {settings?.model && <li>{settings.model === "max" ? t.studio.modelMax : t.studio.modelStandard}</li>}
+              </ul>
               {phase.view.unreplaced > 0 && (
                 <p className={R.note}>
                   {fmt(t.studio.incomplete, {
@@ -965,10 +981,27 @@ function Result({
 
           <div className={R.actions}>
             {phase.kind === "done" && (
-              <a href={phase.view.downloadUrl ?? phase.view.mediaUrl} className="btn btn-accent">
-                <Download />
-                {t.studio.download}
-              </a>
+              <>
+                <a href={phase.view.downloadUrl ?? phase.view.mediaUrl} className="btn btn-accent">
+                  <Download />
+                  {t.studio.download}
+                </a>
+                <div className={R.pair}>
+                  <button
+                    type="button"
+                    onClick={() => askBotsToAnalyze(phase.id, phase.view.mediaUrl)}
+                    title={t.viral.analyzeHint}
+                    className="btn btn-secondary"
+                  >
+                    <Sparkles />
+                    {t.viral.analyzeShort}
+                  </button>
+                  <Link href="/dashboard/planning" title={t.shell.navHint.planning} className="btn btn-secondary">
+                    <CalendarClock />
+                    {t.shell.nav.planning}
+                  </Link>
+                </div>
+              </>
             )}
             {cancellable && (
               <button
@@ -985,7 +1018,7 @@ function Result({
               </button>
             )}
             {!making && (
-              <button type="button" onClick={onReset} className="btn btn-secondary">
+              <button type="button" onClick={onReset} className="btn btn-ghost">
                 <RefreshCw />
                 {t.studio.newVideo}
               </button>

@@ -7,9 +7,9 @@ import type { AspectRatio } from "@/lib/generation";
 // Taille du cadre : les formats verticaux suivent la hauteur de l'écran, le
 // 16:9 la largeur du panneau.
 const FRAME: Record<AspectRatio, { className: string; height?: string }> = {
-  "9:16": { className: "max-w-full", height: "min(64vh, 36rem)" },
-  "1:1": { className: "max-w-full", height: "min(56vh, 30rem)" },
-  "16:9": { className: "w-full max-w-2xl" },
+  "9:16": { className: "max-w-full", height: "min(72vh, 42rem)" },
+  "1:1": { className: "max-w-full", height: "min(62vh, 34rem)" },
+  "16:9": { className: "w-full max-w-3xl" },
 };
 
 // Scène du rendu : le même cadre porte l'attente puis la vidéo finie, qui
@@ -35,10 +35,15 @@ export function ResultStage({
 
   return (
     <>
-      <div className={`relative flex flex-col items-center gap-3 px-4 pt-5 pb-4 ${actions ? "sm:px-20" : "sm:px-6"}`}>
+      <div className={`relative flex flex-col items-center gap-3 px-4 pt-6 pb-6 ${actions ? "sm:px-20" : "sm:px-6"}`}>
+
         <div
-          className={`relative flex items-center justify-center overflow-hidden rounded-2xl bg-black ${frame.className}`}
-          style={{ aspectRatio: aspectRatio.replace(":", " / "), height: frame.height }}
+          className={`relative flex items-center justify-center overflow-hidden rounded-3xl bg-black ${frame.className}`}
+          style={{
+            aspectRatio: aspectRatio.replace(":", " / "),
+            height: frame.height,
+            boxShadow: "0 0 0 1px rgb(255 255 255 / 0.18), 0 40px 80px -30px rgb(0 0 0 / 0.75)",
+          }}
         >
           {backdrop && !player.ready && (
             <video
@@ -67,16 +72,13 @@ export function ResultStage({
           ) : (
             overlay
           )}
+          {/* Barre de lecture posée en bas de l'image. */}
+          {mediaUrl && player.ready && <PlayerBar player={player} overlay />}
         </div>
 
         {actions && <div className="flex gap-2 sm:absolute sm:top-5 sm:right-4 sm:flex-col">{actions}</div>}
       </div>
 
-      {mediaUrl && (
-        <div className="px-4 pb-3">
-          <PlayerBar player={player} />
-        </div>
-      )}
     </>
   );
 }
