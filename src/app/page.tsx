@@ -1,6 +1,4 @@
 import { Landing, type LandingPack } from "@/app/landing";
-import { OfferPopup } from "@/app/offer-popup";
-import { offersFor } from "@/app/offers";
 import { TIERS } from "@/app/tier-style";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
@@ -93,7 +91,6 @@ export default async function Home() {
           nextScreen: L.nextScreen,
         }}
       />
-      <OfferPopup offers={offersFor(t, locale, loggedIn)} side="right" landing />
     </>
   );
 }

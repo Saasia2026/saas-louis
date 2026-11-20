@@ -1,22 +1,14 @@
 "use client";
 
 import {
-  Clock,
   Download,
   Film,
   Gauge,
-  Ghost,
-  Layers,
-  MonitorPlay,
+  Ghost,
   PawPrint,
-  Play,
-  RectangleHorizontal,
-  RectangleVertical,
-  RefreshCw,
-  Sparkles,
-  Square,
+  Play,
+  RefreshCw,
   Trash2,
-  TriangleAlert,
   UserRound,
   Video,
   WandSparkles,
@@ -34,42 +26,19 @@ import { askBotsToAnalyze } from "../../bots/bots-state";
 import { CopyButton, PromptText, RefStrip } from "../generation-details";
 import type { SwapHistoryItem } from "../swap-history";
 import { DeleteButton } from "../videos/delete-button";
+import H from "./history.module.css";
 
-// Cadre de la vidéo dans son panneau : les formats verticaux prennent la
-// hauteur du panneau, le 16:9 sa largeur.
-const FRAME: Record<AspectRatio, string> = {
-  "9:16": "h-[26rem] max-w-full",
-  "1:1": "h-[22rem] max-w-full",
-  "16:9": "w-full",
+// Hauteur du cadre de la vidéo selon son format ; le 16:9 prend la largeur.
+const FRAME: Record<AspectRatio, React.CSSProperties> = {
+  "9:16": { height: "min(68vh, 32rem)", maxWidth: "100%" },
+  "1:1": { height: "min(56vh, 26rem)", maxWidth: "100%" },
+  "16:9": { width: "100%" },
 };
 
-const FORMAT_ICON: Record<AspectRatio, LucideIcon> = {
-  "9:16": RectangleVertical,
-  "1:1": Square,
-  "16:9": RectangleHorizontal,
-};
-
-// Réglage d'un rendu, avec son icône ; `accent` pour les options.
-function Chip({ icon: Icon, accent, children }: { icon: LucideIcon; accent?: boolean; children: React.ReactNode }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold tabular-nums ${
-        accent ? "bg-white text-black" : "bg-white/[0.06] text-muted"
-      }`}
-    >
-      <Icon className={`size-3.5 ${accent ? "" : "text-muted"}`} />
-      {children}
-    </span>
-  );
-}
-
-// Bouton rond posé sur le panneau de la vidéo.
-const STAGE_BUTTON =
-  "flex size-10 items-center justify-center rounded-full bg-black/50 text-white/70 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white";
-
-// Les rendus, un par ligne, en deux panneaux : la vidéo en grand à gauche ;
-// à droite le moteur, le prompt, les références (clip, images, lieu), les
-// réglages et la date, puis « Réutiliser », copier le prompt et supprimer.
+// Les rendus, un par carte, au style de l'écran de résultat : la vidéo
+// cadrée à gauche sur sa propre lumière ; à droite le mode en titre, le
+// prompt, les références (clip, images, lieu), les réglages, puis
+// télécharger, « Réutiliser », analyser, copier le prompt et supprimer.
 // `onReuse` : le studio reprend le rendu sur place ; sans lui (Mes vidéos),
 // « Réutiliser » y mène.
 export function HistoryList({
@@ -80,9 +49,13 @@ export function HistoryList({
   onReuse?: (item: SwapHistoryItem) => void;
 }) {
   return (
-    <ul className="@container w-full space-y-4">
+    <ul className={`${H.list} w-full`} style={{ containerType: "inline-size" }}>
       {items.map((item) => (
-        <li key={item.id} className="grid animate-fade-up gap-2.5 @[40rem]:grid-cols-[minmax(0,1fr)_minmax(0,21rem)]">
+        <li key={item.id} className={`${H.card} animate-fade-up`}>
+          {item.mediaUrl && (
+            <video src={`${item.mediaUrl}#t=0.1`} preload="metadata" muted playsInline aria-hidden className={H.ambient} />
+          )}
+          <span aria-hidden className={H.veil} />
           <Stage item={item} />
           <Details item={item} onReuse={onReuse} />
         </li>
@@ -91,135 +64,130 @@ export function HistoryList({
   );
 }
 
-// Panneau de gauche : la vidéo centrée, sa barre de lecture dessous, et le
-// téléchargement sur le bord.
+// La vidéo cadrée, sa barre de lecture posée dessus, le téléchargement en
+// haut à droite.
 function Stage({ item }: { item: SwapHistoryItem }) {
   const { t } = useI18n();
   const V = t.videos;
   const player = usePlayer({ muted: false });
   return (
-    <div className="panel relative flex min-h-64 flex-col gap-2 overflow-hidden p-3">
-      <div className="flex flex-1 items-center justify-center">
-        <div
-          className={`group relative overflow-hidden rounded-2xl bg-black ${FRAME[item.aspectRatio]}`}
-          style={{ aspectRatio: item.aspectRatio.replace(":", " / ") }}
-        >
-          {item.mediaUrl ? (
-            <>
-              <video
-                // #t= : la première image s'affiche avant la lecture.
-                src={`${item.mediaUrl}#t=0.1`}
-                preload="metadata"
-                loop
-                playsInline
-                webkit-playsinline=""
-                {...player.videoProps}
-                className="size-full cursor-pointer object-contain"
-              />
-              {!player.playing && (
-                <span className="pointer-events-none absolute inset-0 m-auto flex size-14 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-transform duration-200 group-hover:scale-110">
-                  <Play className="size-6 translate-x-0.5 fill-current" />
-                </span>
-              )}
-              {player.ready && <PlayerBar player={player} overlay compact />}
-            </>
-          ) : (
-            <span className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-white/70">
-              <span className="size-7 animate-spin rounded-full border-2 border-white/25 border-t-white" />
-              {V.running}
-            </span>
-          )}
-        </div>
+    <div className={H.stage}>
+      <div className={`group ${H.frame}`} style={{ aspectRatio: item.aspectRatio.replace(":", " / "), ...FRAME[item.aspectRatio] }}>
+        {item.mediaUrl ? (
+          <>
+            <video
+              // #t= : la première image s'affiche avant la lecture.
+              src={`${item.mediaUrl}#t=0.1`}
+              preload="metadata"
+              loop
+              playsInline
+              webkit-playsinline=""
+              {...player.videoProps}
+              className="size-full cursor-pointer object-contain"
+            />
+            {!player.playing && (
+              <span className="pointer-events-none absolute inset-0 m-auto flex size-16 items-center justify-center rounded-full bg-white text-black shadow-lg transition-transform duration-200 group-hover:scale-110">
+                <Play className="size-6 translate-x-0.5 fill-current" />
+              </span>
+            )}
+            {player.ready && <PlayerBar player={player} overlay compact />}
+          </>
+        ) : (
+          <span className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center text-sm text-white/70">
+            <span className="size-7 animate-spin rounded-full border-2 border-white/25 border-t-white" />
+            {V.running}
+          </span>
+        )}
       </div>
       {item.mediaUrl && (
-        <a
-          href={item.downloadUrl ?? item.mediaUrl}
-          aria-label={V.download}
-          title={V.download}
-          className={`absolute top-3 right-3 ${STAGE_BUTTON}`}
-        >
-          <Download className="size-[1.125rem]" />
+        <a href={item.downloadUrl ?? item.mediaUrl} aria-label={V.download} title={V.download} className={H.download}>
+          <Download />
         </a>
       )}
     </div>
   );
 }
 
-// Panneau de droite : tout ce qui a servi au rendu, et ses actions.
+// Colonne de droite : tout ce qui a servi au rendu, et ses actions.
 function Details({ item, onReuse }: { item: SwapHistoryItem; onReuse?: (item: SwapHistoryItem) => void }) {
   const { t } = useI18n();
   const V = t.videos;
   const S = t.studio;
-  const reuseClass = "btn btn-secondary";
+  const mode = item.restyle
+    ? `${S.modeRestyle}${item.restyle.name ? ` · ${item.restyle.name}` : ""}`
+    : item.transfer
+      ? S.modeTransfer
+      : S.modeReplace;
+  const engine = item.settings.model === "max" ? S.modelMax : S.modelStandard;
+  const hasRefs = Boolean(item.clip || item.refs.length > 0 || item.decor);
+  const reuse = onReuse ? (
+    <button type="button" onClick={() => onReuse(item)} title={S.reuseHint} className="btn btn-secondary">
+      <RefreshCw />
+      {S.reuse}
+    </button>
+  ) : (
+    <Link href={`/dashboard/generate?reuse=${item.id}`} title={S.reuseHint} className="btn btn-secondary">
+      <RefreshCw />
+      {S.reuse}
+    </Link>
+  );
+
   return (
-    <div className="panel flex min-w-0 flex-col gap-4 p-5">
-      <span className="inline-flex items-center gap-2 self-start rounded-full bg-white px-3.5 py-1.5 text-sm font-semibold text-black">
-        <Sparkles className="size-4" />
-        {item.settings.model === "max" ? S.modelMax : S.modelStandard} ·{" "}
-        {item.restyle
-          ? `${S.modeRestyle}${item.restyle.name ? ` · ${item.restyle.name}` : ""}`
-          : item.transfer
-            ? S.modeTransfer
-            : S.modeReplace}
-      </span>
+    <div className={H.side}>
+      <h3 className={H.title}>
+        {mode}
+        <em>{engine}</em>
+      </h3>
 
-      <PromptText prompt={item.prompt} />
-      <RefStrip item={item} />
-
-      <div className="flex flex-wrap gap-1.5">
-        <Chip icon={MonitorPlay}>{item.settings.quality}</Chip>
-        {item.seconds ? <Chip icon={Clock}>{fmt(V.seconds, { seconds: item.seconds })}</Chip> : null}
-        <Chip icon={FORMAT_ICON[item.aspectRatio]}>{item.aspectRatio}</Chip>
-        {item.fidelity && (
-          <Chip icon={Layers} accent>
-            {S.methodFidelity}
-          </Chip>
-        )}
+      <div className={H.block}>
+        <p className={H.label}>{S.yourPrompt}</p>
+        <PromptText prompt={item.prompt} />
       </div>
-      {item.incomplete && (
-        <p className="inline-flex items-center gap-1.5 self-start rounded-full bg-warning/10 px-3 py-1.5 text-xs font-medium text-warning">
-          <TriangleAlert className="size-3.5" />
-          {item.incomplete}
-        </p>
+
+      {hasRefs && (
+        <div className={H.block}>
+          <p className={H.label}>{S.references}</p>
+          <RefStrip item={item} />
+        </div>
       )}
 
-      <p className="mt-auto pt-2 text-[0.8125rem] text-faint tabular-nums">{item.date}</p>
+      <ul className={H.facts}>
+        <li>{item.settings.quality}</li>
+        {item.seconds ? <li>{fmt(V.seconds, { seconds: item.seconds })}</li> : null}
+        <li>{item.aspectRatio}</li>
+        {item.fidelity && <li className={H.solid}>{S.methodFidelity}</li>}
+      </ul>
+      {item.incomplete && <p className={H.warn}>{item.incomplete}</p>}
 
-      <div className="flex items-center gap-1.5">
+      <div className={H.actions}>
         {item.running ? (
           <Link href={`/dashboard/generate?v=${item.id}`} className="btn btn-accent">
             {V.resume}
           </Link>
-        ) : onReuse ? (
-          <button type="button" onClick={() => onReuse(item)} title={S.reuseHint} className={reuseClass}>
-            <RefreshCw />
-            {S.reuse}
-          </button>
         ) : (
-          <Link href={`/dashboard/generate?reuse=${item.id}`} title={S.reuseHint} className={reuseClass}>
-            <RefreshCw />
-            {S.reuse}
-          </Link>
+          <div className={H.pair}>
+            {reuse}
+            <button
+              type="button"
+              onClick={() => askBotsToAnalyze(item.id, item.mediaUrl)}
+              title={t.viral.analyzeHint}
+              className="btn btn-secondary"
+            >
+              <Gauge />
+              {t.viral.analyzeShort}
+            </button>
+          </div>
         )}
-        {!item.running && (
-          <button
-            type="button"
-            onClick={() => askBotsToAnalyze(item.id, item.mediaUrl)}
-            title={t.viral.analyzeHint}
-            className="btn btn-secondary"
-          >
-            <Gauge />
-            {t.viral.analyzeShort}
-          </button>
-        )}
-        <span className="ml-auto" />
-        {item.prompt.trim() && <CopyButton text={item.prompt} label={S.copyPrompt} className="size-9" />}
-        <DeleteButton
-          id={item.id}
-          confirm={V.deleteConfirm}
-          icon={Trash2}
-          className="size-9 text-muted hover:bg-danger/15 hover:text-danger"
-        />
+        <div className={H.foot}>
+          <span>{item.date}</span>
+          {item.prompt.trim() && <CopyButton text={item.prompt} label={S.copyPrompt} className="size-9" />}
+          <DeleteButton
+            id={item.id}
+            confirm={V.deleteConfirm}
+            icon={Trash2}
+            className="size-9 text-muted hover:bg-danger/15 hover:text-danger"
+          />
+        </div>
       </div>
     </div>
   );
