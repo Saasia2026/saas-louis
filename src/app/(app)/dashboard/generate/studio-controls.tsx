@@ -74,14 +74,17 @@ export function Popover({
     <div
       ref={box}
       role="dialog"
-      style={{ top: place?.top ?? -9999, left: place?.left ?? -9999, width }}
-      className="fixed z-50 max-h-[min(28rem,calc(100dvh-1rem))] animate-fade-up overflow-y-auto rounded-3xl border border-line-strong bg-surface p-2 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.55)]"
+      style={{ top: place?.top ?? -9999, left: place?.left ?? -9999, width, ...GLASS }}
+      className="fixed z-50 max-h-[min(28rem,calc(100dvh-1rem))] animate-fade-up overflow-y-auto rounded-3xl border border-white/15 p-2 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.55)]"
     >
       {children}
     </div>,
     document.body,
   );
 }
+
+// Menus en verre, comme les cartes du site.
+const GLASS: React.CSSProperties = { background: "rgb(14 14 20 / 0.8)", backdropFilter: "blur(22px) saturate(1.2)", WebkitBackdropFilter: "blur(22px) saturate(1.2)" };
 
 // Ligne de réglage : son nom en petit, la valeur choisie dessous, une flèche.
 // Un clic ouvre le menu de ses choix.
@@ -150,13 +153,13 @@ export function Option({
       aria-checked={selected}
       onClick={onSelect}
       className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors ${
-        selected ? "bg-surface-2" : "hover:bg-surface-2/70"
+        selected ? "bg-white/10" : "hover:bg-white/5"
       }`}
     >
       {Icon && (
         <span
           className={`flex size-9 shrink-0 items-center justify-center rounded-full transition-colors ${
-            selected ? "bg-accent-soft text-accent-light" : "bg-surface-3 text-muted"
+            selected ? "bg-white text-black" : "bg-white/10 text-muted"
           }`}
         >
           <Icon className="size-4" />
@@ -177,7 +180,7 @@ export function Option({
 
 export function ModelBadge({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-full bg-accent-soft px-2 py-px text-[0.6875rem] font-semibold text-accent-light">
+    <span className="rounded-full border border-white/30 px-2 py-px text-[0.6875rem] font-semibold text-white">
       {children}
     </span>
   );

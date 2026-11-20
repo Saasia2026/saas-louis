@@ -67,9 +67,9 @@ export function MainNav() {
       <span
         ref={pill}
         aria-hidden
-        className="absolute inset-y-0 left-0 rounded-full bg-surface-3 opacity-0 transition-[transform,width,opacity] duration-300 [transition-timing-function:var(--ease-out)]"
+        className="absolute inset-y-0 left-0 rounded-full bg-white opacity-0 transition-[transform,width,opacity] duration-300 [transition-timing-function:var(--ease-out)]"
       />
-      {NAV_LINKS.map(({ href, key, icon: Icon }, i) => {
+      {NAV_LINKS.map(({ href, key }, i) => {
         const active = i === activeIndex;
         return (
           <Link
@@ -80,12 +80,12 @@ export function MainNav() {
             href={href}
             title={t.shell.navHint[key]}
             aria-current={active ? "page" : undefined}
-            className={`relative flex items-center gap-2 rounded-full px-3 py-2 transition-colors xl:px-3.5 ${
-              active ? "text-text" : "text-muted hover:text-text"
+            className={`relative flex items-center rounded-full px-3 py-2 transition-colors duration-300 ${
+              active ? "text-black" : "text-muted hover:text-text"
             }`}
           >
-            <Icon className={`size-4 shrink-0 transition-colors ${active ? "text-accent-light" : ""}`} />
-            <span className="hidden text-sm font-medium whitespace-nowrap xl:inline">{t.shell.nav[key]}</span>
+            {/* Comme la barre du bas : les noms seuls, sans icône. */}
+            <span className="text-sm font-semibold whitespace-nowrap">{t.shell.nav[key]}</span>
           </Link>
         );
       })}

@@ -18,7 +18,7 @@ import { BOT_VIDEO, HookFace, ScoutFace } from "./creatures";
 import { analyzeVideo } from "./virality-actions";
 
 // Les bots nagent sur tout l'écran comme des poissons dans un aquarium :
-// Scout (bulle blanche) montre les vidéos qui cartonnent, Hook (bulle violette)
+// Scout (bulle blanche) montre les vidéos qui cartonnent, Hook (bulle au contour voilé)
 // propose quoi dire. Leurs petites bulles s'ouvrent au clic sur la
 // fenêtre complète. Désactivables, choix gardé dans le navigateur.
 
@@ -375,7 +375,7 @@ function AccountPanel({ initial }: { initial: TikTokAnalysis | null }) {
   const section = (title: string, items: string[]) =>
     items.length > 0 && (
       <div>
-        <p className="text-xs font-semibold tracking-wide text-muted uppercase">{title}</p>
+        <p className="eyebrow">{title}</p>
         <ul className="mt-1.5 space-y-1.5 text-sm">
           {items.map((item) => (
             <li key={item} className="flex gap-2">
@@ -404,7 +404,7 @@ function AccountPanel({ initial }: { initial: TikTokAnalysis | null }) {
       <div className="flex items-center gap-3 rounded-2xl border border-line p-3">
         <p className="font-headline text-3xl leading-none tabular-nums">{report.potential.score}</p>
         <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-wide text-muted uppercase">{A.potential}</p>
+          <p className="eyebrow">{A.potential}</p>
           <p className="text-sm">{report.potential.note}</p>
         </div>
       </div>
@@ -413,7 +413,7 @@ function AccountPanel({ initial }: { initial: TikTokAnalysis | null }) {
       {section(A.stop, report.stop)}
       {section(A.next, report.nextVideos)}
       <div className="rounded-2xl border border-line bg-surface-2 p-3">
-        <p className="text-xs font-semibold tracking-wide text-muted uppercase">{A.rhythm}</p>
+        <p className="eyebrow">{A.rhythm}</p>
         <p className="mt-1 text-sm font-semibold">
           {report.rhythm.weekdays.map(weekday).join(", ")} · {report.rhythm.times.join(", ")}
         </p>
@@ -506,18 +506,18 @@ function HookPanel({ picks, index, setIndex, showVideo }: { picks: TrendPick[]; 
   return (
     <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
       <div className="rounded-2xl border border-line bg-surface-2 p-3">
-        <p className="text-xs font-semibold tracking-wide text-muted uppercase">{B.sayThis}</p>
+        <p className="eyebrow">{B.sayThis}</p>
         <div className="mt-1 flex items-start gap-2">
           <p className="min-w-0 flex-1 text-base font-semibold">« {p.hook} »</p>
           <CopyButton text={p.hook} />
         </div>
       </div>
       <div>
-        <p className="text-xs font-semibold tracking-wide text-muted uppercase">{B.why}</p>
+        <p className="eyebrow">{B.why}</p>
         <p className="mt-1 text-sm">{p.why}</p>
       </div>
       <div>
-        <p className="text-xs font-semibold tracking-wide text-muted uppercase">{B.how}</p>
+        <p className="eyebrow">{B.how}</p>
         <p className="mt-1 text-sm">{p.how}</p>
       </div>
       <button type="button" onClick={showVideo} className="btn btn-secondary w-full">
@@ -525,7 +525,7 @@ function HookPanel({ picks, index, setIndex, showVideo }: { picks: TrendPick[]; 
       </button>
       {picks.length > 1 && (
         <div>
-          <p className="text-xs font-semibold tracking-wide text-muted uppercase">{B.otherHooks}</p>
+          <p className="eyebrow">{B.otherHooks}</p>
           <div className="mt-1.5 space-y-1.5">
             {picks.map((o, i) =>
               i === index || !o.hook ? null : (

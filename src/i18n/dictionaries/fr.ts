@@ -667,6 +667,14 @@ export const fr = {
     tooLong: "C'est plus long que prévu. Reviens dans quelques minutes : la vidéo sera dans Mes vidéos.",
   },
 
+  notFound: {
+    eyebrow: "Erreur 404",
+    titleTop: "Rien ici.",
+    titleBottom: "La scène a été coupée.",
+    text: "Cette page n'existe pas ou n'existe plus.",
+    home: "Retour à l'accueil",
+    studio: "Ouvrir le studio",
+  },
   terms: {
     eyebrow: "Conditions",
     title: "Conditions d'utilisation",

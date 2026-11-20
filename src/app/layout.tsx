@@ -1,12 +1,10 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Archivo, Instrument_Serif, Inter } from "next/font/google";
-import { cookies } from "next/headers";
 import { I18nProvider } from "@/i18n/provider";
 import { siteUrl } from "@/lib/site";
 import { getDictionary, getLocale } from "@/i18n/server";
 import "./globals.css";
-import { isTheme, THEME_COOKIE } from "./theme";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -56,28 +54,22 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-// Barre d'état du téléphone assortie au thème, et zoom laissé libre.
+// Barre d'état du téléphone sombre, comme tout le site, et zoom laissé libre.
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f8fc" },
-    { media: "(prefers-color-scheme: dark)", color: "#05060f" },
-  ],
+  themeColor: "#08080b",
   viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();
-  // Thème choisi (sinon celui de l'appareil, en CSS). ThemeToggle modifie
-  // data-theme côté client, d'où suppressHydrationWarning.
-  const theme = (await cookies()).get(THEME_COOKIE)?.value;
   return (
     <html
       lang={locale}
-      data-theme={isTheme(theme) ? theme : undefined}
-      suppressHydrationWarning
+      data-theme="dark"
       className={`${inter.variable} ${archivo.variable} ${instrument.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col font-sans">
+      {/* Site toujours sombre, au style de la landing (voir .video-page). */}
+      <body className="video-page flex min-h-full flex-col bg-bg font-sans">
         <I18nProvider locale={locale}>{children}</I18nProvider>
         {/* Vercel Web Analytics : visites, provenance (référents, utm_source
             des liens de bio), sans cookie. */}

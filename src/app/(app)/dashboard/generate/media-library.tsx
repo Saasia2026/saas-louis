@@ -45,14 +45,15 @@ export function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-6"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-md sm:items-center sm:p-6"
       onPointerDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
         role="dialog"
         aria-modal
         aria-label={label}
-        className={`flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-line-strong bg-surface shadow-[0_24px_60px_-12px_rgb(0_0_0/0.6)] sm:rounded-3xl ${className}`}
+        className={`video-page flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-white/15 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.6)] sm:rounded-3xl ${className}`}
+        style={{ background: "rgb(14 14 20 / 0.82)", backdropFilter: "blur(24px) saturate(1.2)", WebkitBackdropFilter: "blur(24px) saturate(1.2)" }}
       >
         {children}
       </div>
@@ -69,7 +70,7 @@ export function ModalClose({ onClose }: { onClose: () => void }) {
       onClick={onClose}
       aria-label={t.studio.close}
       title={t.studio.close}
-      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-3 text-muted transition-colors hover:text-text"
+      className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-colors hover:bg-white hover:text-black"
     >
       <X className="size-4" />
     </button>
@@ -332,7 +333,7 @@ function Tile({
         </>
       )}
       {selected && (
-        <span className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white">
+        <span className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-accent text-xs font-semibold text-black">
           {badge ?? <Check className="size-3.5" />}
         </span>
       )}

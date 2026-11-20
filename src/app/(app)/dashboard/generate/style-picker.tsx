@@ -130,7 +130,7 @@ export function StylePicker({
                         className="size-full object-cover transition-transform duration-500 [transition-timing-function:var(--ease-out)] group-hover:scale-[1.05]"
                       />
                       {selected && (
-                        <span className="absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-accent text-white">
+                        <span className="absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-accent text-black">
                           <Check className="size-4" strokeWidth={3} />
                         </span>
                       )}

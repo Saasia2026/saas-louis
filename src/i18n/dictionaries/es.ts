@@ -665,6 +665,14 @@ export const es: Dictionary = {
     tooLong: "Está tardando más de lo previsto. Vuelve en unos minutos: el vídeo estará en Mis vídeos.",
   },
 
+  notFound: {
+    eyebrow: "Error 404",
+    titleTop: "Aquí no hay nada.",
+    titleBottom: "La escena se cortó.",
+    text: "Esta página no existe, o ya no existe.",
+    home: "Volver al inicio",
+    studio: "Abrir el estudio",
+  },
   terms: {
     eyebrow: "Condiciones",
     title: "Condiciones de uso",

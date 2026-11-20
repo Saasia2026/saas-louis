@@ -3,7 +3,7 @@
 import type { Ref } from "react";
 
 // Les deux bots sont des bulles vidéo : un rond qui joue un rendu Shinka en
-// boucle, avec deux yeux par-dessus. Contour blanc pour Scout, violet pour
+// boucle, avec deux yeux par-dessus. Contour blanc pour Scout, blanc voilé pour
 // Hook. Les vidéos sont les versions légères du mur (public/demos/wall :
 // 320 px, sans son, ~150 ko).
 //
@@ -71,5 +71,5 @@ export function ScoutFace(props: Props) {
 }
 
 export function HookFace(props: Props) {
-  return <Bubble {...props} src={BOT_VIDEO.hook} ring="#7c5cff" />;
+  return <Bubble {...props} src={BOT_VIDEO.hook} ring="rgb(255 255 255 / 0.45)" />;
 }

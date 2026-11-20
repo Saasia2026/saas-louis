@@ -784,8 +784,8 @@ export function Studio({
     <>
     {launched && (
       <div className="fixed inset-x-0 top-4 z-50 flex justify-center animate-fade-up pointer-events-none">
-        <div className="topbar pointer-events-auto gap-2 px-4 py-2.5 text-sm font-medium">
-          <Check className="size-4 text-accent" />
+        <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-[0_20px_50px_-15px_rgb(0_0_0/0.7)]">
+          <Check className="size-4" />
           {t.studio.launched}
         </div>
       </div>

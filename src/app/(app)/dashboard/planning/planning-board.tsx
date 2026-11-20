@@ -186,7 +186,7 @@ export function PlanningBoard({
           return (
             <div key={key} className="flex flex-col gap-2">
               <p className="flex items-baseline gap-1.5 px-0.5">
-                <span className="text-xs font-semibold text-muted uppercase">{weekday}</span>
+                <span className="text-xs font-semibold text-muted first-letter:uppercase">{weekday}</span>
                 <span className={`font-headline text-xl leading-none ${slots.length ? "text-text" : "text-faint"}`}>
                   {day}
                 </span>
@@ -488,7 +488,7 @@ function RhythmEditor({
           <span className="relative inline-flex shrink-0">
             <input type="checkbox" name="alertEmail" defaultChecked={plan.alertEmail} className="peer sr-only" />
             <span className="h-6 w-11 rounded-full border border-line-strong bg-surface-3 transition-colors peer-checked:border-transparent peer-checked:bg-accent peer-focus-visible:ring-2 peer-focus-visible:ring-accent/50" />
-            <span className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
+            <span className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5 peer-checked:bg-black" />
           </span>
           {P.alertEmail}
         </label>

@@ -51,7 +51,7 @@ export function PricingPlans({ enabled, initialBilling }: { enabled: boolean; in
             >
               {interval === "year" ? S.yearly : S.monthly}
               {interval === "year" && (
-                <span className="rounded-full bg-accent px-1.5 py-px text-[0.625rem] font-bold text-white tabular-nums">
+                <span className="rounded-full bg-accent px-1.5 py-px text-[0.625rem] font-bold text-black tabular-nums">
                   {fmt(P.off, { pct: MAX_YEARLY_OFF })}
                 </span>
               )}

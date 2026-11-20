@@ -503,7 +503,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                 <span className="relative inline-flex shrink-0">
                   <input type="checkbox" name="enabled" defaultChecked={payAsYouGo} className="peer sr-only" />
                   <span className="h-6 w-11 rounded-full border border-line-strong bg-surface-3 transition-colors peer-checked:border-transparent peer-checked:bg-accent peer-focus-visible:ring-2 peer-focus-visible:ring-accent/50" />
-                  <span className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
+                  <span className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5 peer-checked:bg-black" />
                 </span>
               </label>
               {profile?.auto_recharge_failed ? (

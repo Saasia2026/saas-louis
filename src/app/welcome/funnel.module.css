@@ -1,0 +1,451 @@
+/* Tunnel d'accueil, au style de la landing : posé sur une vidéo plein cadre,
+   les questions dans une carte en verre, sélections en blanc, l'avancée en
+   chiffres et en trait fin. */
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.round,
+.roundSpacer {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+}
+
+.round {
+  border: 1px solid rgb(255 255 255 / 0.2);
+  background: rgb(12 12 16 / 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #fff;
+  transition: background 0.2s;
+}
+
+.round:hover {
+  background: rgb(255 255 255 / 0.16);
+}
+
+.round svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.count {
+  flex: none;
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.count i {
+  font-style: normal;
+  font-weight: 500;
+  color: rgb(255 255 255 / 0.5);
+}
+
+.track {
+  position: relative;
+  flex: 1;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.18);
+}
+
+.track span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #fff;
+  transition: width 0.7s cubic-bezier(0.77, 0, 0.18, 1);
+}
+
+.card {
+  padding: 1.5rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 1.75rem;
+  background: rgb(12 12 16 / 0.58);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+  box-shadow: 0 40px 90px -40px rgb(0 0 0 / 0.8);
+}
+
+@media (min-width: 640px) {
+  .card {
+    padding: 2rem;
+  }
+}
+
+.title {
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 800;
+  font-stretch: 88%;
+  letter-spacing: -0.025em;
+  font-size: clamp(2rem, 6vw, 2.9rem);
+  line-height: 0.95;
+}
+
+/* Choix : verre clair, blanc plein une fois choisi. */
+.options {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1.75rem;
+}
+
+.option {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 1.1rem;
+  background: rgb(255 255 255 / 0.05);
+  color: #fff;
+  text-align: left;
+  transition:
+    background 0.25s,
+    border-color 0.25s,
+    color 0.25s;
+}
+
+.option:hover {
+  border-color: rgb(255 255 255 / 0.32);
+  background: rgb(255 255 255 / 0.1);
+}
+
+.optionLabel {
+  display: block;
+  font-weight: 600;
+}
+
+.optionHint {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.875rem;
+  color: rgb(255 255 255 / 0.62);
+}
+
+.tick {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  border-radius: 999px;
+}
+
+.tick svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.selected,
+.selected:hover {
+  border-color: #fff;
+  background: #fff;
+  color: #0c0c10;
+}
+
+.selected .optionHint {
+  color: rgb(12 12 16 / 0.6);
+}
+
+.selected .tick {
+  border-color: #0c0c10;
+  background: #0c0c10;
+  color: #fff;
+}
+
+.skip {
+  display: block;
+  width: 100%;
+  margin-top: 1.25rem;
+  font-size: 0.875rem;
+  text-align: center;
+  color: rgb(255 255 255 / 0.6);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.skip:hover {
+  color: #fff;
+}
+
+/* Accroche : en bas à gauche, sur la vidéo, comme la landing. */
+.intro {
+  display: flex;
+  min-height: calc(100dvh - 12rem);
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+
+@media (min-width: 640px) {
+  .intro {
+    align-items: flex-start;
+  }
+}
+
+.hero {
+  margin-top: 1.25rem;
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 800;
+  font-stretch: 88%;
+  letter-spacing: -0.025em;
+  font-size: clamp(2.9rem, 8vw, 5.5rem);
+  line-height: 0.92;
+}
+
+/* Le plan qui se construit. */
+.spinner {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #0c0c10;
+}
+
+.spinner svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.lines {
+  display: grid;
+  gap: 0.55rem;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lines li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 1.1rem;
+  background: rgb(255 255 255 / 0.05);
+  opacity: 0;
+  transform: translateY(0.5rem);
+  transition:
+    opacity 0.5s,
+    transform 0.5s cubic-bezier(0.77, 0, 0.18, 1);
+}
+
+.lines li.lineIn {
+  opacity: 1;
+  transform: none;
+}
+
+.lines span {
+  font-size: 0.875rem;
+  color: rgb(255 255 255 / 0.62);
+}
+
+.lines b {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: right;
+}
+
+.lines b svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+
+.bar {
+  position: relative;
+  height: 2px;
+  margin-top: 1.75rem;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.18);
+}
+
+.bar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #fff;
+  transition: width 0.5s cubic-bezier(0.77, 0, 0.18, 1);
+}
+
+/* Offre recommandée. */
+.visual {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  background: #000;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.18),
+    0 40px 80px -30px rgb(0 0 0 / 0.75);
+}
+
+.visual img,
+.visual video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.visual p {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 4rem 1.1rem 1.1rem;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.8), transparent);
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 800;
+  font-stretch: 88%;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.offer {
+  padding: 1.5rem;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 1.75rem;
+  background: rgb(12 12 16 / 0.6);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.billing {
+  display: flex;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.05);
+  font-size: 0.75rem;
+}
+
+.billing button {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.65);
+  transition:
+    background 0.25s,
+    color 0.25s;
+}
+
+.billing button:hover {
+  color: #fff;
+}
+
+.billing small {
+  font-size: 0.65rem;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.billing .billingOn,
+.billing .billingOn:hover {
+  background: #fff;
+  color: #0c0c10;
+}
+
+.unlocks {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.unlocks li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.unlocks span {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.1rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #0c0c10;
+}
+
+.unlocks svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.pack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 1.1rem;
+  background: rgb(12 12 16 / 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Téléphone : le prix et le bouton toujours à portée de pouce. */
+.dock {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 30;
+  padding: 0.75rem 1rem max(0.75rem, env(safe-area-inset-bottom));
+  border-top: 1px solid rgb(255 255 255 / 0.12);
+  background: rgb(10 10 14 / 0.78);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+
+@media (min-width: 768px) {
+  .dock {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lines li,
+  .track span,
+  .bar span {
+    transition: none;
+  }
+}
