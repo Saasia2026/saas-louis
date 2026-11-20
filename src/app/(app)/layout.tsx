@@ -6,7 +6,6 @@ import { LanguageSwitcher } from "@/app/language-switcher";
 import { Logo } from "@/app/logo";
 import { OfferPopup } from "@/app/offer-popup";
 import { offersFor } from "@/app/offers";
-import { ThemeToggle } from "@/app/theme-toggle";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { swapMethodRate } from "@/lib/generation";
@@ -60,7 +59,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       : fmt(t.shell.creditsSeconds, { n: videoSeconds });
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
+    // Toujours sombre, comme la landing : les pages sont posées sur des
+    // vidéos et des cartes de verre.
+    <div className="video-page flex min-h-dvh min-w-0 flex-1 flex-col overflow-x-clip bg-bg">
       {/* Barre du haut, en pilule flottante : la navigation y tient en une
           ligne et laisse tout l'écran au contenu. */}
       <header className="topbar-shell z-20">
@@ -92,7 +93,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
             <div className="flex items-center">
               <BotsToggle />
-              <ThemeToggle />
               <LanguageSwitcher />
             </div>
 

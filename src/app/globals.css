@@ -1088,7 +1088,7 @@ html {
   --text-muted: rgb(255 255 255 / 0.74);
   --text-faint: rgb(255 255 255 / 0.55);
   --accent: #7c5cff;
-  --accent-light: #c9bcff;
+  --accent-light: #ffffff;
   --accent-2: #9b7fff;
   --accent-soft: rgb(124 92 255 / 0.22);
   --accent-hot: #ff4fd8;
@@ -1113,4 +1113,31 @@ html {
 .video-page .glass {
   backdrop-filter: blur(18px) saturate(1.2);
   -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+
+/* App toujours sombre : barres en verre au-dessus des vidéos. */
+.video-page .topbar {
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+.video-page .topbar-shell {
+  background: linear-gradient(to bottom, rgb(8 8 11 / 0.65) 30%, transparent);
+}
+.video-page .app-bottom-nav {
+  background: rgb(10 10 14 / 0.78);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+
+/* Studio : le générateur et les panneaux flottent en verre sur la vidéo. */
+.studio-stage {
+  --surface: rgb(16 16 22 / 0.72);
+  --surface-2: rgb(255 255 255 / 0.08);
+  --surface-3: rgb(255 255 255 / 0.14);
+  --line: rgb(255 255 255 / 0.16);
+}
+.studio-stage .composer,
+.studio-stage .panel {
+  backdrop-filter: blur(22px) saturate(1.25);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
 }
