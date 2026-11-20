@@ -498,7 +498,8 @@ function PlanStep({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={influencer.url} alt="" />
             ) : (
-              <video src="/demos/demo-20.mp4" poster="/demos/demo-20.jpg" muted loop autoPlay playsInline aria-hidden />
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src="/photos/tongue.jpg" alt="" />
             )}
             {influencer && <p>{W.plan.ready}</p>}
           </div>

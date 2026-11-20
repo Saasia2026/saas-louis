@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BackdropVideo } from "@/app/backdrop-video";
+import { BackdropPhoto } from "@/app/backdrop-photo";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { getDictionary } from "@/i18n/server";
 import { readRefCode } from "@/lib/referral";
@@ -26,7 +26,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
 
   return (
     <main className="video-page relative isolate flex min-h-dvh flex-1 flex-col">
-      <BackdropVideo h="/demos/demo-21" v="/examples/gallery/g-105" />
+      <BackdropPhoto src="/photos/red-glass.jpg" side="left" focus="50% 35%" />
       <header className="flex items-center justify-between px-5 pt-5 sm:px-8 lg:px-12" style={{ paddingTop: "calc(1.25rem + env(safe-area-inset-top))" }}>
         <Link href="/" className="font-wide text-[0.95rem] tracking-wide uppercase">
           TwinPost

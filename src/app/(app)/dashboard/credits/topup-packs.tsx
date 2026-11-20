@@ -37,7 +37,7 @@ export function TopupPacks({ card, nonce, enabled }: { card: Card; nonce: string
     <div className="space-y-5">
       {/* Grand format au curseur. */}
       <div className={c.big}>
-        <video src="/demos/demo-17.mp4" poster="/demos/demo-17.jpg" muted loop autoPlay playsInline aria-hidden />
+        <video src="/demos/demo-11.mp4" poster="/demos/demo-11.jpg" muted loop autoPlay playsInline aria-hidden />
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">

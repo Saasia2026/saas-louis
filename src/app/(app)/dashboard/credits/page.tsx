@@ -205,8 +205,8 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
           solde dans une carte de verre. Sombre dans les deux thèmes. */}
       <section className="relative isolate overflow-hidden rounded-[2rem] border border-white/10 bg-[#0b0a0e] px-5 py-14 text-center text-white sm:py-20">
         <video
-          src="/demos/demo-21.mp4"
-          poster="/demos/demo-21.jpg"
+          src="/demos/demo-16.mp4"
+          poster="/demos/demo-16.jpg"
           muted
           loop
           autoPlay

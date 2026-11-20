@@ -28,7 +28,8 @@ export type Offer = {
   figureLabel?: string;
   cta: string;
   href: string;
-  video: string;
+  // Photo de la carte (chemin complet).
+  photo: string;
 };
 
 const MAX_SUBSCRIPTION_OFF = Math.max(...SUBSCRIPTION_PLANS.map((plan) => subscriptionOff(plan, "year")));
@@ -39,6 +40,19 @@ const BONUS_PACK = CREDIT_PACKS.filter((p) => p.credits <= 5000).sort((a, b) => 
 
 // Abonnement annuel qui fait économiser le plus sur un an.
 const BEST_PLAN = [...SUBSCRIPTION_PLANS].sort((a, b) => subscriptionYearlySaving(b, "year") - subscriptionYearlySaving(a, "year"))[0];
+
+// Bandeau du haut : la plus forte remise de l'abonnement annuel.
+export function offerBarFor(t: Dictionary, loggedIn: boolean) {
+  const B = t.offerBar;
+  return {
+    chip: B.chip,
+    text: fmt(B.text, { off: fmt(t.creditsPage.off, { pct: MAX_SUBSCRIPTION_OFF }) }),
+    short: fmt(B.short, { off: fmt(t.creditsPage.off, { pct: MAX_SUBSCRIPTION_OFF }) }),
+    cta: B.cta,
+    close: B.close,
+    href: loggedIn ? "/dashboard/credits?billing=year" : "/login?next=/dashboard/credits",
+  };
+}
 
 export function offersFor(t: Dictionary, locale: Locale, loggedIn: boolean): Offer[] {
   const intl = INTL_LOCALES[locale];
@@ -54,7 +68,7 @@ export function offersFor(t: Dictionary, locale: Locale, loggedIn: boolean): Off
         text: fmt(t.landing.pricingSubs, { off: fmt(t.creditsPage.off, { pct: MAX_SUBSCRIPTION_OFF }) }),
         cta: t.landing.allPrices,
         href: credits,
-        video: "/demos/demo-17",
+        photo: "/photos/blue-eye.jpg",
       }
     : {
         id: "signup",
@@ -63,7 +77,7 @@ export function offersFor(t: Dictionary, locale: Locale, loggedIn: boolean): Off
         text: t.login.freeCredits,
         cta: t.login.submitSignUp,
         href: "/login",
-        video: "/demos/demo-21",
+        photo: "/photos/blue-eye.jpg",
       };
 
   const offers: Offer[] = [first];
@@ -79,7 +93,7 @@ export function offersFor(t: Dictionary, locale: Locale, loggedIn: boolean): Off
       figureLabel: O.packFigure,
       cta: t.landing.allPrices,
       href: credits,
-      video: "/demos/demo-09",
+      photo: "/photos/red-glass.jpg",
     });
   }
 
@@ -98,7 +112,7 @@ export function offersFor(t: Dictionary, locale: Locale, loggedIn: boolean): Off
       figure: fmt(t.creditsPage.off, { pct: subscriptionOff(BEST_PLAN, "year") }),
       cta: O.savingCta,
       href: yearly,
-      video: "/demos/demo-20",
+      photo: "/photos/tongue.jpg",
     });
   }
 

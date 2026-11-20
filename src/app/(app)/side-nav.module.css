@@ -5,7 +5,7 @@
 
 .aside {
   position: fixed;
-  inset: 0 auto 0 0;
+  inset: var(--offer-bar, 0px) auto 0 0;
   z-index: 30;
   display: none;
   width: 15rem;

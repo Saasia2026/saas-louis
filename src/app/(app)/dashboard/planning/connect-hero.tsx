@@ -22,8 +22,8 @@ export async function ConnectHero() {
   return (
     <section className="video-page relative isolate mt-8 grid animate-fade-up items-center gap-8 overflow-hidden rounded-[2rem] border border-white/10 bg-black p-6 sm:p-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <video
-        src="/demos/demo-09.mp4"
-        poster="/demos/demo-09.jpg"
+        src="/demos/demo-19.mp4"
+        poster="/demos/demo-19.jpg"
         muted
         loop
         autoPlay

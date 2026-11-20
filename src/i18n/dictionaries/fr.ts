@@ -159,6 +159,13 @@ export const fr = {
     startFree: "Créer mon compte",
   },
 
+  offerBar: {
+    chip: "Offre annuelle",
+    text: "Abonnement annuel : jusqu'à {off} sur tes crédits.",
+    short: "Annuel : jusqu'à {off}",
+    cta: "Voir l'offre",
+    close: "Masquer l'offre",
+  },
   offers: {
     label: "Offre",
     close: "Fermer",

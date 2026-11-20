@@ -1073,6 +1073,21 @@ html {
   }
 }
 
+/* Bandeau d'offre (offer-bar.tsx) : tant qu'il est affiché, sa hauteur
+   décale le corps de page et les éléments fixés en haut. */
+:root:has([data-offer-bar]) {
+  --offer-bar: 2.5rem;
+}
+
+body {
+  padding-top: var(--offer-bar, 0px);
+}
+
+/* Pages plein écran : leur hauteur laisse la place du bandeau. */
+body .min-h-dvh {
+  min-height: calc(100dvh - var(--offer-bar, 0px));
+}
+
 /* Page posée sur une vidéo plein cadre (connexion, accueil après
    inscription…) : toujours en sombre, quel que soit le thème choisi, avec
    des cartes en verre qui laissent voir la vidéo. Reprend les valeurs du

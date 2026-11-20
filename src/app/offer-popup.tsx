@@ -86,7 +86,8 @@ export function OfferPopup({
       {top} {bottom && <em>{bottom}</em>}
     </p>
   );
-  const video = <video src={`${offer.video}.mp4`} poster={`${offer.video}.jpg`} muted loop autoPlay playsInline aria-hidden />;
+  // eslint-disable-next-line @next/next/no-img-element
+  const video = <img src={offer.photo} alt="" aria-hidden />;
   const closeButton = (
     <button type="button" className={s.close} onClick={close} aria-label={t.offers.close} title={t.offers.close}>
       <X />

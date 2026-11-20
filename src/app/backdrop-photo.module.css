@@ -1,0 +1,100 @@
+/* Photo de fond, au style des couvertures de magazine : sur téléphone elle
+   remplit l'écran (les photos sont verticales) ; sur un écran large elle
+   devient un panneau d'un côté, fondu dans le noir, et ses couleurs, très
+   floues, éclairent doucement le reste de la page. */
+
+.root {
+  pointer-events: none;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  background: #08080b;
+}
+
+.fixed {
+  position: fixed;
+}
+
+.absolute {
+  position: absolute;
+}
+
+/* Ambiance : la même photo, très floue, sur toute la largeur. */
+.ambient {
+  position: absolute;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
+  object-fit: cover;
+  filter: blur(70px) saturate(1.4);
+  opacity: 0.35;
+}
+
+.photo {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  height: 100%;
+  object-fit: cover;
+  animation: photo-in 1.2s cubic-bezier(0.77, 0, 0.18, 1) both;
+}
+
+.veil {
+  position: absolute;
+  inset: 0;
+}
+
+/* Écran large : panneau d'un côté, fondu vers le centre. */
+.right .photo {
+  right: 0;
+  width: min(48vw, 46rem);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 32%);
+  mask-image: linear-gradient(to right, transparent, #000 32%);
+}
+
+.left .photo {
+  left: 0;
+  width: min(48vw, 46rem);
+  -webkit-mask-image: linear-gradient(to left, transparent, #000 32%);
+  mask-image: linear-gradient(to left, transparent, #000 32%);
+}
+
+.right .veil {
+  background: linear-gradient(to bottom, rgb(8 8 11 / 0.35), transparent 25%, transparent 70%, rgb(8 8 11 / 0.6));
+}
+
+.left .veil {
+  background: linear-gradient(to bottom, rgb(8 8 11 / 0.35), transparent 25%, transparent 55%, rgb(8 8 11 / 0.8));
+}
+
+/* Écran en hauteur (téléphone) : plein cadre, voile en haut et en bas. */
+@media (max-aspect-ratio: 4/5) {
+  .root .photo {
+    left: 0;
+    right: 0;
+    width: 100%;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .root .ambient {
+    display: none;
+  }
+
+  .root .veil {
+    background: linear-gradient(to bottom, rgb(0 0 0 / 0.45), transparent 22%, transparent 45%, rgb(0 0 0 / 0.82));
+  }
+}
+
+@keyframes photo-in {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo {
+    animation: none;
+  }
+}

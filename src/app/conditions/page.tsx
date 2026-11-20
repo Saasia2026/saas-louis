@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BackdropPhoto } from "@/app/backdrop-photo";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { getDictionary } from "@/i18n/server";
 
@@ -20,20 +21,11 @@ export default async function TermsPage() {
   return (
     <div className="video-page flex min-h-dvh flex-1 flex-col bg-bg">
       <section className="relative isolate flex min-h-[42vh] flex-col overflow-hidden">
-        <video
-          src="/demos/demo-17.mp4"
-          poster="/demos/demo-17.jpg"
-          muted
-          loop
-          autoPlay
-          playsInline
-          aria-hidden
-          className="absolute inset-0 -z-10 size-full object-cover"
-        />
+        <BackdropPhoto src="/photos/blue-eye.jpg" focus="50% 22%" contained />
         <div
           aria-hidden
-          className="absolute inset-0 -z-10"
-          style={{ background: "linear-gradient(to bottom, rgb(8 8 11 / 0.55), rgb(8 8 11 / 0.25) 40%, #08080b)" }}
+          className="absolute inset-x-0 bottom-0 h-1/2"
+          style={{ zIndex: -5, background: "linear-gradient(to bottom, transparent, #08080b)" }}
         />
         <header
           className="mx-auto flex w-full max-w-3xl items-center justify-between px-5 pt-5 sm:px-6"

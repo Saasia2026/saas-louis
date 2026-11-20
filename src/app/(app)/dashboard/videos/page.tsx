@@ -38,8 +38,8 @@ export default async function VideosPage() {
       {shown.length === 0 ? (
         <div className="video-page relative isolate mt-8 flex min-h-[26rem] animate-fade-up flex-col items-start justify-end gap-5 overflow-hidden rounded-[2rem] border border-white/10 bg-black p-6 sm:p-10">
           <video
-            src="/demos/demo-21.mp4"
-            poster="/demos/demo-21.jpg"
+            src="/demos/demo-12.mp4"
+            poster="/demos/demo-12.jpg"
             muted
             loop
             autoPlay

@@ -8,7 +8,7 @@ export async function StudioStage({ children }: { children: React.ReactNode }) {
   const L = (await getDictionary()).landing;
   return (
     <>
-      <BackdropVideo h="/demos/demo-21" v="/examples/gallery/g-105" />
+      <BackdropVideo h="/demos/demo-18" v="/examples/gallery/g-06" />
       <header className="mx-auto mb-8 max-w-4xl animate-fade-up pt-2 text-center sm:mb-10 sm:pt-6">
         <p className="eyebrow justify-center">{L.eyebrow}</p>
         <h1 className="mt-4 font-headline text-4xl leading-[1] text-white sm:text-6xl">

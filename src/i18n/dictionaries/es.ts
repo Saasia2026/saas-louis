@@ -157,6 +157,13 @@ export const es: Dictionary = {
     startFree: "Crear mi cuenta",
   },
 
+  offerBar: {
+    chip: "Oferta anual",
+    text: "Plan anual: hasta {off} en tus créditos.",
+    short: "Anual: hasta {off}",
+    cta: "Ver la oferta",
+    close: "Ocultar la oferta",
+  },
   offers: {
     label: "Oferta",
     close: "Cerrar",

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BackdropVideo } from "@/app/backdrop-video";
+import { BackdropPhoto } from "@/app/backdrop-photo";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { getDictionary } from "@/i18n/server";
 import { safeNextPath } from "@/lib/safe-next-path";
@@ -37,7 +37,7 @@ export default async function WelcomePage(props: PageProps<"/welcome">) {
 
   return (
     <div className="video-page relative isolate flex min-h-dvh min-w-0 flex-1 flex-col overflow-x-clip">
-      <BackdropVideo h="/demos/demo-21" v="/examples/gallery/g-105" />
+      <BackdropPhoto src="/photos/shelves.jpg" focus="50% 20%" />
       <header className="flex items-center justify-between px-5 pt-5 sm:px-8 lg:px-12" style={{ paddingTop: "calc(1.25rem + env(safe-area-inset-top))" }}>
         <Link href={next} className="font-wide text-[0.95rem] tracking-wide uppercase">
           TwinPost

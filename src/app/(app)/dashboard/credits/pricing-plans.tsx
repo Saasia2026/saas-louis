@@ -19,7 +19,7 @@ import { subscribe } from "./actions";
 import s from "./credits.module.css";
 
 // Vidéo de fond de chaque abonnement (sans extension).
-const PLAN_VIDEO = { pro: "/demos/demo-09", creator: "/demos/demo-20" } as const;
+const PLAN_PHOTO = { pro: "/photos/chess.jpg", creator: "/photos/shelves.jpg" } as const;
 
 const PRO = SUBSCRIPTION_PLANS.filter((p) => p.tier === "pro");
 const CREATOR = SUBSCRIPTION_PLANS.filter((p) => p.tier === "creator");
@@ -112,15 +112,8 @@ function PlanCard({
   return (
     <li className="flex flex-col">
       <div className={s.plan}>
-        <video
-          src={`${PLAN_VIDEO[plan.tier]}.mp4`}
-          poster={`${PLAN_VIDEO[plan.tier]}.jpg`}
-          muted
-          loop
-          autoPlay
-          playsInline
-          aria-hidden
-        />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={PLAN_PHOTO[plan.tier]} alt="" aria-hidden style={{ objectPosition: plan.tier === "pro" ? "50% 30%" : "50% 20%" }} />
         <div className={s.planTop}>
           <h3 className={s.planName}>{S.plans[plan.tier]}</h3>
           {popular && (

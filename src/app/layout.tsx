@@ -1,10 +1,13 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Archivo, Instrument_Serif, Inter } from "next/font/google";
+import { cookies } from "next/headers";
 import { I18nProvider } from "@/i18n/provider";
 import { siteUrl } from "@/lib/site";
 import { getDictionary, getLocale } from "@/i18n/server";
 import "./globals.css";
+import { OFFER_BAR_COOKIE, OfferBar } from "./offer-bar";
+import { offerBarFor } from "./offers";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -61,7 +64,11 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const locale = await getLocale();
+  const [locale, t, jar] = await Promise.all([getLocale(), getDictionary(), cookies()]);
+  // Connecté ? (cookie de session Supabase) : le bandeau mène aux crédits
+  // ou à la connexion.
+  const loggedIn = jar.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
+  const showBar = !jar.get(OFFER_BAR_COOKIE);
   return (
     <html
       lang={locale}
@@ -70,7 +77,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       {/* Site toujours sombre, au style de la landing (voir .video-page). */}
       <body className="video-page flex min-h-full flex-col bg-bg font-sans">
-        <I18nProvider locale={locale}>{children}</I18nProvider>
+        <I18nProvider locale={locale}>
+          {showBar && <OfferBar {...offerBarFor(t, loggedIn)} />}
+          {children}
+        </I18nProvider>
         {/* Vercel Web Analytics : visites, provenance (référents, utm_source
             des liens de bio), sans cookie. */}
         <Analytics />

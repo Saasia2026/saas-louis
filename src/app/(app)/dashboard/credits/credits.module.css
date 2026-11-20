@@ -15,6 +15,7 @@
 }
 
 .plan > video,
+.plan > img,
 .big > video {
   position: absolute;
   inset: 0;
