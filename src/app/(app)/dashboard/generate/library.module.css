@@ -1,0 +1,226 @@
+/* Bibliothèque des dépôts (My uploads), au style de la carte du clip dans
+   le studio : chaque vidéo ou photo est une carte au bord blanc épais,
+   légèrement penchée (un peu à gauche, un peu à droite d'une carte à
+   l'autre), l'image remplit la carte, bouton lecture en verre et pastille
+   de durée. Au survol, la carte se redresse et se soulève. */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem 1rem;
+  padding: 0.75rem 0.5rem 1rem;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  transform: rotate(var(--tilt, 0deg));
+  transition:
+    transform 0.35s cubic-bezier(0.77, 0, 0.18, 1),
+    opacity 0.25s;
+}
+
+.tile:hover:not(:disabled),
+.tile:focus-visible {
+  transform: rotate(0deg) translateY(-4px) scale(1.02);
+}
+
+.tile:disabled {
+  cursor: default;
+}
+
+.frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 2px solid rgb(255 255 255 / 0.85);
+  border-radius: 1rem;
+  background: #000;
+  box-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.6);
+  transition: box-shadow 0.25s;
+}
+
+.frame video,
+.frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* Vidéo sans image lisible (format que le navigateur ne lit pas). */
+.empty {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.02));
+  color: rgb(255 255 255 / 0.6);
+}
+
+.empty svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+/* Choisie : anneau blanc autour de la carte, pastille en haut à droite. */
+.selected .frame {
+  box-shadow:
+    0 0 0 3px #08080b,
+    0 0 0 5px #fff,
+    0 18px 40px -12px rgb(0 0 0 / 0.6);
+}
+
+.dimmed {
+  opacity: 0.4;
+}
+
+.play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.tile:hover .play {
+  opacity: 0;
+}
+
+.play svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  fill: currentColor;
+  transform: translateX(1px);
+}
+
+.time {
+  position: absolute;
+  bottom: 0.6rem;
+  left: 0.6rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.375rem;
+  background: rgb(0 0 0 / 0.7);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.badge {
+  position: absolute;
+  top: -0.55rem;
+  right: -0.55rem;
+  display: flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #fff;
+  color: #0c0c10;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 6px 16px -6px rgb(0 0 0 / 0.7);
+}
+
+.badge svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+/* Déposer un fichier : même forme, bord blanc en pointillés. */
+.upload {
+  display: flex;
+  aspect-ratio: 1;
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border: 2px dashed rgb(255 255 255 / 0.35);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 0.04);
+  text-align: center;
+  transition:
+    border-color 0.25s,
+    background 0.25s;
+}
+
+.upload:hover {
+  border-color: #fff;
+  background: rgb(255 255 255 / 0.08);
+}
+
+.uploadIcon {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff;
+  color: #0c0c10;
+  transition: transform 0.25s cubic-bezier(0.77, 0, 0.18, 1);
+}
+
+.upload:hover .uploadIcon {
+  transform: scale(1.06);
+}
+
+.uploadIcon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.skeleton {
+  aspect-ratio: 1;
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 0.06);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile,
+  .tile:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .skeleton {
+    animation: none;
+  }
+}
