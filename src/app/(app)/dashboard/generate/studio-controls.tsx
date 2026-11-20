@@ -1,7 +1,6 @@
 "use client";
 
 import { Check, ChevronRight, Move, Palette, Replace, Sparkles, Zap, type LucideIcon } from "lucide-react";
-import { Space_Grotesk } from "next/font/google";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePauseWhenHidden } from "@/app/pause-hidden";
@@ -9,7 +8,6 @@ import { useI18n } from "@/i18n/provider";
 import type { GenjutsuModel } from "@/lib/generation";
 
 // Nom du modèle sur sa carte.
-const modelNameFont = Space_Grotesk({ subsets: ["latin"], weight: "700" });
 
 // Commandes du panneau de création : la carte du modèle, les deux modes, et
 // les lignes de réglage dont le menu s'ouvre à côté du panneau.
@@ -244,10 +242,8 @@ export function ModelCard({
       </button>
       <div className="@container absolute inset-x-0 bottom-0 p-4">
         <p className="text-[0.6875rem] font-semibold text-white/70">{t.studio.poweredByLabel}</p>
-        <p
-          className={`${modelNameFont.className} text-[9.2cqw] leading-none tracking-tight whitespace-nowrap text-[#b4a3ff] uppercase [text-shadow:0_1px_6px_rgb(0_0_0_/_0.7)]`}
-        >
-          TwinPost {name}
+        <p className="font-headline text-[10.5cqw] leading-none whitespace-nowrap text-white [text-shadow:0_1px_8px_rgb(0_0_0_/_0.6)]">
+          TwinPost <span className="text-shine text-white">{name}</span>
         </p>
         <p className="mt-1 text-xs text-white/75">{tagline}</p>
       </div>

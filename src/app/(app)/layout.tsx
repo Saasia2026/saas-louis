@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { signOut } from "@/app/login/actions";
 import { LanguageSwitcher } from "@/app/language-switcher";
 import { Logo } from "@/app/logo";
-import { VideoWall } from "@/app/video-wall";
 import { ThemeToggle } from "@/app/theme-toggle";
 import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
@@ -62,7 +61,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
       {/* Même fond que le landing, en plus discret : l'outil reste
           concentré, le site reste un seul monde. */}
-      <VideoWall />
 
       {/* Barre du haut, en pilule flottante : la navigation y tient en une
           ligne et laisse tout l'écran au contenu. */}

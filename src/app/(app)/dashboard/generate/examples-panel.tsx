@@ -3,6 +3,7 @@
 import { Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { usePauseWhenHidden } from "@/app/pause-hidden";
+import { TitleLines } from "@/app/title-lines";
 import { useI18n } from "@/i18n/provider";
 import { DemoFeed } from "./feed/feed";
 import { useFeedItems, type FeedItem } from "./feed/feed-items";
@@ -86,7 +87,9 @@ export function ExamplesPanel({
     <div ref={root} className="space-y-5">
       <div className="grid items-center gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div>
-          <h2 className="font-headline text-4xl leading-[0.92] uppercase sm:text-5xl">{E.title}</h2>
+          <h2 className="font-headline text-4xl leading-[0.95] sm:text-5xl">
+            <TitleLines text={E.title} />
+          </h2>
           <p className="mt-3 max-w-md text-sm leading-relaxed text-muted">{E.text}</p>
           <button type="button" onClick={() => open(0)} className="btn btn-secondary mt-4 px-4 py-2 text-sm">
             <Play />
