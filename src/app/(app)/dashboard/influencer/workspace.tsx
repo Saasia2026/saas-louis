@@ -3,6 +3,7 @@
 import { ArrowRight, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { TitleLines } from "@/app/title-lines";
 import { useI18n } from "@/i18n/provider";
 import { deleteInfluencer } from "./actions";
 import { InfluencerCreator, type CreatedInfluencer } from "./creator";
@@ -33,7 +34,9 @@ export function InfluencerWorkspace({
 
       {items.length > 0 && (
         <section className="mt-16">
-          <h2 className="font-headline text-3xl leading-none sm:text-4xl">{I.gallery}</h2>
+          <h2 className="font-headline text-3xl leading-none sm:text-4xl">
+            <TitleLines text={I.gallery} stacked={false} />
+          </h2>
           <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {items.map((item) => (
               <li key={item.id} className="group relative aspect-[3/4] overflow-hidden rounded-2xl border border-line bg-surface-2">

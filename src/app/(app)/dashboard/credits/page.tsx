@@ -24,7 +24,7 @@ import { GENJUTSU_RATES } from "@/lib/generation";
 import { CANCEL_REASONS, PAUSE_MONTHS, RETENTION_OFF_PERCENT } from "@/lib/retention";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { createClient } from "@/lib/supabase/server";
-import { BADGE, tierCard } from "@/app/tier-style";
+import { BADGE } from "@/app/tier-style";
 import {
   acceptRetentionOffer,
   addCard,
@@ -215,7 +215,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
           className="pointer-events-none absolute inset-0 -z-20 size-full object-cover"
         />
         <div aria-hidden className="absolute inset-0 -z-10" style={{ background: HERO_VEIL }} />
-        <p className="text-sm font-semibold tracking-wide text-white/60">{P.title}</p>
+        <p className="text-sm font-medium text-white/70">{P.title}</p>
         <h1 className="mx-auto mt-3 max-w-4xl font-headline text-5xl leading-[0.95] text-white sm:text-7xl">
           <TitleLines text={P.heroTitle} />
         </h1>
@@ -424,7 +424,9 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
       <section id="packs" className="mt-20 scroll-mt-24">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="font-headline text-4xl leading-none sm:text-5xl">{P.topupsTitle}</h2>
+            <h2 className="font-headline text-4xl leading-none sm:text-5xl">
+              <TitleLines text={P.topupsTitle} stacked={false} />
+            </h2>
             <p className="mt-3 text-[0.9375rem] text-muted">{P.topupsIntro}</p>
           </div>
           <p className="flex items-center gap-2 text-sm text-muted">
@@ -440,12 +442,11 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
       {/* Paiement à l'usage : la carte paie ce qui manque au lancement. */}
       <section
         id="auto"
-        className="mt-20 scroll-mt-24 rounded-[1.75rem] border p-6 sm:p-8"
-        style={tierCard("var(--accent)", 22)}
+        className="panel mt-20 scroll-mt-24 p-6 sm:p-8"
       >
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="font-headline text-4xl leading-none sm:text-5xl">{A.usageTitle}</h2>
-          <span className={`${BADGE} bg-accent text-white`}>{A.recommended}</span>
+          <span className={`${BADGE} bg-text text-bg`}>{A.recommended}</span>
         </div>
         <p className="mt-3 max-w-lg text-sm text-muted">{A.usagePitch}</p>
         <ul className="mt-5 space-y-2.5 text-sm">

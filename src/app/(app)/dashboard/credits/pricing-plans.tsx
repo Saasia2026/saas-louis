@@ -16,15 +16,18 @@ import {
   type SubscriptionPlan,
 } from "@/lib/credit-packs";
 import { subscribe } from "./actions";
-import { HOT_PILL, HOT_PILL_SM, LIME, PINK, PLAN_LOOK } from "./pricing-look";
+import s from "./credits.module.css";
+
+// Vidéo de fond de chaque abonnement (sans extension).
+const PLAN_VIDEO = { pro: "/demos/demo-09", creator: "/demos/demo-20" } as const;
 
 const PRO = SUBSCRIPTION_PLANS.filter((p) => p.tier === "pro");
 const CREATOR = SUBSCRIPTION_PLANS.filter((p) => p.tier === "creator");
 const MAX_YEARLY_OFF = Math.max(...SUBSCRIPTION_PLANS.map((p) => subscriptionOff(p, "year")));
 
-// Les deux abonnements, façon page de prix Higgsfield : la carte colorée
-// (nom, prix barré face aux recharges, bouton avec la réduction réelle),
-// puis les crédits et ce qu'ils donnent en vidéos.
+// Les deux abonnements, au style de la landing : une carte sur une vidéo
+// (nom, accroche en italique, prix barré face aux recharges, bouton blanc
+// avec la réduction réelle), puis les crédits et ce qui est compris.
 export function PricingPlans({ enabled, initialBilling }: { enabled: boolean; initialBilling: BillingInterval }) {
   const { t, locale } = useI18n();
   const P = t.creditsPage;
@@ -47,7 +50,11 @@ export function PricingPlans({ enabled, initialBilling }: { enabled: boolean; in
               }`}
             >
               {interval === "year" ? S.yearly : S.monthly}
-              {interval === "year" && <span className={HOT_PILL_SM}>{fmt(P.off, { pct: MAX_YEARLY_OFF })}</span>}
+              {interval === "year" && (
+                <span className="rounded-full bg-accent px-1.5 py-px text-[0.625rem] font-bold text-white tabular-nums">
+                  {fmt(P.off, { pct: MAX_YEARLY_OFF })}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -61,18 +68,9 @@ export function PricingPlans({ enabled, initialBilling }: { enabled: boolean; in
           enabled={enabled}
           locale={locale}
           sizes={
-            <div role="radiogroup" aria-label={P.sizeLabel} className="flex gap-0.5 rounded-full bg-black/20 p-1 text-sm font-bold">
+            <div role="radiogroup" aria-label={P.sizeLabel} className={s.sizes}>
               {CREATOR.map((plan, i) => (
-                <button
-                  key={plan.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={creatorSize === i}
-                  onClick={() => setCreatorSize(i)}
-                  className={`rounded-full px-3 py-1 tabular-nums transition-colors ${
-                    creatorSize === i ? "bg-white text-[#9b1659] shadow-sm" : "text-white/80 hover:text-white"
-                  }`}
-                >
+                <button key={plan.id} type="button" role="radio" aria-checked={creatorSize === i} onClick={() => setCreatorSize(i)}>
                   {plan.credits / 1000}K
                 </button>
               ))}
@@ -104,8 +102,6 @@ function PlanCard({
   const S = P.subscriptions;
   const intl = INTL_LOCALES[locale];
   const price = (amount: number) => formatPrice(amount, intl);
-  const look = PLAN_LOOK[plan.tier];
-  const dot = plan.tier === "pro" ? LIME : PINK;
   const monthly = subscriptionMonthly(plan, billing);
   const reference = packMonthlyEquivalent(plan);
   const pct = subscriptionOff(plan, billing);
@@ -115,64 +111,60 @@ function PlanCard({
 
   return (
     <li className="flex flex-col">
-      <div className="relative overflow-hidden rounded-[1.75rem] p-6 sm:p-7" style={look}>
-        {/* Reflet en haut de la carte. */}
-        <div
+      <div className={s.plan}>
+        <video
+          src={`${PLAN_VIDEO[plan.tier]}.mp4`}
+          poster={`${PLAN_VIDEO[plan.tier]}.jpg`}
+          muted
+          loop
+          autoPlay
+          playsInline
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent"
         />
-        <div className="relative">
-          <div className="flex flex-wrap items-center gap-3">
-            <h3 className="font-headline text-5xl leading-none">{S.plans[plan.tier]}</h3>
-            {popular && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-black/15 px-3 py-1 text-sm font-bold">
-                <Sparkles className="size-4" />
-                {P.mostPopular}
+        <div className={s.planTop}>
+          <h3 className={s.planName}>{S.plans[plan.tier]}</h3>
+          {popular && (
+            <span className={s.pill}>
+              <Sparkles />
+              {P.mostPopular}
+            </span>
+          )}
+          {sizes}
+        </div>
+        <p className={s.tagline}>{P.taglines[plan.tier]}</p>
+
+        <div className={s.priceRow}>
+          {pct > 0 && <span className={s.ref}>{price(reference)}</span>}
+          <span className={s.price}>{price(monthly)}</span>
+          <span className={s.per}>
+            {P.perMonthShort}, {billing === "year" ? fmt(P.billedYearly, { price: price(plan.year) }) : P.billedMonthly}
+          </span>
+        </div>
+
+        <form action={subscribe}>
+          <input type="hidden" name="plan" value={plan.id} />
+          <input type="hidden" name="interval" value={billing} />
+          <button type="submit" disabled={!enabled} className={s.subscribe}>
+            {S.subscribe}
+            {pct > 0 && (
+              <span className={s.deal}>
+                {fmt(P.off, { pct })}
+                {saving > 0 && (
+                  <>
+                    <span aria-hidden className="opacity-50">·</span>
+                    {fmt(P.save, { amount: price(saving) })}
+                  </>
+                )}
               </span>
             )}
-            {sizes}
-          </div>
-          <p className="mt-2 text-[0.9375rem] font-medium opacity-80">{P.taglines[plan.tier]}</p>
-
-          <div className="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            {pct > 0 && (
-              <span className="font-headline text-3xl leading-none opacity-55 line-through decoration-2">{price(reference)}</span>
-            )}
-            <span className="font-headline text-6xl leading-none tabular-nums">{price(monthly)}</span>
-            <span className="text-base font-semibold opacity-80">
-              {P.perMonthShort}, {billing === "year" ? fmt(P.billedYearly, { price: price(plan.year) }) : P.billedMonthly}
-            </span>
-          </div>
-
-          <form action={subscribe} className="mt-6">
-            <input type="hidden" name="plan" value={plan.id} />
-            <input type="hidden" name="interval" value={billing} />
-            <button
-              type="submit"
-              disabled={!enabled}
-              className="flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-2xl bg-white px-5 py-4 text-lg font-bold text-[#0b0b0f] shadow-[0_10px_30px_-10px_rgb(0_0_0/0.45)] transition-transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60"
-            >
-              {S.subscribe}
-              {pct > 0 && (
-                <span className={`${HOT_PILL} text-sm`}>
-                  {fmt(P.off, { pct })}
-                  {saving > 0 && (
-                    <>
-                      <span aria-hidden className="opacity-60">|</span>
-                      {fmt(P.save, { amount: price(saving) })}
-                    </>
-                  )}
-                </span>
-              )}
-            </button>
-          </form>
-        </div>
+          </button>
+        </form>
       </div>
 
       <div className="px-2 pt-6">
         <p className="flex items-center gap-3 text-lg">
-          <span className="grid size-6 place-items-center rounded-full" style={{ background: dot }}>
-            <span className="size-2 rounded-full bg-black/70" />
+          <span className="grid size-6 place-items-center rounded-full bg-text text-bg">
+            <Check className="size-3.5" strokeWidth={3} />
           </span>
           <span className="font-bold tabular-nums">
             {fmt(billing === "year" ? S.creditsPerYear : S.creditsPerMonth, { credits: n(credits) })}
@@ -184,8 +176,8 @@ function PlanCard({
           <ul className="mt-3 space-y-2.5 text-[0.9375rem]">
             {P.features.map((line) => (
               <li key={line} className="flex items-center gap-3">
-                <span className="grid size-5 shrink-0 place-items-center rounded-full" style={{ background: dot }}>
-                  <Check className="size-3.5 text-black" strokeWidth={3} />
+                <span className="grid size-5 shrink-0 place-items-center rounded-full border border-line-strong">
+                  <Check className="size-3" strokeWidth={3} />
                 </span>
                 {line}
               </li>

@@ -1,0 +1,346 @@
+/* Page Crédits au style de la landing : les abonnements et la grande
+   recharge sont des cartes posées sur une vidéo, texte blanc, titre en deux
+   temps, bouton blanc. Ces cartes restent sombres dans les deux thèmes. */
+
+.plan,
+.big {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 1.75rem;
+  background: #0c0c10;
+  color: #fff;
+  color-scheme: dark;
+}
+
+.plan > video,
+.big > video {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.plan::after,
+.big::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  min-height: 26rem;
+  padding: 1.5rem;
+}
+
+.plan::after {
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.15) 35%, rgb(8 8 12 / 0.92) 75%);
+}
+
+@media (min-width: 640px) {
+  .plan {
+    padding: 1.75rem;
+  }
+}
+
+.planTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.planName {
+  font-family: var(--font-archivo);
+  font-weight: 800;
+  font-stretch: 88%;
+  letter-spacing: -0.025em;
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.tagline {
+  margin-top: 0.4rem;
+  font-family: var(--font-instrument), Georgia, serif;
+  font-style: italic;
+  font-size: 1.35rem;
+  line-height: 1.15;
+  color: rgb(255 255 255 / 0.88);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #0c0c10;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pill svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+/* Tailles Creator : pilule de verre, la taille choisie en blanc. */
+.sizes {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  border-radius: 999px;
+  background: rgb(14 14 20 / 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.sizes button {
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: rgb(255 255 255 / 0.8);
+  transition:
+    background 0.25s,
+    color 0.25s;
+}
+
+.sizes button:hover {
+  color: #fff;
+}
+
+.sizes button[aria-checked="true"] {
+  background: #fff;
+  color: #0c0c10;
+}
+
+.priceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin-top: auto;
+  padding-top: 2rem;
+}
+
+.ref {
+  font-family: var(--font-archivo);
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: rgb(255 255 255 / 0.5);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.price {
+  font-family: var(--font-archivo);
+  font-weight: 800;
+  font-stretch: 88%;
+  letter-spacing: -0.02em;
+  font-size: 3.6rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.per {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgb(255 255 255 / 0.78);
+}
+
+.subscribe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem 0.75rem;
+  width: 100%;
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #0c0c10;
+  font-size: 1.05rem;
+  font-weight: 700;
+  transition: transform 0.25s cubic-bezier(0.77, 0, 0.18, 1);
+}
+
+.subscribe:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.subscribe:disabled {
+  opacity: 0.6;
+}
+
+.deal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: #0c0c10;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Grande recharge au curseur ---- */
+.big {
+  padding: 1.5rem;
+}
+
+.big::after {
+  background: linear-gradient(to right, rgb(8 8 12 / 0.92), rgb(8 8 12 / 0.7) 55%, rgb(8 8 12 / 0.45));
+}
+
+@media (min-width: 640px) {
+  .big {
+    padding: 2rem;
+  }
+}
+
+.bigTitle {
+  font-family: var(--font-archivo);
+  font-weight: 800;
+  font-stretch: 88%;
+  letter-spacing: -0.025em;
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.bigTitle em {
+  font-family: var(--font-instrument), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-stretch: 100%;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.badgeSolid {
+  background: #fff;
+  border-color: #fff;
+  color: #0c0c10;
+}
+
+.bigPrice {
+  font-family: var(--font-archivo);
+  font-weight: 800;
+  font-stretch: 88%;
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: rgb(255 255 255 / 0.6);
+}
+
+/* Curseur : rail de verre, remplissage blanc, poignée blanche. */
+.track {
+  position: relative;
+  height: 2.75rem;
+  margin-top: 0.75rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.1);
+  border: 1px solid rgb(255 255 255 / 0.14);
+}
+
+.fill {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.55), #fff);
+  transition: width 0.2s ease-out;
+}
+
+.notch {
+  position: absolute;
+  top: 50%;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  transition: background 0.2s;
+}
+
+.knob {
+  position: absolute;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #0c0c10;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.4);
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition: left 0.2s ease-out;
+}
+
+.ticks button {
+  color: rgb(255 255 255 / 0.55);
+  transition: color 0.2s;
+}
+
+.ticks button:hover,
+.ticks button[aria-current="true"] {
+  color: #fff;
+}
+
+.buyLight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 1.6rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #0c0c10;
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: transform 0.25s cubic-bezier(0.77, 0, 0.18, 1);
+}
+
+.buyLight:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.buyLight:disabled {
+  opacity: 0.6;
+}
+
+.otherLight {
+  font-size: 0.75rem;
+  color: rgb(255 255 255 / 0.6);
+}
+
+.otherLight:hover {
+  color: #fff;
+}
