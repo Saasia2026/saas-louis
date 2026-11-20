@@ -1,0 +1,119 @@
+/* Barre du haut de l'espace connecté, comme l'en-tête de la landing : pas de
+   bandeau, les éléments flottent sur la page. Le nom à gauche, le solde dans
+   une pilule blanche (elle mène à la recharge), la langue et la déconnexion
+   en petites icônes. */
+
+.bar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: calc(0.9rem + env(safe-area-inset-top)) 1rem 0.25rem;
+}
+
+@media (min-width: 640px) {
+  .bar {
+    padding-inline: 2rem;
+  }
+}
+
+.brand {
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 900;
+  font-stretch: 125%;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+/* Solde : pilule blanche, le nombre en gras, un « + » encre pour recharger. */
+.credits {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-right: 0.25rem;
+  padding: 0.3rem 0.3rem 0.3rem 0.85rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #0c0c10;
+  text-decoration: none;
+  transition: transform 0.25s cubic-bezier(0.77, 0, 0.18, 1);
+}
+
+.credits:hover {
+  transform: translateY(-1px);
+}
+
+.credits b {
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.credits small {
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.55;
+}
+
+.plus {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: #0c0c10;
+  color: #fff;
+}
+
+.plus svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+/* Petites icônes : langue, bots, déconnexion. */
+.icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  color: rgb(255 255 255 / 0.7);
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.icon:hover {
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+}
+
+.icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.tools :global(.btn) {
+  color: rgb(255 255 255 / 0.7);
+}
+
+.tools :global(.btn):hover {
+  color: #fff;
+  background: rgb(255 255 255 / 0.1);
+}
