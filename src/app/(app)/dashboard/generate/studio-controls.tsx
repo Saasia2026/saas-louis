@@ -216,18 +216,14 @@ export function ModelCard({
       ref={box}
       className="relative isolate h-36 overflow-hidden rounded-[1.25rem] bg-black"
     >
-      <video
-        src="/examples/shinka-card.mp4"
-        poster="/examples/shinka-card.jpg"
-        muted
-        loop
-        playsInline
-        webkit-playsinline=""
-        disablePictureInPicture
-        disableRemotePlayback
-        preload="none"
+      {/* Photo de la carte du moteur (visage centré, fond rouge). */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/brand/engine-red.jpg"
+        alt=""
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 size-full object-cover object-[50%_30%]"
+        className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
+        style={{ objectPosition: "50% 28%" }}
       />
       <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/90 via-black/55 to-black/10" />
       <button

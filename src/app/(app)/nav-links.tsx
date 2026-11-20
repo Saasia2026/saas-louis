@@ -1,10 +1,11 @@
 "use client";
 
 import { CalendarClock, Clapperboard, Coins, Film, ScanFace, type LucideIcon } from "lucide-react";
-import Link, { useLinkStatus } from "next/link";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n/provider";
+import b from "./bottom-nav.module.css";
 
 const NAV_LINKS: {
   href: string;
@@ -91,21 +92,6 @@ export function MainNav() {
   );
 }
 
-// Pastille d'un onglet du bas : allumée pour la page ouverte, et dès le
-// toucher pour celle qui se charge.
-function TabIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean }) {
-  const { pending } = useLinkStatus();
-  return (
-    <span
-      className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors duration-100 ${
-        active || pending ? "bg-accent/20 text-accent-light" : ""
-      }`}
-    >
-      <Icon className="size-[1.125rem]" />
-    </span>
-  );
-}
-
 // Menu latéral (grands écrans), comme les studios de création : une entrée
 // par page, l'icône et le nom, l'entrée active surlignée.
 export function SideNav() {
@@ -133,32 +119,44 @@ export function SideNav() {
   );
 }
 
-// Barre d'onglets du bas (téléphone) : les six entrées toujours visibles,
-// à portée de pouce, au-dessus de la zone du geste d'accueil.
+// Barre d'onglets du bas (téléphone) : une pilule de verre flottante, les
+// cinq pages à portée de pouce. La pastille blanche de la page ouverte
+// glisse jusqu'à l'onglet touché dès le toucher, avec la courbe de la
+// landing, puis la page suit.
 export function BottomNav() {
   const isActive = useActive();
   const { t } = useI18n();
+  const activeIndex = NAV_LINKS.findIndex((l) => isActive(l.href));
+  const [tapped, setTapped] = useState<number | null>(null);
+  // Une fois la page arrivée, c'est elle qui fait foi.
+  const current = tapped !== null && tapped !== activeIndex ? tapped : activeIndex;
+  const n = NAV_LINKS.length;
+
   return (
-    <nav
-      className="app-bottom-nav fixed inset-x-0 bottom-0 z-30 grid border-t border-line bg-bg pb-[env(safe-area-inset-bottom)] md:hidden"
-      style={{ gridTemplateColumns: `repeat(${NAV_LINKS.length}, minmax(0, 1fr))` }}
-    >
-      {NAV_LINKS.map(({ href, key, icon: Icon }) => {
-        const active = isActive(href);
-        return (
+    <div className={`${b.wrap} md:hidden`}>
+      <nav className={b.bar} style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+        <span
+          aria-hidden
+          className={b.thumb}
+          style={{
+            width: `calc((100% - 10px) / ${n})`,
+            transform: `translateX(${Math.max(0, current) * 100}%)`,
+            opacity: current < 0 ? 0 : 1,
+          }}
+        />
+        {NAV_LINKS.map(({ href, key, icon: Icon }, i) => (
           <Link
             key={href}
             href={href}
-            aria-current={active ? "page" : undefined}
-            className={`flex min-w-0 flex-col items-center gap-1 px-1 pt-2 pb-1.5 text-[0.6875rem] font-medium ${
-              active ? "text-text" : "text-muted"
-            }`}
+            onClick={() => setTapped(i)}
+            aria-current={i === activeIndex ? "page" : undefined}
+            className={`${b.item} ${i === current ? b.active : ""}`}
           >
-            <TabIcon icon={Icon} active={active} />
-            <span className="max-w-full truncate">{t.shell.nav[key]}</span>
+            <Icon />
+            <span>{t.shell.nav[key]}</span>
           </Link>
-        );
-      })}
-    </nav>
+        ))}
+      </nav>
+    </div>
   );
 }

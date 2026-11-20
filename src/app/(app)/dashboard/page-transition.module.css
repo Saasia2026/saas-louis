@@ -1,0 +1,25 @@
+/* Passage d'une page à l'autre, comme les écrans de la landing : la page
+   arrivante se découvre dans un cercle qui s'ouvre depuis l'endroit touché
+   (onglet, lien), avec la même courbe. Ni transform ni filtre : les vidéos
+   de fond en position fixe gardent leur place pendant l'animation. */
+
+.page {
+  animation: reveal 0.9s cubic-bezier(0.77, 0, 0.18, 1) both;
+}
+
+@keyframes reveal {
+  from {
+    clip-path: circle(0% at var(--cx, 50%) var(--cy, 0%));
+    opacity: 0.35;
+  }
+  to {
+    clip-path: circle(150% at var(--cx, 50%) var(--cy, 0%));
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    animation: none;
+  }
+}
