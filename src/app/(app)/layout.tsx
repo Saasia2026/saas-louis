@@ -14,7 +14,7 @@ import { latestTikTokAnalysis } from "@/lib/tiktok-analysis";
 import { listTrendPicks } from "@/lib/trends";
 import { BotsAquarium } from "./bots/aquarium";
 import { BotsToggle } from "./bots/bots-toggle";
-import { BottomNav, MainNav } from "./nav-links";
+import { BottomNav, MainNav, SideNav } from "./nav-links";
 
 // Les bots tournent sur toutes les pages : l'analyse d'un compte TikTok
 // (server action) prend environ 30 s.
@@ -62,14 +62,27 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // Toujours sombre, comme la landing : les pages sont posées sur des
     // vidéos et des cartes de verre.
     <div className="video-page flex min-h-dvh min-w-0 flex-1 flex-col overflow-x-clip bg-bg">
+      {/* Menu latéral sur grand écran : le logo et les pages. */}
+      <aside
+        className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col gap-8 border-r border-line px-3 py-5 lg:flex"
+        style={{ background: "rgb(10 10 14 / 0.82)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
+      >
+        <div className="px-3">
+          <Logo href="/dashboard" />
+        </div>
+        <SideNav />
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col lg:pl-60">
       {/* Barre du haut, en pilule flottante : la navigation y tient en une
-          ligne et laisse tout l'écran au contenu. */}
+          ligne et laisse tout l'écran au contenu. Sur grand écran, le logo et
+          les pages sont dans le menu latéral. */}
       <header className="topbar-shell z-20">
         <div className="topbar pointer-events-auto mx-auto max-w-7xl gap-3 py-1.5 pr-2 pl-4">
-          <div className="shrink-0">
+          <div className="shrink-0 lg:hidden">
             <Logo href="/dashboard" compact />
           </div>
-          <div className="ml-2 hidden min-w-0 md:block lg:ml-4">
+          <div className="ml-2 hidden min-w-0 md:block lg:hidden">
             <MainNav />
           </div>
 
@@ -117,6 +130,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="relative isolate min-w-0 flex-1 overflow-x-clip px-4 pt-6 pb-28 sm:px-8 sm:pt-10 md:pb-10">
         <div className="mx-auto max-w-7xl">{children}</div>
       </main>
+      </div>
       <BotsAquarium userId={data.claims.sub} picks={picks} account={account} />
       <OfferPopup offers={offersFor(t, locale, true)} />
     </div>

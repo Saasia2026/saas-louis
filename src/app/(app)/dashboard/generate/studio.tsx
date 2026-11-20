@@ -49,6 +49,7 @@ import {
 } from "./studio-controls";
 import { StylePicker, type StudioStyle } from "./style-picker";
 import { SwapInput, keptSeconds, readDuration, uploadSwapFile, type SwapFile } from "./swap-input";
+import L from "./studio-layout.module.css";
 
 const POLL_INTERVAL_MS = 5_000;
 // Durée annoncée d'un rendu. Les séquences se rendent en même temps (quelques
@@ -596,13 +597,10 @@ export function Studio({
         e.preventDefault();
         launch();
       }}
-      className="composer overflow-hidden"
+      className={`composer overflow-hidden ${L.composer}`}
     >
-      <div className="space-y-3 px-4 pt-4">
+      <div className={L.tabs}>
         <h1 className="sr-only">{t.studio.createTitle}</h1>
-        <ModelCard name={modelName(model)} tagline={modelTagline(model)} changeLabel={t.studio.changeModel}>
-          {modelOptions}
-        </ModelCard>
         <ModeTabs
           value={mode}
           onChange={changeMode}
@@ -617,6 +615,8 @@ export function Studio({
           }}
         />
       </div>
+      <div className={L.body}>
+      <div className="min-w-0">
       <SwapInput
         userId={userId}
         video={video}
@@ -685,10 +685,36 @@ export function Studio({
           </VisibleVideos>
         </div>
       )}
+      </div>
+      <div className={L.engine}>
+        <ModelCard name={modelName(model)} tagline={modelTagline(model)} changeLabel={t.studio.changeModel}>
+          {modelOptions}
+        </ModelCard>
+      </div>
+      </div>
 
-      {/* Réglages : une ligne par choix, son menu s'ouvre à côté du panneau ;
-          chaque option affiche son tarif, qui suit les autres réglages. */}
-      <div className="space-y-2 px-4 pt-2 pb-4">
+      {/* Messages avant le lancement, au-dessus de la barre du bas. */}
+      <div className={`${L.notes} space-y-1.5 pt-3`}>
+        {restoring && <p className="text-xs text-muted">{t.studio.restoring}</p>}
+        {video && imagesReady && short && (
+          <p className="text-xs text-danger">{fmt(t.studio.notEnoughCredits, { n: gate - credits })}</p>
+        )}
+        {byCard && (
+          <p className="text-xs text-muted">
+            {fmt(t.studio.payByCard, {
+              n: gate - credits,
+              price: formatPrice(usageCharge(gate - credits).amount, INTL_LOCALES[locale]),
+            })}
+          </p>
+        )}
+        {durationKnown && seconds > 15 && <p className="text-xs text-warning">{t.studio.longClipWarning}</p>}
+        {missing && !restoring && <p className="text-xs text-muted">{missing}</p>}
+      </div>
+
+      {/* Barre du bas : réglages (leur menu affiche les tarifs) et le
+          bouton, prix compris. */}
+      <div className={L.foot}>
+        <div className={L.setting}>
         <SettingRow
           label={t.studio.modelLabel}
           value={
@@ -700,6 +726,8 @@ export function Studio({
         >
           {modelOptions}
         </SettingRow>
+        </div>
+        <div className={L.setting}>
         <SettingRow label={t.studio.qualityLabel} value={quality}>
           {(close) =>
             STUDIO_QUALITIES.map((q) => (
@@ -717,23 +745,8 @@ export function Studio({
             ))
           }
         </SettingRow>
-      </div>
-
-      <div className="border-t border-line px-4 pt-3 pb-4">
-        {restoring && <p className="mb-3 text-xs text-muted">{t.studio.restoring}</p>}
-        {video && imagesReady && short && (
-          <p className="mb-3 text-xs text-danger">{fmt(t.studio.notEnoughCredits, { n: gate - credits })}</p>
-        )}
-        {byCard && (
-          <p className="mb-3 text-xs text-muted">
-            {fmt(t.studio.payByCard, {
-              n: gate - credits,
-              price: formatPrice(usageCharge(gate - credits).amount, INTL_LOCALES[locale]),
-            })}
-          </p>
-        )}
-        {durationKnown && seconds > 15 && <p className="mb-3 text-xs text-warning">{t.studio.longClipWarning}</p>}
-        {missing && !restoring && <p className="mb-3 text-xs text-muted">{missing}</p>}
+        </div>
+        <div className={L.launch}>
         {/* Le prix est dans le bouton : rien d'autre à lire avant de lancer. */}
         <button
           type="submit"
@@ -741,7 +754,7 @@ export function Studio({
           title={
             video ? fmt(t.studio.costFrom, { cost, credits: plural(cost, t.common.credit, t.common.credits) }) : undefined
           }
-          className="btn btn-accent w-full py-3.5 text-base"
+          className="btn btn-accent"
         >
           {launching ? <Loader2 className="animate-spin" /> : <WandSparkles />}
           {t.studio.launch}
@@ -752,6 +765,7 @@ export function Studio({
             </span>
           )}
         </button>
+        </div>
       </div>
     </form>
   );
@@ -760,9 +774,8 @@ export function Studio({
   const shownId = phase.kind === "generating" || phase.kind === "done" ? phase.id : null;
   const pastItems = history.filter((item) => item.id !== shownId);
 
-  // Deux colonnes : la création à gauche (fixe au défilement), le rendu en
-  // cours puis les onglets à droite (historique, exemples, démo). Sur
-  // mobile, l'une sous l'autre.
+  // Le générateur, large et centré ; dessous, sur toute la largeur, le rendu
+  // en cours puis les onglets (historique, exemples, démo).
   return (
     <>
     {launched && (
@@ -773,12 +786,10 @@ export function Studio({
         </div>
       </div>
     )}
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)]">
-      <aside className="relative z-20 animate-fade-up lg:sticky lg:top-24 lg:-mx-3 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:px-3 lg:pb-3 lg:[scrollbar-width:none]">
-        {composer}
-      </aside>
+    <div className={L.page}>
+      <div className="relative z-20 animate-fade-up">{composer}</div>
 
-      <section ref={resultEnd} className="min-w-0 scroll-mt-24 space-y-3">
+      <section ref={resultEnd} className={`${L.below} scroll-mt-24 space-y-3`}>
         {started && (
           <Result
             phase={phase}

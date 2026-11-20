@@ -1,0 +1,124 @@
+/* Architecture du studio, façon générateur unique : les modes en onglets en
+   haut du cadre, le dépôt et le texte au centre, la carte du moteur à
+   droite, les réglages et le bouton en bas ; dessous, sur toute la largeur,
+   le rendu, l'historique et les exemples. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.composer {
+  width: 100%;
+  max-width: 68rem;
+  margin: 0 auto;
+}
+
+.tabs {
+  padding: 1rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.tabs > * {
+  max-width: 34rem;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.engine {
+  order: -1;
+  padding: 1rem 1rem 0;
+}
+
+@media (min-width: 1024px) {
+  .body {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+  }
+
+  .engine {
+    order: 0;
+    padding: 1rem;
+    border-left: 1px solid var(--line);
+  }
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.setting {
+  flex: 1 1 11rem;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .setting {
+    flex: 0 1 13rem;
+  }
+}
+
+.launch {
+  display: flex;
+  flex: 1 1 100%;
+  justify-content: flex-end;
+}
+
+@media (min-width: 768px) {
+  .launch {
+    flex: 1 1 auto;
+  }
+}
+
+.launch button {
+  width: 100%;
+  border-radius: 999px;
+  padding: 0.9rem 1.6rem;
+  font-size: 1rem;
+}
+
+@media (min-width: 768px) {
+  .launch button {
+    width: auto;
+  }
+}
+
+.notes {
+  padding: 0 1rem;
+}
+
+.notes:empty {
+  display: none;
+}
+
+.below {
+  min-width: 0;
+}
+
+/* Dans le générateur large, les zones de dépôt restent compactes au lieu de
+   garder un format 16:9 sur toute la largeur ; l'aperçu du clip déposé
+   reste centré à une taille raisonnable. */
+@media (min-width: 768px) {
+  .body button:global(.aspect-video) {
+    aspect-ratio: auto;
+    height: 12rem;
+  }
+
+  .body button:global(.aspect-\[16\/7\]) {
+    aspect-ratio: auto;
+    height: 10rem;
+  }
+
+  .body div:global(.aspect-video) {
+    max-width: 34rem;
+    margin-inline: auto;
+  }
+}

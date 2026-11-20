@@ -106,6 +106,33 @@ function TabIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean }) 
   );
 }
 
+// Menu latéral (grands écrans), comme les studios de création : une entrée
+// par page, l'icône et le nom, l'entrée active surlignée.
+export function SideNav() {
+  const isActive = useActive();
+  const { t } = useI18n();
+  return (
+    <nav className="flex flex-col gap-1">
+      {NAV_LINKS.map(({ href, key, icon: Icon }) => {
+        const active = isActive(href);
+        return (
+          <Link
+            key={href}
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.95rem] font-semibold transition-colors ${
+              active ? "bg-white/10 text-text" : "text-muted hover:bg-white/5 hover:text-text"
+            }`}
+          >
+            <Icon className="size-5 shrink-0" />
+            {t.shell.nav[key]}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 // Barre d'onglets du bas (téléphone) : les six entrées toujours visibles,
 // à portée de pouce, au-dessus de la zone du geste d'accueil.
 export function BottomNav() {
