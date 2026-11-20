@@ -51,7 +51,7 @@ export function PromptText({ prompt }: { prompt: string }) {
     <p className="max-h-40 overflow-y-auto text-[0.9375rem] leading-relaxed break-words whitespace-pre-wrap text-muted">
       {prompt.split(/(@(?:image\d+|video)\b)/gi).map((part, i) =>
         i % 2 ? (
-          <span key={i} className="rounded-full bg-accent-soft px-2 py-0.5 font-semibold text-accent-light">
+          <span key={i} className="rounded-full bg-white/15 px-2 py-0.5 font-semibold text-text">
             {part}
           </span>
         ) : (

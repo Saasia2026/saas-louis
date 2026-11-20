@@ -456,6 +456,8 @@ export const fr = {
   },
 
   studio: {
+    yourPrompt: "Ton prompt",
+    references: "Tes références",
     makingEyebrow: "En fabrication",
     makingTop: "Ton personnage",
     makingBottom: "entre en scène.",

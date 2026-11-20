@@ -454,6 +454,8 @@ export const es: Dictionary = {
   },
 
   studio: {
+    yourPrompt: "Tu prompt",
+    references: "Tus referencias",
     makingEyebrow: "En producción",
     makingTop: "Tu personaje",
     makingBottom: "entra en escena.",

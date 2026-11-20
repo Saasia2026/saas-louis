@@ -51,6 +51,7 @@ import { StylePicker, type StudioStyle } from "./style-picker";
 import { SwapInput, keptSeconds, readDuration, uploadSwapFile, type SwapFile } from "./swap-input";
 import { askBotsToAnalyze } from "../../bots/bots-state";
 import Link from "next/link";
+import { PromptText, RefStrip } from "../generation-details";
 import R from "./result.module.css";
 import L from "./studio-layout.module.css";
 
@@ -799,6 +800,12 @@ export function Studio({
             credits={credits}
             sourcePreview={video?.previewUrl}
             characterPreview={images[0]?.previewUrl}
+            prompt={prompt}
+            references={{
+              clip: video ? { path: video.path, url: video.previewUrl } : undefined,
+              refs: images.map((img) => ({ path: img.path, url: img.previewUrl })),
+              decor: decorPhoto ? { path: decorPhoto.path, url: decorPhoto.previewUrl } : undefined,
+            }}
             onReset={() => setPhase({ kind: "idle" })}
             onRedo={redo}
             onCancel={cancel}
@@ -842,6 +849,8 @@ function Result({
   credits,
   sourcePreview,
   characterPreview,
+  prompt = "",
+  references,
   onReset,
   onRedo,
   onCancel,
@@ -853,6 +862,10 @@ function Result({
   // en train de naître. Absents à la reprise d'un rendu après rechargement.
   sourcePreview?: string;
   characterPreview?: string;
+  // Ce qui a servi au rendu, affiché une fois la vidéo prête : le prompt
+  // et les références (clip, images, lieu).
+  prompt?: string;
+  references?: Pick<SwapHistoryItem, "clip" | "refs" | "decor">;
   onReset: () => void;
   // Refait une séquence d'un remplacement terminé.
   onRedo: (index: number) => void;
@@ -944,9 +957,19 @@ function Result({
                 </p>
               )}
               {phase.view.notice && <p className={R.note}>{phase.view.notice}</p>}
+              <div className={R.block}>
+                <p className={R.label}>{t.studio.yourPrompt}</p>
+                <PromptText prompt={prompt} />
+              </div>
+              {references && (references.clip || references.refs.length > 0 || references.decor) && (
+                <div className={R.block}>
+                  <p className={R.label}>{t.studio.references}</p>
+                  <RefStrip item={references} />
+                </div>
+              )}
               {phase.view.parts.length > 1 && (
-                <div className={R.redo}>
-                  <p>{phase.view.engine === "genjutsu" ? t.studio.redoSequenceTitle : t.studio.redoTitle}</p>
+                <details className={R.redo}>
+                  <summary>{phase.view.engine === "genjutsu" ? t.studio.redoSequenceTitle : t.studio.redoTitle}</summary>
                   {phase.view.parts.map((part, i) => {
                     const sequence = phase.view.engine === "genjutsu";
                     const cost = swapShotCredits(part.seconds, phase.view.engine, phase.view.settings, phase.view.face);
@@ -974,7 +997,7 @@ function Result({
                       </button>
                     );
                   })}
-                </div>
+                </details>
               )}
             </>
           )}

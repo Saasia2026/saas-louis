@@ -212,9 +212,39 @@
   gap: 0.4rem;
 }
 
-.redo p {
+/* Refaire une séquence : replié, un petit lien discret. */
+.redo summary {
+  cursor: pointer;
+  list-style: none;
   font-size: 0.78rem;
-  color: rgb(255 255 255 / 0.6);
+  color: rgb(255 255 255 / 0.55);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.redo summary::-webkit-details-marker {
+  display: none;
+}
+
+.redo[open] summary {
+  margin-bottom: 0.4rem;
+}
+
+.redo > button + button {
+  margin-top: 0.4rem;
+}
+
+/* Prompt et références du rendu. */
+.block {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgb(255 255 255 / 0.55);
 }
 
 .redo button {

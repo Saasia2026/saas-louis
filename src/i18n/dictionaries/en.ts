@@ -454,6 +454,8 @@ export const en: Dictionary = {
   },
 
   studio: {
+    yourPrompt: "Your prompt",
+    references: "Your references",
     makingEyebrow: "In production",
     makingTop: "Your character",
     makingBottom: "steps in.",
