@@ -8,6 +8,7 @@ import { getDictionary, getLocale } from "@/i18n/server";
 import "./globals.css";
 import { OFFER_BAR_COOKIE, OfferBar } from "./offer-bar";
 import { offerBarFor } from "./offers";
+import { STILL_MODE_SCRIPT } from "./still-mode";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -73,8 +74,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang={locale}
       data-theme="dark"
+      // data-still : posé avant l'hydratation dans le navigateur de TikTok.
+      suppressHydrationWarning
       className={`${inter.variable} ${archivo.variable} ${instrument.variable} h-full antialiased`}
     >
+      <head>
+        {/* Lien TikTok : aucune vidéo ne démarre seule (voir still-mode.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: STILL_MODE_SCRIPT }} />
+      </head>
       {/* Site toujours sombre, au style de la landing (voir .video-page). */}
       <body className="video-page flex min-h-full flex-col bg-bg font-sans">
         <I18nProvider locale={locale}>
