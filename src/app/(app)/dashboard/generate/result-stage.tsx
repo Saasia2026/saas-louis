@@ -26,14 +26,16 @@ export function ResultStage({
   mediaUrl?: string;
   backdrop?: string;
   overlay?: React.ReactNode;
-  actions: React.ReactNode;
+  // Boutons ronds sur le bord droit (facultatif : la scène du studio a ses
+  // actions dans sa colonne).
+  actions?: React.ReactNode;
 }) {
   const player = usePlayer();
   const frame = FRAME[aspectRatio];
 
   return (
     <>
-      <div className="relative flex flex-col items-center gap-3 px-4 pt-5 pb-4 sm:px-20">
+      <div className={`relative flex flex-col items-center gap-3 px-4 pt-5 pb-4 ${actions ? "sm:px-20" : "sm:px-6"}`}>
         <div
           className={`relative flex items-center justify-center overflow-hidden rounded-2xl bg-black ${frame.className}`}
           style={{ aspectRatio: aspectRatio.replace(":", " / "), height: frame.height }}
@@ -67,7 +69,7 @@ export function ResultStage({
           )}
         </div>
 
-        <div className="flex gap-2 sm:absolute sm:top-5 sm:right-4 sm:flex-col">{actions}</div>
+        {actions && <div className="flex gap-2 sm:absolute sm:top-5 sm:right-4 sm:flex-col">{actions}</div>}
       </div>
 
       {mediaUrl && (

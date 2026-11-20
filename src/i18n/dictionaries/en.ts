@@ -454,6 +454,13 @@ export const en: Dictionary = {
   },
 
   studio: {
+    makingEyebrow: "In production",
+    makingTop: "Your character",
+    makingBottom: "steps in.",
+    doneEyebrow: "Done",
+    doneTop: "Your video",
+    doneBottom: "is ready.",
+    elapsed: "elapsed",
     createTitle: "Create video",
     poweredByLabel: "Engine",
     modelLabel: "Model",

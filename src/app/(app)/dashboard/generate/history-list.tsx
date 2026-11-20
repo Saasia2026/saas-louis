@@ -54,7 +54,7 @@ function Chip({ icon: Icon, accent, children }: { icon: LucideIcon; accent?: boo
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold tabular-nums ${
-        accent ? "bg-accent-soft text-accent-light" : "bg-white/[0.06] text-muted"
+        accent ? "bg-white text-black" : "bg-white/[0.06] text-muted"
       }`}
     >
       <Icon className={`size-3.5 ${accent ? "" : "text-muted"}`} />
@@ -125,7 +125,7 @@ function Stage({ item }: { item: SwapHistoryItem }) {
             </>
           ) : (
             <span className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-white/70">
-              <span className="size-7 animate-spin rounded-full border-2 border-white/25 border-t-accent" />
+              <span className="size-7 animate-spin rounded-full border-2 border-white/25 border-t-white" />
               {V.running}
             </span>
           )}
@@ -153,7 +153,7 @@ function Details({ item, onReuse }: { item: SwapHistoryItem; onReuse?: (item: Sw
   const reuseClass = "btn btn-secondary";
   return (
     <div className="panel flex min-w-0 flex-col gap-4 p-5">
-      <span className="inline-flex items-center gap-2 self-start rounded-full bg-accent-soft px-3.5 py-1.5 text-sm font-semibold text-accent-light">
+      <span className="inline-flex items-center gap-2 self-start rounded-full bg-white px-3.5 py-1.5 text-sm font-semibold text-black">
         <Sparkles className="size-4" />
         {item.settings.model === "max" ? S.modelMax : S.modelStandard} ·{" "}
         {item.restyle
@@ -341,7 +341,7 @@ export function HistoryEmpty() {
           <span className="h-1 w-3/4 overflow-hidden rounded-full bg-surface-3">
             <span
               key={`progress-${cycle}-${shown}`}
-              className={`block h-full origin-left rounded-full bg-accent ${
+              className={`block h-full origin-left rounded-full bg-white ${
                 shown === 2 ? "animate-feature-progress" : shown === 3 ? "" : "scale-x-0"
               }`}
               style={shown === 2 ? { animationDuration: `${DEMO_MS[2]}ms` } : undefined}
@@ -382,7 +382,7 @@ export function HistoryEmpty() {
             <li key={s.title} className={`transition-opacity duration-300 ${active || reduced ? "" : "opacity-55"}`}>
               <div
                 className={`relative aspect-[9/16] overflow-hidden rounded-2xl border bg-surface-2/40 bg-clip-padding transition-colors duration-300 ${
-                  active ? "border-accent/60" : "border-line"
+                  active ? "border-white/60" : "border-line"
                 }`}
               >
                 {visual(i)}
@@ -390,7 +390,7 @@ export function HistoryEmpty() {
               <p className="mt-2.5 flex items-center gap-2 text-sm font-semibold">
                 <span
                   className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[0.6875rem] tabular-nums transition-colors duration-300 ${
-                    active ? "bg-accent text-white" : "bg-surface-3 text-muted"
+                    active ? "bg-white text-black" : "bg-surface-3 text-muted"
                   }`}
                 >
                   {i + 1}

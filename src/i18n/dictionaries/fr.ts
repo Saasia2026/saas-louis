@@ -456,6 +456,13 @@ export const fr = {
   },
 
   studio: {
+    makingEyebrow: "En fabrication",
+    makingTop: "Ton personnage",
+    makingBottom: "entre en scène.",
+    doneEyebrow: "Terminé",
+    doneTop: "Ta vidéo",
+    doneBottom: "est prête.",
+    elapsed: "écoulées",
     createTitle: "Créer une vidéo",
     poweredByLabel: "Moteur",
     modelLabel: "Modèle",
