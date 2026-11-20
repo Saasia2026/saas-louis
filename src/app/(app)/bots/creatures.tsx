@@ -19,6 +19,9 @@ type Props = { eyesRef?: Ref<SVGGElement>; className?: string; talking?: boolean
 
 const wall = (n: string) => `/demos/wall/demo-${n}`;
 
+// Vidéo jouée par chaque bot (sans extension) : bulle et en-tête de sa fenêtre.
+export const BOT_VIDEO = { scout: wall("17"), hook: wall("19") } as const;
+
 function Bubble({ src, ring, eyesRef, className, talking, still }: Props & { src: string; ring: string }) {
   return (
     <span
@@ -64,9 +67,9 @@ function Bubble({ src, ring, eyesRef, className, talking, still }: Props & { src
 }
 
 export function ScoutFace(props: Props) {
-  return <Bubble {...props} src={wall("17")} ring="#ffffff" />;
+  return <Bubble {...props} src={BOT_VIDEO.scout} ring="#ffffff" />;
 }
 
 export function HookFace(props: Props) {
-  return <Bubble {...props} src={wall("19")} ring="#7c5cff" />;
+  return <Bubble {...props} src={BOT_VIDEO.hook} ring="#7c5cff" />;
 }
