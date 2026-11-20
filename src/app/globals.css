@@ -740,12 +740,12 @@ html {
   }
 }
 
+/* Ancien bouton rose : aligné sur le bouton principal blanc. */
 @utility btn-hot {
-  color: #fff;
-  background: linear-gradient(180deg, color-mix(in oklab, var(--accent-hot) 85%, white), var(--accent-hot));
-  box-shadow: var(--btn-sheen);
+  color: var(--on-primary);
+  background: var(--text);
   &:hover:not(:disabled) {
-    filter: brightness(1.1);
+    background: var(--primary-hover);
   }
 }
 

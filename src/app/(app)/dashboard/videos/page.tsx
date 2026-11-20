@@ -36,9 +36,24 @@ export default async function VideosPage() {
       />
 
       {shown.length === 0 ? (
-        <div className="panel mt-8 flex animate-fade-up flex-col items-center gap-4 px-6 py-16 text-center">
-          <p className="max-w-sm text-sm text-muted">{V.empty}</p>
-          <Link href="/dashboard/generate" className="btn btn-secondary">
+        <div className="video-page relative isolate mt-8 flex min-h-[26rem] animate-fade-up flex-col items-start justify-end gap-5 overflow-hidden rounded-[2rem] border border-white/10 bg-black p-6 sm:p-10">
+          <video
+            src="/demos/demo-21.mp4"
+            poster="/demos/demo-21.jpg"
+            muted
+            loop
+            autoPlay
+            playsInline
+            aria-hidden
+            className="pointer-events-none absolute inset-0 -z-20 size-full object-cover"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10"
+            style={{ background: "linear-gradient(to bottom, rgb(0 0 0 / 0.2), rgb(8 8 12 / 0.88) 80%)" }}
+          />
+          <p className="max-w-md font-headline text-3xl leading-tight sm:text-4xl">{V.empty}</p>
+          <Link href="/dashboard/generate" className="btn btn-accent px-6 py-3 text-base">
             {V.goStudio}
           </Link>
         </div>
