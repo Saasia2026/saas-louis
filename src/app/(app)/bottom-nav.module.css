@@ -25,35 +25,32 @@
   pointer-events: auto;
 }
 
+/* Onglet : le nom seul, dans la police des titres, sur deux lignes si
+   besoin plutôt que coupé. */
 .item {
   position: relative;
   z-index: 1;
   display: flex;
   min-width: 0;
-  flex-direction: column;
+  min-height: 2.9rem;
   align-items: center;
-  gap: 3px;
-  padding: 0.55rem 0.25rem 0.45rem;
+  justify-content: center;
+  padding: 0.35rem 0.3rem;
   border-radius: 1.2rem;
-  color: rgb(255 255 255 / 0.62);
-  font-size: 0.66rem;
-  font-weight: 600;
+  color: rgb(255 255 255 / 0.6);
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-stretch: 92%;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  text-align: center;
   text-decoration: none;
-  transition:
-    background 0.25s,
-    color 0.25s;
-}
-
-.item svg {
-  width: 1.15rem;
-  height: 1.15rem;
+  text-wrap: balance;
 }
 
 .item span {
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .item:active {

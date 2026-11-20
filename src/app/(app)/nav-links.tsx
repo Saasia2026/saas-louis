@@ -120,7 +120,7 @@ export function SideNav() {
 }
 
 // Barre d'onglets du bas (téléphone) : une pilule de verre flottante, les
-// cinq pages à portée de pouce. La pastille blanche de la page ouverte
+// cinq pages à portée de pouce, en toutes lettres (sans icônes). La pastille blanche de la page ouverte
 // glisse jusqu'à l'onglet touché dès le toucher, avec la courbe de la
 // landing, puis la page suit.
 export function BottomNav() {
@@ -144,7 +144,7 @@ export function BottomNav() {
             opacity: current < 0 ? 0 : 1,
           }}
         />
-        {NAV_LINKS.map(({ href, key, icon: Icon }, i) => (
+        {NAV_LINKS.map(({ href, key }, i) => (
           <Link
             key={href}
             href={href}
@@ -152,7 +152,6 @@ export function BottomNav() {
             aria-current={i === activeIndex ? "page" : undefined}
             className={`${b.item} ${i === current ? b.active : ""}`}
           >
-            <Icon />
             <span>{t.shell.nav[key]}</span>
           </Link>
         ))}
