@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Play, Upload, X } from "lucide-react";
+import { Check, Film, Play, Upload, X } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { playInline } from "@/app/inline-video";
@@ -8,6 +8,7 @@ import { fmt, plural } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import { SWAP_INPUTS_BUCKET } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/client";
+import G from "./library.module.css";
 
 // Fichier déjà déposé par le créateur (swap-inputs), avec une URL signée.
 export type LibraryItem = { path: string; url: string };
@@ -182,8 +183,8 @@ export function MediaLibrary({
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto border-t border-line px-4 py-4 sm:px-5">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-          <label className="group flex aspect-square cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl bg-surface-2/60 text-center transition-colors hover:bg-surface-2">
+        <div className={G.grid}>
+          <label className={G.upload}>
             <input
               type="file"
               accept={kind === "video" ? "video/*" : "image/*"}
@@ -195,25 +196,26 @@ export function MediaLibrary({
                 if (files.length) onUpload(files);
               }}
             />
-            <span className="flex size-12 items-center justify-center rounded-full bg-surface-3 text-muted transition-transform group-hover:scale-105">
-              <Upload className="size-5" />
+            <span className={G.uploadIcon}>
+              <Upload />
             </span>
             <span className="px-2 text-sm font-medium">{S.libraryUpload}</span>
           </label>
 
           {items === null &&
             Array.from({ length: 7 }, (_, i) => (
-              <div key={i} className="aspect-square animate-pulse rounded-2xl bg-surface-2" />
+              <div key={i} className={G.skeleton} />
             ))}
 
           {Array.isArray(items) &&
-            items.map((item) => {
+            items.map((item, index) => {
               const order = chosen.findIndex((c) => c.path === item.path);
               const inStudio = taken.includes(item.path);
               return (
                 <Tile
                   key={item.path}
                   item={item}
+                  index={index}
                   kind={kind}
                   selected={order >= 0 || inStudio}
                   badge={order >= 0 && several ? String(order + 1) : undefined}
@@ -251,8 +253,12 @@ export function MediaLibrary({
 
 // Une vignette de la bibliothèque. Son fichier n'est chargé qu'une fois la
 // vignette à l'écran ; une vidéo joue au survol.
+// Inclinaison des cartes, un peu à gauche, un peu à droite.
+const TILTS = [-2.5, 1.5, -1, 2.5, -1.5, 1];
+
 function Tile({
   item,
+  index,
   kind,
   selected,
   badge,
@@ -260,6 +266,7 @@ function Tile({
   onChoose,
 }: {
   item: LibraryItem;
+  index: number;
   kind: "video" | "image";
   selected: boolean;
   badge?: string;
@@ -270,6 +277,7 @@ function Tile({
   const video = useRef<HTMLVideoElement>(null);
   const [seen, setSeen] = useState(false);
   const [seconds, setSeconds] = useState<number | null>(null);
+  const [broken, setBroken] = useState(false);
 
   useEffect(() => {
     const el = box.current;
@@ -295,48 +303,49 @@ function Tile({
       onClick={onChoose}
       onPointerEnter={(e) => e.pointerType === "mouse" && video.current && playInline(video.current)}
       onPointerLeave={() => video.current?.pause()}
-      className={`group relative aspect-square overflow-hidden rounded-2xl border bg-black bg-clip-padding transition-[border-color,opacity] ${
-        selected ? "border-accent shadow-[0_0_0_1px_var(--accent)]" : "border-line hover:border-line-strong"
-      } ${disabled && !selected ? "opacity-40" : ""}`}
+      className={`${G.tile} ${selected ? G.selected : ""} ${disabled && !selected ? G.dimmed : ""}`}
+      style={{ "--tilt": `${TILTS[index % TILTS.length]}deg` } as React.CSSProperties}
     >
-      {seen &&
-        (kind === "video" ? (
-          <video
-            ref={video}
-            // #t : la première image sert de vignette, y compris sur iPhone.
-            src={`${item.url}#t=0.1`}
-            muted
-            loop
-            playsInline
-            webkit-playsinline=""
-            preload="metadata"
-            disablePictureInPicture
-            disableRemotePlayback
-            onLoadedMetadata={(e) => setSeconds(e.currentTarget.duration)}
-            className="pointer-events-none size-full object-contain"
-          />
-        ) : (
-          // URL signée Supabase : pas d'optimisation Next.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.url} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
-        ))}
-      {kind === "video" && (
-        <>
-          <span className="pointer-events-none absolute inset-0 m-auto flex size-9 items-center justify-center rounded-full bg-black/45 text-white transition-opacity group-hover:opacity-0">
-            <Play className="size-4 translate-x-px fill-current" />
-          </span>
-          {seconds !== null && Number.isFinite(seconds) && (
-            <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[0.6875rem] font-medium text-white tabular-nums">
-              {Math.floor(seconds / 60)}:{String(Math.floor(seconds % 60)).padStart(2, "0")}
-            </span>
-          )}
-        </>
-      )}
-      {selected && (
-        <span className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-accent text-xs font-semibold text-black">
-          {badge ?? <Check className="size-3.5" />}
+      <span className={G.frame}>
+        {seen &&
+          (kind === "video" ? (
+            broken ? (
+              <span className={G.empty}>
+                <Film />
+              </span>
+            ) : (
+              <video
+                ref={video}
+                // #t : la première image sert de vignette, y compris sur iPhone.
+                src={`${item.url}#t=0.1`}
+                muted
+                loop
+                playsInline
+                webkit-playsinline=""
+                preload="metadata"
+                disablePictureInPicture
+                disableRemotePlayback
+                onLoadedMetadata={(e) => setSeconds(e.currentTarget.duration)}
+                onError={() => setBroken(true)}
+              />
+            )
+          ) : (
+            // URL signée Supabase : pas d'optimisation Next.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.url} alt="" loading="lazy" decoding="async" />
+          ))}
+      </span>
+      {kind === "video" && !broken && (
+        <span className={G.play}>
+          <Play />
         </span>
       )}
+      {kind === "video" && seconds !== null && Number.isFinite(seconds) && (
+        <span className={G.time}>
+          {Math.floor(seconds / 60)}:{String(Math.floor(seconds % 60)).padStart(2, "0")}
+        </span>
+      )}
+      {selected && <span className={G.badge}>{badge ?? <Check />}</span>}
     </button>
   );
 }
