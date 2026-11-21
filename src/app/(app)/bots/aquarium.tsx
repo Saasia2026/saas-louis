@@ -14,41 +14,21 @@ import { uploadSwapFile } from "../dashboard/generate/swap-input";
 import { analyzeTikTok, applyRhythm, askBot, type BotId, type BotTurn } from "./actions";
 import { BOTS_ANALYZE_EVENT, BOTS_EVENT, botsEnabled, setBotsEnabled, takeAnalyzeRequest, type AnalyzeRequest } from "./bots-state";
 import s from "./bots.module.css";
-import { BOT_VIDEO, HookFace, ScoutFace } from "./creatures";
+import { BOT_VIDEO, BotHead, HookFace, ScoutFace } from "./creatures";
 import { analyzeVideo } from "./virality-actions";
 
-// Les bots nagent sur tout l'écran comme des poissons dans un aquarium :
-// Scout (bulle blanche) montre les vidéos qui cartonnent, Hook (bulle au contour voilé)
-// propose quoi dire. Leurs petites bulles s'ouvrent au clic sur la
+// Les bots dépassent du bas de l'écran, juste leurs yeux qui suivent le
+// pointeur : Scout (tête blanche) montre les vidéos qui cartonnent, Hook
+// (tête sombre) propose quoi dire. Ils se hissent quand ils parlent. Leurs petites bulles s'ouvrent au clic sur la
 // fenêtre complète. Désactivables, choix gardé dans le navigateur.
 
 const BOTS: BotId[] = ["scout", "hook"];
-const SPEED = 36; // px/s, une nage calme
 const FIRST_BUBBLES_MS = [9_000, 26_000];
 const BUBBLE_EVERY_MS = 150_000;
 const BUBBLE_VISIBLE_MS = 15_000;
 
-type Sim = {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  tx: number;
-  ty: number;
-  retargetAt: number;
-  phase: number;
-  face: number;
-  faceTarget: number;
-  lx: number;
-  ly: number;
-  blinkAt: number;
-  blinkUntil: number;
-  hover: boolean;
-};
-
 type Panel = { bot: BotId; tab: "video" | "account" | "hook" | "chat" };
 
-const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 const videoIdOf = (url: string) => /\/video\/(\d+)/.exec(url)?.[1] ?? null;
 
@@ -565,143 +545,58 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
     return () => window.removeEventListener(BOTS_ANALYZE_EVENT, take);
   }, []);
 
-  const wrap: Record<BotId, RefObject<HTMLDivElement | null>> = { scout: useRef(null), hook: useRef(null) };
-  const body: Record<BotId, RefObject<HTMLDivElement | null>> = { scout: useRef(null), hook: useRef(null) };
-  const eyes: Record<BotId, RefObject<SVGGElement | null>> = { scout: useRef(null), hook: useRef(null) };
-  const bubbleEl = useRef<HTMLDivElement>(null);
-  const tailEl = useRef<HTMLSpanElement>(null);
-  const sims = useRef<Record<BotId, Sim> | null>(null);
-  // État courant lu par la boucle d'animation, sans la relancer.
+  const heads: Record<BotId, RefObject<HTMLButtonElement | null>> = { scout: useRef(null), hook: useRef(null) };
+  const pupils: Record<BotId, RefObject<SVGGElement | null>> = { scout: useRef(null), hook: useRef(null) };
+  const lids: Record<BotId, RefObject<SVGGElement | null>> = { scout: useRef(null), hook: useRef(null) };
+  // Le bot qui se hisse un peu pour regarder (de temps en temps).
+  const [peeking, setPeeking] = useState<BotId | null>(null);
   const live = useRef({ panel, bubble });
   useEffect(() => {
     live.current = { panel, bubble };
   }, [panel, bubble]);
 
-  // Nage, respiration, regard et clignements, recalculés à chaque image.
+  // Regard qui suit le pointeur, et clignements.
   useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const size = () => (window.innerWidth < 768 ? 52 : 64);
-    const bounds = () => {
-      const s = size();
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      return { minX: 12, maxX: w - s - 12, minY: 84, maxY: h - s - (w < 768 ? 92 : 16), s, w, h };
-    };
-    const home = (bot: BotId) => {
-      const b = bounds();
-      return { x: b.w - (bot === "scout" ? 2 : 1) * (b.s + 12) - 4, y: b.maxY };
-    };
-    const now0 = performance.now();
-    const fresh = (bot: BotId, i: number): Sim => {
-      const b = bounds();
-      const h = home(bot);
-      return {
-        x: reduced ? h.x : rand(b.minX, b.maxX),
-        y: reduced ? h.y : rand(b.minY, b.maxY),
-        vx: 0,
-        vy: 0,
-        tx: rand(b.minX, b.maxX),
-        ty: rand(b.minY, b.maxY),
-        retargetAt: now0 + rand(4000, 9000),
-        phase: i * 2.1,
-        face: 1,
-        faceTarget: 1,
-        lx: 0,
-        ly: 0,
-        blinkAt: now0 + rand(1500, 4000),
-        blinkUntil: 0,
-        hover: false,
-      };
-    };
-    sims.current ??= { scout: fresh("scout", 0), hook: fresh("hook", 1) };
-    const mouse = { x: -9999, y: -9999 };
+    const mouse = { x: -1, y: -1 };
     const onMove = (e: PointerEvent) => {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
     };
     window.addEventListener("pointermove", onMove, { passive: true });
-
-    let last = performance.now();
+    const look = { scout: { x: 0, y: 0 }, hook: { x: 0, y: 0 } };
+    const blink = { scout: { at: performance.now() + rand(1500, 4000), until: 0 }, hook: { at: performance.now() + rand(2500, 5000), until: 0 } };
     let raf = 0;
     const step = (now: number) => {
       raf = requestAnimationFrame(step);
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
       if (document.hidden) return;
-      const t = now / 1000;
-      const b = bounds();
-      const parked = Boolean(live.current.panel) || reduced;
       for (const bot of BOTS) {
-        const m = sims.current![bot];
-        let { tx, ty } = m;
-        if (parked) {
-          ({ x: tx, y: ty } = home(bot));
-        } else if (now > m.retargetAt || Math.hypot(tx - m.x, ty - m.y) < 24) {
-          m.tx = tx = rand(b.minX, b.maxX);
-          m.ty = ty = rand(b.minY, b.maxY);
-          m.retargetAt = now + rand(7000, 14000);
+        const head = heads[bot].current;
+        if (!head) continue;
+        const r = head.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height * 0.36;
+        let tx = 0;
+        let ty = 0;
+        if (mouse.x >= 0) {
+          const dx = mouse.x - cx;
+          const dy = mouse.y - cy;
+          const d = Math.hypot(dx, dy) || 1;
+          const reach = Math.min(1, d / 160);
+          tx = (dx / d) * 6 * reach;
+          ty = (dy / d) * 6 * reach;
         }
-        tx = clamp(tx, b.minX, b.maxX);
-        ty = clamp(ty, b.minY, b.maxY);
-        const dx = tx - m.x;
-        const dy = ty - m.y;
-        const d = Math.hypot(dx, dy) || 1;
-        const talking = live.current.bubble?.bot === bot;
-        const speed = parked ? 260 : talking ? SPEED * 0.3 : SPEED;
-        const arrive = Math.min(1, d / 120);
-        const want = m.hover ? [0, 0] : [(dx / d) * speed * arrive, (dy / d) * speed * arrive];
-        const k = Math.min(1, dt * (parked ? 5 : 1.1));
-        m.vx += (want[0] - m.vx) * k;
-        m.vy += (want[1] - m.vy) * k;
-        m.x = clamp(m.x + m.vx * dt, b.minX, b.maxX);
-        m.y = clamp(m.y + m.vy * dt, b.minY, b.maxY);
-
-        // Ni retournement en miroir ni bascule : une bulle vidéo qui se
-        // retourne semble tourner sur elle-même. Elle flotte et respire.
-        const bob = reduced ? 0 : Math.sin(t * 1.7 + m.phase) * (parked ? 2 : 6);
-        const breath = reduced ? 1 : 1 + 0.03 * Math.sin(t * 2.6 + m.phase);
-
-        const cx = m.x + b.s / 2;
-        const cy = m.y + bob + b.s / 2;
-        const md = Math.hypot(mouse.x - cx, mouse.y - cy);
-        let lx: number;
-        let ly: number;
-        if (md < 280) {
-          lx = ((mouse.x - cx) / md) * 3.4;
-          ly = ((mouse.y - cy) / md) * 3;
-        } else {
-          lx = (m.vx / SPEED) * 2.4;
-          ly = (m.vy / SPEED) * 1.8;
+        const l = look[bot];
+        l.x += (tx - l.x) * 0.15;
+        l.y += (ty - l.y) * 0.15;
+        const pu = pupils[bot].current;
+        if (pu) pu.style.transform = `translate(${l.x.toFixed(2)}px, ${l.y.toFixed(2)}px)`;
+        const bl = blink[bot];
+        if (now > bl.at) {
+          bl.until = now + 130;
+          bl.at = now + rand(2400, 6400);
         }
-        m.lx += (lx - m.lx) * Math.min(1, dt * 6);
-        m.ly += (ly - m.ly) * Math.min(1, dt * 6);
-        if (now > m.blinkAt) {
-          m.blinkUntil = now + 130;
-          m.blinkAt = now + rand(2200, 6400);
-        }
-        const open = now < m.blinkUntil ? 0.12 : 1;
-
-        const w = wrap[bot].current;
-        if (w) w.style.transform = `translate3d(${m.x.toFixed(1)}px, ${(m.y + bob).toFixed(1)}px, 0)`;
-        const bd = body[bot].current;
-        if (bd) bd.style.transform = `scale(${breath.toFixed(3)}, ${(1 / breath).toFixed(3)})`;
-        const e = eyes[bot].current;
-        if (e) e.style.transform = `translate(${m.lx.toFixed(2)}px, ${m.ly.toFixed(2)}px) scaleY(${open})`;
-
-        // La petite bulle suit sa créature, au-dessus (ou dessous près du haut).
-        const bubbleNow = live.current.bubble;
-        const el = bubbleEl.current;
-        if (bubbleNow?.bot === bot && el && !live.current.panel) {
-          const bw = el.offsetWidth;
-          const bh = el.offsetHeight;
-          const left = clamp(cx - bw / 2, 12, b.w - bw - 12);
-          let top = m.y + bob - bh - 14;
-          const below = top < 76;
-          if (below) top = m.y + bob + b.s + 14;
-          el.style.transform = `translate3d(${left.toFixed(1)}px, ${top.toFixed(1)}px, 0)`;
-          el.dataset.side = below ? "below" : "above";
-          if (tailEl.current) tailEl.current.style.left = `${clamp(cx - left, 18, bw - 18) - 7}px`;
-        }
+        const li = lids[bot].current;
+        if (li) li.style.transform = `scaleY(${now < bl.until ? 0.1 : 1})`;
       }
     };
     raf = requestAnimationFrame(step);
@@ -711,6 +606,23 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
     };
     // Les refs sont stables : la boucle tourne une seule fois.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // De temps en temps, l'un des deux se hisse un peu et regarde la page.
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const next = () => {
+      timer = setTimeout(() => {
+        if (!document.hidden && !live.current.panel && !live.current.bubble) {
+          setPeeking(Math.random() < 0.5 ? "scout" : "hook");
+          setTimeout(() => setPeeking(null), 1800);
+        }
+        next();
+      }, rand(7000, 14000));
+    };
+    next();
+    return () => clearTimeout(timer);
   }, []);
 
   // Petites bulles de temps en temps : une accroche de Hook, puis une vidéo
@@ -762,58 +674,48 @@ function Aquarium({ userId, picks, account }: { userId: string; picks: TrendPick
 
   return (
     <>
-      {BOTS.map((bot) => {
-        const Face = bot === "scout" ? ScoutFace : HookFace;
-        return (
-          <div
-            key={bot}
-            ref={wrap[bot]}
-            className="pointer-events-none fixed top-0 left-0 z-40 will-change-transform"
-            style={{ transform: "translate3d(-200px, -200px, 0)" }}
-          >
+      {/* Les deux têtes qui dépassent du bas de l'écran (au-dessus de la
+          barre du bas sur téléphone), la bulle de parole au-dessus. */}
+      <div className={s.peek}>
+        {bubble && bubblePick && !panel && (
+          <div className={`${s.say} ${s.peekSay} animate-fade-up`} data-bot={bubble.bot}>
+            <button type="button" onClick={() => open(bubble.bot, bubble.pick)} className="block w-full px-3 py-2 pr-7 text-left">
+              {bubble.bot === "scout" ? (
+                <>
+                  <span className="block text-sm font-semibold">{fmt(B.watchThis, { views: num(bubblePick.views) })}</span>
+                  <span className="block truncate text-xs text-white/60">@{bubblePick.author}</span>
+                </>
+              ) : (
+                <>
+                  <span className="block text-xs text-white/60">{B.sayThis}</span>
+                  <span className="line-clamp-2 block text-sm font-medium">« {bubblePick.hook} »</span>
+                </>
+              )}
+            </button>
+            <button type="button" onClick={() => setBubble(null)} className="absolute top-1.5 right-1.5 p-0.5 text-white/50 hover:text-white" title={B.dismiss}>
+              <X className="size-3.5" />
+              <span className="sr-only">{B.dismiss}</span>
+            </button>
+            <span aria-hidden className={s.sayTail} />
+          </div>
+        )}
+        <div className={s.peekWindow}>
+          {BOTS.map((bot) => (
             <button
+              key={bot}
+              ref={heads[bot]}
               type="button"
               onClick={() => open(bot, bubble?.bot === bot ? bubble.pick : undefined)}
-              onPointerEnter={() => sims.current && (sims.current[bot].hover = true)}
-              onPointerLeave={() => sims.current && (sims.current[bot].hover = false)}
               title={fmt(B.open, { name: B[bot].name })}
-              className="pointer-events-auto block size-[52px] cursor-pointer drop-shadow-[0_10px_14px_rgb(0_0_0/0.35)] transition-[filter] hover:drop-shadow-[0_12px_18px_rgb(0_0_0/0.45)] md:size-16"
+              data-up={bubble?.bot === bot || peeking === bot || panel?.bot === bot ? "" : undefined}
+              className={s.peekHead}
             >
-              <div ref={body[bot]} className="size-full will-change-transform">
-                <Face eyesRef={eyes[bot]} talking={bubble?.bot === bot} className="size-full" />
-              </div>
+              <BotHead bot={bot} pupilsRef={pupils[bot]} lidsRef={lids[bot]} className="block size-full" />
               <span className="sr-only">{fmt(B.open, { name: B[bot].name })}</span>
             </button>
-          </div>
-        );
-      })}
-
-      {bubble && bubblePick && !panel && (
-        <div
-          ref={bubbleEl}
-          className={`${s.say} pointer-events-auto fixed top-0 left-0 z-40 w-max max-w-[15rem] animate-fade-up`}
-          style={{ transform: "translate3d(-400px, -400px, 0)" }}
-        >
-          <button type="button" onClick={() => open(bubble.bot, bubble.pick)} className="block w-full px-3 py-2 pr-7 text-left">
-            {bubble.bot === "scout" ? (
-              <>
-                <span className="block text-sm font-semibold">{fmt(B.watchThis, { views: num(bubblePick.views) })}</span>
-                <span className="block truncate text-xs text-white/60">@{bubblePick.author}</span>
-              </>
-            ) : (
-              <>
-                <span className="block text-xs text-white/60">{B.sayThis}</span>
-                <span className="line-clamp-2 block text-sm font-medium">« {bubblePick.hook} »</span>
-              </>
-            )}
-          </button>
-          <button type="button" onClick={() => setBubble(null)} className="absolute top-1.5 right-1.5 p-0.5 text-white/50 hover:text-white" title={B.dismiss}>
-            <X className="size-3.5" />
-            <span className="sr-only">{B.dismiss}</span>
-          </button>
-          <span ref={tailEl} aria-hidden className={s.sayTail} />
+          ))}
         </div>
-      )}
+      </div>
 
       {panel && (
         <section role="dialog" aria-label={B[panel.bot].name} className={`video-page ${s.panel}`}>
