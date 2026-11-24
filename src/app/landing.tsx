@@ -66,8 +66,8 @@ type Props = {
 
 // Fond de chaque écran : vidéo horizontale (h) et verticale (v), sans extension.
 const BACKGROUNDS = [
-  { h: "/demos/demo-21", v: "/examples/gallery/g-105" },
-  { h: "/demos/demo-17", v: "/examples/gallery/g-100" },
+  { h: "/demos/hero-drift", v: "/demos/hero-drift-v" },
+  { h: "/demos/demo-17", v: "/demos/drift-rose-v" },
   { h: "/demos/demo-09", v: "/examples/gallery/g-24" },
   { h: "/demos/demo-20", v: "/demos/demo-07" },
 ];
