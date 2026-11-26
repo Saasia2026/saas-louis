@@ -349,29 +349,6 @@
   grid-column: 1 / 9;
 }
 
-.perks {
-  grid-column: 9 / 13;
-  display: grid;
-  gap: 10px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.perks li {
-  display: grid;
-  grid-template-columns: 22px 1fr;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  font-size: 0.9rem;
-}
-
-.perks svg {
-  width: 16px;
-  height: 16px;
-}
-
 /* Écran 2 : avant / après */
 .wideText {
   grid-column: 1 / 9;
@@ -781,10 +758,6 @@
 @media (max-width: 1080px) {
   .nav button {
     padding: 8px 12px;
-  }
-
-  .perks {
-    display: none;
   }
 
   .heroText {

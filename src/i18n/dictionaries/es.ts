@@ -81,7 +81,6 @@ export const es: Dictionary = {
     titleTop: "Tu personaje.",
     titleBottom: "En el vídeo.",
     ctaFirst: "Crear mi primer vídeo",
-    perks: ["Calidad Shinka, hasta 1080p", "Sin suscripción obligatoria", "Créditos devueltos si falla"],
     compareBefore: "Original",
     compareAfter: "Tu personaje",
     mockWindow: "twinpost · Studio",

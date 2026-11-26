@@ -68,7 +68,6 @@ export default async function Home() {
           heroText: L.heroText,
           ctaFirst: loggedIn ? L.openStudio : L.ctaFirst,
           seeExamples: L.seeExamples,
-          perks: L.perks,
           examplesTop,
           examplesBottom,
           examplesText: L.featureList[1].text,
