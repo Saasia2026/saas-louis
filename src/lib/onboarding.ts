@@ -27,7 +27,7 @@ export type OnboardingAnswers = {
 
 // Vidéos publiées par mois pour chaque rythme.
 export const PACE_VIDEOS: Record<Pace, number> = { weekly: 4, few: 12, daily: 30, multi: 60 };
-// Durée de référence d'une vidéo : la limite d'un rendu Shinka.
+// Durée de référence d'une vidéo : la limite d'un rendu B-Effect.
 export const CLIP_SECONDS = 15;
 
 // Seuls les objectifs d'audience demandent les abonnés.
@@ -41,12 +41,12 @@ export function targetsAbove(audience: Audience | undefined): Target[] {
   return TARGETS.slice(Math.min(start, TARGETS.length - 1));
 }
 
-// Crédits d'une vidéo de 15 s en 720p, en Shinka et en Shinka Max.
+// Crédits d'une vidéo de 15 s en 720p, en B-Effect et en B-Effect 2.0.
 export function clipCredits(max = false) {
   return CLIP_SECONDS * swapMethodRate({ model: max ? "max" : "standard", quality: "720p" });
 }
 
-// Crédits par mois au rythme choisi, en Shinka 720p.
+// Crédits par mois au rythme choisi, en B-Effect 720p.
 export function monthlyCredits(pace: Pace) {
   return PACE_VIDEOS[pace] * clipCredits();
 }

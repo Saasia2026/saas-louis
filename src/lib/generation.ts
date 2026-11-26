@@ -39,16 +39,16 @@ export function isSwapEngine(value: unknown): value is SwapEngine {
 
 // Deux modèles Genjutsu chez Higgsfield, nommés autrement sur le site :
 // - standard : « Genjutsu Light » chez Higgsfield (sorti le 2026-10-20),
-//   affiché « Shinka ». Prix publics de l'API lus le 2026-11-16 : 0,0739 /
+//   affiché « B-Effect ». Prix publics de l'API lus le 2026-11-16 : 0,0739 /
 //   0,1471 / 0,2936 $ la seconde en 480p / 720p / 1080p (0,05 / 0,10 / 0,20
 //   au lancement), 15 s au plus par requête ;
-// - max : « Genjutsu » chez Higgsfield, affiché « Shinka Max ». Prix publics
+// - max : « Genjutsu » chez Higgsfield, affiché « B-Effect 2.0 ». Prix publics
 //   du 2026-11-16 : 0,154 / 0,3446 / 0,8346 $ la seconde (0,318 / 0,681 /
 //   1,632 quand le barème a été posé).
-// Shinka : barème relevé le 2026-11-16 (5 → 9 en 720p) pour garder ~20 % net
+// B-Effect : barème relevé le 2026-11-16 (5 → 9 en 720p) pour garder ~20 % net
 // après Stripe et l'URSSAF aux prix publics (un crédit rapporte ~0,0235 $
 // net). Un essai à 11 (~30 % net) a été retiré le jour même : trop cher pour
-// le client, au-dessus du moteur complet chez Higgsfield. Shinka Max :
+// le client, au-dessus du moteur complet chez Higgsfield. B-Effect 2.0 :
 // baissé le 2026-11-17 de 14 / 28 / 68 à 10 / 21 / 50, ~20 % net aux prix
 // publics eux aussi. Ces prix n'ont pas été vérifiés sur une facture du
 // compte : si un rendu Max est débité ~0,68 $ la seconde en 720p au lieu de
@@ -62,7 +62,7 @@ export const GENJUTSU_RATES: Record<GenjutsuModel, Record<SwapQuality, number>> 
   standard: { "480p": 5, "720p": 9, "1080p": 18 },
   max: { "480p": 10, "720p": 21, "1080p": 50 },
 };
-// Shinka par défaut depuis le 2026-11-16 : environ 3 fois moins cher la
+// B-Effect par défaut depuis le 2026-11-16 : environ 3 fois moins cher la
 // vidéo pour le client ; Max reste l'option qualité.
 export const DEFAULT_GENJUTSU_MODEL: GenjutsuModel = "standard";
 export const DEFAULT_SWAP_QUALITY: SwapQuality = "720p";
@@ -267,7 +267,7 @@ export function swapCredits(
 export const SHORT_CLIP_SECONDS = 5;
 
 // Vidéos de SHORT_CLIP_SECONDS (720p, un personnage, une passe) qu'un nombre
-// de crédits permet, une fiche par vidéo. Shinka par défaut.
+// de crédits permet, une fiche par vidéo. B-Effect par défaut.
 export function swapShortClipsFor(credits: number, settings: GenjutsuSettings = {}) {
   return Math.max(
     0,
@@ -276,7 +276,7 @@ export function swapShortClipsFor(credits: number, settings: GenjutsuSettings = 
 }
 
 // Secondes de remplacement (720p, un personnage, une passe) qu'un nombre de
-// crédits permet, fiche comprise. Shinka par défaut.
+// crédits permet, fiche comprise. B-Effect par défaut.
 export function swapMethodSecondsFor(credits: number, settings: GenjutsuSettings = {}) {
   return Math.max(0, Math.floor((credits - SWAP_SHEET_CREDITS) / swapMethodRate(settings)));
 }

@@ -3,11 +3,10 @@
 import {
   Download,
   Film,
-  Gauge,
-  Ghost,
+  Ghost,
   PawPrint,
-  Play,
-  RefreshCw,
+  Play,
+  RefreshCw,
   Trash2,
   UserRound,
   Video,
@@ -22,7 +21,6 @@ import { PlayerBar, usePlayer } from "@/app/video-player";
 import { fmt } from "@/i18n/config";
 import { useI18n } from "@/i18n/provider";
 import type { AspectRatio } from "@/lib/generation";
-import { askBotsToAnalyze } from "../../bots/bots-state";
 import { CopyButton, PromptText, RefStrip } from "../generation-details";
 import type { SwapHistoryItem } from "../swap-history";
 import { DeleteButton } from "../videos/delete-button";
@@ -165,18 +163,7 @@ function Details({ item, onReuse }: { item: SwapHistoryItem; onReuse?: (item: Sw
             {V.resume}
           </Link>
         ) : (
-          <div className={H.pair}>
-            {reuse}
-            <button
-              type="button"
-              onClick={() => askBotsToAnalyze(item.id, item.mediaUrl)}
-              title={t.viral.analyzeHint}
-              className="btn btn-secondary"
-            >
-              <Gauge />
-              {t.viral.analyzeShort}
-            </button>
-          </div>
+          reuse
         )}
         <div className={H.foot}>
           <span>{item.date}</span>

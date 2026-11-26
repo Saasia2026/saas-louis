@@ -9,7 +9,7 @@ const BASE_URL = "https://api.higgsfield.ai";
 
 // Les deux modes de Genjutsu, comme sur Higgsfield (vérifiés le 2026-11-08 :
 // les quatre identifiants répondent). 0,681 $/s en 720p, 1,632 $/s en 1080p
-// (Genjutsu Max) ; 0,10 $/s en 720p (Genjutsu Light, affiché « Shinka »,
+// (Genjutsu Max) ; 0,10 $/s en 720p (Genjutsu Light, affiché « B-Effect »,
 // 15 s lues au plus). Vidéo source 4–30 s.
 // — Object Swap (onglet « Remplacer ») : remplace ce que dit le prompt et
 //   garde le reste du clip (décor, caméra, jeu, coupes). Il retouche la vidéo

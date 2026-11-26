@@ -123,13 +123,13 @@ export function InfluencerWorkspace({
       </header>
 
       <div className={s.carousel}>
-        <button type="button" className={`${s.arrow} ${s.prev}`} onClick={() => scroll(-1)} aria-label={t.bots.prev}>
+        <button type="button" className={`${s.arrow} ${s.prev}`} onClick={() => scroll(-1)} aria-label={I.prev}>
           <ChevronLeft />
         </button>
         <div ref={track} className={s.track}>
           {tab === "examples" ? exampleItems : mineItems}
         </div>
-        <button type="button" className={`${s.arrow} ${s.next}`} onClick={() => scroll(1)} aria-label={t.bots.next}>
+        <button type="button" className={`${s.arrow} ${s.next}`} onClick={() => scroll(1)} aria-label={I.next}>
           <ChevronRight />
         </button>
       </div>

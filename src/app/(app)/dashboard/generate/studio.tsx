@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, Check, CirclePlay, Coins, Download, Film, History, Loader2, MonitorPlay, RefreshCw, Sparkles, TriangleAlert, WandSparkles, X } from "lucide-react";
+import { CalendarClock, Check, CirclePlay, Coins, Download, Film, History, Loader2, MonitorPlay, RefreshCw, TriangleAlert, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fmt, INTL_LOCALES, plural } from "@/i18n/config";
@@ -49,7 +49,6 @@ import {
 } from "./studio-controls";
 import { StylePicker, type StudioStyle } from "./style-picker";
 import { SwapInput, keptSeconds, readDuration, uploadSwapFile, type SwapFile } from "./swap-input";
-import { askBotsToAnalyze } from "../../bots/bots-state";
 import Link from "next/link";
 import { PromptText, RefStrip } from "../generation-details";
 import R from "./result.module.css";
@@ -145,7 +144,7 @@ export function Studio({
   // prend tout le corps, animal compris).
   const [mode, setMode] = useState<StudioMode>("replace");
   // Style optionnel (Restyle) : disponible dans tous les modes. Quand un
-  // style est choisi, le rendu passe en mode restyle côté API (Shinka Max,
+  // style est choisi, le rendu passe en mode restyle côté API (B-Effect 2.0,
   // une passe).
   const [style, setStyle] = useState<StudioStyle | null>(null);
   const restyle = Boolean(style);
@@ -195,7 +194,7 @@ export function Studio({
   // Notification éphémère après un lancement réussi.
   const [launched, setLaunched] = useState(false);
   const started = phase.kind !== "idle";
-  // Genjutsu lit au plus 30 s (15 s pour Shinka) du clip, ou du passage
+  // Genjutsu lit au plus 30 s (15 s pour B-Effect) du clip, ou du passage
   // choisi dans la fenêtre de découpe. Même calcul que le serveur (voir
   // startSwap).
   const maxSeconds = model === "standard" ? GENJUTSU_LIGHT_MAX_SECONDS : SWAP_ENGINES[engine].maxSeconds;
@@ -566,7 +565,7 @@ export function Studio({
   const modelName = (m: GenjutsuModel) => (m === "max" ? t.studio.modelMax : t.studio.modelStandard);
   const modelTagline = (m: GenjutsuModel) => (m === "max" ? t.studio.modelMaxTagline : t.studio.modelStandardTagline);
   const rate = (r: number) => fmt(t.studio.perSecond, { rate: r.toLocaleString(locale) });
-  // Restyle n'existe qu'avec Shinka Max.
+  // Restyle n'existe qu'avec B-Effect 2.0.
   const modelOptions = (close: () => void) =>
     GENJUTSU_MODELS.filter((m) => !restyle || m === "max").map((m) => (
       <Option
@@ -1009,21 +1008,10 @@ function Result({
                   <Download />
                   {t.studio.download}
                 </a>
-                <div className={R.pair}>
-                  <button
-                    type="button"
-                    onClick={() => askBotsToAnalyze(phase.id, phase.view.mediaUrl)}
-                    title={t.viral.analyzeHint}
-                    className="btn btn-secondary"
-                  >
-                    <Sparkles />
-                    {t.viral.analyzeShort}
-                  </button>
-                  <Link href="/dashboard/planning" title={t.shell.navHint.planning} className="btn btn-secondary">
-                    <CalendarClock />
-                    {t.shell.nav.planning}
-                  </Link>
-                </div>
+                <Link href="/dashboard/planning" title={t.shell.navHint.planning} className="btn btn-secondary">
+                  <CalendarClock />
+                  {t.shell.nav.planning}
+                </Link>
               </>
             )}
             {cancellable && (
@@ -1071,7 +1059,7 @@ function Process({ phase }: { phase: Extract<Phase, { kind: "generating" }> }) {
   const late = elapsed > minutes * 60;
   const assembling = view?.stage === "assembling";
 
-  // Avancée connue : images clés puis plans (Kling), ou séquences (Shinka).
+  // Avancée connue : images clés puis plans (Kling), ou séquences (B-Effect).
   let progress: number | null = null;
   let label = t.studio.swapping;
   if (assembling) {

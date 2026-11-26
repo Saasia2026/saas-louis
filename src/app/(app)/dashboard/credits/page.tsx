@@ -179,7 +179,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
 
   // Parcours de résiliation (?cancel=1 puis ?cancel=2, voir lib/retention.ts).
   // Crédits d'abonnement restants, leur valeur au prix de la formule et les
-  // secondes de vidéo Shinka 720p qu'ils représentent.
+  // secondes de vidéo B-Effect 720p qu'ils représentent.
   const R = S.retention;
   const keptCredits = subscriptionPaid ? expiring : 0;
   const keptValue = subscribedPlan
