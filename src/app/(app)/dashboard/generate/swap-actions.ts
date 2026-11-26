@@ -127,7 +127,7 @@ export async function startSwap(input: {
   // (Motion Transfer), avec ou sans photo de lieu.
   transfer?: boolean;
   // Onglet « Restyle » : tout le clip est refait dans le style choisi
-  // (toujours avec Shinka Max). Les images deviennent facultatives : sans
+  // (toujours avec B-Effect 2.0). Les images deviennent facultatives : sans
   // elles, les personnages du clip sont restylés.
   restyle?: { presetId: string };
   // Consignes libres, facultatives : demandes en plus du remplacement
@@ -149,7 +149,7 @@ export async function startSwap(input: {
   if (!higgsfieldEnabled()) return { error: errors.startFailed };
   const engine: SwapEngine = "genjutsu";
   // Restyle : le style doit être dans le catalogue du moment ; ce mode
-  // n'existe qu'avec Shinka Max, en une passe.
+  // n'existe qu'avec B-Effect 2.0, en une passe.
   const restyleId = typeof input.restyle?.presetId === "string" ? input.restyle.presetId : undefined;
   const restyle = restyleId !== undefined;
   const style = restyle
@@ -256,7 +256,7 @@ export async function startSwap(input: {
 
   // Sans découpe, le clip part tel quel, en un seul envoi. Seules comptent
   // les règles de Genjutsu : 4 s au moins, et il ne lit que les 30 premières
-  // secondes (15 pour Shinka), seules facturées. Avec la fenêtre de découpe
+  // secondes (15 pour B-Effect), seules facturées. Avec la fenêtre de découpe
   // du studio, seul le passage choisi part (voir trimClip).
   const maxSeconds = model === "standard" ? GENJUTSU_LIGHT_MAX_SECONDS : SWAP_ENGINES[engine].maxSeconds;
   const asked = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : undefined);

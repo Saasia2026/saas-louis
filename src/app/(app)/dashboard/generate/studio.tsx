@@ -144,7 +144,7 @@ export function Studio({
   // prend tout le corps, animal compris).
   const [mode, setMode] = useState<StudioMode>("replace");
   // Style optionnel (Restyle) : disponible dans tous les modes. Quand un
-  // style est choisi, le rendu passe en mode restyle côté API (Shinka Max,
+  // style est choisi, le rendu passe en mode restyle côté API (B-Effect 2.0,
   // une passe).
   const [style, setStyle] = useState<StudioStyle | null>(null);
   const restyle = Boolean(style);
@@ -194,7 +194,7 @@ export function Studio({
   // Notification éphémère après un lancement réussi.
   const [launched, setLaunched] = useState(false);
   const started = phase.kind !== "idle";
-  // Genjutsu lit au plus 30 s (15 s pour Shinka) du clip, ou du passage
+  // Genjutsu lit au plus 30 s (15 s pour B-Effect) du clip, ou du passage
   // choisi dans la fenêtre de découpe. Même calcul que le serveur (voir
   // startSwap).
   const maxSeconds = model === "standard" ? GENJUTSU_LIGHT_MAX_SECONDS : SWAP_ENGINES[engine].maxSeconds;
@@ -565,7 +565,7 @@ export function Studio({
   const modelName = (m: GenjutsuModel) => (m === "max" ? t.studio.modelMax : t.studio.modelStandard);
   const modelTagline = (m: GenjutsuModel) => (m === "max" ? t.studio.modelMaxTagline : t.studio.modelStandardTagline);
   const rate = (r: number) => fmt(t.studio.perSecond, { rate: r.toLocaleString(locale) });
-  // Restyle n'existe qu'avec Shinka Max.
+  // Restyle n'existe qu'avec B-Effect 2.0.
   const modelOptions = (close: () => void) =>
     GENJUTSU_MODELS.filter((m) => !restyle || m === "max").map((m) => (
       <Option
@@ -1059,7 +1059,7 @@ function Process({ phase }: { phase: Extract<Phase, { kind: "generating" }> }) {
   const late = elapsed > minutes * 60;
   const assembling = view?.stage === "assembling";
 
-  // Avancée connue : images clés puis plans (Kling), ou séquences (Shinka).
+  // Avancée connue : images clés puis plans (Kling), ou séquences (B-Effect).
   let progress: number | null = null;
   let label = t.studio.swapping;
   if (assembling) {
