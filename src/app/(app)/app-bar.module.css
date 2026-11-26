@@ -86,7 +86,7 @@
   height: 0.9rem;
 }
 
-/* Petites icônes : langue, bots, déconnexion. */
+/* Petites icônes : langue, déconnexion. */
 .icon {
   display: grid;
   place-items: center;

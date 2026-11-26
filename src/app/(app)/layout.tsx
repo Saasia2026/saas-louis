@@ -9,16 +9,8 @@ import { fmt, INTL_LOCALES } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { swapMethodRate } from "@/lib/generation";
 import { createClient } from "@/lib/supabase/server";
-import { latestTikTokAnalysis } from "@/lib/tiktok-analysis";
-import { listTrendPicks } from "@/lib/trends";
-import { BotsAquarium } from "./bots/aquarium";
-import { BotsToggle } from "./bots/bots-toggle";
 import h from "./app-bar.module.css";
 import { BottomNav, MainNav, SideNav } from "./nav-links";
-
-// Les bots tournent sur toutes les pages : l'analyse d'un compte TikTok
-// (server action) prend environ 30 s.
-export const maxDuration = 300;
 
 // Espace connecté. Le proxy redirige déjà, mais on revérifie ici :
 // le proxy n'est qu'une vérification optimiste.
@@ -36,11 +28,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .single();
 
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
-  // Bots : sélection du jour et dernière analyse du compte TikTok.
-  const [picks, account] = await Promise.all([
-    listTrendPicks(locale).catch(() => []),
-    latestTikTokAnalysis().catch(() => null),
-  ]);
   const credits = profile?.credits_remaining ?? 0;
   const numberFormat = new Intl.NumberFormat(INTL_LOCALES[locale]);
   // Au-delà de 100 000, le solde s'abrège (« 1,2 M ») pour tenir dans la
@@ -91,7 +78,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <span className="sr-only">{t.shell.recharge}</span>
           </Link>
           <div className={`${h.tools} flex items-center`}>
-            <BotsToggle />
             <LanguageSwitcher />
           </div>
           <form action={signOut}>
@@ -109,7 +95,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="mx-auto max-w-7xl">{children}</div>
       </main>
       </div>
-      <BotsAquarium userId={data.claims.sub} picks={picks} account={account} />
       <OfferPopup offers={offersFor(t, locale, true)} />
     </div>
   );

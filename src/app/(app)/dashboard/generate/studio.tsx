@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, Check, CirclePlay, Coins, Download, Film, History, Loader2, MonitorPlay, RefreshCw, Sparkles, TriangleAlert, WandSparkles, X } from "lucide-react";
+import { CalendarClock, Check, CirclePlay, Coins, Download, Film, History, Loader2, MonitorPlay, RefreshCw, TriangleAlert, WandSparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { fmt, INTL_LOCALES, plural } from "@/i18n/config";
@@ -49,7 +49,6 @@ import {
 } from "./studio-controls";
 import { StylePicker, type StudioStyle } from "./style-picker";
 import { SwapInput, keptSeconds, readDuration, uploadSwapFile, type SwapFile } from "./swap-input";
-import { askBotsToAnalyze } from "../../bots/bots-state";
 import Link from "next/link";
 import { PromptText, RefStrip } from "../generation-details";
 import R from "./result.module.css";
@@ -1009,21 +1008,10 @@ function Result({
                   <Download />
                   {t.studio.download}
                 </a>
-                <div className={R.pair}>
-                  <button
-                    type="button"
-                    onClick={() => askBotsToAnalyze(phase.id, phase.view.mediaUrl)}
-                    title={t.viral.analyzeHint}
-                    className="btn btn-secondary"
-                  >
-                    <Sparkles />
-                    {t.viral.analyzeShort}
-                  </button>
-                  <Link href="/dashboard/planning" title={t.shell.navHint.planning} className="btn btn-secondary">
-                    <CalendarClock />
-                    {t.shell.nav.planning}
-                  </Link>
-                </div>
+                <Link href="/dashboard/planning" title={t.shell.navHint.planning} className="btn btn-secondary">
+                  <CalendarClock />
+                  {t.shell.nav.planning}
+                </Link>
               </>
             )}
             {cancellable && (
