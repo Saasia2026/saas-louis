@@ -289,7 +289,7 @@ export function Landing({ copy: c, packs, studioHref, startHref, creditsHref, lo
             </h1>
             <p className={cx(s.lead, s.rise)}>{c.heroText}</p>
             <div className={cx(s.actions, s.rise)} style={{ "--d": "0.1s" } as CSSProperties}>
-              <Link href={studioHref} className={cx(s.pill, s.lg)} {...hold}>
+              <Link href={studioHref} className={cx(s.pill, s.lg, s.hot, "sheen sheen-auto")} {...hold}>
                 {c.ctaFirst}
                 <Arrow />
               </Link>
@@ -420,7 +420,7 @@ export function Landing({ copy: c, packs, studioHref, startHref, creditsHref, lo
             ))}
           </ul>
           <div className={cx(s.packFoot, s.rise)} style={{ "--d": "0.25s" } as CSSProperties}>
-            <Link href={studioHref} className={cx(s.pill, s.lg)} {...hold}>
+            <Link href={studioHref} className={cx(s.pill, s.lg, s.hot, "sheen sheen-auto")} {...hold}>
               {c.ctaFirst}
               <Arrow />
             </Link>

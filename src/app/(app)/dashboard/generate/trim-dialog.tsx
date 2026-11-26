@@ -314,7 +314,7 @@ export function TrimDialog({
             type="button"
             onClick={() => onConfirm(round(range.start), round(length))}
             disabled={busy}
-            className="btn btn-accent"
+            className="btn btn-primary"
           >
             {busy && <Loader2 className="animate-spin" />}
             {busy ? S.uploading : S.trimConfirm}

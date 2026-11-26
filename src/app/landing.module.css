@@ -189,6 +189,14 @@
   font-size: 1.02rem;
 }
 
+/* L'action de l'écran (créer sa première vidéo) : le rose de la marque. Le
+   bouton de l'en-tête reste blanc, pour qu'il n'y ait qu'un rose à la fois. */
+.hot {
+  background: var(--brand-fill);
+  color: var(--on-brand) !important;
+  box-shadow: var(--brand-shadow);
+}
+
 .ghost {
   display: inline-flex;
   align-items: center;
@@ -572,7 +580,7 @@
 }
 
 .packFeatured {
-  border-color: var(--white);
+  border-color: var(--brand);
   background: rgb(255 255 255 / 0.14);
 }
 
@@ -594,8 +602,8 @@
 .badge {
   padding: 3px 9px;
   border-radius: 999px;
-  background: var(--white);
-  color: var(--ink);
+  background: var(--brand);
+  color: var(--on-brand);
   font-size: 0.68rem;
   font-weight: 700;
 }
@@ -719,6 +727,7 @@
 }
 
 .seg.cur .bar i {
+  background: var(--brand);
   animation: fill var(--slide) linear forwards;
 }
 

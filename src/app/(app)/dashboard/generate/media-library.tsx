@@ -241,7 +241,7 @@ export function MediaLibrary({
             type="button"
             disabled={!chosen.length}
             onClick={() => onPick(chosen)}
-            className="btn btn-accent"
+            className="btn btn-primary"
           >
             {fmt(plural(chosen.length, S.libraryAddOne, S.libraryAddMany), { n: chosen.length })}
           </button>

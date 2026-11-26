@@ -277,7 +277,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
               <div className="flex flex-wrap items-center gap-2">
                 {subscription.ending && subscriptionPaid && (
                   <form action={resumeSubscription}>
-                    <button type="submit" className="btn btn-accent">
+                    <button type="submit" className="btn btn-primary">
                       {S.resume}
                     </button>
                   </form>
@@ -357,7 +357,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                       })}
                     </p>
                     <form action={acceptRetentionOffer} className="mt-3">
-                      <button type="submit" className="btn btn-accent">
+                      <button type="submit" className="btn btn-primary">
                         {R.offerTake}
                       </button>
                     </form>
@@ -460,7 +460,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
         {!card ? (
           <div className="mt-7">
             <form action={addCard}>
-              <button type="submit" disabled={!enabled} className="btn btn-accent w-full py-3.5 text-base sm:w-auto sm:px-8">
+              <button type="submit" disabled={!enabled} className="btn btn-primary w-full py-3.5 text-base sm:w-auto sm:px-8">
                 <CreditCard />
                 {A.activateCta}
               </button>
@@ -502,8 +502,8 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
                 <span className="text-sm font-semibold">{A.toggleLabel}</span>
                 <span className="relative inline-flex shrink-0">
                   <input type="checkbox" name="enabled" defaultChecked={payAsYouGo} className="peer sr-only" />
-                  <span className="h-6 w-11 rounded-full border border-line-strong bg-surface-3 transition-colors peer-checked:border-transparent peer-checked:bg-accent peer-focus-visible:ring-2 peer-focus-visible:ring-accent/50" />
-                  <span className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5 peer-checked:bg-black" />
+                  <span className="h-6 w-11 rounded-full border border-line-strong bg-surface-3 transition-colors peer-checked:border-transparent peer-checked:bg-brand peer-focus-visible:ring-2 peer-focus-visible:ring-brand/50" />
+                  <span className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
                 </span>
               </label>
               {profile?.auto_recharge_failed ? (
@@ -511,7 +511,7 @@ export default async function CreditsPage(props: PageProps<"/dashboard/credits">
               ) : payAsYouGo ? (
                 <p className="rounded-xl border border-success/20 bg-success/5 px-3 py-2 text-sm text-success">{A.usageOn}</p>
               ) : null}
-              <button type="submit" className="btn btn-accent">
+              <button type="submit" className="btn btn-primary">
                 {A.save}
               </button>
             </form>

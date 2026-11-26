@@ -94,7 +94,7 @@ export function OfferPopup({
     </button>
   );
   const cta = (
-    <Link href={offer.href} className={s.cta} onClick={take}>
+    <Link href={offer.href} className={`${s.cta} sheen`} onClick={take}>
       {offer.cta}
       <ArrowRight />
     </Link>

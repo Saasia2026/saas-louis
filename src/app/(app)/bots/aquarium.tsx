@@ -335,7 +335,7 @@ function AccountPanel({ initial }: { initial: TikTokAnalysis | null }) {
             disabled={pending}
             className="h-11 w-full rounded-xl border border-line bg-surface-2 px-3 text-sm placeholder:text-faint focus:border-accent focus:outline-none"
           />
-          <button type="submit" disabled={!handle.trim() || pending} className="btn btn-accent w-full">
+          <button type="submit" disabled={!handle.trim() || pending} className="btn btn-primary w-full">
             {pending ? A.analyzing : A.analyze}
           </button>
         </form>
@@ -408,7 +408,7 @@ function AccountPanel({ initial }: { initial: TikTokAnalysis | null }) {
                 setApplied(r.ok ? "ok" : "failed");
               })
             }
-            className="btn btn-accent"
+            className="btn btn-primary"
           >
             {applied === "ok" ? <Check className="size-4" /> : null}
             {A.apply}

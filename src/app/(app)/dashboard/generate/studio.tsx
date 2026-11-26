@@ -884,7 +884,7 @@ function Result({
             <TriangleAlert className="mt-0.5 size-4 shrink-0" />
             <p>{phase.message}</p>
           </div>
-          <button type="button" onClick={onReset} className="btn btn-accent">
+          <button type="button" onClick={onReset} className="btn btn-primary">
             <RefreshCw />
             {t.studio.newVideo}
           </button>
@@ -1005,7 +1005,7 @@ function Result({
           <div className={R.actions}>
             {phase.kind === "done" && (
               <>
-                <a href={phase.view.downloadUrl ?? phase.view.mediaUrl} className="btn btn-accent">
+                <a href={phase.view.downloadUrl ?? phase.view.mediaUrl} className="btn btn-primary">
                   <Download />
                   {t.studio.download}
                 </a>

@@ -137,7 +137,7 @@ function PlanCard({
         <form action={subscribe}>
           <input type="hidden" name="plan" value={plan.id} />
           <input type="hidden" name="interval" value={billing} />
-          <button type="submit" disabled={!enabled} className={s.subscribe}>
+          <button type="submit" disabled={!enabled} className={`${s.subscribe} sheen`}>
             {S.subscribe}
             {pct > 0 && (
               <span className={s.deal}>

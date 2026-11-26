@@ -56,6 +56,56 @@
   color-scheme: dark;
 }
 
+/* Couleur de marque : un rose, et un seul. Le site reste noir, gris et blanc ;
+   le rose est réservé à ce qui fait avancer (créer, lancer, payer), aux
+   étiquettes (« Populaire ») et aux jauges. Jamais en décor. Le dégradé va du
+   rose clair au rose profond pour que le texte blanc reste lisible. */
+:root {
+  --brand: #f43f5e;
+  --brand-light: #ff6b84;
+  --brand-deep: #e11d48;
+  --brand-soft: rgb(244 63 94 / 0.16);
+  --on-brand: #ffffff;
+  --brand-fill: linear-gradient(100deg, #fb5a75 0%, #f43f5e 42%, #e3264b 100%);
+  /* Reflet fin en haut, ombre portée teintée et serrée : du corps, pas de halo. */
+  --brand-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 10px 22px -12px rgb(244 63 94 / 0.8);
+}
+
+/* Reflet qui traverse un bouton rose au survol (.sheen), ou tout seul de temps
+   en temps (.sheen-auto, pour l'action principale d'un écran). Une bande
+   claire déplacée en transformation seulement. */
+:where(.sheen) {
+  position: relative;
+}
+.sheen {
+  overflow: hidden;
+  isolation: isolate;
+}
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 32%, rgb(255 255 255 / 0.4) 50%, transparent 68%);
+  transform: translateX(-110%);
+}
+.sheen:hover:not(:disabled)::after {
+  transform: translateX(110%);
+  transition: transform 0.85s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.sheen-auto:not(:hover)::after {
+  animation: sheen-pass 6s cubic-bezier(0.2, 0.7, 0.2, 1) 1.5s infinite;
+}
+@keyframes sheen-pass {
+  0%,
+  72% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(110%);
+  }
+}
+
 /* Une teinte par offre (page Crédits) : Basic, Pro, Creator. */
 :root {
   --tier-basic: #7dd3fc;
@@ -223,6 +273,9 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-light);
+  --color-brand-soft: var(--brand-soft);
   --font-sans: var(--font-inter);
   --font-display: var(--font-archivo);
 
@@ -384,7 +437,8 @@ body {
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--accent) 40%, transparent);
+  background: color-mix(in oklab, var(--brand) 55%, transparent);
+  color: #fff;
 }
 
 /* Au clavier, l'élément visé se voit toujours : un anneau d'accent, décollé. */
@@ -730,17 +784,37 @@ html {
   }
 }
 
-/* Bouton d'action forte : blanc sur fond sombre, encre sur fond clair,
-   comme les boutons de la landing. */
+/* Bouton de l'action qui fait avancer (créer, lancer, payer) : le rose de la
+   marque, en dégradé, traversé par un reflet au survol. Un seul par écran ;
+   les autres actions fortes prennent btn-primary (blanc). */
 @utility btn-accent {
-  color: var(--on-primary);
-  background: var(--text);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--on-brand);
+  background: var(--brand-fill);
+  box-shadow: var(--brand-shadow);
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(100deg, transparent 32%, rgb(255 255 255 / 0.4) 50%, transparent 68%);
+    transform: translateX(-110%);
+  }
   &:hover:not(:disabled) {
-    background: var(--primary-hover);
+    filter: brightness(1.06);
+  }
+  &:hover:not(:disabled)::after {
+    transform: translateX(110%);
+    transition: transform 0.85s var(--ease-out);
+  }
+  &:disabled {
+    box-shadow: none;
   }
 }
 
-/* Ancien bouton rose : aligné sur le bouton principal blanc. */
+/* Ancien bouton néon : aligné sur le bouton principal blanc. */
 @utility btn-hot {
   color: var(--on-primary);
   background: var(--text);

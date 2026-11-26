@@ -30,7 +30,7 @@ export default async function NotFound() {
         </h1>
         <p className="mt-5 max-w-sm animate-fade-up text-lg leading-snug text-muted [animation-delay:120ms]">{N.text}</p>
         <div className="mt-8 flex animate-fade-up flex-wrap gap-3 [animation-delay:160ms]">
-          <Link href="/" className="btn btn-accent">
+          <Link href="/" className="btn btn-primary">
             {N.home}
           </Link>
           <Link href="/dashboard/generate" className="btn btn-secondary">

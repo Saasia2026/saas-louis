@@ -32,7 +32,7 @@
   flex: none;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
-  background: #0c0c10;
+  background: var(--brand);
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
