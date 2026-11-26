@@ -35,7 +35,6 @@ export type LandingCopy = {
   heroText: string;
   ctaFirst: string;
   seeExamples: string;
-  perks: string[];
   examplesTop: string;
   examplesBottom: string;
   examplesText: string;
@@ -82,14 +81,6 @@ function Arrow() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
       <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
-  );
-}
-
-function Check() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <path d="M4 12l5 5L20 6" />
     </svg>
   );
 }
@@ -298,14 +289,6 @@ export function Landing({ copy: c, packs, studioHref, startHref, creditsHref, lo
               </button>
             </div>
           </div>
-          <ul className={cx(s.perks, s.rise)} style={{ "--d": "0.2s" } as CSSProperties}>
-            {c.perks.map((perk) => (
-              <li key={perk} className={s.card} {...hold}>
-                <Check />
-                {perk}
-              </li>
-            ))}
-          </ul>
         </div>
       </section>
 
