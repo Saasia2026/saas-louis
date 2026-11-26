@@ -200,7 +200,7 @@ function BuyButton({
     ? c.buyLight
     : inverted
       ? "btn shrink-0 bg-bg px-6 py-3 text-base text-text hover:opacity-90"
-      : "btn btn-accent shrink-0 px-6 py-3 text-base";
+      : "btn btn-primary shrink-0 px-6 py-3 text-base";
   if (!card) {
     return (
       <form action={buyCredits}>

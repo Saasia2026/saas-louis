@@ -60,7 +60,7 @@ export default async function TermsPage() {
           ))}
         </ol>
 
-        <Link href="/" className="btn btn-accent mt-6">
+        <Link href="/" className="btn btn-primary mt-6">
           {T.back}
         </Link>
       </main>

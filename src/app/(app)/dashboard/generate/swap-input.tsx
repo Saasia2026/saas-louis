@@ -777,11 +777,11 @@ function PromptBox({
         <span
           aria-hidden
           className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-            open ? "bg-accent" : "bg-surface-3"
+            open ? "bg-brand" : "bg-surface-3"
           }`}
         >
           <span
-            className={`inline-block size-4.5 rounded-full shadow-sm transition ${open ? "bg-black" : "bg-white"} ${
+            className={`inline-block size-4.5 rounded-full bg-white shadow-sm transition ${
               open ? "translate-x-[1.375rem]" : "translate-x-[0.1875rem]"
             }`}
           />

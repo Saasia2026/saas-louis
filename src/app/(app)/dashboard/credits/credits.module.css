@@ -170,8 +170,9 @@
   margin-top: 1.25rem;
   padding: 1rem 1.25rem;
   border-radius: 999px;
-  background: #fff;
-  color: #0c0c10;
+  background: var(--brand-fill);
+  box-shadow: var(--brand-shadow);
+  color: var(--on-brand);
   font-size: 1.05rem;
   font-weight: 700;
   transition: transform 0.25s cubic-bezier(0.77, 0, 0.18, 1);
@@ -242,9 +243,9 @@
 }
 
 .badgeSolid {
-  background: #fff;
-  border-color: #fff;
-  color: #0c0c10;
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
 }
 
 .bigPrice {

@@ -487,12 +487,12 @@ function RhythmEditor({
         <label className="flex cursor-pointer items-center gap-3 text-sm font-medium">
           <span className="relative inline-flex shrink-0">
             <input type="checkbox" name="alertEmail" defaultChecked={plan.alertEmail} className="peer sr-only" />
-            <span className="h-6 w-11 rounded-full border border-line-strong bg-surface-3 transition-colors peer-checked:border-transparent peer-checked:bg-accent peer-focus-visible:ring-2 peer-focus-visible:ring-accent/50" />
-            <span className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5 peer-checked:bg-black" />
+            <span className="h-6 w-11 rounded-full border border-line-strong bg-surface-3 transition-colors peer-checked:border-transparent peer-checked:bg-brand peer-focus-visible:ring-2 peer-focus-visible:ring-brand/50" />
+            <span className="pointer-events-none absolute top-1 left-1 size-4 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5" />
           </span>
           {P.alertEmail}
         </label>
-        <button type="submit" className="btn btn-accent">
+        <button type="submit" className="btn btn-primary">
           {P.save}
         </button>
       </div>

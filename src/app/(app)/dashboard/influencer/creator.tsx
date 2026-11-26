@@ -356,12 +356,12 @@ export function InfluencerCreator({
   const resultActions = result && (
     <div className="mt-4 space-y-2">
       {onContinue ? (
-        <button type="button" onClick={() => onContinue(result)} className="btn btn-accent w-full py-3.5 text-base">
+        <button type="button" onClick={() => onContinue(result)} className="btn btn-primary w-full py-3.5 text-base">
           {I.continue}
           <ArrowRight />
         </button>
       ) : (
-        <Link href={`/dashboard/generate?influencer=${result.id}`} className="btn btn-accent w-full py-3.5 text-base">
+        <Link href={`/dashboard/generate?influencer=${result.id}`} className="btn btn-primary w-full py-3.5 text-base">
           {I.use}
           <ArrowRight />
         </Link>

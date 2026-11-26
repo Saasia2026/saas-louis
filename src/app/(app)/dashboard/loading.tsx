@@ -7,7 +7,7 @@ export default function DashboardLoading() {
     <div className="flex flex-col items-center gap-8 pt-6" aria-busy>
       <span className="relative block h-px w-40 overflow-hidden bg-white/15">
         <span
-          className="absolute inset-y-0 left-0 w-1/3 bg-white"
+          className="absolute inset-y-0 left-0 w-1/3 bg-brand"
           style={{ animation: "loading-run 1.4s cubic-bezier(0.77, 0, 0.18, 1) infinite" }}
         />
       </span>

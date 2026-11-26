@@ -151,8 +151,9 @@
   margin-top: 1rem;
   padding: 0.8rem 1rem;
   border-radius: 999px;
-  background: #fff;
-  color: #0c0c10;
+  background: var(--brand-fill);
+  box-shadow: var(--brand-shadow);
+  color: var(--on-brand);
   font-weight: 600;
   font-size: 0.92rem;
   text-decoration: none;

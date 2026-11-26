@@ -63,7 +63,7 @@
 .track span {
   position: absolute;
   inset: 0 auto 0 0;
-  background: #fff;
+  background: var(--brand);
   transition: width 0.7s cubic-bezier(0.77, 0, 0.18, 1);
 }
 
@@ -282,7 +282,7 @@
 .bar span {
   position: absolute;
   inset: 0 auto 0 0;
-  background: #fff;
+  background: var(--brand);
   transition: width 0.5s cubic-bezier(0.77, 0, 0.18, 1);
 }
 

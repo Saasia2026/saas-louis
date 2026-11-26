@@ -161,7 +161,7 @@ function Details({ item, onReuse }: { item: SwapHistoryItem; onReuse?: (item: Sw
 
       <div className={H.actions}>
         {item.running ? (
-          <Link href={`/dashboard/generate?v=${item.id}`} className="btn btn-accent">
+          <Link href={`/dashboard/generate?v=${item.id}`} className="btn btn-primary">
             {V.resume}
           </Link>
         ) : (
@@ -309,7 +309,7 @@ export function HistoryEmpty() {
           <span className="h-1 w-3/4 overflow-hidden rounded-full bg-surface-3">
             <span
               key={`progress-${cycle}-${shown}`}
-              className={`block h-full origin-left rounded-full bg-white ${
+              className={`block h-full origin-left rounded-full bg-brand ${
                 shown === 2 ? "animate-feature-progress" : shown === 3 ? "" : "scale-x-0"
               }`}
               style={shown === 2 ? { animationDuration: `${DEMO_MS[2]}ms` } : undefined}

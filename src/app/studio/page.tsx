@@ -38,7 +38,7 @@ export default async function GuestStudioPage(props: PageProps<"/studio">) {
         <Logo className="min-w-0 shrink" />
         <div className="flex shrink-0 items-center gap-2">
           <LanguageSwitcher />
-          <Link href="/login?next=/dashboard/generate" className="btn btn-accent px-4 py-2 text-[0.8125rem]">
+          <Link href="/login?next=/dashboard/generate" className="btn btn-primary px-4 py-2 text-[0.8125rem]">
             {t.login.submitSignIn}
           </Link>
         </div>
